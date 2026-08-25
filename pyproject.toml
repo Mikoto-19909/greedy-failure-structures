@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "greedy-failure-structures"
+version = "0.1.0"
+description = "Reproducible empirical study of Maximum Coverage algorithms"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [{name = "Liang Dao", email = "daoliang38@gmail.com"}]
+dependencies = []
+
+[project.optional-dependencies]
+oracle = ["ortools==9.15.6755"]
+typecheck = ["mypy==2.3.0"]
+test = ["pytest>=8.0", "pytest-xdist>=3.5", "openai>=1.0"]
+
+[project.scripts]
+maxcover = "maxcover.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.mypy]
+python_version = "3.11"
+files = ["src/maxcover"]
+check_untyped_defs = true
+disallow_untyped_defs = true
+ignore_missing_imports = true
+no_implicit_optional = true
+show_error_codes = true
+warn_return_any = true
+warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+module = [
+    "maxcover.benchmark",
+    "maxcover.contracts",
+    "maxcover.reporting",
+]
+ignore_errors = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

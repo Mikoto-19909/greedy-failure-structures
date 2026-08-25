@@ -1,0 +1,127 @@
+{
+  "schema_version": 3,
+  "name": "P3 branch-and-bound ablation",
+  "base_seed": 2026,
+  "repetitions": 10,
+  "algorithms": [
+    {
+      "id": "bnb_baseline",
+      "name": "branch_and_bound",
+      "options": { "time_limit_seconds": 10.0 }
+    },
+    {
+      "id": "bnb_dedup",
+      "name": "branch_and_bound_enhanced",
+      "options": {
+        "time_limit_seconds": 10.0,
+        "remove_duplicates": true,
+        "remove_dominated": false,
+        "bound_strategy": "suffix_union",
+        "ordering_strategy": "static_size"
+      }
+    },
+    {
+      "id": "bnb_dominance",
+      "name": "branch_and_bound_enhanced",
+      "options": {
+        "time_limit_seconds": 10.0,
+        "remove_duplicates": true,
+        "remove_dominated": true,
+        "bound_strategy": "suffix_union",
+        "ordering_strategy": "static_size"
+      }
+    },
+    {
+      "id": "bnb_cardinality_bound",
+      "name": "branch_and_bound_enhanced",
+      "options": {
+        "time_limit_seconds": 10.0,
+        "remove_duplicates": true,
+        "remove_dominated": true,
+        "bound_strategy": "cardinality",
+        "ordering_strategy": "static_size"
+      }
+    },
+    {
+      "id": "bnb_enhanced",
+      "name": "branch_and_bound_enhanced",
+      "options": {
+        "time_limit_seconds": 10.0,
+        "remove_duplicates": true,
+        "remove_dominated": true,
+        "bound_strategy": "cardinality",
+        "ordering_strategy": "dynamic_marginal"
+      }
+    }
+  ],
+  "cases": [
+    {
+      "name": "uniform_sparse",
+      "family": "uniform",
+      "universe_size": 200,
+      "set_count": 22,
+      "k": 5,
+      "density": 0.08
+    },
+    {
+      "name": "uniform_dense",
+      "family": "uniform",
+      "universe_size": 200,
+      "set_count": 22,
+      "k": 5,
+      "density": 0.3
+    },
+    {
+      "name": "overlap_moderate",
+      "family": "high_overlap",
+      "universe_size": 200,
+      "set_count": 22,
+      "k": 5,
+      "core_fraction": 0.3,
+      "core_probability": 0.65,
+      "peripheral_probability": 0.08
+    },
+    {
+      "name": "overlap_extreme",
+      "family": "high_overlap",
+      "universe_size": 200,
+      "set_count": 22,
+      "k": 5,
+      "core_fraction": 0.5,
+      "core_probability": 0.9,
+      "peripheral_probability": 0.03
+    },
+    {
+      "name": "four_clusters",
+      "family": "clustered",
+      "universe_size": 200,
+      "set_count": 24,
+      "k": 5,
+      "clusters": 4,
+      "within_probability": 0.55,
+      "outside_probability": 0.02
+    },
+    {
+      "name": "eight_clusters",
+      "family": "clustered",
+      "universe_size": 200,
+      "set_count": 24,
+      "k": 5,
+      "clusters": 8,
+      "within_probability": 0.7,
+      "outside_probability": 0.015
+    },
+    {
+      "name": "greedy_trap_small",
+      "family": "adversarial",
+      "block_size": 40,
+      "distractor_count": 10
+    },
+    {
+      "name": "greedy_trap_large",
+      "family": "adversarial",
+      "block_size": 100,
+      "distractor_count": 18
+    }
+  ]
+}

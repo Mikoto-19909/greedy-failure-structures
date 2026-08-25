@@ -1,0 +1,43 @@
+{
+  "schema_version": 3,
+  "name": "P4.3 paired dominated-heavy pruning scan",
+  "base_seed": 4304,
+  "repetitions": 10,
+  "algorithms": [
+    { "name": "greedy" },
+    { "name": "local_search" },
+    { "name": "brute_force", "options": { "max_set_count": 40 } },
+    {
+      "id": "bnb_without_dominance",
+      "name": "branch_and_bound_enhanced",
+      "options": {
+        "time_limit_seconds": 5.0,
+        "remove_duplicates": true,
+        "remove_dominated": false,
+        "bound_strategy": "suffix_union",
+        "ordering_strategy": "static_size"
+      }
+    },
+    {
+      "id": "bnb_with_dominance",
+      "name": "branch_and_bound_enhanced",
+      "options": {
+        "time_limit_seconds": 5.0,
+        "remove_duplicates": true,
+        "remove_dominated": true,
+        "bound_strategy": "suffix_union",
+        "ordering_strategy": "static_size"
+      }
+    }
+  ],
+  "cases": [
+    {
+      "name": "dominated_children",
+      "family": "dominated_heavy",
+      "anchor_count": 8,
+      "anchor_size": 6,
+      "k": 4,
+      "sweep": { "child_count": [0, 1, 2, 4] }
+    }
+  ]
+}

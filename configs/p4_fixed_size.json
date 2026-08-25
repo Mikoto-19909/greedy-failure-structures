@@ -1,0 +1,63 @@
+{
+  "schema_version": 3,
+  "name": "P4.3 fixed-size set-size variation",
+  "base_seed": 4301,
+  "repetitions": 10,
+  "algorithms": [
+    { "name": "greedy" },
+    { "name": "local_search" },
+    { "name": "brute_force", "options": { "max_set_count": 40 } },
+    { "name": "branch_and_bound", "options": { "time_limit_seconds": 5.0 } },
+    {
+      "name": "branch_and_bound_enhanced",
+      "options": { "time_limit_seconds": 5.0 }
+    }
+  ],
+  "cases": [
+    {
+      "name": "fixed_size",
+      "family": "fixed_size",
+      "universe_size": 32,
+      "set_count": 24,
+      "k": 6,
+      "unique_sets": false,
+      "sweep": { "set_size": [4, 6, 8, 12] }
+    },
+    {
+      "name": "uniform_expected_size_4",
+      "family": "uniform",
+      "universe_size": 32,
+      "set_count": 24,
+      "k": 6,
+      "paired_set_size": 4,
+      "density": 0.12455727127735752
+    },
+    {
+      "name": "uniform_expected_size_6",
+      "family": "uniform",
+      "universe_size": 32,
+      "set_count": 24,
+      "k": 6,
+      "paired_set_size": 6,
+      "density": 0.18745927187019207
+    },
+    {
+      "name": "uniform_expected_size_8",
+      "family": "uniform",
+      "universe_size": 32,
+      "set_count": 24,
+      "k": 6,
+      "paired_set_size": 8,
+      "density": 0.2499968604411672
+    },
+    {
+      "name": "uniform_expected_size_12",
+      "family": "uniform",
+      "universe_size": 32,
+      "set_count": 24,
+      "k": 6,
+      "paired_set_size": 12,
+      "density": 0.3749999908164461
+    }
+  ]
+}

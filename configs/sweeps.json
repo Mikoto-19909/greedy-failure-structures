@@ -1,0 +1,53 @@
+{
+  "schema_version": 2,
+  "name": "structural parameter sweep examples",
+  "base_seed": 2026,
+  "repetitions": 3,
+  "algorithms": [{ "name": "greedy" }, { "name": "local_search" }],
+  "cases": [
+    {
+      "name": "density_sweep",
+      "family": "uniform",
+      "universe_size": 80,
+      "set_count": 14,
+      "k": 4,
+      "sweep": {
+        "density": [0.08, 0.15, 0.3]
+      }
+    },
+    {
+      "name": "overlap_sweep",
+      "family": "high_overlap",
+      "universe_size": 80,
+      "set_count": 14,
+      "k": 4,
+      "peripheral_probability": 0.08,
+      "sweep": {
+        "core_fraction": [0.2, 0.4],
+        "core_probability": [0.6, 0.9]
+      }
+    },
+    {
+      "name": "budget_sweep",
+      "family": "clustered",
+      "universe_size": 80,
+      "set_count": 16,
+      "clusters": 4,
+      "within_probability": 0.65,
+      "outside_probability": 0.03,
+      "sweep": {
+        "k": [2, 4, 6]
+      }
+    },
+    {
+      "name": "scale_sweep",
+      "family": "uniform",
+      "k": 4,
+      "density": 0.15,
+      "sweep": {
+        "universe_size": [80, 160],
+        "set_count": [14, 20]
+      }
+    }
+  ]
+}

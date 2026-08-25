@@ -1,0 +1,28 @@
+{
+  "schema_version": 3,
+  "name": "P4.3 paired mixed-cluster bridge scan",
+  "base_seed": 4305,
+  "repetitions": 10,
+  "algorithms": [
+    { "name": "greedy" },
+    { "name": "local_search" },
+    { "name": "brute_force", "options": { "max_set_count": 40 } },
+    { "name": "branch_and_bound", "options": { "time_limit_seconds": 5.0 } },
+    {
+      "name": "branch_and_bound_enhanced",
+      "options": { "time_limit_seconds": 5.0 }
+    }
+  ],
+  "cases": [
+    {
+      "name": "mixed_cluster_bridges",
+      "family": "mixed_cluster",
+      "universe_size": 64,
+      "set_count": 24,
+      "k": 6,
+      "clusters": 4,
+      "set_size": 8,
+      "sweep": { "bridge_fraction": [0.0, 0.25, 0.5, 0.75] }
+    }
+  ]
+}

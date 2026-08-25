@@ -1,0 +1,44 @@
+{
+  "schema_version": 3,
+  "name": "P4.3 paired duplicate-heavy redundancy scan",
+  "base_seed": 4303,
+  "repetitions": 10,
+  "algorithms": [
+    { "name": "greedy" },
+    { "name": "local_search" },
+    { "name": "brute_force", "options": { "max_set_count": 40 } },
+    {
+      "id": "bnb_without_deduplication",
+      "name": "branch_and_bound_enhanced",
+      "options": {
+        "time_limit_seconds": 5.0,
+        "remove_duplicates": false,
+        "remove_dominated": false,
+        "bound_strategy": "suffix_union",
+        "ordering_strategy": "static_size"
+      }
+    },
+    {
+      "id": "bnb_with_deduplication",
+      "name": "branch_and_bound_enhanced",
+      "options": {
+        "time_limit_seconds": 5.0,
+        "remove_duplicates": true,
+        "remove_dominated": false,
+        "bound_strategy": "suffix_union",
+        "ordering_strategy": "static_size"
+      }
+    }
+  ],
+  "cases": [
+    {
+      "name": "duplicate_copy_factor",
+      "family": "duplicate_heavy",
+      "universe_size": 32,
+      "base_set_count": 8,
+      "k": 4,
+      "set_size": 6,
+      "sweep": { "copy_factor": [1, 2, 3, 4] }
+    }
+  ]
+}

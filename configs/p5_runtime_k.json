@@ -1,0 +1,26 @@
+{
+  "schema_version": 3,
+  "name": "P5.4 controlled runtime versus selection-budget scan",
+  "base_seed": 5501,
+  "repetitions": 10,
+  "algorithms": [
+    { "name": "greedy" },
+    { "name": "local_search" },
+    { "name": "brute_force", "options": { "max_set_count": 30 } },
+    { "name": "branch_and_bound", "options": { "time_limit_seconds": 5.0 } },
+    {
+      "name": "branch_and_bound_enhanced",
+      "options": { "time_limit_seconds": 5.0 }
+    }
+  ],
+  "cases": [
+    {
+      "name": "runtime_k",
+      "family": "uniform",
+      "universe_size": 80,
+      "set_count": 20,
+      "density": 0.15,
+      "sweep": { "k": [2, 4, 6, 8] }
+    }
+  ]
+}

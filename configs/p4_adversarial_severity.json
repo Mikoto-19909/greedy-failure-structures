@@ -1,0 +1,41 @@
+{
+  "schema_version": 3,
+  "name": "P4.2 paired adversarial severity scan",
+  "base_seed": 4202,
+  "repetitions": 5,
+  "algorithms": [
+    { "name": "greedy" },
+    { "name": "brute_force", "options": { "max_set_count": 16 } },
+    { "name": "branch_and_bound", "options": { "time_limit_seconds": 5.0 } },
+    {
+      "name": "branch_and_bound_enhanced",
+      "options": { "time_limit_seconds": 5.0 }
+    }
+  ],
+  "cases": [
+    {
+      "name": "severity_b8",
+      "family": "adversarial",
+      "block_size": 8,
+      "distractor_count": 8,
+      "construction_version": 2,
+      "sweep": { "trap_count": [5, 6, 7, 8] }
+    },
+    {
+      "name": "severity_b10",
+      "family": "adversarial",
+      "block_size": 10,
+      "distractor_count": 8,
+      "construction_version": 2,
+      "sweep": { "trap_count": [6, 7, 8, 10] }
+    },
+    {
+      "name": "severity_b12",
+      "family": "adversarial",
+      "block_size": 12,
+      "distractor_count": 8,
+      "construction_version": 2,
+      "sweep": { "trap_count": [7, 8, 10, 12] }
+    }
+  ]
+}

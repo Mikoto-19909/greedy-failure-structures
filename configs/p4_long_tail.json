@@ -1,0 +1,27 @@
+{
+  "schema_version": 3,
+  "name": "P4.3 paired long-tail coverage-skew scan",
+  "base_seed": 4302,
+  "repetitions": 10,
+  "algorithms": [
+    { "name": "greedy" },
+    { "name": "local_search" },
+    { "name": "brute_force", "options": { "max_set_count": 40 } },
+    { "name": "branch_and_bound", "options": { "time_limit_seconds": 5.0 } },
+    {
+      "name": "branch_and_bound_enhanced",
+      "options": { "time_limit_seconds": 5.0 }
+    }
+  ],
+  "cases": [
+    {
+      "name": "long_tail_gamma",
+      "family": "long_tail",
+      "universe_size": 32,
+      "set_count": 20,
+      "k": 5,
+      "set_size": 6,
+      "sweep": { "gamma": [0.0, 0.5, 1.0, 2.0] }
+    }
+  ]
+}
