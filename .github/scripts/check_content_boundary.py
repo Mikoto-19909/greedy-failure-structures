@@ -26,17 +26,10 @@ from pathlib import Path, PurePosixPath
 
 CLAIM_MODES = ("no_quantitative_claims", "evidence_backed_claims")
 
-# Text is decided by content, not by filename. A suffix allow-list silently
-# skips .env, Dockerfile, Makefile and .sh, so a credential placed in one of
-# those would pass while the workflow reported that the boundary held.
-BINARY_SUFFIXES = frozenset(
-    {
-        ".bmp", ".bz2", ".class", ".dll", ".exe", ".gif", ".gz", ".ico", ".jar",
-        ".jpeg", ".jpg", ".mo", ".mp3", ".mp4", ".o", ".ods", ".odt", ".pdf",
-        ".png", ".pyc", ".pyd", ".pyo", ".so", ".svgz", ".tar", ".ttf", ".webp",
-        ".woff", ".woff2", ".xz", ".zip", ".zst",
-    }
-)
+# No suffix list decides what gets scanned. An allow-list skipped .env,
+# Dockerfile and .sh; replacing it with a deny-list was the same mistake in
+# reverse, since either can be defeated by choosing a filename. Binary is now
+# judged from content in read_text_if_text.
 MAX_TEXT_BYTES = 4 * 1024 * 1024
 
 # Prose is where a research claim can be asserted in words. Credential and
@@ -95,8 +88,8 @@ QUANTITATIVE = (
 # so requiring quotes — as the predecessor did — missed the common case in
 # exactly the file types the content-based scan was added to cover.
 # An environment-style key may carry a prefix, as in AZURE_CLIENT_SECRET, where
-# a  before the keyword does not hold because the preceding character is an
-# underscore. So the prefix is matched explicitly instead.
+# a word boundary before the keyword does not hold because the preceding
+# character is an underscore. So the prefix is matched explicitly instead.
 _SECRET_KEYWORD = (
     r"password|passwd|pwd|secret|token|credential|api[_-]?key|access[_-]?key|"
     r"private[_-]?key|auth[_-]?token|client[_-]?secret|pat"
@@ -167,6 +160,23 @@ MD_LINK = re.compile(r"\[[^\]]*\]\(\s*([^)\s]+)")
 EXTERNAL = re.compile(r"\A(?:[a-z][a-z0-9+.-]*:|//|#)", re.IGNORECASE)
 
 
+# A test fixture for this checker must contain the exact strings the checker
+# rejects, so scanning them would make the boundary permanently fail. Blanket
+# directory exemptions were rejected: exempting tests/ wholesale would open a
+# real bypass, since a genuine leak could then be parked in a test file.
+#
+# Instead each line opts out explicitly and visibly. The marker has to be on the
+# same line as the fixture, so an exemption is always adjacent to what it
+# exempts and shows up in review of that line.
+FIXTURE_MARKER = "boundary-fixture"
+
+
+def _is_exempt(line: str) -> bool:
+    """True when this line declares itself a fixture for this checker."""
+
+    return FIXTURE_MARKER in line
+
+
 def tracked_files(root: Path) -> list[str]:
     out = subprocess.run(
         ["git", "-C", str(root), "ls-files", "-z"], capture_output=True, check=True
@@ -175,27 +185,69 @@ def tracked_files(root: Path) -> list[str]:
 
 
 def read_text_if_text(path: Path) -> tuple[str | None, str | None]:
-    """Return decoded text, or a reason it is not text to scan.
+    """Return decoded text, or a reason it could not be scanned.
 
-    Content decides, not the filename: a NUL byte or a UTF-8 decoding failure
-    means binary. Only unambiguously binary suffixes are skipped without
-    reading, so .env, Dockerfile, Makefile and .sh are all scanned.
+    Content decides, never the filename. A suffix list — whether it named the
+    files to scan or the files to skip — could always be defeated by choosing a
+    name, which is the opposite of what this check is for. So every tracked file
+    is read and classified by what is in it.
+
+    Three outcomes, and the difference between the last two matters:
+
+    - ``(text, None)`` — scan it.
+    - ``(None, None)`` — genuinely binary; skipped and counted, no finding. A
+      real PNG must not become noise.
+    - ``(None, reason)`` — a finding. Something was tracked that could not be
+      examined, so the boundary is unverified for it rather than clean.
+
+    A NUL byte previously produced the second outcome, which let any file,
+    including a Markdown one, disappear from the report entirely. Now a NUL byte
+    only means binary when the rest of the content agrees; a file that is
+    otherwise valid UTF-8 text is reported instead of silently dropped.
     """
 
-    if path.suffix.casefold() in BINARY_SUFFIXES:
-        return None, None
     try:
         payload = path.read_bytes()
     except OSError as error:
         return None, f"cannot be read ({error.strerror})"
+    if not payload:
+        return "", None
     if len(payload) > MAX_TEXT_BYTES:
         return None, "exceeds the text size limit and was not scanned"
-    if b"\0" in payload:
-        return None, None
+
     try:
-        return payload.decode("utf-8"), None
+        text = payload.decode("utf-8")
     except UnicodeDecodeError:
+        # Not UTF-8. If it looks like a known binary format, skip it quietly;
+        # otherwise say so, because an unreadable tracked file is unverified.
+        if _looks_binary(payload):
+            return None, None
         return None, "is not valid UTF-8 and could not be scanned"
+
+    if "\0" not in text:
+        return text, None
+
+    # Valid UTF-8 containing NUL. A real binary can decode as UTF-8 by accident,
+    # so decide by how much of it is unprintable rather than by the NUL alone.
+    if _looks_binary(payload):
+        return None, None
+    return None, "contains NUL bytes in otherwise textual content"
+
+
+def _looks_binary(payload: bytes) -> bool:
+    """Judge binary by the share of bytes that no text format would carry.
+
+    Deliberately not a suffix check. Control characters outside tab, newline and
+    carriage return are the signal; a text file holding a stray NUL stays text,
+    while a compiled object or image crosses the threshold immediately.
+    """
+
+    sample = payload[:8192]
+    if not sample:
+        return False
+    textual = bytes(range(32, 127)) + bytes([9, 10, 13, 27])
+    unprintable = sum(1 for byte in sample if byte not in textual and byte < 128)
+    return unprintable / len(sample) > 0.05
 
 
 def check_quantitative(path: str, text: str, claim_mode: str) -> list[str]:
@@ -209,6 +261,8 @@ def check_quantitative(path: str, text: str, claim_mode: str) -> list[str]:
         return []
     findings = []
     for index, line in enumerate(text.splitlines(), start=1):
+        if _is_exempt(line):
+            continue
         for pattern in QUANTITATIVE:
             if pattern.search(line):
                 findings.append(
@@ -222,6 +276,8 @@ def check_quantitative(path: str, text: str, claim_mode: str) -> list[str]:
 def check_sensitive(path: str, text: str) -> list[str]:
     findings = []
     for index, line in enumerate(text.splitlines(), start=1):
+        if _is_exempt(line):
+            continue
         for label, pattern in SENSITIVE:
             if pattern.search(line):
                 findings.append(f"{path}:{index}: {label} must not be published")
@@ -233,6 +289,8 @@ def check_links(root: Path, path: str, text: str, known: set[str]) -> list[str]:
         return []
     findings = []
     for index, line in enumerate(text.splitlines(), start=1):
+        if _is_exempt(line):
+            continue
         for match in MD_LINK.finditer(line):
             target = match.group(1)
             if EXTERNAL.match(target):

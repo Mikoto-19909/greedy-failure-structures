@@ -5,9 +5,11 @@ under this license.  Attribution must identify the licensor recorded for
 CC-BY-4.0 in that manifest, link to the license, and indicate changes.
 
 LICENSE_MANIFEST.json is the live allow-list for this repository and is
-regenerated whenever the tracked file set changes.  PUBLIC_SNAPSHOT_MANIFEST.json
-is a migration archive describing one past export and is not a license
-authority; see LICENSES/README.md.
+regenerated whenever the tracked file set changes.  It records each covered
+file's path, file mode and payload identity as git has them staged, so the
+identities it lists do not depend on the platform a checkout was made on.
+PUBLIC_SNAPSHOT_MANIFEST.json is a migration archive describing one past export
+and is not a license authority; see LICENSES/README.md.
 
 Official license text:
 https://creativecommons.org/licenses/by/4.0/legalcode
