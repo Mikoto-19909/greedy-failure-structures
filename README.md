@@ -98,7 +98,9 @@ for what preceded this repository.
 - `tests/`: deterministic unit and contract tests
 - `run_project.py`: primary command-line entry point
 - `project.ps1`: Windows convenience wrapper
-- `PUBLIC_SNAPSHOT_MANIFEST.json`: the closed allow-list defining this snapshot
+- `LICENSE_MANIFEST.json`: the closed license allow-list, verified by CI
+- `PUBLIC_SNAPSHOT_MANIFEST.json`: the migration archive for the one export
+  that created this repository
 - `docs/history/`: migration provenance and pre-public development history
 
 ## Contributing and support

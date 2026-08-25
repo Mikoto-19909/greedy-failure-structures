@@ -48,3 +48,7 @@ jobs:
         run: >-
           python .github/scripts/check_content_boundary.py
           --claim-mode ${{ matrix.claim-mode }}
+      # A file added without being listed must fail here rather than ship
+      # unlicensed, which is what the default-deny license rule requires.
+      - name: Verify the license allow-list covers the tracked tree
+        run: python .github/scripts/build_license_manifest.py --check
