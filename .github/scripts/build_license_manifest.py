@@ -61,6 +61,23 @@ def tracked_files(root: Path) -> list[str]:
     return sorted(name for name in out.decode("utf-8").split("\0") if name)
 
 
+def blob_bytes(root: Path, path: str) -> bytes:
+    """Read the committed bytes for a path, not the working-tree file.
+
+    These differ wherever .gitattributes normalizes line endings: a Windows
+    checkout holds CRLF while the committed blob holds LF. Hashing the working
+    tree would make the manifest platform-dependent, so it would pass locally
+    and fail on a Linux runner. The blob is the repository's canonical content,
+    so it is what the license identity must be bound to.
+    """
+
+    return subprocess.run(
+        ["git", "-C", str(root), "cat-file", "blob", f"HEAD:{path}"],
+        capture_output=True,
+        check=True,
+    ).stdout
+
+
 def build(root: Path) -> bytes:
     """Build the manifest over every tracked file except the manifest itself.
 
@@ -74,7 +91,7 @@ def build(root: Path) -> bytes:
     for name in tracked_files(root):
         if name == MANIFEST_NAME:
             continue
-        payload = (root / name).read_bytes()
+        payload = blob_bytes(root, name)
         entries.append(
             {
                 "bytes": len(payload),
