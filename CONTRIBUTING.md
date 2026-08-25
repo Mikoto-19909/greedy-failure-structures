@@ -43,6 +43,13 @@ typed CSV, then manifest and checksum, then an independent validator, then the
 statement — with every step reproducible by someone else. Without that chain
 closed, the statement does not go in.
 
+The rule is unconditional, which catches one honest case worth naming: quoting a
+prohibited phrase as an example. If you are describing a bug — a checker that
+failed to reject something, say — describe the form rather than reproducing it.
+Write "a metric stated with a value" instead of the phrase itself. Two commits
+predating this note quote such examples verbatim; they are known exceptions and
+were left unrewritten rather than having a pushed history amended.
+
 This is why the bundled starter workflow is described as a functional check
 rather than a benchmark: it verifies that the code runs, and it is not evidence
 about how well anything performs.

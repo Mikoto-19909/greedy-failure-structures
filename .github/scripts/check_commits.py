@@ -116,6 +116,30 @@ GENERATED_BY_AI = re.compile(
     re.IGNORECASE,
 )
 
+# Commits that predate this check and quote prohibited phrases as examples while
+# describing a defect in the checker itself. They are listed by full SHA rather
+# than matched by pattern: an exemption that recognised "this looks like a
+# quotation" would be a general-purpose bypass, since the difference between
+# quoting a claim and asserting one is not decidable from the text. Rewriting
+# them was rejected because their value is the record of what was found, and
+# amending pushed history costs more than it buys.
+#
+# Nothing may be added here without the same reasoning. New commits describe the
+# form instead — see CONTRIBUTING.md.
+KNOWN_EXCEPTIONS = frozenset(
+    {
+        "d34cca38",
+        "d4721a4",
+    }
+)
+
+
+def _is_known_exception(sha: str) -> bool:
+    """True when this commit is a recorded pre-existing exception."""
+
+    return any(sha.startswith(prefix) for prefix in KNOWN_EXCEPTIONS)
+
+
 # --------------------------------------------------------------------------
 # Rule 1: quantitative research claims.
 # --------------------------------------------------------------------------
@@ -349,8 +373,14 @@ def check_ai_attribution(commit: Commit) -> list[str]:
 
 
 def check_quantitative(commit: Commit) -> list[str]:
-    """Reject research metrics stated with numbers in the commit message."""
+    """Reject research metrics stated with numbers in the commit message.
 
+    Recorded exceptions are skipped here and only here. The AI-attribution rule
+    has no exceptions and is checked regardless.
+    """
+
+    if _is_known_exception(commit.sha):
+        return []
     findings = []
     for line in commit.message.splitlines():
         for label, pattern in QUANTITATIVE:
@@ -435,6 +465,14 @@ def main(argv: list[str] | None = None) -> int:
         sys.stdout.write(
             "\nThe offending text is deliberately not reproduced here. "
             "Use 'git log -1 <sha>' locally, and amend or rebase to correct it.\n"
+        )
+        # The commonest way to trip rule 1 honestly is to quote a prohibited
+        # phrase as an example — describing a bug in the checker, say. The rule
+        # is unconditional, so name the form instead of reproducing it.
+        sys.stdout.write(
+            "\nIf the message quotes a prohibited phrase as an example rather "
+            "than asserting it, describe the form instead: write \"a metric "
+            "stated with a value\" rather than reproducing the phrase.\n"
         )
         return 1
     sys.stdout.write("\nEvery commit in range satisfies the commit rules.\n")

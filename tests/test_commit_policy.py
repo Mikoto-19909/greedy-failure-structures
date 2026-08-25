@@ -483,3 +483,52 @@ class WorkflowContractTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class KnownExceptionTests(unittest.TestCase):
+    """The exception list is itself a bypass risk, so its scope is pinned.
+
+    It exists for commits predating this check that quote prohibited phrases
+    while describing a defect in the checker. Matching by pattern was refused:
+    telling a quotation from an assertion is not decidable from the text, so a
+    pattern-based exemption would be general-purpose.
+    """
+
+    def test_exceptions_are_listed_by_sha_not_by_pattern(self) -> None:
+        for entry in checker.KNOWN_EXCEPTIONS:
+            self.assertRegex(entry, r"\A[0-9a-f]{7,40}\Z", entry)
+
+    def test_a_listed_commit_is_exempt_from_the_claim_rule(self) -> None:
+        commit = checker.Commit(
+            sha=sorted(checker.KNOWN_EXCEPTIONS)[0] + "0" * 8,
+            message="docs: the failure rate was 25 percent",
+            author_name="Someone",
+            author_email="someone@example.com",
+            committer_name="Someone",
+            committer_email="someone@example.com",
+        )
+        self.assertEqual(checker.check_quantitative(commit), [])
+
+    def test_an_unlisted_commit_is_not_exempt(self) -> None:
+        commit = checker.Commit(
+            sha="f" * 40,
+            message="docs: the failure rate was 25 percent",
+            author_name="Someone",
+            author_email="someone@example.com",
+            committer_name="Someone",
+            committer_email="someone@example.com",
+        )
+        self.assertTrue(checker.check_quantitative(commit))
+
+    def test_a_listed_commit_is_still_checked_for_ai_attribution(self) -> None:
+        # The attribution rule has no exceptions; the owner asked for it to be
+        # enforced strictly, and an exemption here would silently weaken it.
+        commit = checker.Commit(
+            sha=sorted(checker.KNOWN_EXCEPTIONS)[0] + "0" * 8,
+            message="docs: something\n\nCo-Authored-By: Claude <noreply@anthropic.com>",
+            author_name="Someone",
+            author_email="someone@example.com",
+            committer_name="Someone",
+            committer_email="someone@example.com",
+        )
+        self.assertTrue(checker.check_ai_attribution(commit))
