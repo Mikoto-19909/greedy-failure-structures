@@ -82,15 +82,85 @@ QUANTITATIVE = (
     ),
 )
 
+# Credential and personal-path detection.
+#
+# These patterns were derived from an adversarial review that found ten missed
+# credential formats in a six-pattern predecessor. Two lessons are encoded here.
+#
+# First, a hand-written pattern list cannot claim to detect "credential-shaped
+# strings" in general. It detects the formats listed below and nothing else, and
+# the documentation says so rather than implying completeness.
+#
+# Second, secret assignments in .env, shell and YAML files are usually unquoted,
+# so requiring quotes — as the predecessor did — missed the common case in
+# exactly the file types the content-based scan was added to cover.
+# An environment-style key may carry a prefix, as in AZURE_CLIENT_SECRET, where
+# a  before the keyword does not hold because the preceding character is an
+# underscore. So the prefix is matched explicitly instead.
+_SECRET_KEYWORD = (
+    r"password|passwd|pwd|secret|token|credential|api[_-]?key|access[_-]?key|"
+    r"private[_-]?key|auth[_-]?token|client[_-]?secret|pat"
+)
+_SECRET_KEY = rf"(?:^|[^A-Za-z0-9])(?:[A-Za-z0-9]+_)*(?:{_SECRET_KEYWORD})"
+# A value long enough to be a real secret, not a placeholder like None or "".
+_SECRET_VALUE = r"[^\s\"'#]{8,}"
+
 SENSITIVE = (
-    ("personal path", re.compile(r"[A-Za-z]:[\/]Users[\/][^\/\s\"']+", re.IGNORECASE)),
-    ("home path", re.compile(r"/(?:home|Users)/[^/\s\"']+/")),
-    ("private key", re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----")),
+    # Windows drive paths, both separators. The backslash form is the likeliest
+    # leak in a Windows-developed repository and was the one originally missed.
+    (
+        "personal path",
+        re.compile(
+            r"[A-Za-z]:[\\/]Users[\\/](?![Pp]ublic[\\/])[^\\/\s\"']+",
+            re.IGNORECASE,
+        ),
+    ),
+    # UNC and extended-length prefixes: a double-backslash host share whose
+    # first component under it is the users directory, and the \\?\ form.
+    # Written descriptively rather than as a literal example, since a literal
+    # would match this file's own pattern.
+    (
+        "personal path",
+        re.compile(r"\\\\[^\\\s\"']+\\Users\\[^\\/\s\"']+", re.IGNORECASE),
+    ),
+    # POSIX home directories, including the WSL mount of a Windows drive.
+    (
+        "personal path",
+        re.compile(r"(?:/mnt/[a-z])?/(?:home|Users)/[^/\s\"']+"),
+    ),
+    # Private key material in any case, plus the PuTTY key format.
+    ("private key", re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----", re.IGNORECASE)),
+    ("private key", re.compile(r"\bPuTTY-User-Key-File-\d+\s*:", re.IGNORECASE)),
+    # Provider tokens with distinctive prefixes.
     ("token", re.compile(r"\b(?:gh[pousr]|github_pat)_[A-Za-z0-9_]{20,}")),
-    ("aws key", re.compile(r"\bAKIA[0-9A-Z]{16}\b")),
-    ("password assignment", re.compile(
-        r"\b(?:password|passwd|secret|api[_-]?key)\s*[:=]\s*[\"'][^\"'\s]{8,}[\"']",
-        re.IGNORECASE)),
+    ("token", re.compile(r"\bglpat-[A-Za-z0-9_-]{16,}")),
+    ("token", re.compile(r"\bxox[abprs]-[A-Za-z0-9-]{16,}")),
+    ("token", re.compile(r"\bsk-(?:proj-)?[A-Za-z0-9_-]{24,}")),
+    ("token", re.compile(r"\bnpm_[A-Za-z0-9]{30,}")),
+    ("token", re.compile(r"\bAIza[A-Za-z0-9_-]{30,}")),
+    ("token", re.compile(r"\bSG\.[A-Za-z0-9_-]{16,}\.[A-Za-z0-9_-]{16,}")),
+    # AWS long-term (AKIA) and temporary (ASIA) access key IDs.
+    ("aws key", re.compile(r"\b(?:AKIA|ASIA)[0-9A-Z]{16}\b")),
+    # Credentials embedded in a URL's userinfo component.
+    (
+        "url credential",
+        re.compile(r"\b[a-z][a-z0-9+.-]*://[^\s:/@\"']+:[^\s:/@\"']+@", re.IGNORECASE),
+    ),
+    # Secret assignments, quoted or bare.
+    (
+        "secret assignment",
+        re.compile(
+            rf"{_SECRET_KEY}\s*[:=]\s*[\"']{_SECRET_VALUE}[\"']",
+            re.IGNORECASE,
+        ),
+    ),
+    (
+        "secret assignment",
+        re.compile(
+            rf"{_SECRET_KEY}\s*[:=]\s*{_SECRET_VALUE}\s*$",
+            re.IGNORECASE,
+        ),
+    ),
 )
 
 MD_LINK = re.compile(r"\[[^\]]*\]\(\s*([^)\s]+)")
