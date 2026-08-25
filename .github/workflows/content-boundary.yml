@@ -1,0 +1,50 @@
+name: content boundary
+
+# Enforces the published content boundary: no quantitative research claims, no
+# personal paths, no credential-shaped strings, and no broken internal links.
+#
+# Deliberately separate from tests.yml. The claim mode is an input rather than
+# an assumption, so widening the boundary later — for a release that does carry
+# evidence-backed results — changes this workflow's inputs, not its structure,
+# and adds a sibling workflow rather than rewriting either.
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: content-boundary-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHONUTF8: "1"
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  boundary:
+    name: content boundary (claim mode ${{ matrix.claim-mode }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      matrix:
+        claim-mode:
+          - no_quantitative_claims
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Check the content boundary
+        run: >-
+          python .github/scripts/check_content_boundary.py
+          --claim-mode ${{ matrix.claim-mode }}

@@ -1,0 +1,130 @@
+name: tests
+
+# Functional verification only. Content-boundary checks live in their own
+# workflow so that adding evidence verification later does not require
+# restructuring this one.
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHONUTF8: "1"
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  unit-tests:
+    name: unit tests (${{ matrix.os }}, Python ${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+        python-version:
+          - "3.11"
+          - "3.12"
+          - "3.13"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Run the test suite
+        run: python -m unittest discover -s tests -v
+
+  static-types:
+    name: static type check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Install the type checker
+        run: python -m pip install -e ".[typecheck]"
+      - name: Check the typed baseline
+        run: python -m mypy
+
+  entry-points:
+    name: entry points and bundled configurations
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Exercise the demonstration entry point
+        run: python run_project.py demo
+      - name: Validate every bundled configuration without running it
+        shell: bash
+        run: |
+          for config in configs/*.json; do
+            echo "::group::$config"
+            python run_project.py benchmark --config "$config" --dry-run
+            echo "::endgroup::"
+          done
+
+  starter-workflow:
+    name: starter workflow (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      # A functional check that the starter workflow completes, not a
+      # measurement. Output identity verification needs the frozen-corpus
+      # validator, which is not part of this code-first repository.
+      - name: Run the starter workflow with parallel workers
+        run: >-
+          python run_project.py benchmark
+          --config configs/quick.json
+          --output results/ci-quick
+          --workers 2
+      - name: Confirm the expected artifacts were written
+        shell: bash
+        run: |
+          for artifact in raw_results.csv manifest.json results_summary.md; do
+            test -f "results/ci-quick/$artifact" || {
+              echo "missing artifact: $artifact" >&2
+              exit 1
+            }
+          done

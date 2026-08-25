@@ -15,7 +15,7 @@ dependencies = []
 [project.optional-dependencies]
 oracle = ["ortools==9.15.6755"]
 typecheck = ["mypy==2.3.0"]
-test = ["pytest>=8.0", "pytest-xdist>=3.5", "openai>=1.0"]
+test = ["pytest>=8.0", "pytest-xdist>=3.5"]
 
 [project.scripts]
 maxcover = "maxcover.cli:main"
@@ -25,6 +25,9 @@ package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+maxcover = ["py.typed"]
 
 [tool.mypy]
 python_version = "3.11"

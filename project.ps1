@@ -1,16 +1,14 @@
 param(
-    [ValidateSet("quick", "demo", "test", "test-fast", "test-fix", "typecheck", "full")]
+    [ValidateSet("quick", "demo", "test", "test-fast", "typecheck", "full")]
     [string]$Action = "quick"
 )
 
 $ErrorActionPreference = "Stop"
 $ProjectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
-$BundledPython = Join-Path $HOME ".cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe"
 $Candidates = @()
 $PythonCommand = Get-Command python -ErrorAction SilentlyContinue
 $PyCommand = Get-Command py -ErrorAction SilentlyContinue
 if ($PythonCommand) { $Candidates += $PythonCommand.Source }
-$Candidates += $BundledPython
 $LocalPythonRoot = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'Programs\Python'
 foreach ($VersionSuffix in '315', '314', '313', '312', '311') {
     $Candidates += Join-Path $LocalPythonRoot "Python$VersionSuffix\python.exe"
@@ -85,7 +83,6 @@ try {
                     --tb=short -q
             }
         }
-        "test-fix" { & $Python scripts/test_fix_loop.py @args }
         "typecheck" { & $Python -m mypy }
         "full"  { & $Python run_project.py benchmark --config configs/full.json --output results/full }
     }
