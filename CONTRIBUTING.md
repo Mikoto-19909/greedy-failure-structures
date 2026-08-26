@@ -75,14 +75,13 @@ python -m mypy
 ```
 
 A clean mypy run is narrower than it looks. `pyproject.toml` exempts
-`maxcover.benchmark`, `maxcover.reporting` and `maxcover.contracts` with
-`ignore_errors = true`, which is about 40% of the source by line, and those
-modules hold a real backlog of unresolved errors. So mypy passing does not mean
-your change is type-clean if it lands in one of the three — check it by
-temporarily removing the override for the module you touched. Reducing that
-backlog is welcome as its own change; do not remove an exemption in the same
-pull request as a behavioural change, since the two cannot then be reviewed
-apart.
+`maxcover.benchmark` and `maxcover.reporting` with `ignore_errors = true`, which
+is about 40% of the source by line, and those modules hold a real backlog of
+unresolved errors. So mypy passing does not mean your change is type-clean if it
+lands in either — check it by temporarily removing the override for the module
+you touched. Reducing that backlog is welcome as its own change; do not remove an
+exemption in the same pull request as a behavioural change, since the two cannot
+then be reviewed apart.
 
 Add a regression test for a bug fix, and a seeded case for anything randomized.
 Keep changes focused; unrelated reformatting makes review harder.

@@ -41,9 +41,16 @@ warn_return_any = true
 warn_unused_ignores = true
 
 [[tool.mypy.overrides]]
+# These two modules carry a backlog of unresolved type errors. The exemption
+# keeps the check enforceable everywhere else instead of leaving it permanently
+# red; README.md and CONTRIBUTING.md both say what a clean run does not cover.
+#
+# maxcover.contracts was listed here until the module split turned it into a
+# pure re-export facade. It defines nothing, so exempting it hid no errors while
+# making the documented claim about "three modules with a backlog" false for one
+# of the three. tests/test_documented_claims.py now fails on a vestigial entry.
 module = [
     "maxcover.benchmark",
-    "maxcover.contracts",
     "maxcover.reporting",
 ]
 ignore_errors = true

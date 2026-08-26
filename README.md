@@ -81,13 +81,13 @@ python -m mypy
 ```
 
 Read its output narrowly. `pyproject.toml` sets `ignore_errors = true` for
-`maxcover.benchmark`, `maxcover.reporting` and `maxcover.contracts` — roughly
-40% of the source by line — so `Success: no issues found in 19 source files`
-means the remaining modules are clean, not that the package is. Those three
-modules carry a real backlog of unresolved type errors; the exemption keeps the
-check enforceable everywhere else instead of leaving it permanently red.
-Reducing that backlog is a welcome contribution, and the exemption list is the
-place to check what is not yet covered.
+`maxcover.benchmark` and `maxcover.reporting` — roughly 40% of the source by
+line — so `Success: no issues found in 19 source files` means the remaining
+modules are clean, not that the package is. Those two modules carry a real
+backlog of unresolved type errors; the exemption keeps the check enforceable
+everywhere else instead of leaving it permanently red. Reducing that backlog is
+a welcome contribution, and the exemption list is the place to check what is not
+yet covered.
 
 On Windows, the convenience wrapper provides equivalent commands:
 

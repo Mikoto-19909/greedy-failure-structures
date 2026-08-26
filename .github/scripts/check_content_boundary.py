@@ -4,8 +4,8 @@ Three things are verified over every tracked text file:
 
 1. no quantitative research claim, under the active claim mode;
 2. no personal path or credential-shaped string;
-3. every relative link resolves to a tracked path, across inline,
-   reference-style and HTML link syntax.
+3. in every file GitHub renders as Markdown, every relative link resolves to
+   a tracked path — inline, reference-style and HTML syntax alike.
 
 Findings name a file and a line and describe the rule that failed. They never
 echo the matched text, and the report never enumerates paths that are not
@@ -24,6 +24,7 @@ import re
 import subprocess
 import sys
 from pathlib import Path, PurePosixPath
+from urllib.parse import unquote
 
 CLAIM_MODES = ("no_quantitative_claims", "evidence_backed_claims")
 
@@ -36,6 +37,11 @@ MAX_TEXT_BYTES = 4 * 1024 * 1024
 # Prose is where a research claim can be asserted in words. Credential and
 # personal-path checks are not limited to these: they run over all text.
 PROSE_SUFFIXES = frozenset({".md", ".rst", ".txt"})
+
+# Suffixes GitHub renders as Markdown. Link checking applies to these only: a
+# `[x](y)` in a .txt file is literal text, so reporting its target would name a
+# path no reader can click. The claim and credential checks are wider.
+MARKDOWN_SUFFIXES = frozenset({".md", ".markdown", ".mdown", ".mkdn"})
 
 # A result claim states a research metric with a number, pairs an outcome verb
 # with one, or expresses a ratio. Bare numbers stay legal: versions, seeds,
@@ -139,6 +145,24 @@ _SECRET_KEYWORD = (
 _SECRET_KEY = rf"(?:^|[^A-Za-z0-9])(?:[A-Za-z0-9]+_)*(?:{_SECRET_KEYWORD})"
 # A value long enough to be a real secret, not a placeholder like None or "".
 _SECRET_VALUE = r"[^\s\"'#]{8,}"
+# Documentation has to show how to supply a secret without containing one. These
+# forms are how it is done, and flagging them blocks correct documentation:
+# an angle-bracket or brace placeholder, a shell or CI variable reference, and a
+# lookup in code. Each requires the *whole* value to be the placeholder, so a
+# placeholder followed by a real value is still reported — the exclusion cannot
+# be used as a prefix that launders a secret. Written as a description rather
+# than as an example, since an example would trip this file's own check.
+_SECRET_PLACEHOLDER = re.compile(
+    r"\A(?:"
+    r"<[^>]*>"                                  # <your-password>
+    r"|\$\{[^}]*\}|\$[A-Za-z_][A-Za-z0-9_]*"    # ${VAR}, $VAR
+    r"|%[A-Za-z_][A-Za-z0-9_]*%"                # %VAR% on Windows
+    r"|\{\{[^}]*\}\}|\{[A-Za-z_][A-Za-z0-9_]*\}"  # {{ secrets.X }}, {name}
+    r"|(?:os\.environ|os\.getenv|getenv|process\.env)\b.*"
+    r"|(?:REDACTED|CHANGEME|CHANGE_ME|PLACEHOLDER|EXAMPLE|TODO|xxx+|\.{3,})"
+    r")\Z",
+    re.IGNORECASE,
+)
 
 SENSITIVE = (
     # Windows drive paths, both separators. The backslash form is the likeliest
@@ -181,18 +205,24 @@ SENSITIVE = (
         "url credential",
         re.compile(r"\b[a-z][a-z0-9+.-]*://[^\s:/@\"']+:[^\s:/@\"']+@", re.IGNORECASE),
     ),
-    # Secret assignments, quoted or bare.
+    # Secret assignments, quoted or bare. Both capture the value as `value` so
+    # a placeholder can be recognised and excluded; see _SECRET_PLACEHOLDER.
     (
         "secret assignment",
         re.compile(
-            rf"{_SECRET_KEY}\s*[:=]\s*[\"']{_SECRET_VALUE}[\"']",
+            rf"{_SECRET_KEY}\s*[:=]\s*[\"'](?P<value>{_SECRET_VALUE})[\"']",
             re.IGNORECASE,
         ),
     ),
+    # A bare assignment ends at whitespace, not at the line end. Anchoring it to
+    # the line end missed the value whenever anything followed it — a trailing
+    # comment, a closing backtick, or a sentence continuing past it — which is
+    # the common shape in prose and in a documented example. The value class
+    # already excludes whitespace, so the run itself is the bound.
     (
         "secret assignment",
         re.compile(
-            rf"{_SECRET_KEY}\s*[:=]\s*{_SECRET_VALUE}\s*$",
+            rf"{_SECRET_KEY}\s*[:=]\s*(?P<value>{_SECRET_VALUE})(?=\s|$|`)",
             re.IGNORECASE,
         ),
     ),
@@ -205,14 +235,25 @@ SENSITIVE = (
 # those ways passed a check whose docstring promises that every relative link
 # resolves.
 #
+# Link text may itself contain brackets — `[![alt](img)](target)` is the badge
+# pattern every public README uses, and `[see [this]](target)` is legal. So the
+# text is matched by scanning balanced brackets rather than by a character class
+# that stops at the first `]`, which is what made both invisible.
+#
 # Autolinks are deliberately absent rather than overlooked. A CommonMark
 # autolink carries a scheme, as in <https://example.com>, so it is always
 # external; a bare relative path in angle brackets is not a link at all and
 # renders as literal text. Checking it would report a target no reader can
 # click, which is how a check earns a `continue-on-error`.
-MD_INLINE_LINK = re.compile(r"!?\[[^\]]*\]\(\s*(?:<([^>]*)>|([^)\s]+))")
-MD_REFERENCE_USE = re.compile(r"!?\[([^\]]*)\]\[([^\]]*)\]")
+
+# A destination, once the opening paren is found: `<...>`, or a bare run ending
+# at whitespace or the closing paren. A bare destination may be followed by a
+# title, as in `[x](path "title")`, which is not part of the target.
+LINK_DESTINATION = re.compile(r"\s*(?:<([^>]*)>|([^)\s]+))")
 MD_REFERENCE_DEF = re.compile(r"^\s{0,3}\[([^\]]+)\]:\s*(?:<([^>]*)>|(\S+))")
+# A GFM footnote definition, `[^1]: text`, is not a link definition. Its text is
+# prose, so parsing it as a destination reported the prose as a broken target.
+FOOTNOTE_DEF = re.compile(r"^\s{0,3}\[\^")
 HTML_ATTRIBUTE_LINK = re.compile(
     r"<(?:a|img|source|video|audio|iframe)\b[^>]*?"
     r"\b(?:href|src)\s*=\s*(?:\"([^\"]*)\"|'([^']*)'|([^\s>]+))",
@@ -230,11 +271,29 @@ HTML_ATTRIBUTE_LINK = re.compile(
 EXTERNAL = re.compile(r"\A(?:[a-z][a-z0-9+.-]+:|//|#)", re.IGNORECASE)
 
 # Fenced code shows link syntax as an example rather than linking anywhere.
-FENCE = re.compile(r"^\s{0,3}(`{3,}|~{3,})")
+#
+# CommonMark 4.5 governs when a fence closes, and getting it wrong is worse than
+# not handling fences at all: a closer that is mistaken for an opener flips the
+# parity of everything after it, so a real broken link becomes invisible while a
+# line of actual code gets reported. Two rules were missing.
+#
+# First, a closing fence carries no info string. `` ```console `` twice in a
+# file is an opener followed by another opener, not an open-and-close, and this
+# repository's own documents use exactly that style.
+#
+# Second, a closer must be at least as long as its opener, so a three-backtick
+# line inside a four-backtick block is content.
+FENCE = re.compile(r"^(\s{0,3})(`{3,}|~{3,})(.*)$")
 # An inline code span does the same within a line: `sets[i][j]` is not a
-# reference-style link. Blanked rather than deleted, so that columns and line
-# numbers still line up with the file.
-CODE_SPAN = re.compile(r"`[^`\n]*`")
+# reference-style link. The delimiter may be a run of any length, and a span
+# opened with two backticks can contain single ones — that is how a literal
+# backtick is written — so the closing run must match the opening run's length.
+CODE_SPAN = re.compile(r"(`+)(?:(?!\1).)*?\1", re.DOTALL)
+# An indented code block is code on GitHub too. Four spaces, outside a fence,
+# and not a lazy continuation of a paragraph — so only after a blank line.
+INDENTED_CODE = re.compile(r"^(?: {4}|\t)")
+# A bracket escaped with a backslash is literal text, not link syntax.
+ESCAPED_BRACKET = re.compile(r"\\[\[\]]")
 
 
 # A test fixture for this checker must contain the exact strings the checker
@@ -382,44 +441,125 @@ def check_sensitive(path: str, text: str) -> list[str]:
         if _is_exempt(line):
             continue
         for label, pattern in SENSITIVE:
-            if pattern.search(line):
-                findings.append(f"{path}:{index}: {label} must not be published")
+            match = pattern.search(line)
+            if match is None:
+                continue
+            # A pattern that captures a value lets a documented placeholder
+            # through. Only the assignment patterns do; everything else — a key
+            # header, a provider token — has no placeholder form.
+            if "value" in (pattern.groupindex or {}):
+                value = match.group("value")
+                if value and _SECRET_PLACEHOLDER.match(value):
+                    continue
+            findings.append(f"{path}:{index}: {label} must not be published")
     return findings
 
 
 def _blank_code(text: str) -> list[str]:
-    """Return the lines with code content blanked, keeping line count intact.
+    """Return the lines with code content blanked, keeping the line count intact.
 
-    Link syntax inside a fence or a code span is an example, not a link. The
-    blanking preserves the line count so reported line numbers still match the
-    file, and preserves each line's length so a fixture marker later on the same
-    line is still found.
+    Link syntax inside code is an example, not a link. Three code forms are
+    recognised: fenced blocks, indented blocks, and inline spans.
+
+    The line *count* is preserved so a reported line number still matches the
+    file. Line length is not: a code line becomes empty. Nothing may depend on
+    the column of a blanked line — `check_links` reads the original line when it
+    needs the real text, which is what the fixture-marker check does.
+
+    Fence handling follows CommonMark 4.5, because a mistake here is worse than
+    ignoring fences entirely. A closer mistaken for an opener flips the parity of
+    the rest of the file, hiding real broken links and reporting real code.
     """
 
     lines = text.split("\n")
     result = []
-    fence: str | None = None
+    fence: tuple[str, int] | None = None
+    previous_blank = True
     for line in lines:
         match = FENCE.match(line)
         if fence is None:
             if match is not None:
-                fence = match.group(1)[0] * 3
+                # An opener may carry an info string; its length is the minimum
+                # a closer must match.
+                fence = (match.group(2)[0], len(match.group(2)))
+                result.append("")
+                previous_blank = False
+                continue
+            # An indented code block only starts after a blank line; otherwise
+            # four spaces are a lazy continuation of the paragraph above.
+            if previous_blank and INDENTED_CODE.match(line):
                 result.append("")
                 continue
+            previous_blank = not line.strip()
             result.append(CODE_SPAN.sub(lambda hit: " " * len(hit.group(0)), line))
         else:
-            # A closing fence must use the same character and be at least as
-            # long, so a ``` inside a ~~~ block does not end it.
-            if match is not None and match.group(1)[0] * 3 == fence:
+            character, length = fence
+            closes = (
+                match is not None
+                and match.group(2)[0] == character
+                and len(match.group(2)) >= length
+                # A closing fence carries no info string. Without this, a second
+                # ```console line reads as a closer and inverts everything after.
+                and not match.group(3).strip()
+            )
+            if closes:
                 fence = None
+                previous_blank = False
             result.append("")
     return result
+
+
+def _inline_targets(line: str) -> list[str]:
+    """Find `[text](destination)` targets, allowing brackets inside the text.
+
+    A character class cannot do this. `[![alt](img)](target)` is the badge
+    pattern, and its text contains a complete image link; a class that stops at
+    the first `]` sees neither link. So brackets are counted.
+
+    An escaped bracket is literal text and does not open or close a link. The
+    scan runs left to right and finds nested links too, since it continues from
+    inside the text rather than skipping past the whole construct.
+    """
+
+    targets = []
+    for index, character in enumerate(line):
+        if character != "[":
+            continue
+        if index and line[index - 1] == "\\":
+            continue
+        depth = 0
+        position = index
+        while position < len(line):
+            here = line[position]
+            if here in "[]" and position and line[position - 1] == "\\":
+                position += 1
+                continue
+            if here == "[":
+                depth += 1
+            elif here == "]":
+                depth -= 1
+                if depth == 0:
+                    break
+            position += 1
+        else:
+            continue
+        # `position` is now the `]` closing this link's text.
+        if position + 1 >= len(line) or line[position + 1] != "(":
+            continue
+        match = LINK_DESTINATION.match(line, position + 2)
+        if match is not None:
+            targets.append(match.group(1) if match.group(1) is not None else match.group(2))
+    return targets
 
 
 def _resolve(path: str, target: str) -> tuple[str | None, bool]:
     """Resolve a link target against the linking file. Returns (path, escaped)."""
 
     cleaned = target.split("#", 1)[0].split("?", 1)[0].strip()
+    # A destination is percent-encoded, so `%20` is how a tracked filename
+    # containing a space is written. Compare the decoded form against the
+    # tracked names, or every such link reads as unresolvable.
+    cleaned = unquote(cleaned)
     if not cleaned:
         return None, False
     # A leading slash in a Markdown link is repository-root-relative on GitHub.
@@ -440,51 +580,75 @@ def check_links(
 ) -> list[str]:
     """Verify that every relative link resolves to a tracked path.
 
-    Three things this does not do, each for a reason:
+    Applies to files GitHub renders as Markdown. `.rst` and `.txt` are prose for
+    the claim check but their link syntax is not Markdown's, so a `[x](y)` in
+    them is literal text; checking it would report targets no reader can click.
+
+    Four things this does not do, each for a reason:
 
     - It never touches the filesystem. `Path.exists()` is case-insensitive on
       Windows and case-sensitive on the Linux runner, so a link whose case was
       wrong passed locally and 404s on github.com. The tracked-name set is the
-      same on both platforms, which makes the check's verdict platform-independent
-      — and a wrong-case link is reported as such rather than as missing, since
-      that is the failure a contributor on Windows cannot otherwise see.
+      same on both platforms, which makes the verdict platform-independent — and
+      a wrong-case link is reported as such rather than as missing, since that is
+      the failure a contributor on Windows cannot otherwise see.
     - It does not resolve anchors. GitHub's heading-slug rules are not worth
       reimplementing, and a wrong anchor degrades to landing at the top of a page
       that does exist.
     - It does not follow a reference definition's own target twice. A definition
-      is checked where it is defined; a use is checked only for having one.
+      is checked where it is defined; a use is checked only against the set of
+      definitions.
+    - It does not report an undefined reference label. `[text][nowhere]` renders
+      as literal text, so it is not a broken link — the same reasoning that
+      excludes autolinks. Reporting it flagged ordinary prose instead: an index
+      expression like sets[i][j] outside backticks, and citation forms, are
+      indistinguishable from a mistyped label without knowing the author's
+      intent. A check that flags those is noise, and noise is what gets a gate
+      disabled.
     """
 
-    if PurePosixPath(path).suffix.casefold() != ".md":
+    if PurePosixPath(path).suffix.casefold() not in MARKDOWN_SUFFIXES:
         return []
 
     lines = _blank_code(text)
     raw = text.split("\n")
 
-    definitions: dict[str, int] = {}
-    for index, line in enumerate(lines, start=1):
+    # Built once. Rebuilding these inside the per-target loop made the cost
+    # quadratic in tracked files, on the path taken when something is already
+    # wrong. Lower-cased, not case-folded: casefold maps ß to ss, so a link to a
+    # genuinely different filename was reported as a mere case difference, with
+    # a message claiming it works on Windows when it works nowhere.
+    lowered_names = {name.lower(): name for name in known}
+    lowered_dirs = {name.lower() for name in known_dirs}
+
+    definitions: set[str] = set()
+    for line in lines:
+        if FOOTNOTE_DEF.match(line):
+            continue
         match = MD_REFERENCE_DEF.match(line)
         if match is not None:
-            definitions[match.group(1).strip().casefold()] = index
+            definitions.add(_normalize_label(match.group(1)))
 
     findings = []
     for index, line in enumerate(lines, start=1):
         if _is_exempt(raw[index - 1]):
             continue
 
-        targets = []
-        for match in MD_INLINE_LINK.finditer(line):
-            targets.append(match.group(1) if match.group(1) is not None else match.group(2))
+        targets = list(_inline_targets(line))
         for match in HTML_ATTRIBUTE_LINK.finditer(line):
             targets.append(match.group(1) or match.group(2) or match.group(3))
-        definition = MD_REFERENCE_DEF.match(line)
-        if definition is not None:
-            targets.append(
-                definition.group(2) if definition.group(2) is not None else definition.group(3)
-            )
+        # A footnote definition's text is prose, not a destination.
+        if not FOOTNOTE_DEF.match(line):
+            definition = MD_REFERENCE_DEF.match(line)
+            if definition is not None:
+                targets.append(
+                    definition.group(2)
+                    if definition.group(2) is not None
+                    else definition.group(3)
+                )
 
         for target in targets:
-            if not target or EXTERNAL.match(target) or target.startswith("mailto:"):
+            if not target or EXTERNAL.match(target):
                 continue
             candidate, escaped = _resolve(path, target)
             if escaped:
@@ -492,10 +656,8 @@ def check_links(
                 continue
             if not candidate or candidate in known or candidate in known_dirs:
                 continue
-            folded = candidate.casefold()
-            if folded in {name.casefold() for name in known} or folded in {
-                name.casefold() for name in known_dirs
-            }:
+            lowered = candidate.lower()
+            if lowered in lowered_names or lowered in lowered_dirs:
                 findings.append(
                     f"{path}:{index}: internal link differs in case from the "
                     "tracked path; it resolves on Windows and 404s on github.com"
@@ -503,16 +665,75 @@ def check_links(
             else:
                 findings.append(f"{path}:{index}: internal link does not resolve")
 
-        # A reference *use* needs a definition in the same file. The label is
-        # collapsed (`[text][]`) when the second bracket is empty, in which case
-        # the text is the label.
-        for match in MD_REFERENCE_USE.finditer(line):
-            label = (match.group(2) or match.group(1)).strip().casefold()
-            if label and label not in definitions:
-                findings.append(
-                    f"{path}:{index}: reference-style link has no definition in this file"
-                )
+    # A link may be split across lines, since Markdown renders consecutive lines
+    # as one sentence. Matched over the joined paragraph as well, the same way
+    # check_quantitative does, and reported at the paragraph's first line because
+    # a joined match has no line of its own. Only targets not already seen
+    # line-by-line are reported, so an ordinary link is not counted twice.
+    #
+    # Not deduplicated. Two different broken links on one line produce the same
+    # message text, and collapsing them would report one fault where there are
+    # two — the joined pass already excludes what the line pass saw, which is
+    # where a genuine double-report would come from.
+    findings += _check_joined_links(
+        path, lines, raw, known, known_dirs, lowered_names, lowered_dirs
+    )
+    return findings
 
+
+def _normalize_label(label: str) -> str:
+    """Fold a reference label the way CommonMark does: trim, collapse, casefold.
+
+    Internal whitespace runs collapse to a single space, so `[a  b]` and `[a b]`
+    are the same label. Only stripping made them different.
+    """
+
+    return re.sub(r"\s+", " ", label.strip()).casefold()
+
+
+def _check_joined_links(
+    path: str,
+    lines: list[str],
+    raw: list[str],
+    known: frozenset[str],
+    known_dirs: frozenset[str],
+    lowered_names: dict[str, str],
+    lowered_dirs: set[str],
+) -> list[str]:
+    """Report links whose syntax spans a line break within one paragraph."""
+
+    seen: set[str] = set()
+    for line in lines:
+        seen.update(_inline_targets(line))
+
+    findings = []
+    number = 1
+    for paragraph in re.split(r"\n\s*\n", "\n".join(lines)):
+        block = paragraph.split("\n")
+        checkable = [
+            item
+            for offset, item in enumerate(block)
+            if number + offset <= len(raw) and not _is_exempt(raw[number + offset - 1])
+        ]
+        joined = re.sub(r"\s*\n\s*", " ", "\n".join(checkable))
+        for target in _inline_targets(joined):
+            if target in seen or not target or EXTERNAL.match(target):
+                continue
+            candidate, escaped = _resolve(path, target)
+            if escaped:
+                findings.append(f"{path}:{number}: link escapes the repository")
+                continue
+            if not candidate or candidate in known or candidate in known_dirs:
+                continue
+            lowered = candidate.lower()
+            if lowered in lowered_names or lowered in lowered_dirs:
+                findings.append(
+                    f"{path}:{number}: internal link differs in case from the "
+                    "tracked path; it resolves on Windows and 404s on github.com"
+                )
+            else:
+                findings.append(f"{path}:{number}: internal link does not resolve")
+        number += len(block) + 1
     return findings
 
 

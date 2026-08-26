@@ -418,13 +418,30 @@ class LinkResolutionTests(unittest.TestCase):
         self.assertAccepted("See [the guide][g].\n\n[g]: docs/guide.md")
         self.assertRejected("See [the guide][g].\n\n[g]: docs/absent.md")
 
-    def test_reference_style_uses_need_a_definition(self) -> None:
-        self.assertRejected("See [the guide][nowhere].")
-        self.assertAccepted("See [the guide][g].\n\n[g]: docs/guide.md")
+    def test_an_undefined_reference_label_is_not_reported(self) -> None:
+        # Deliberately not a finding, reversing an earlier decision in this
+        # file. `[text][nowhere]` renders as literal text, so it is not a broken
+        # link — the same reasoning that excludes autolinks. Reporting it flagged
+        # ordinary prose instead: an index expression outside backticks and a
+        # citation form are indistinguishable from a mistyped label.
+        self.assertAccepted("See [the guide][nowhere].")
+        self.assertAccepted("Use sets[i][j] for the bitmask.")
+        self.assertAccepted("See [1][2] for context.")
+        self.assertAccepted("Compare data[0][1] against the reference.")
 
-    def test_collapsed_reference_links_are_checked(self) -> None:
+    def test_collapsed_reference_definitions_are_checked(self) -> None:
         self.assertAccepted("See [guide][].\n\n[guide]: docs/guide.md")
-        self.assertRejected("See [guide][].")
+        self.assertRejected("See [guide][].\n\n[guide]: docs/absent.md")
+
+    def test_reference_labels_collapse_internal_whitespace(self) -> None:
+        # CommonMark folds a whitespace run inside a label, so these are one
+        # label and the definition applies. Only stripping made them differ.
+        self.assertAccepted("[g][a  b]\n\n[a b]: docs/guide.md")
+
+    def test_footnote_definitions_are_not_link_definitions(self) -> None:
+        # A GFM footnote's text is prose. Parsed as a destination, the prose
+        # itself became a broken target.
+        self.assertAccepted("Text.[^1]\n\n[^1]: See the guide for details.")
 
     def test_html_attribute_links_are_checked(self) -> None:
         self.assertAccepted('<a href="docs/guide.md">guide</a>')
@@ -498,3 +515,256 @@ class LinkResolutionTests(unittest.TestCase):
     def test_the_fixture_marker_exempts_a_link_line(self) -> None:
         marker = "  <!-- " + checker.FIXTURE_MARKER + " -->"
         self.assertAccepted("[missing](docs/absent.md)" + marker)
+
+
+class FenceStateMachineTests(unittest.TestCase):
+    """CommonMark 4.5 decides when a fence closes, and a mistake inverts parity.
+
+    This class exists because a second review found the earlier fence handling
+    worse than no fence handling at all. A closer mistaken for an opener flips
+    the parity of the rest of the file: a real broken link becomes invisible
+    while a line of actual code gets reported at a wrong line number. Since the
+    workflow runs this check without `continue-on-error`, one direction blocks
+    valid documentation and the other ships a broken link silently.
+    """
+
+    KNOWN = frozenset({"README.md", "docs/guide.md"})
+    DIRS = frozenset({"docs"})
+
+    def _findings(self, text: str) -> list[str]:
+        return checker.check_links("README.md", text, self.KNOWN, self.DIRS)
+
+    def assertRejected(self, text: str) -> None:
+        self.assertTrue(self._findings(text), f"not rejected: {text!r}")
+
+    def assertAccepted(self, text: str) -> None:
+        findings = self._findings(text)
+        self.assertFalse(findings, f"wrongly rejected: {text!r} -> {findings}")
+
+    def test_a_closing_fence_carries_no_info_string(self) -> None:
+        # ```console twice is two openers, not open-and-close. This repository's
+        # own documents use exactly that style, so the desync was one editing
+        # accident away from hiding a real broken link.
+        text = (
+            "```console\npython run_project.py demo\n"
+            "```console\npython run_project.py quick\n```\n\n"
+            "[broken](docs/absent.md)\n"
+        )
+        self.assertRejected(text)
+
+    def test_a_closer_must_be_at_least_as_long_as_its_opener(self) -> None:
+        text = "````\nx\n```\ny\n````\n\n[broken](docs/absent.md)\n"
+        self.assertRejected(text)
+
+    def test_code_inside_a_desynced_block_is_not_reported(self) -> None:
+        # The other half of the same defect: real code read as prose.
+        text = "```console\npython demo\n```console\npython quick\n```\n"
+        self.assertAccepted(text)
+
+    def test_a_fence_is_closed_only_by_its_own_character(self) -> None:
+        self.assertAccepted("~~~\n```\n[x](docs/absent.md)\n```\n~~~\n")
+
+    def test_an_info_string_on_an_opener_is_allowed(self) -> None:
+        self.assertAccepted("```py\n[x](docs/absent.md)\n```\n")
+
+    def test_an_unclosed_fence_runs_to_the_end(self) -> None:
+        self.assertAccepted("```\n[x](docs/absent.md)\n")
+
+    def test_indented_code_blocks_are_code(self) -> None:
+        self.assertAccepted("text\n\n    [x](docs/absent.md)\n")
+
+    def test_four_spaces_continuing_a_paragraph_are_not_code(self) -> None:
+        # Without the blank line this is a lazy continuation, so the link is
+        # real and must be reported.
+        self.assertRejected("See the guide\n    [x](docs/absent.md)\n")
+
+    def test_double_backtick_spans_are_code(self) -> None:
+        # A span opened with two backticks may contain single ones; that is how
+        # a literal backtick is written.
+        self.assertAccepted("Write ``[x](docs/absent.md)`` to link.")
+
+    def test_the_line_count_is_preserved(self) -> None:
+        # Reported line numbers depend on this, across awkward inputs.
+        for text in (
+            "```\nx\n",
+            "a\n```\nb",
+            "```\r\nx\r\n```\r\n",
+            "",
+            "```",
+            "```py\nx\n```\n",
+        ):
+            with self.subTest(text=text):
+                self.assertEqual(
+                    len(checker._blank_code(text)), len(text.split("\n"))
+                )
+
+    def test_a_reported_line_number_survives_a_desync_candidate(self) -> None:
+        text = "```console\nx\n```\n\n```console\ny\n```\n\n[b](docs/absent.md)\n"
+        findings = self._findings(text)
+        self.assertTrue(findings)
+        self.assertIn(":9:", findings[0])
+
+
+class NestedLinkSyntaxTests(unittest.TestCase):
+    """Link text may contain brackets, so a character class cannot parse it.
+
+    The badge pattern `[![alt](img)](target)` is the most common link shape in a
+    public README, and a pattern stopping at the first `]` saw neither of its
+    two links.
+    """
+
+    KNOWN = frozenset({"README.md", "docs/guide.md", "docs/a file.md"})
+    DIRS = frozenset({"docs"})
+
+    def _findings(self, text: str) -> list[str]:
+        return checker.check_links("README.md", text, self.KNOWN, self.DIRS)
+
+    def assertRejected(self, text: str) -> None:
+        self.assertTrue(self._findings(text), f"not rejected: {text!r}")
+
+    def assertAccepted(self, text: str) -> None:
+        findings = self._findings(text)
+        self.assertFalse(findings, f"wrongly rejected: {text!r} -> {findings}")
+
+    def test_a_badge_links_are_both_checked(self) -> None:
+        self.assertRejected("[![alt](docs/guide.md)](docs/absent.md)")
+        self.assertRejected("[![alt](docs/absent.svg)](docs/guide.md)")
+        self.assertAccepted("[![alt](docs/guide.md)](docs/guide.md)")
+
+    def test_brackets_inside_link_text_are_allowed(self) -> None:
+        self.assertRejected("[see [this] now](docs/absent.md)")
+        self.assertAccepted("[see [this] now](docs/guide.md)")
+
+    def test_escaped_brackets_are_literal_text(self) -> None:
+        self.assertAccepted(BS + "[not a link" + BS + "](docs/absent.md)")
+
+    def test_a_link_split_across_lines_is_checked(self) -> None:
+        # Markdown renders consecutive lines as one sentence, so this is a real
+        # link that line-at-a-time matching missed.
+        self.assertRejected("See [the guide](\ndocs/absent.md).")
+        self.assertAccepted("See [the guide](\ndocs/guide.md).")
+
+    def test_a_title_is_not_part_of_the_destination(self) -> None:
+        self.assertRejected('[x](docs/absent.md "title")')
+        self.assertAccepted('[x](docs/guide.md "title")')
+
+    def test_percent_encoding_is_decoded_before_resolving(self) -> None:
+        # The standard way to link a tracked filename containing a space.
+        self.assertAccepted("[x](docs/a%20file.md)")
+        self.assertRejected("[x](docs/absent%20file.md)")
+
+    def test_multiple_links_on_one_line(self) -> None:
+        findings = self._findings("[a](docs/absent.md) and [b](docs/other.md)")
+        self.assertEqual(len(findings), 2, findings)
+
+
+class MarkdownScopeTests(unittest.TestCase):
+    """Link checking applies to what GitHub renders as Markdown, and says so."""
+
+    KNOWN = frozenset({"README.md"})
+    DIRS = frozenset()
+
+    def _findings(self, path: str) -> list[str]:
+        return checker.check_links(path, "[x](docs/absent.md)", self.KNOWN, self.DIRS)
+
+    def test_markdown_suffixes_are_checked(self) -> None:
+        for name in ("notes.md", "notes.markdown", "notes.MD"):
+            with self.subTest(name=name):
+                self.assertTrue(self._findings(name), name)
+
+    def test_non_markdown_prose_is_not_link_checked(self) -> None:
+        # `.rst` and `.txt` are claim-scanned, but a [x](y) in them is literal
+        # text, so reporting its target would name a path no reader can click.
+        for name in ("notes.txt", "notes.rst", "src/x.py"):
+            with self.subTest(name=name):
+                self.assertFalse(self._findings(name), name)
+
+
+class CaseDifferenceTests(unittest.TestCase):
+    """The wrong-case message asserts a specific platform behaviour, so it has
+    to be right about which failure occurred."""
+
+    KNOWN = frozenset({"docs/guide.md", "docs/strasse.md"})
+    DIRS = frozenset({"docs", "LICENSES"})
+
+    def _findings(self, target: str) -> list[str]:
+        return checker.check_links(
+            "README.md", f"[x]({target})", self.KNOWN, self.DIRS
+        )
+
+    def test_a_case_difference_says_so(self) -> None:
+        findings = self._findings("docs/Guide.md")
+        self.assertTrue(findings)
+        self.assertIn("case", findings[0])
+
+    def test_a_directory_case_difference_says_so(self) -> None:
+        findings = self._findings("licenses")
+        self.assertTrue(findings)
+        self.assertIn("case", findings[0])
+
+    def test_a_distinct_name_is_not_called_a_case_difference(self) -> None:
+        # casefold() maps the sharp s to "ss", so this genuinely different
+        # filename was reported as a mere case difference, with a message
+        # claiming it resolves on Windows when it resolves nowhere.
+        findings = self._findings("docs/stra" + chr(223) + ".md")
+        self.assertTrue(findings)
+        self.assertNotIn("case", findings[0])
+        self.assertIn("does not resolve", findings[0])
+
+
+class SecretPlaceholderTests(unittest.TestCase):
+    """A bare secret assignment ends at whitespace, not at the line end.
+
+    Found while probing whether code blanking had leaked into the credential
+    check. It had not — but anchoring the bare-assignment pattern to the line end
+    meant anything following the value hid it, which is the common shape in prose
+    and in a documented example. Neither earlier review found this.
+
+    Widening it required an exclusion for the placeholder forms documentation
+    uses to show how to supply a secret without containing one.
+    """
+
+    def _findings(self, line: str) -> list[str]:
+        return checker.check_sensitive("notes.md", line)
+
+    def assertRejected(self, line: str) -> None:
+        self.assertTrue(self._findings(line), f"not rejected: {line!r}")
+
+    def assertAccepted(self, line: str) -> None:
+        self.assertFalse(self._findings(line), f"wrongly rejected: {line!r}")
+
+    def _secret(self) -> str:
+        return "hunter2" + "hunter2"
+
+    def test_a_value_followed_by_prose_is_still_a_secret(self) -> None:
+        self.assertRejected("Set password = " + self._secret() + " here.")
+        self.assertRejected("export SECRET=" + self._secret() + "  # staging")
+
+    def test_a_value_inside_a_code_span_is_still_a_secret(self) -> None:
+        self.assertRejected("Set `password = " + self._secret() + "` here.")
+
+    def test_a_value_inside_a_fence_is_still_a_secret(self) -> None:
+        # Only link checking ignores code. A leaked credential in a fenced
+        # example is still published.
+        self.assertRejected("```\npassword = " + self._secret() + "\n```")
+
+    def test_documented_placeholders_are_accepted(self) -> None:
+        # Flagging these blocks correct documentation, and a check that blocks
+        # correct documentation gets disabled.
+        for value in (
+            "<your-password>",
+            "${GITHUB_TOKEN}",
+            "$API_KEY",
+            "%USERPASS%",
+            "{{ secrets.GITHUB_TOKEN }}",
+            "os.environ['API_KEY']",
+            "REDACTED",
+            "CHANGEME",
+            "xxxxxxxxxx",
+        ):
+            with self.subTest(value=value):
+                self.assertAccepted(f"password = {value}")
+
+    def test_a_placeholder_prefix_does_not_launder_a_real_value(self) -> None:
+        # The exclusion requires the whole value to be the placeholder.
+        self.assertRejected("password = <tag>" + self._secret())
