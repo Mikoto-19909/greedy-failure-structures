@@ -111,8 +111,8 @@ jobs:
         with:
           python-version: "3.12"
       # A functional check that the starter workflow completes, not a
-      # measurement. Output identity verification needs the frozen-corpus
-      # validator, which is not part of this code-first repository.
+      # measurement. The output is then verified independently: first that the
+      # artifacts exist, then that they say what the configuration implies.
       - name: Run the starter workflow with parallel workers
         run: >-
           python run_project.py benchmark
@@ -128,3 +128,12 @@ jobs:
               exit 1
             }
           done
+      # The manifest checksum proves only that the files were not altered after
+      # being written. This recomputes the statistics from the configuration, so
+      # output written wrongly fails here instead of passing a checksum that
+      # matches its own mistake.
+      - name: Validate the output independently of the manifest checksum
+        run: >-
+          python .github/scripts/validate_benchmark_output.py
+          --config configs/quick.json
+          --output results/ci-quick

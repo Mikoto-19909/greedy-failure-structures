@@ -67,6 +67,19 @@ configurations are schema 3 and warn about nothing.
 Generated files under `results/` are local artifacts and are not part of the
 repository snapshot.
 
+Verify a completed run without relying on its own checksum:
+
+```console
+python .github/scripts/validate_benchmark_output.py --config configs/quick.json --output results/quick
+```
+
+`manifest.json` carries a checksum, and verifying it proves the files were not
+altered after they were written. It cannot prove they were written correctly — a
+run that computed a statistic wrongly produces output whose checksum matches
+perfectly. This reads the artifacts back and recomputes what they claim from the
+configuration alone, exiting non-zero on any disagreement. CI runs it after every
+starter workflow.
+
 ## Test
 
 ```console
