@@ -141,6 +141,7 @@ every tracked file rather than trusting the convention.
 ## Contributing and support
 
 - [`CONTRIBUTING.md`](CONTRIBUTING.md): scope, ground rules, and how to submit
+- [`AGENTS.md`](AGENTS.md): additional constraints for AI coding agents
 - [`SECURITY.md`](SECURITY.md): what counts as a security issue, and reporting
 - [`SUPPORT.md`](SUPPORT.md): what this project does and does not answer
 

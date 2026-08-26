@@ -93,7 +93,13 @@ prefixes (`feat:`, `fix:`, `docs:`, `refactor:`) are used here.
 
 Do not attribute commits to an AI assistant. No `Co-Authored-By` trailer naming
 a model, and no "generated with" line. Authorship stays with the person who
-submitted the work.
+submitted the work. This is checked over the commit range by
+`.github/scripts/check_commits.py`.
+
+If you are directing an AI agent to work in this repository, [`AGENTS.md`](AGENTS.md)
+carries the additional constraints that apply to it — chiefly around reviewing
+its own work, since the defects here have concentrated in changes where a
+documented rule and its enforcing code disagreed.
 
 ## Licensing your contribution
 
