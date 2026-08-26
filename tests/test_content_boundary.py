@@ -379,3 +379,122 @@ class QuantitativeClaimTests(unittest.TestCase):
                 "notes.md", "The failure rate was 25%.", "evidence_backed_claims"
             )
         )
+
+
+class LinkResolutionTests(unittest.TestCase):
+    """The docstring promises every relative link resolves, in every syntax.
+
+    Review found it promised more than it did: only `[text](target)` was parsed,
+    so reference-style and HTML links were unchecked, and `C:` was skipped as a
+    URL scheme, which made a Windows path in a link invisible to *both* this
+    check and the personal-path check.
+    """
+
+    # A tracked-name set standing in for a repository.
+    KNOWN = frozenset({"README.md", "docs/guide.md", "LICENSES/README.md"})
+    DIRS = frozenset({"docs", "LICENSES"})
+
+    def _findings(self, text: str, path: str = "README.md") -> list[str]:
+        return checker.check_links(path, text, self.KNOWN, self.DIRS)
+
+    def assertRejected(self, text: str, path: str = "README.md") -> None:
+        self.assertTrue(self._findings(text, path), f"not rejected: {text!r}")
+
+    def assertAccepted(self, text: str, path: str = "README.md") -> None:
+        findings = self._findings(text, path)
+        self.assertFalse(findings, f"wrongly rejected: {text!r} -> {findings}")
+
+    def test_inline_links_are_checked(self) -> None:
+        self.assertAccepted("[guide](docs/guide.md)")
+        self.assertRejected("[missing](docs/absent.md)")
+
+    def test_angle_bracket_destinations_are_checked(self) -> None:
+        # `[text](<path with space>)` is valid CommonMark and the old pattern
+        # stopped at the first whitespace, silently truncating the target.
+        self.assertAccepted("[guide](<docs/guide.md>)")
+        self.assertRejected("[missing](<docs/a file.md>)")
+
+    def test_reference_style_definitions_are_checked(self) -> None:
+        self.assertAccepted("See [the guide][g].\n\n[g]: docs/guide.md")
+        self.assertRejected("See [the guide][g].\n\n[g]: docs/absent.md")
+
+    def test_reference_style_uses_need_a_definition(self) -> None:
+        self.assertRejected("See [the guide][nowhere].")
+        self.assertAccepted("See [the guide][g].\n\n[g]: docs/guide.md")
+
+    def test_collapsed_reference_links_are_checked(self) -> None:
+        self.assertAccepted("See [guide][].\n\n[guide]: docs/guide.md")
+        self.assertRejected("See [guide][].")
+
+    def test_html_attribute_links_are_checked(self) -> None:
+        self.assertAccepted('<a href="docs/guide.md">guide</a>')
+        self.assertRejected('<a href="docs/absent.md">guide</a>')
+        self.assertRejected("<img src='docs/absent.png'>")
+        self.assertRejected("<a href=docs/absent.md>unquoted</a>")
+
+    def test_image_links_are_checked(self) -> None:
+        self.assertRejected("![chart](docs/absent.svg)")
+
+    def test_a_windows_drive_path_is_not_treated_as_a_url_scheme(self) -> None:
+        # Double miss: EXTERNAL matched `C:` as a scheme, so the link check
+        # skipped it, and it sat inside link syntax rather than as bare text.
+        drive = "C:" + BS + "Users" + BS + "someone" + BS + "notes.md"
+        self.assertRejected(f"[notes]({drive})")
+
+    def test_real_url_schemes_are_still_skipped(self) -> None:
+        self.assertAccepted("[site](https://example.com/a/b)")
+        self.assertAccepted("[mail](mailto:someone@example.com)")
+        self.assertAccepted("[proto](ftp://example.com/x)")
+        self.assertAccepted("[anchor](#section)")
+        self.assertAccepted("[protocol-relative](//example.com/x)")
+
+    def test_case_differences_are_reported_distinctly(self) -> None:
+        # Path.exists() made this pass on Windows and 404 on github.com. The
+        # message has to say so, or a Windows contributor cannot see the fault.
+        findings = self._findings("[guide](docs/Guide.md)")
+        self.assertTrue(findings)
+        self.assertIn("case", findings[0])
+
+    def test_links_to_directories_resolve(self) -> None:
+        self.assertAccepted("[licences](LICENSES)")
+        self.assertAccepted("[licences](LICENSES/)")
+
+    def test_root_relative_links_resolve(self) -> None:
+        self.assertAccepted("[guide](/docs/guide.md)", path="docs/guide.md")
+        self.assertRejected("[missing](/docs/absent.md)", path="docs/guide.md")
+
+    def test_relative_links_resolve_against_the_linking_file(self) -> None:
+        self.assertAccepted("[readme](../README.md)", path="docs/guide.md")
+        self.assertRejected("[escape](../../outside.md)", path="docs/guide.md")
+
+    def test_anchors_and_queries_are_stripped_before_resolving(self) -> None:
+        self.assertAccepted("[guide](docs/guide.md#section)")
+        self.assertRejected("[missing](docs/absent.md#section)")
+
+    def test_link_syntax_in_code_is_not_a_link(self) -> None:
+        # A fenced example shows syntax; it does not link anywhere.
+        self.assertAccepted("```\n[example](docs/absent.md)\n```")
+        self.assertAccepted("~~~md\n[example](docs/absent.md)\n~~~")
+        # An inline span does the same, and an index expression is not a
+        # reference-style link.
+        self.assertAccepted("Write `[text](docs/absent.md)` to link.")
+        self.assertAccepted("Use `sets[i][j]` for the bitmask.")
+
+    def test_a_fence_is_closed_only_by_its_own_marker(self) -> None:
+        # A ``` inside a ~~~ block must not end it, or the rest of the file
+        # would be scanned as prose while the block stays open.
+        text = "~~~\n```\n[example](docs/absent.md)\n```\n~~~\n"
+        self.assertAccepted(text)
+
+    def test_non_markdown_files_are_not_link_checked(self) -> None:
+        self.assertAccepted("[missing](docs/absent.md)", path="src/x.py")
+
+    def test_reported_line_numbers_survive_code_blanking(self) -> None:
+        text = "```\nfenced\n```\n\n[missing](docs/absent.md)\n"
+        findings = self._findings(text)
+        self.assertTrue(findings)
+        self.assertIn(":5:", findings[0])
+
+    def test_the_fixture_marker_exempts_a_link_line(self) -> None:
+        marker = "  <!-- " + checker.FIXTURE_MARKER + " -->"
+        self.assertAccepted("[missing](docs/absent.md)" + marker)

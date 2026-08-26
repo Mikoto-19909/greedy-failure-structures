@@ -4,7 +4,8 @@ Three things are verified over every tracked text file:
 
 1. no quantitative research claim, under the active claim mode;
 2. no personal path or credential-shaped string;
-3. every relative Markdown link resolves.
+3. every relative link resolves to a tracked path, across inline,
+   reference-style and HTML link syntax.
 
 Findings name a file and a line and describe the rule that failed. They never
 echo the matched text, and the report never enumerates paths that are not
@@ -197,8 +198,43 @@ SENSITIVE = (
     ),
 )
 
-MD_LINK = re.compile(r"\[[^\]]*\]\(\s*([^)\s]+)")
-EXTERNAL = re.compile(r"\A(?:[a-z][a-z0-9+.-]*:|//|#)", re.IGNORECASE)
+# Link syntaxes that GitHub actually resolves.
+#
+# The predecessor recognised exactly one, `[text](target)`. Reference-style
+# links and HTML attributes went unchecked, so a broken target written either of
+# those ways passed a check whose docstring promises that every relative link
+# resolves.
+#
+# Autolinks are deliberately absent rather than overlooked. A CommonMark
+# autolink carries a scheme, as in <https://example.com>, so it is always
+# external; a bare relative path in angle brackets is not a link at all and
+# renders as literal text. Checking it would report a target no reader can
+# click, which is how a check earns a `continue-on-error`.
+MD_INLINE_LINK = re.compile(r"!?\[[^\]]*\]\(\s*(?:<([^>]*)>|([^)\s]+))")
+MD_REFERENCE_USE = re.compile(r"!?\[([^\]]*)\]\[([^\]]*)\]")
+MD_REFERENCE_DEF = re.compile(r"^\s{0,3}\[([^\]]+)\]:\s*(?:<([^>]*)>|(\S+))")
+HTML_ATTRIBUTE_LINK = re.compile(
+    r"<(?:a|img|source|video|audio|iframe)\b[^>]*?"
+    r"\b(?:href|src)\s*=\s*(?:\"([^\"]*)\"|'([^']*)'|([^\s>]+))",
+    re.IGNORECASE,
+)
+
+# The shortcut form — a bare `[label]` with its definition elsewhere — is not
+# matched. Every bracketed phrase in prose would become a candidate target. The
+# collapsed form `[label][]` is matched, because the empty second bracket makes
+# the intent explicit.
+
+# Two or more characters before the colon. RFC 3986 permits a single-letter
+# scheme, but in a link destination a lone letter before a colon is a Windows
+# drive, and a drive path was therefore skipped here as an external URL.
+EXTERNAL = re.compile(r"\A(?:[a-z][a-z0-9+.-]+:|//|#)", re.IGNORECASE)
+
+# Fenced code shows link syntax as an example rather than linking anywhere.
+FENCE = re.compile(r"^\s{0,3}(`{3,}|~{3,})")
+# An inline code span does the same within a line: `sets[i][j]` is not a
+# reference-style link. Blanked rather than deleted, so that columns and line
+# numbers still line up with the file.
+CODE_SPAN = re.compile(r"`[^`\n]*`")
 
 
 # A test fixture for this checker must contain the exact strings the checker
@@ -351,36 +387,132 @@ def check_sensitive(path: str, text: str) -> list[str]:
     return findings
 
 
-def check_links(root: Path, path: str, text: str, known: set[str]) -> list[str]:
+def _blank_code(text: str) -> list[str]:
+    """Return the lines with code content blanked, keeping line count intact.
+
+    Link syntax inside a fence or a code span is an example, not a link. The
+    blanking preserves the line count so reported line numbers still match the
+    file, and preserves each line's length so a fixture marker later on the same
+    line is still found.
+    """
+
+    lines = text.split("\n")
+    result = []
+    fence: str | None = None
+    for line in lines:
+        match = FENCE.match(line)
+        if fence is None:
+            if match is not None:
+                fence = match.group(1)[0] * 3
+                result.append("")
+                continue
+            result.append(CODE_SPAN.sub(lambda hit: " " * len(hit.group(0)), line))
+        else:
+            # A closing fence must use the same character and be at least as
+            # long, so a ``` inside a ~~~ block does not end it.
+            if match is not None and match.group(1)[0] * 3 == fence:
+                fence = None
+            result.append("")
+    return result
+
+
+def _resolve(path: str, target: str) -> tuple[str | None, bool]:
+    """Resolve a link target against the linking file. Returns (path, escaped)."""
+
+    cleaned = target.split("#", 1)[0].split("?", 1)[0].strip()
+    if not cleaned:
+        return None, False
+    # A leading slash in a Markdown link is repository-root-relative on GitHub.
+    base = PurePosixPath("") if cleaned.startswith("/") else PurePosixPath(path).parent
+    parts: list[str] = []
+    for part in (base / cleaned.lstrip("/")).parts:
+        if part == "..":
+            if not parts:
+                return None, True
+            parts.pop()
+        elif part != ".":
+            parts.append(part)
+    return "/".join(parts), False
+
+
+def check_links(
+    path: str, text: str, known: frozenset[str], known_dirs: frozenset[str]
+) -> list[str]:
+    """Verify that every relative link resolves to a tracked path.
+
+    Three things this does not do, each for a reason:
+
+    - It never touches the filesystem. `Path.exists()` is case-insensitive on
+      Windows and case-sensitive on the Linux runner, so a link whose case was
+      wrong passed locally and 404s on github.com. The tracked-name set is the
+      same on both platforms, which makes the check's verdict platform-independent
+      — and a wrong-case link is reported as such rather than as missing, since
+      that is the failure a contributor on Windows cannot otherwise see.
+    - It does not resolve anchors. GitHub's heading-slug rules are not worth
+      reimplementing, and a wrong anchor degrades to landing at the top of a page
+      that does exist.
+    - It does not follow a reference definition's own target twice. A definition
+      is checked where it is defined; a use is checked only for having one.
+    """
+
     if PurePosixPath(path).suffix.casefold() != ".md":
         return []
+
+    lines = _blank_code(text)
+    raw = text.split("\n")
+
+    definitions: dict[str, int] = {}
+    for index, line in enumerate(lines, start=1):
+        match = MD_REFERENCE_DEF.match(line)
+        if match is not None:
+            definitions[match.group(1).strip().casefold()] = index
+
     findings = []
-    for index, line in enumerate(text.splitlines(), start=1):
-        if _is_exempt(line):
+    for index, line in enumerate(lines, start=1):
+        if _is_exempt(raw[index - 1]):
             continue
-        for match in MD_LINK.finditer(line):
-            target = match.group(1)
-            if EXTERNAL.match(target):
+
+        targets = []
+        for match in MD_INLINE_LINK.finditer(line):
+            targets.append(match.group(1) if match.group(1) is not None else match.group(2))
+        for match in HTML_ATTRIBUTE_LINK.finditer(line):
+            targets.append(match.group(1) or match.group(2) or match.group(3))
+        definition = MD_REFERENCE_DEF.match(line)
+        if definition is not None:
+            targets.append(
+                definition.group(2) if definition.group(2) is not None else definition.group(3)
+            )
+
+        for target in targets:
+            if not target or EXTERNAL.match(target) or target.startswith("mailto:"):
                 continue
-            cleaned = target.split("#", 1)[0].split("?", 1)[0]
-            if not cleaned:
-                continue
-            parts: list[str] = []
-            escaped = False
-            for part in (PurePosixPath(path).parent / cleaned).parts:
-                if part == "..":
-                    if not parts:
-                        escaped = True
-                        break
-                    parts.pop()
-                elif part != ".":
-                    parts.append(part)
+            candidate, escaped = _resolve(path, target)
             if escaped:
                 findings.append(f"{path}:{index}: link escapes the repository")
                 continue
-            candidate = "/".join(parts)
-            if candidate and candidate not in known and not (root / candidate).exists():
+            if not candidate or candidate in known or candidate in known_dirs:
+                continue
+            folded = candidate.casefold()
+            if folded in {name.casefold() for name in known} or folded in {
+                name.casefold() for name in known_dirs
+            }:
+                findings.append(
+                    f"{path}:{index}: internal link differs in case from the "
+                    "tracked path; it resolves on Windows and 404s on github.com"
+                )
+            else:
                 findings.append(f"{path}:{index}: internal link does not resolve")
+
+        # A reference *use* needs a definition in the same file. The label is
+        # collapsed (`[text][]`) when the second bracket is empty, in which case
+        # the text is the label.
+        for match in MD_REFERENCE_USE.finditer(line):
+            label = (match.group(2) or match.group(1)).strip().casefold()
+            if label and label not in definitions:
+                findings.append(
+                    f"{path}:{index}: reference-style link has no definition in this file"
+                )
+
     return findings
 
 
@@ -392,7 +524,15 @@ def main(argv: list[str] | None = None) -> int:
 
     root = args.repo_root.resolve()
     names = tracked_files(root)
-    known = set(names)
+    known = frozenset(names)
+    # Git tracks no directory, but a link to one resolves on github.com. Every
+    # parent of every tracked file is therefore a legal target.
+    known_dirs = frozenset(
+        str(parent)
+        for name in names
+        for parent in PurePosixPath(name).parents
+        if str(parent) != "."
+    )
 
     findings: list[str] = []
     scanned = 0
@@ -408,7 +548,7 @@ def main(argv: list[str] | None = None) -> int:
         scanned += 1
         findings += check_quantitative(name, text, args.claim_mode)
         findings += check_sensitive(name, text)
-        findings += check_links(root, name, text, known)
+        findings += check_links(name, text, known, known_dirs)
 
     sys.stdout.write(f"claim mode    : {args.claim_mode}\n")
     sys.stdout.write(f"tracked files : {len(names)}\n")
