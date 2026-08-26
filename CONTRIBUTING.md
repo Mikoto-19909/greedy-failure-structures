@@ -37,11 +37,26 @@ experiment results, performance comparisons, failure rates, gap figures or
 runtime measurements, and it must stay that way. Do not add them to the README,
 to documentation, to release notes, or to commit messages.
 
+"Publishes" is the operative word, because the code computes numbers by design.
+`demo` prints a coverage gap and a benchmark run writes measurement CSVs under
+`results/`. Both are generated on the machine that runs them, from inputs
+committed here, and neither is tracked. The rule governs claims this repository
+*carries* — a figure in prose, a results table, a stored corpus of outcomes —
+not what its code produces when you execute it. If you are unsure which side a
+change falls on, the practical test is whether `git status` would show it.
+
 If you have measurements you believe belong here, they cannot be added as prose.
 Any quantitative statement must derive from a single frozen evidence chain —
 typed CSV, then manifest and checksum, then an independent validator, then the
 statement — with every step reproducible by someone else. Without that chain
 closed, the statement does not go in.
+
+The rule is unconditional, which catches one honest case worth naming: quoting a
+prohibited phrase as an example. If you are describing a bug — a checker that
+failed to reject something, say — describe the form rather than reproducing it.
+Write "a metric stated with a value" instead of the phrase itself. Two commits
+predating this note quote such examples verbatim; they are known exceptions and
+were left unrewritten rather than having a pushed history amended.
 
 This is why the bundled starter workflow is described as a functional check
 rather than a benchmark: it verifies that the code runs, and it is not evidence
@@ -59,6 +74,15 @@ Optionally, with the type checker installed via `pip install -e ".[typecheck]"`:
 python -m mypy
 ```
 
+A clean mypy run is narrower than it looks. `pyproject.toml` exempts
+`maxcover.benchmark` and `maxcover.reporting` with `ignore_errors = true`, which
+is about 40% of the source by line, and those modules hold a real backlog of
+unresolved errors. So mypy passing does not mean your change is type-clean if it
+lands in either — check it by temporarily removing the override for the module
+you touched. Reducing that backlog is welcome as its own change; do not remove an
+exemption in the same pull request as a behavioural change, since the two cannot
+then be reviewed apart.
+
 Add a regression test for a bug fix, and a seeded case for anything randomized.
 Keep changes focused; unrelated reformatting makes review harder.
 
@@ -69,7 +93,13 @@ prefixes (`feat:`, `fix:`, `docs:`, `refactor:`) are used here.
 
 Do not attribute commits to an AI assistant. No `Co-Authored-By` trailer naming
 a model, and no "generated with" line. Authorship stays with the person who
-submitted the work.
+submitted the work. This is checked over the commit range by
+`.github/scripts/check_commits.py`.
+
+If you are directing an AI agent to work in this repository, [`AGENTS.md`](AGENTS.md)
+carries the additional constraints that apply to it — chiefly around reviewing
+its own work, since the defects here have concentrated in changes where a
+documented rule and its enforcing code disagreed.
 
 ## Licensing your contribution
 

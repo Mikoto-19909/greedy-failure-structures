@@ -54,7 +54,9 @@ the exact identities involved: the legacy source commit, the approved
 migration policy digest, the public manifest and payload tree digests, and this
 repository's root commit and tree.
 
-`PUBLIC_SNAPSHOT_MANIFEST.json` in the repository root is the closed
-allow-list: a file is part of this snapshot, and carries a license grant, only
-if it appears there with its exact path, byte count, digest and license
-identifier.
+Two manifests sit in the repository root and answer different questions.
+`PUBLIC_SNAPSHOT_MANIFEST.json` is the archive of that one export: it records
+the payload identities as they were at migration time, and stays fixed.
+`LICENSE_MANIFEST.json` is the live allow-list — a file carries a license grant
+only if it appears there with its exact path, byte count, digest and license
+identifier — and it is regenerated whenever the tracked file set changes.

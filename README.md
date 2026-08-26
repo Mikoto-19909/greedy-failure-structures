@@ -31,6 +31,12 @@ Show a small deterministic example:
 python run_project.py demo
 ```
 
+This builds one fixed instance defined in the source and prints what each
+algorithm returns on it, coverage gap included. Those numbers are computed on
+your machine from that hard-coded instance. They demonstrate that greedy can be
+trapped; they are not a measurement of any corpus, and nothing in this
+repository reports them as a result. See [Scope](#scope).
+
 Run the starter workflow:
 
 ```console
@@ -49,6 +55,15 @@ Run a configured benchmark and write local outputs:
 python run_project.py benchmark --config configs/full.json --output results/full
 ```
 
+Both commands above emit a `LegacyConfigWarning`: `configs/quick.json` and
+`configs/full.json` are schema v1, and the loader migrates them to schema 3 in
+memory on every run. The warning is expected. Those two files stay at v1
+deliberately — `config_hash` is computed over the normalized configuration, so
+rewriting them would change the hash and orphan the run identities already
+recorded against it, which `CONTRIBUTING.md` classes as a breaking change.
+`configs/sweeps.json` is schema 2; the `configs/p3_*` through `configs/p5_*`
+configurations are schema 3 and warn about nothing.
+
 Generated files under `results/` are local artifacts and are not part of the
 repository snapshot.
 
@@ -58,12 +73,21 @@ repository snapshot.
 python -m unittest discover -s tests -v
 ```
 
-Optionally, check the typed baseline:
+Optionally, run the type checker:
 
 ```console
 python -m pip install -e ".[typecheck]"
 python -m mypy
 ```
+
+Read its output narrowly. `pyproject.toml` sets `ignore_errors = true` for
+`maxcover.benchmark` and `maxcover.reporting` — roughly 40% of the source by
+line — so `Success: no issues found in 19 source files` means the remaining
+modules are clean, not that the package is. Those two modules carry a real
+backlog of unresolved type errors; the exemption keeps the check enforceable
+everywhere else instead of leaving it permanently red. Reducing that backlog is
+a welcome contribution, and the exemption list is the place to check what is not
+yet covered.
 
 On Windows, the convenience wrapper provides equivalent commands:
 
@@ -91,6 +115,17 @@ deliberate boundary, not an omission — see
 [`docs/history/PRE_PUBLIC_DEVELOPMENT_HISTORY.md`](docs/history/PRE_PUBLIC_DEVELOPMENT_HISTORY.md)
 for what preceded this repository.
 
+The boundary is about what this repository *publishes*, and the distinction is
+worth stating because the code does compute numbers. `demo` prints a coverage
+gap, and a benchmark run writes CSVs full of measurements to `results/`. Neither
+crosses the boundary: both are produced on your machine when you run them, from
+inputs committed here, and neither is checked in or asserted as a finding. What
+the boundary excludes is a claim carried *by this repository* — a figure in the
+README, a results table in the documentation, a stored corpus of outcomes.
+Anything of that kind requires the frozen evidence chain
+[`CONTRIBUTING.md`](CONTRIBUTING.md) describes, and CI enforces the rule over
+every tracked file rather than trusting the convention.
+
 ## Project layout
 
 - `src/maxcover/`: algorithms, generators, benchmark execution, and reporting
@@ -98,12 +133,15 @@ for what preceded this repository.
 - `tests/`: deterministic unit and contract tests
 - `run_project.py`: primary command-line entry point
 - `project.ps1`: Windows convenience wrapper
-- `PUBLIC_SNAPSHOT_MANIFEST.json`: the closed allow-list defining this snapshot
+- `LICENSE_MANIFEST.json`: the closed license allow-list, verified by CI
+- `PUBLIC_SNAPSHOT_MANIFEST.json`: the migration archive for the one export
+  that created this repository
 - `docs/history/`: migration provenance and pre-public development history
 
 ## Contributing and support
 
 - [`CONTRIBUTING.md`](CONTRIBUTING.md): scope, ground rules, and how to submit
+- [`AGENTS.md`](AGENTS.md): additional constraints for AI coding agents
 - [`SECURITY.md`](SECURITY.md): what counts as a security issue, and reporting
 - [`SUPPORT.md`](SUPPORT.md): what this project does and does not answer
 
