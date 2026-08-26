@@ -37,6 +37,14 @@ experiment results, performance comparisons, failure rates, gap figures or
 runtime measurements, and it must stay that way. Do not add them to the README,
 to documentation, to release notes, or to commit messages.
 
+"Publishes" is the operative word, because the code computes numbers by design.
+`demo` prints a coverage gap and a benchmark run writes measurement CSVs under
+`results/`. Both are generated on the machine that runs them, from inputs
+committed here, and neither is tracked. The rule governs claims this repository
+*carries* — a figure in prose, a results table, a stored corpus of outcomes —
+not what its code produces when you execute it. If you are unsure which side a
+change falls on, the practical test is whether `git status` would show it.
+
 If you have measurements you believe belong here, they cannot be added as prose.
 Any quantitative statement must derive from a single frozen evidence chain —
 typed CSV, then manifest and checksum, then an independent validator, then the
@@ -65,6 +73,16 @@ Optionally, with the type checker installed via `pip install -e ".[typecheck]"`:
 ```console
 python -m mypy
 ```
+
+A clean mypy run is narrower than it looks. `pyproject.toml` exempts
+`maxcover.benchmark`, `maxcover.reporting` and `maxcover.contracts` with
+`ignore_errors = true`, which is about 40% of the source by line, and those
+modules hold a real backlog of unresolved errors. So mypy passing does not mean
+your change is type-clean if it lands in one of the three — check it by
+temporarily removing the override for the module you touched. Reducing that
+backlog is welcome as its own change; do not remove an exemption in the same
+pull request as a behavioural change, since the two cannot then be reviewed
+apart.
 
 Add a regression test for a bug fix, and a seeded case for anything randomized.
 Keep changes focused; unrelated reformatting makes review harder.
