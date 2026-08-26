@@ -36,43 +36,84 @@ MAX_TEXT_BYTES = 4 * 1024 * 1024
 # personal-path checks are not limited to these: they run over all text.
 PROSE_SUFFIXES = frozenset({".md", ".rst", ".txt"})
 
-# A result claim states a research metric with a number, or pairs an outcome
-# verb with one. Bare numbers stay legal: versions, seeds, sizes, worker counts
-# and timeouts are ordinary content, and a checker that flags those becomes
-# noise that gets ignored.
+# A result claim states a research metric with a number, pairs an outcome verb
+# with one, or expresses a ratio. Bare numbers stay legal: versions, seeds,
+# sizes, worker counts, file counts and timeouts are ordinary content, and a
+# checker that flags those becomes noise that gets ignored.
+#
+# The predecessor used a closed vocabulary and matched one line at a time. An
+# adversarial review got roughly sixteen English rephrasings, every Chinese
+# formulation, table rows and split sentences past it. Three things changed:
+# the vocabulary widened, Chinese forms are matched directly rather than assumed
+# absent, and matching runs over the joined paragraph because Markdown renders
+# consecutive lines as one sentence.
 _METRIC = (
-    r"failure\s+rate|optimality\s+gap|recovery\s+rate|node\s+reduction|"
-    r"runtime\s+ratio|coverage|runtime|speedup|deficit|objective|gap"
+    r"failure\s+rate|optimality\s+gap|approximation\s+ratio|recovery\s+rate|"
+    r"node\s+reduction|runtime\s+ratio|wall[-\s]*clock(?:\s+time)?|elapsed\s+time|"
+    r"coverage|runtime|speedup|regret|shortfall|deficit|objective|gap"
 )
 _OUTCOME = (
-    r"failed|succeeded|lost|gained|recovered|averaged|achieved|reached|"
-    r"outperformed|beat|exceeded|covered|solved|explored|improved|degraded"
+    r"failed|succeeded|lost|loses|gained|recovered|averaged|achieved|reached|"
+    r"reaches|outperformed|beat|exceeded|covered|covers|solved|explored|visited|"
+    r"improved|degraded"
 )
+
+# Exclusions run before the patterns. Each covers a construction that names a
+# metric beside a number without asserting a measurement, and each exists
+# because the pattern set flagged a real sentence from this repository.
+#
+# A definition says what a term means, not what was observed.
+_DEFINITIONAL = re.compile(
+    r"\bis\s+defined\s+as\b|\bmeans\b|\bwhen\s+every\b|\bfor\s+the\s+empty\b|"
+    r"\bis\s+the\s+fraction\b",
+    re.IGNORECASE,
+)
+# 0 and 1 are boundary conditions of the definition. "gap = 0" states that the
+# bound is closed; no corpus produced it.
+_DEGENERATE = re.compile(rf"\b(?:{_METRIC})\s*[:=]\s*[01](?!\d|\.\d)", re.IGNORECASE)
+# Dependency prose. "runtime" is both a metric name and the word for an
+# interpreter, which is why "the Python 3 runtime is supported" read as a claim.
+_VERSIONISH = re.compile(
+    r"\b(?:python|mypy|pytest|ortools|version)\b[^.\n]{0,20}?\d|"
+    r"\b\d+\.\d+(?:\.\d+)?\s+or\s+newer\b|"
+    r"\bis\s+pinned\b",
+    re.IGNORECASE,
+)
+
 QUANTITATIVE = (
-    # "the failure rate was 25%", "coverage of 19"
-    re.compile(
-        rf"\b(?:{_METRIC})\b[^.\n]{{0,20}}?\b(?:was|were|is|are|of)\b"
-        rf"[^.\n]{{0,12}}?\d",
-        re.IGNORECASE,
-    ),
-    # "mean gap: 0.24", "speedup = 3.2"
-    re.compile(rf"\b(?:{_METRIC})\s*[:=]\s*\d", re.IGNORECASE),
-    # "greedy covered 80%", "local search recovered 82"
-    re.compile(
-        rf"\b(?:{_OUTCOME})\b[^.\n]{{0,40}}?\b\d+(?:\.\d+)?\s*%?",
-        re.IGNORECASE,
-    ),
-    # "45% of instances", "80% of elements"
-    re.compile(
-        r"\b\d+(?:\.\d+)?\s*%[^.\n]{0,40}?"
-        r"\b(?:instances?|runs?|cases?|elements?|sets?)\b",
-        re.IGNORECASE,
-    ),
-    # "12.5% coverage", "3 seconds runtime"
-    re.compile(
-        rf"\b\d+(?:\.\d+)?\s*%?\s+(?:\w+\s+){{0,2}}?(?:{_METRIC})\b",
-        re.IGNORECASE,
-    ),
+    ("metric stated with a value", re.compile(
+        rf"\b(?:{_METRIC})\b[^.\n]{{0,24}}?\b(?:was|were|is|are|of)\b"
+        rf"[^.\n]{{0,14}}?\d", re.IGNORECASE)),
+    ("metric assigned a value", re.compile(
+        rf"\b(?:{_METRIC})\s*[:=]\s*\d", re.IGNORECASE)),
+    ("metric followed by a value", re.compile(
+        rf"\b(?:{_METRIC})\s+\d+(?:\.\d+)?\b", re.IGNORECASE)),
+    ("outcome paired with a number", re.compile(
+        rf"\b(?:{_OUTCOME})\b[^.\n]{{0,40}}?\b\d+(?:\.\d+)?\s*%?", re.IGNORECASE)),
+    ("percentage with a corpus noun", re.compile(
+        r"\b\d+(?:\.\d+)?\s*(?:%|percent)[^.\n]{0,40}?"
+        r"\b(?:instances?|runs?|cases?|elements?|sets?|optimum)\b", re.IGNORECASE)),
+    ("spelled-out percentage of a corpus", re.compile(
+        r"\b(?:twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)"
+        r"[-\s]?(?:one|two|three|four|five|six|seven|eight|nine)?\s*percent\b",
+        re.IGNORECASE)),
+    # Up to four intervening words, not two: "24 percent was the observed
+    # shortfall" puts three between the value and the metric. Widening this far
+    # was checked against the repository's own prose — test counts, file counts,
+    # seeds and exit codes stay legal.
+    ("value followed by a metric", re.compile(
+        rf"\b\d+(?:\.\d+)?\s*%?\s+(?:\w+\s+){{0,4}}?(?:{_METRIC})\b", re.IGNORECASE)),
+    ("comparative ratio", re.compile(
+        r"\b\d+(?:\.\d+)?\s*(?:x|times)\s+(?:\w+\s+){0,2}?"
+        r"(?:slower|faster|fewer|more|better|worse)\b", re.IGNORECASE)),
+    ("table row of numbers", re.compile(r"^\s*\|[^|\n]*\|\s*\d+(?:\.\d+)?\s*\|")),
+    # Chinese forms. Their absence was assumed rather than checked, while the
+    # project's own working language is Chinese.
+    ("Chinese metric with a value", re.compile(
+        r"(?:失败率|覆盖率|间隙|近似比|加速比|运行时间|耗时|节点数)[^。\n]{0,8}?\d")),
+    ("Chinese percentage of a corpus", re.compile(
+        r"\d+(?:\.\d+)?\s*%\s*的?\s*(?:实例|运行|案例|元素)")),
+    ("Chinese comparative ratio", re.compile(r"\d+(?:\.\d+)?\s*倍")),
 )
 
 # Credential and personal-path detection.
@@ -251,7 +292,13 @@ def _looks_binary(payload: bytes) -> bool:
 
 
 def check_quantitative(path: str, text: str, claim_mode: str) -> list[str]:
-    """Reject result claims in prose, unless the active mode authorizes them."""
+    """Reject result claims in prose, unless the active mode authorizes them.
+
+    Matching runs over each paragraph with its newlines collapsed, because
+    Markdown renders consecutive lines as one sentence and a claim split across
+    two lines would otherwise pass. The reported line is the paragraph's first,
+    since a joined match has no single line of its own.
+    """
 
     if claim_mode != "no_quantitative_claims":
         # A wider mode still needs its claims bound to a frozen evidence chain,
@@ -259,18 +306,38 @@ def check_quantitative(path: str, text: str, claim_mode: str) -> list[str]:
         return []
     if PurePosixPath(path).suffix.casefold() not in PROSE_SUFFIXES:
         return []
+
     findings = []
-    for index, line in enumerate(text.splitlines(), start=1):
-        if _is_exempt(line):
-            continue
-        for pattern in QUANTITATIVE:
-            if pattern.search(line):
-                findings.append(
-                    f"{path}:{index}: reads as a quantitative result claim; "
-                    "this repository publishes none"
-                )
-                break
+    line_number = 1
+    for paragraph in re.split(r"\n\s*\n", text):
+        lines = paragraph.split("\n")
+        # Fixture markers and exclusions are judged per line so that one
+        # exempt line does not carry its whole paragraph.
+        checkable = [line for line in lines if not _is_exempt(line)]
+        if checkable:
+            joined = re.sub(r"\s*\n\s*", " ", "\n".join(checkable))
+            if not _claim_excluded(joined):
+                for label, pattern in QUANTITATIVE:
+                    if pattern.search(joined) or any(
+                        pattern.search(line) for line in checkable
+                    ):
+                        findings.append(
+                            f"{path}:{line_number}: reads as a quantitative result "
+                            f"claim ({label}); this repository publishes none"
+                        )
+                        break
+        line_number += len(lines) + 1
     return findings
+
+
+def _claim_excluded(segment: str) -> bool:
+    """True when a metric sits beside a number without asserting a measurement."""
+
+    return bool(
+        _DEFINITIONAL.search(segment)
+        or _DEGENERATE.search(segment)
+        or _VERSIONISH.search(segment)
+    )
 
 
 def check_sensitive(path: str, text: str) -> list[str]:

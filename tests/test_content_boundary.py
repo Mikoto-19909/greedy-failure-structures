@@ -259,3 +259,123 @@ class FixtureExemptionTests(unittest.TestCase):
         self.assertFalse(
             checker.check_sensitive("README.md", self._marked(self._secret()))
         )
+
+
+class QuantitativeClaimTests(unittest.TestCase):
+    """CONTRIBUTING says the single-claim-source rule is enforced, not requested.
+
+    Adversarial review found roughly sixteen English rephrasings, every Chinese
+    formulation, table rows and statements split across lines all passing. The
+    cause was a closed vocabulary of metric names and outcome verbs: anything
+    said another way went through.
+    """
+
+    def _findings(self, text: str) -> list[str]:
+        return checker.check_quantitative("notes.md", text, "no_quantitative_claims")
+
+    def assertRejected(self, text: str) -> None:
+        self.assertTrue(self._findings(text), f"not rejected: {text!r}")
+
+    def assertAccepted(self, text: str) -> None:
+        self.assertFalse(self._findings(text), f"wrongly rejected: {text!r}")
+
+    def test_metric_stated_with_a_value(self) -> None:
+        self.assertRejected("The failure rate was 25%.")
+        self.assertRejected("The optimality gap was 10%.")
+        self.assertRejected("The runtime was 3 seconds.")
+        self.assertRejected("The approximation ratio is 0.63.")
+        self.assertRejected("Mean approximation ratio was 0.63 across the corpus.")
+        self.assertRejected("Regret was 0.38 on average.")
+        self.assertRejected("Mean shortfall 0.38 (n=120)")
+
+    def test_metric_assigned_a_value(self) -> None:
+        self.assertRejected("mean gap: 0.24")
+        self.assertRejected("speedup = 3.2")
+        self.assertRejected("Elapsed time: 12.4 s")
+
+    def test_outcome_paired_with_a_number(self) -> None:
+        self.assertRejected("Greedy covered 80% of elements.")
+        self.assertRejected("Greedy loses 38 percent of the optimum on this family.")
+        self.assertRejected("Greedy reaches 62 percent of the optimum.")
+        self.assertRejected("Local search recovered 82% of the gap.")
+        self.assertRejected("The solver visited 41200 nodes.")
+
+    def test_comparative_ratios(self) -> None:
+        self.assertRejected("The heuristic is 3.2 times slower than branch and bound.")
+        self.assertRejected("Branch and bound needs 4.5x fewer nodes.")
+        self.assertRejected("Wall-clock time was 12.4 seconds for the full sweep.")
+
+    def test_percentage_with_a_corpus_noun(self) -> None:
+        self.assertRejected("45% of instances showed a deficit.")
+        self.assertRejected("24 percent was the observed shortfall.")
+        self.assertRejected("Twenty-five percent of instances defeat greedy.")
+
+    def test_table_rows(self) -> None:
+        self.assertRejected("| greedy | 0.62 | 41200 |")
+        self.assertRejected("| algorithm | coverage | nodes |\n| greedy | 0.62 | 41200 |")
+
+    def test_statements_split_across_lines(self) -> None:
+        # Markdown renders these as one sentence, so line-at-a-time matching
+        # missed them entirely.
+        self.assertRejected("The failure rate\nwas 25%.")
+        self.assertRejected("Greedy covered\n80% of elements.")
+
+    def test_chinese_formulations(self) -> None:
+        self.assertRejected("贪心算法的失败率为 25%。")
+        self.assertRejected("覆盖率 0.62，最优间隙 0.38。")
+        self.assertRejected("在 45% 的实例上贪心失败。")
+        self.assertRejected("贪心比精确解慢 3.2 倍。")
+        self.assertRejected("平均近似比 0.63。")
+
+    def test_bare_numbers_stay_legal(self) -> None:
+        # The comment above the patterns promises this, and a checker that
+        # flags these becomes noise that gets ignored.
+        self.assertAccepted("Python 3.11 or newer is required.")
+        self.assertAccepted("The Python 3 runtime is supported.")
+        self.assertAccepted("The runtime is 3.11 or newer.")
+        self.assertAccepted("mypy 2.3.0 is pinned.")
+        self.assertAccepted("Use 2 workers for the starter run.")
+        self.assertAccepted("timeout_seconds: 60")
+        self.assertAccepted("timeout-minutes: 10")
+        self.assertAccepted("The manifest lists 74 files.")
+        self.assertAccepted("base_seed 2026 controls all runs")
+        self.assertAccepted("universe_size 80 with 14 sets")
+        self.assertAccepted("CLI exit codes: 0 success, 1 operational error.")
+        self.assertAccepted("results/ci-quick holds 48 algorithm runs")
+
+    def test_boundary_conditions_stay_legal(self) -> None:
+        # Definitional and degenerate statements are not results.
+        self.assertAccepted("objective = 0 for the empty solution.")
+        self.assertAccepted("gap = 0 means the bound is closed.")
+        self.assertAccepted("Coverage is 1 when every element is covered.")
+        self.assertAccepted(
+            "The failure rate is defined as the fraction of instances "
+            "where greedy is suboptimal."
+        )
+
+    def test_repository_prose_stays_legal(self) -> None:
+        # Real sentences from this repository's own documents.
+        self.assertAccepted(
+            "Runtime observations can vary with the machine and optional solver."
+        )
+        self.assertAccepted(
+            "The starter workflow is a functional check, not a performance claim."
+        )
+        self.assertAccepted(
+            "no experiment results, no performance comparisons, no measurements"
+        )
+        self.assertAccepted("Treat timeouts as incomplete work, not proof of optimality.")
+
+    def test_non_prose_files_are_not_claim_checked(self) -> None:
+        # Section headings in reporting code would otherwise trip this.
+        source = 'HEADING = "## P5.2 classical Greedy failure rate"'
+        self.assertFalse(
+            checker.check_quantitative("src/x.py", source, "no_quantitative_claims")
+        )
+
+    def test_a_wider_claim_mode_defers_to_its_own_workflow(self) -> None:
+        self.assertFalse(
+            checker.check_quantitative(
+                "notes.md", "The failure rate was 25%.", "evidence_backed_claims"
+            )
+        )
