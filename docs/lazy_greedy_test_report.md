@@ -78,6 +78,17 @@ corresponding wrapper commands when a supported Python installation is found.
   Greedy/Lazy Greedy correspondence for every shared instance unit.
 - The full repository gates pass.
 
+## Work-accounting definition
+
+The lazy marginal-evaluation counter includes the initial queue construction:
+
+    marginal_evaluations = initial_candidate_count + priority_queue_pops
+
+where `initial_candidate_count` equals the number of sets in the instance.
+The `priority_queue_pops` counter only counts actual `heapq.heappop` calls.
+This definition is verified by the contract test
+`test_metadata_and_work_accounting_are_deterministic`.
+
 ## Interpretation
 
 A passing report establishes that Lazy Greedy is a deterministic, compatible
@@ -88,7 +99,9 @@ package and an independently validated analysis.
 
 ## Verification record
 
-For this revision, the focused Lazy Greedy tests, the bundled paired workflow,
-the complete repository test suite, the content-boundary check, the
-license-manifest check and the type-check gate passed. The local workflow
-output is ignored under `results/` and is not part of the published snapshot.
+For this revision, the focused Lazy Greedy tests (including tie-breaking,
+zero-gain, full-coverage, `k = set_count` and serial/parallel metadata
+consistency), the bundled paired workflow, the complete repository test suite,
+the content-boundary check, the license-manifest check and the type-check gate
+passed. The local workflow output is ignored under `results/` and is not part
+of the published snapshot.

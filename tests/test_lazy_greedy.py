@@ -232,6 +232,10 @@ class LazyGreedyTests(unittest.TestCase):
         )
         self.assertEqual(search["selected_count"], instance.k)
         self.assertEqual(len(first.metadata["trajectory"]), instance.k)
+        cumulative = 0
+        for point in first.metadata["trajectory"]:
+            self.assertGreaterEqual(point["marginal_evaluations"], cumulative)
+            cumulative = point["marginal_evaluations"]
         dense_evaluations = instance.set_count * instance.k - (
             instance.k * (instance.k - 1) // 2
         )
@@ -374,6 +378,111 @@ class LazyGreedyTests(unittest.TestCase):
             validator = _load_output_validator()
             with self.assertRaisesRegex(ValueError, "marginal evaluations"):
                 validator.validate(config_path.resolve(), output.resolve())
+
+    def test_tie_breaking_prefers_lower_index(self) -> None:
+        """When two sets have identical marginal gain, the lower index wins."""
+        instance = MaximumCoverageInstance(
+            universe_size=4,
+            sets=(
+                _mask((0, 1)),
+                _mask((2, 3)),
+                _mask((0, 1)),
+                _mask((2, 3)),
+            ),
+            k=2,
+            family="custom",
+        )
+        result = lazy_greedy(instance)
+        dense_selected, _ = _dense_greedy(instance)
+        trajectory_indices = tuple(
+            point["selected_index"] for point in result.metadata["trajectory"]
+        )
+        self.assertEqual(trajectory_indices, dense_selected)
+        self.assertEqual(trajectory_indices, (0, 1))
+
+    def test_zero_and_full_coverage_instances(self) -> None:
+        """Zero-gain sets and a full-coverage single step both terminate cleanly."""
+        zero = MaximumCoverageInstance(
+            universe_size=3, sets=(0, 0, 0), k=2, family="custom",
+        )
+        result_zero = lazy_greedy(zero)
+        self.assertEqual(result_zero.coverage, 0)
+        self.assertEqual(len(result_zero.metadata["trajectory"]), 2)
+        dense_sel, dense_cov = _dense_greedy(zero)
+        self.assertEqual(result_zero.coverage, dense_cov)
+        traj = tuple(p["selected_index"] for p in result_zero.metadata["trajectory"])
+        self.assertEqual(traj, dense_sel)
+
+        full = MaximumCoverageInstance(
+            universe_size=4,
+            sets=(_mask(range(4)), _mask(range(2))),
+            k=1,
+            family="custom",
+        )
+        result_full = lazy_greedy(full)
+        self.assertEqual(result_full.coverage, 4)
+        dense_sel_f, dense_cov_f = _dense_greedy(full)
+        self.assertEqual(result_full.coverage, dense_cov_f)
+        traj_f = tuple(p["selected_index"] for p in result_full.metadata["trajectory"])
+        self.assertEqual(traj_f, dense_sel_f)
+
+    def test_k_equals_set_count(self) -> None:
+        """When k equals the number of sets, every set is selected."""
+        instance = MaximumCoverageInstance(
+            universe_size=6,
+            sets=(_mask(range(0, 3)), _mask(range(3, 6)), _mask(range(1, 4))),
+            k=3,
+            family="custom",
+        )
+        result = lazy_greedy(instance)
+        self.assertEqual(len(result.selected), 3)
+        dense_sel, dense_cov = _dense_greedy(instance)
+        self.assertEqual(result.coverage, dense_cov)
+        traj = tuple(p["selected_index"] for p in result.metadata["trajectory"])
+        self.assertEqual(traj, dense_sel)
+
+    def test_serial_and_parallel_metadata_are_identical(self) -> None:
+        """workers=1 and workers=2 produce identical lazy_greedy metadata."""
+        value = {
+            "schema_version": 3,
+            "name": "serial parallel check",
+            "base_seed": 2210,
+            "repetitions": 1,
+            "algorithms": [
+                {"id": "greedy_baseline", "name": "greedy"},
+                {"id": "lazy_id", "name": "lazy_greedy"},
+            ],
+            "cases": [
+                {
+                    "name": "small",
+                    "family": "uniform",
+                    "universe_size": 20,
+                    "set_count": 8,
+                    "k": 3,
+                    "density": 0.2,
+                }
+            ],
+        }
+        serial_rows = {}
+        parallel_rows = {}
+        for tag, workers, store in [("serial", 1, serial_rows), ("parallel", 2, parallel_rows)]:
+            with tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                cfg = root / "config.json"
+                cfg.write_text(json.dumps(value), encoding="utf-8")
+                out = root / "output"
+                run_benchmark(cfg, out, workers=workers)
+                raw = out / "raw_results.csv"
+                with raw.open(encoding="utf-8", newline="") as fh:
+                    for row in csv.DictReader(fh):
+                        if row["algorithm"] == "lazy_greedy":
+                            store[tag] = row
+        for key in ("coverage", "selected", "algorithm_metadata"):
+            self.assertEqual(
+                serial_rows["serial"][key],
+                parallel_rows["parallel"][key],
+                f"mismatch on {key} between serial and parallel",
+            )
 
 
 if __name__ == "__main__":
