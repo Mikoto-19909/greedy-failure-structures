@@ -4,6 +4,15 @@ Thanks for looking at this project. It is research code for studying the
 Maximum Coverage problem, maintained by one person, so please read the scope
 notes below before opening a pull request.
 
+## Where development happens
+
+This public repository is the canonical home for current software development,
+issues, pull requests, CI and releases. Make changes on a branch, open a pull
+request here, wait for the configured required checks, and merge through the
+pull request. The migration records under `docs/history/` and
+`PUBLIC_SNAPSHOT_MANIFEST.json` are provenance for how the repository began;
+they are not an upstream, an import channel or a synchronization mechanism.
+
 ## What this repository accepts
 
 Bug reports and fixes, portability problems, clearer documentation, and

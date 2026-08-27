@@ -7,6 +7,18 @@ constraints that exist because an agent fails differently from a person.
 Everything here is enforced by CI where enforcement is possible. Where it is
 not, it is a rule you are expected to follow rather than a suggestion.
 
+## Development home
+
+This is the public canonical development repository. Current software work,
+issues, pull requests, CI and releases belong here. Work on a branch, open a
+pull request, wait for the configured required checks, and merge through that
+pull request; direct pushes to the default branch are rejected.
+
+`PUBLIC_SNAPSHOT_MANIFEST.json` and `docs/history/` preserve the one-time
+migration provenance. They are historical records, not instructions to import
+from, publish from or synchronize with another repository. Do not add a second
+development path or a recurring cross-repository publication workflow.
+
 ## Authorship
 
 Do not attribute a commit to an AI assistant. No `Co-Authored-By` trailer naming
