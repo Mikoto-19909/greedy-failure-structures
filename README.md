@@ -1,5 +1,7 @@
 # Maximum Coverage Study
 
+**English** | [简体中文](README.zh-CN.md)
+
 This repository contains research-oriented Python code for deterministic
 experiments with the Maximum Coverage problem.  It provides algorithm
 implementations, instance generators, configuration validation, benchmark
@@ -48,6 +50,12 @@ Validate a configuration without executing a benchmark:
 ```console
 python run_project.py benchmark --config configs/sweeps.json --dry-run
 ```
+
+The deterministic lazy-greedy variant has a paired functional workflow in
+[`configs/p3_lazy_greedy.json`](configs/p3_lazy_greedy.json). Its complete
+verification procedure is documented in
+[`docs/lazy_greedy_test_report.md`](docs/lazy_greedy_test_report.md); that
+report records compatibility checks only and is not a performance claim.
 
 Run a configured benchmark and write local outputs:
 
@@ -139,6 +147,20 @@ Anything of that kind requires the frozen evidence chain
 [`CONTRIBUTING.md`](CONTRIBUTING.md) describes, and CI enforces the rule over
 every tracked file rather than trusting the convention.
 
+## Planned direction
+
+A future goal is to add an interactive experiment dashboard as a second frontend
+to the existing experiment engine. The dashboard should let a local user
+configure and validate experiments, start or resume benchmark runs, inspect
+locally generated outputs, compare algorithm behaviour, and replay serialized
+failure cases without reimplementing the underlying research logic.
+
+The command-line interface remains the current supported interface. The planned
+dashboard is not a hosted multi-user platform: its first scope is a local
+frontend over the same configuration, benchmark, reporting, validation, and
+replay functions already used by the CLI. Database-backed accounts, remote job
+queues, and hosted execution are explicitly outside that initial goal.
+
 ## Project layout
 
 - `src/maxcover/`: algorithms, generators, benchmark execution, and reporting
@@ -150,6 +172,7 @@ every tracked file rather than trusting the convention.
 - `PUBLIC_SNAPSHOT_MANIFEST.json`: the migration archive for the one export
   that created this repository
 - `docs/history/`: migration provenance and pre-public development history
+- `docs/lazy_greedy_test_report.md`: lazy-greedy functional verification process
 
 ## Contributing and support
 

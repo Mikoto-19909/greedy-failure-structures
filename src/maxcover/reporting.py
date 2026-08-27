@@ -37,6 +37,7 @@ COLORS = {
     "branch_and_bound_enhanced": "#2563eb",
     "cp_sat_oracle": "#4f46e5",
     "greedy": "#dc2626",
+    "lazy_greedy": "#65a30d",
     "local_search": "#059669",
     "multi_start_local_search": "#0891b2",
     "randomized_greedy": "#d97706",
