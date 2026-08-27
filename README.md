@@ -139,6 +139,20 @@ Anything of that kind requires the frozen evidence chain
 [`CONTRIBUTING.md`](CONTRIBUTING.md) describes, and CI enforces the rule over
 every tracked file rather than trusting the convention.
 
+## Planned direction
+
+A future goal is to add an interactive experiment dashboard as a second frontend
+to the existing experiment engine. The dashboard should let a local user
+configure and validate experiments, start or resume benchmark runs, inspect
+locally generated outputs, compare algorithm behaviour, and replay serialized
+failure cases without reimplementing the underlying research logic.
+
+The command-line interface remains the current supported interface. The planned
+dashboard is not a hosted multi-user platform: its first scope is a local
+frontend over the same configuration, benchmark, reporting, validation, and
+replay functions already used by the CLI. Database-backed accounts, remote job
+queues, and hosted execution are explicitly outside that initial goal.
+
 ## Project layout
 
 - `src/maxcover/`: algorithms, generators, benchmark execution, and reporting
