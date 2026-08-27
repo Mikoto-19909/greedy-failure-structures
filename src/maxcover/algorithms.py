@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import heapq
 import itertools
 import math
 import random
@@ -69,6 +70,70 @@ def greedy(instance: MaximumCoverageInstance) -> Solution:
         started,
         status=SolutionStatus.FEASIBLE,
         work=iterations,
+    )
+
+
+def lazy_greedy(instance: MaximumCoverageInstance) -> Solution:
+    """Select the same sets as :func:`greedy` with lazy marginal evaluation.
+
+    The priority queue stores previously evaluated marginal gains as upper
+    bounds.  Marginal gains only decrease as coverage grows, so a candidate is
+    safe to select once its refreshed gain is no smaller than every remaining
+    upper bound; the secondary index key preserves the classical Greedy
+    tie-breaking rule.
+    """
+
+    started = time.perf_counter()
+    queue = [(-mask.bit_count(), index) for index, mask in enumerate(instance.sets)]
+    heapq.heapify(queue)
+    selected: list[int] = []
+    covered = 0
+    # Building the initial upper-bound queue evaluates every candidate's
+    # marginal gain at empty coverage. Count those evaluations so this metric
+    # is comparable with dense Greedy's full candidate scan.
+    marginal_evaluations = instance.set_count
+    priority_queue_pops = 0
+    trajectory: list[dict[str, int]] = []
+
+    for iteration in range(instance.k):
+        while True:
+            _, index = heapq.heappop(queue)
+            priority_queue_pops += 1
+            gain = (instance.sets[index] & ~covered).bit_count()
+            marginal_evaluations += 1
+            refreshed = (-gain, index)
+            if not queue or refreshed <= queue[0]:
+                selected.append(index)
+                covered |= instance.sets[index]
+                trajectory.append(
+                    {
+                        "iteration": iteration + 1,
+                        "selected_index": index,
+                        "marginal_gain": gain,
+                        "marginal_evaluations": marginal_evaluations,
+                    }
+                )
+                break
+            heapq.heappush(queue, refreshed)
+
+    return _finish(
+        "lazy_greedy",
+        instance,
+        tuple(selected),
+        started,
+        status=SolutionStatus.FEASIBLE,
+        work=marginal_evaluations,
+        metadata={
+            "schema_version": 1,
+            "termination": "completed",
+            "search": {
+                "initial_candidate_count": instance.set_count,
+                "selected_count": len(selected),
+                "marginal_evaluations": marginal_evaluations,
+                "priority_queue_pops": priority_queue_pops,
+            },
+            "trajectory": trajectory,
+        },
     )
 
 
@@ -783,6 +848,13 @@ def _run_greedy(
     return greedy(instance)
 
 
+def _run_lazy_greedy(
+    instance: MaximumCoverageInstance, options: AlgorithmRunOptions
+) -> Solution:
+    del options
+    return lazy_greedy(instance)
+
+
 def _run_local_search(
     instance: MaximumCoverageInstance, options: AlgorithmRunOptions
 ) -> Solution:
@@ -856,6 +928,12 @@ ALGORITHMS: dict[str, AlgorithmSpec] = {
         name="greedy",
         exact=False,
         runner=_run_greedy,
+    ),
+    "lazy_greedy": AlgorithmSpec(
+        name="lazy_greedy",
+        exact=False,
+        runner=_run_lazy_greedy,
+        version=2,
     ),
     "local_search": AlgorithmSpec(
         name="local_search",

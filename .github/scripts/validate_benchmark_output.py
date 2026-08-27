@@ -30,6 +30,7 @@ from __future__ import annotations
 import argparse
 import csv
 import hashlib
+import heapq
 import json
 import sys
 from collections import Counter
@@ -40,6 +41,7 @@ from typing import TypeVar
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
 
+from maxcover.algorithms import ALGORITHMS  # noqa: E402
 from maxcover.benchmark import (  # noqa: E402
     _bnb_node_reduction_statistics,
     _canonical_instance_records,
@@ -55,10 +57,12 @@ from maxcover.benchmark import (  # noqa: E402
     _local_search_recovery_statistics,
     _local_search_remaining_gap_statistics,
     _normalize_optima,
+    _instances_for_config,
     _quality_runtime_pareto_statistics,
     _runtime_k_association_statistics,
     _runtime_set_count_association_statistics,
     _search_nodes_dominated_ratio_association_statistics,
+    _tasks_for_config,
     plan_benchmark,
 )
 from maxcover.config import load_config  # noqa: E402
@@ -100,7 +104,7 @@ from maxcover.contracts import (  # noqa: E402
     RunRecord,
     SummaryRecord,
 )
-from maxcover.model import SolutionStatus  # noqa: E402
+from maxcover.model import MaximumCoverageInstance, SolutionStatus  # noqa: E402
 from maxcover.reporting import (  # noqa: E402
     _headline_lines,
     _render_gap_by_case_chart,
@@ -111,7 +115,7 @@ from maxcover.reporting import (  # noqa: E402
     _render_runtime_scaling_chart,
     _render_timeout_by_case_chart,
 )
-from maxcover.reproducibility import config_hash  # noqa: E402
+from maxcover.reproducibility import canonical_json, config_hash  # noqa: E402
 
 
 Record = TypeVar(
@@ -195,6 +199,296 @@ def _load_records(
     return records
 
 
+def _non_negative_integer(value: object, label: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        _fail(f"{label} must be a non-negative integer")
+    return value
+
+
+def _dense_greedy_reference(
+    instance: MaximumCoverageInstance,
+) -> tuple[tuple[int, ...], tuple[tuple[int, int], ...]]:
+    """Recompute the deterministic dense-Greedy trajectory independently."""
+
+    selected: list[int] = []
+    trajectory: list[tuple[int, int]] = []
+    covered = 0
+    available = set(range(instance.set_count))
+    for iteration in range(instance.k):
+        best = max(
+            available,
+            key=lambda index: (
+                (instance.sets[index] & ~covered).bit_count(),
+                -index,
+            ),
+        )
+        gain = (instance.sets[best] & ~covered).bit_count()
+        selected.append(best)
+        trajectory.append((best, gain))
+        covered |= instance.sets[best]
+        available.remove(best)
+    return tuple(selected), tuple(trajectory)
+
+
+def _lazy_greedy_reference(
+    instance: MaximumCoverageInstance,
+) -> tuple[int, int, tuple[tuple[int, int, int], ...]]:
+    """Replay the Lazy Greedy queue and return its independent work counts."""
+
+    queue = [(-mask.bit_count(), index) for index, mask in enumerate(instance.sets)]
+    heapq.heapify(queue)
+    covered = 0
+    marginal_evaluations = instance.set_count
+    priority_queue_pops = 0
+    trajectory: list[tuple[int, int, int]] = []
+
+    for iteration in range(instance.k):
+        while True:
+            _, index = heapq.heappop(queue)
+            priority_queue_pops += 1
+            gain = (instance.sets[index] & ~covered).bit_count()
+            marginal_evaluations += 1
+            refreshed = (-gain, index)
+            if not queue or refreshed <= queue[0]:
+                covered |= instance.sets[index]
+                trajectory.append(
+                    (index, gain, marginal_evaluations)
+                )
+                break
+            heapq.heappush(queue, refreshed)
+
+    return priority_queue_pops, marginal_evaluations, tuple(trajectory)
+
+
+def _validate_manifest_algorithm_identity(
+    config: object, manifest: dict[str, object]
+) -> None:
+    expected = {
+        algorithm.algorithm_id: {
+            "name": algorithm.name,
+            "version": ALGORITHMS[algorithm.name].version,
+            "enabled": algorithm.enabled,
+            "algorithm_seeds": list(algorithm.algorithm_seeds),
+            "options": ALGORITHMS[algorithm.name].option_values(algorithm.options),
+        }
+        for algorithm in config.algorithms
+    }
+    if manifest.get("algorithms") != expected:
+        _fail("manifest algorithm identities do not match the execution configuration")
+
+
+def _validate_run_identity(
+    config: object, expected_hash: str, rows: list[object]
+) -> None:
+    planned_instances = _instances_for_config(config)
+    tasks = _tasks_for_config(config, expected_hash, planned_instances)
+    expected_by_run_id = {task.run_id: task for task in tasks}
+    actual_by_run_id = {row.run_id: row for row in rows}
+    missing = sorted(set(expected_by_run_id) - set(actual_by_run_id))
+    unexpected = sorted(set(actual_by_run_id) - set(expected_by_run_id))
+    if missing or unexpected:
+        _fail(
+            "raw results run_id values do not match the execution plan "
+            f"(missing={len(missing)}, unexpected={len(unexpected)})"
+        )
+
+    fields = (
+        "config_hash",
+        "case_id",
+        "case",
+        "repetition",
+        "seed",
+        "instance_id",
+        "family",
+        "universe_size",
+        "set_count",
+        "k",
+        "parameters",
+        "algorithm_id",
+        "algorithm_seed",
+        "algorithm",
+        "algorithm_options",
+    )
+    for run_id, task in expected_by_run_id.items():
+        row = actual_by_run_id[run_id]
+        expected_values = {
+            "config_hash": expected_hash,
+            "case_id": task.case_id,
+            "case": task.case_id,
+            "repetition": task.repetition,
+            "seed": task.instance.seed,
+            "instance_id": task.instance_id,
+            "family": task.instance.family,
+            "universe_size": task.instance.universe_size,
+            "set_count": task.instance.set_count,
+            "k": task.instance.k,
+            "parameters": canonical_json(dict(task.instance.parameters)),
+            "algorithm_id": task.algorithm_id,
+            "algorithm_seed": task.algorithm_seed,
+            "algorithm": task.algorithm,
+            "algorithm_options": canonical_json(task.option_values),
+        }
+        for field in fields:
+            if getattr(row, field) != expected_values[field]:
+                _fail(
+                    f"raw result {run_id} field {field!r} does not match "
+                    "the execution plan"
+                )
+
+
+def _validate_lazy_greedy_rows(config: object, rows: list[object]) -> None:
+    lazy_variants = [
+        algorithm for algorithm in config.algorithms
+        if algorithm.enabled and algorithm.name == "lazy_greedy"
+    ]
+    if not lazy_variants:
+        return
+    greedy_variants = [
+        algorithm for algorithm in config.algorithms
+        if algorithm.enabled and algorithm.name == "greedy"
+    ]
+    if len(lazy_variants) != 1:
+        _fail("Lazy Greedy validation requires exactly one Lazy Greedy variant")
+    if len(greedy_variants) > 1:
+        _fail("Lazy Greedy validation supports at most one Greedy variant")
+
+    planned_instances = _instances_for_config(config)
+    instances_by_unit = {
+        (planned.case_id, planned.repetition, planned.instance_id): planned.instance
+        for planned in planned_instances
+    }
+    pair_rows: dict[tuple[str, int, str], dict[str, object]] = {}
+    expected_algorithms = {lazy_variants[0].algorithm_id: "lazy_greedy"}
+    if greedy_variants:
+        expected_algorithms[greedy_variants[0].algorithm_id] = "greedy"
+    for row in rows:
+        algorithm_name = expected_algorithms.get(row.algorithm_id)
+        if algorithm_name is None:
+            continue
+        unit = (row.case_id, row.repetition, row.instance_id)
+        by_algorithm = pair_rows.setdefault(unit, {})
+        if algorithm_name in by_algorithm:
+            _fail("Lazy Greedy pairing contains duplicate algorithm rows")
+        by_algorithm[algorithm_name] = row
+
+    if set(pair_rows) != set(instances_by_unit):
+        _fail("Lazy Greedy pairing does not cover exactly the planned instance units")
+
+    for unit, by_algorithm in sorted(pair_rows.items()):
+        greedy_row = by_algorithm.get("greedy")
+        lazy_row = by_algorithm.get("lazy_greedy")
+        if lazy_row is None:
+            _fail("each instance unit must contain a Lazy Greedy row")
+        instance = instances_by_unit[unit]
+        try:
+            lazy_coverage = instance.coverage(lazy_row.selected)
+        except IndexError as error:
+            _fail(f"Lazy Greedy selected index is invalid: {error}")
+        if lazy_row.coverage != lazy_coverage:
+            _fail("Lazy Greedy coverage does not match the selected sets")
+        if greedy_variants:
+            if greedy_row is None:
+                _fail("each instance unit must contain Greedy and Lazy Greedy rows")
+            try:
+                greedy_coverage = instance.coverage(greedy_row.selected)
+            except IndexError as error:
+                _fail(f"Greedy selected index is invalid: {error}")
+            if greedy_row.coverage != greedy_coverage:
+                _fail("Greedy coverage does not match the selected sets")
+            if (
+                greedy_row.coverage != lazy_row.coverage
+                or greedy_row.selected != lazy_row.selected
+            ):
+                _fail("Greedy and Lazy Greedy results disagree on an instance unit")
+
+        expected_selected, expected_trajectory = _dense_greedy_reference(instance)
+        expected_pops, expected_evaluations, expected_lazy_trajectory = (
+            _lazy_greedy_reference(instance)
+        )
+        dense_evaluations = instance.set_count * instance.k - (
+            instance.k * (instance.k - 1) // 2
+        )
+        if lazy_row.selected != tuple(sorted(expected_selected)):
+            _fail("Lazy Greedy selected set does not match the dense reference")
+        if greedy_variants:
+            assert greedy_row is not None
+            if greedy_row.nodes_or_iterations != dense_evaluations:
+                _fail("Greedy nodes_or_iterations does not match dense candidate evaluations")
+
+        try:
+            metadata = json.loads(lazy_row.algorithm_metadata)
+        except json.JSONDecodeError as error:
+            _fail(f"Lazy Greedy metadata is not valid JSON: {error}")
+        search = metadata.get("search")
+        trajectory = metadata.get("trajectory")
+        if not isinstance(search, dict) or not isinstance(trajectory, list):
+            _fail("Lazy Greedy metadata must contain search and trajectory")
+        initial = _non_negative_integer(
+            search.get("initial_candidate_count"),
+            "Lazy Greedy initial_candidate_count",
+        )
+        marginal_evaluations = _non_negative_integer(
+            search.get("marginal_evaluations"),
+            "Lazy Greedy marginal_evaluations",
+        )
+        priority_queue_pops = _non_negative_integer(
+            search.get("priority_queue_pops"),
+            "Lazy Greedy priority_queue_pops",
+        )
+        selected_count = _non_negative_integer(
+            search.get("selected_count"),
+            "Lazy Greedy selected_count",
+        )
+        if initial != instance.set_count or selected_count != instance.k:
+            _fail("Lazy Greedy metadata dimensions do not match the instance")
+        if priority_queue_pops != expected_pops:
+            _fail(
+                "Lazy Greedy marginal evaluations and priority_queue_pops "
+                "do not match an independent heap replay"
+            )
+        if marginal_evaluations != expected_evaluations:
+            _fail(
+                "Lazy Greedy marginal evaluations and priority_queue_pops "
+                "do not match an independent heap replay"
+            )
+        if lazy_row.nodes_or_iterations != expected_evaluations:
+            _fail("Lazy Greedy work field does not match an independent heap replay")
+        if len(trajectory) != instance.k:
+            _fail("Lazy Greedy trajectory length does not match k")
+
+        observed_trajectory: list[tuple[int, int]] = []
+        observed_count_trajectory: list[tuple[int, int, int]] = []
+        previous_evaluations = initial
+        for iteration, point in enumerate(trajectory, start=1):
+            if not isinstance(point, dict) or point.get("iteration") != iteration:
+                _fail("Lazy Greedy trajectory has an invalid iteration")
+            selected_index = _non_negative_integer(
+                point.get("selected_index"),
+                "Lazy Greedy trajectory selected_index",
+            )
+            marginal_gain = _non_negative_integer(
+                point.get("marginal_gain"),
+                "Lazy Greedy trajectory marginal_gain",
+            )
+            cumulative = _non_negative_integer(
+                point.get("marginal_evaluations"),
+                "Lazy Greedy trajectory marginal_evaluations",
+            )
+            if cumulative < previous_evaluations:
+                _fail("Lazy Greedy trajectory evaluation counts are not monotone")
+            previous_evaluations = cumulative
+            observed_trajectory.append((selected_index, marginal_gain))
+            observed_count_trajectory.append(
+                (selected_index, marginal_gain, cumulative)
+            )
+        if tuple(observed_trajectory) != expected_trajectory:
+            _fail("Lazy Greedy trajectory does not match the dense reference")
+        if tuple(observed_count_trajectory) != expected_lazy_trajectory:
+            _fail("Lazy Greedy trajectory counts do not match an independent heap replay")
+        if previous_evaluations != expected_evaluations:
+            _fail("Lazy Greedy trajectory does not end at the independently replayed work count")
+
+
 def _markdown_section(
     document: str, heading: str, next_heading: str
 ) -> list[str]:
@@ -271,6 +565,7 @@ def validate(config_path: Path, output: Path) -> None:
     expected_hash = config_hash(config)
     if configuration.get("config_hash") != expected_hash:
         _fail("manifest configuration hash does not match the input config")
+    _validate_manifest_algorithm_identity(config, manifest)
     if execution.get("planned_runs") != plan.algorithm_run_count:
         _fail("manifest planned run count does not match the execution plan")
     if execution.get("planned_instances") != plan.instance_count:
@@ -1313,6 +1608,7 @@ def validate(config_path: Path, output: Path) -> None:
         _fail("raw result count does not match the execution plan")
     if len(instances) != plan.instance_count:
         _fail("instance record count does not match the execution plan")
+    _validate_run_identity(config, expected_hash, rows)
     instance_keys = {
         (record.case_id, record.repetition, record.instance_id)
         for record in instances
@@ -1359,6 +1655,7 @@ def validate(config_path: Path, output: Path) -> None:
     canonical_rows = _canonical_run_records(
         _normalize_optima(rows, instances)
     )
+    _validate_lazy_greedy_rows(config, canonical_rows)
     if [row.to_csv_row() for row in rows] != [
         row.to_csv_row() for row in canonical_rows
     ]:

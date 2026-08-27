@@ -173,7 +173,7 @@ EXPECTED_PACKAGE_ROOT_EXPORTS = (
     "SolutionStatus", "SummaryRecord", "branch_and_bound",
     "branch_and_bound_enhanced", "brute_force", "cp_sat_oracle", "config_hash",
     "analyze_instance", "greedy", "instance_from_payload", "instance_id",
-    "instance_payload", "local_search", "multi_start_local_search",
+    "instance_payload", "lazy_greedy", "local_search", "multi_start_local_search",
     "known_optimum_certificate", "randomized_greedy", "load_config",
     "parse_config", "plan_benchmark", "replay_instance_file", "run_benchmark",
     "summarize_benchmark", "run_id", "validate_known_optimum_certificate",

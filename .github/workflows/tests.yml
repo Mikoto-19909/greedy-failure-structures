@@ -137,3 +137,44 @@ jobs:
           python .github/scripts/validate_benchmark_output.py
           --config configs/quick.json
           --output results/ci-quick
+
+  lazy-greedy-smoke:
+    name: lazy greedy smoke (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Run the Lazy Greedy paired workflow with parallel workers
+        run: >-
+          python run_project.py benchmark
+          --config configs/p3_lazy_greedy.json
+          --output results/ci-lazy-greedy
+          --workers 2
+          --force
+      - name: Confirm the expected artifacts were written
+        shell: bash
+        run: |
+          for artifact in raw_results.csv instances.csv summary.csv manifest.json results_summary.md; do
+            test -f "results/ci-lazy-greedy/$artifact" || {
+              echo "missing artifact: $artifact" >&2
+              exit 1
+            }
+          done
+      - name: Validate the Lazy Greedy output independently
+        run: >-
+          python .github/scripts/validate_benchmark_output.py
+          --config configs/p3_lazy_greedy.json
+          --output results/ci-lazy-greedy

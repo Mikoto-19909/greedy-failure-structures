@@ -55,6 +55,24 @@ so reformatting a config file is not a cosmetic change.
 Randomized algorithms take an explicit seed; deterministic ones must not. A
 solver that ran out of time yields an incumbent, never a reference optimum.
 
+## Orientation
+
+Before deciding what "the recent changes" are, enumerate the work:
+
+```console
+git branch -a
+git worktree list
+```
+
+Development here has run on several branches and in a separate worktree at the
+same time. A review that reads only the checked-out branch can be a complete,
+confident review of the wrong commits, and nothing in the diff will say so. Two
+commands settle it.
+
+`LICENSE_MANIFEST.json` is a single-line JSON document, so a diff of it prints
+the whole file twice and `head` cannot trim one line. Read it with `--stat` and
+compare the specific fields that matter.
+
 ## Verification before you claim something works
 
 Run the suite and the checks, and report what they actually said:
@@ -75,6 +93,11 @@ text.
 
 A clean mypy run is narrower than it looks; `CONTRIBUTING.md` says which modules
 are exempt and what that means for a change landing in one of them.
+
+A statement about the environment is not an environment fact. A plan or a
+handover note saying a tool is missing is a claim from another session, and
+editing a document to agree with it is a change you will have to make twice if
+the claim is stale. Run the version command first; it costs one call.
 
 ## Reviewing your own work
 

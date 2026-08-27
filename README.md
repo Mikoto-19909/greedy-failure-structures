@@ -51,6 +51,12 @@ Validate a configuration without executing a benchmark:
 python run_project.py benchmark --config configs/sweeps.json --dry-run
 ```
 
+The deterministic lazy-greedy variant has a paired functional workflow in
+[`configs/p3_lazy_greedy.json`](configs/p3_lazy_greedy.json). Its complete
+verification procedure is documented in
+[`docs/lazy_greedy_test_report.md`](docs/lazy_greedy_test_report.md); that
+report records compatibility checks only and is not a performance claim.
+
 Run a configured benchmark and write local outputs:
 
 ```console
@@ -166,6 +172,7 @@ queues, and hosted execution are explicitly outside that initial goal.
 - `PUBLIC_SNAPSHOT_MANIFEST.json`: the migration archive for the one export
   that created this repository
 - `docs/history/`: migration provenance and pre-public development history
+- `docs/lazy_greedy_test_report.md`: lazy-greedy functional verification process
 
 ## Contributing and support
 
