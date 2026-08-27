@@ -380,6 +380,41 @@ class LazyGreedyTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "marginal evaluations"):
                 validator.validate(config_path.resolve(), output.resolve())
 
+    def test_output_validator_accepts_lazy_without_greedy_baseline(self) -> None:
+        value = {
+            "schema_version": 3,
+            "name": "lazy greedy without dense baseline",
+            "base_seed": 2204,
+            "repetitions": 1,
+            "algorithms": [
+                {
+                    "id": "bnb_reference",
+                    "name": "branch_and_bound_enhanced",
+                    "options": {"time_limit_seconds": 10.0},
+                },
+                {"id": "lazy_greedy", "name": "lazy_greedy"},
+            ],
+            "cases": [
+                {
+                    "name": "tiny",
+                    "family": "uniform",
+                    "universe_size": 20,
+                    "set_count": 8,
+                    "k": 3,
+                    "density": 0.2,
+                }
+            ],
+        }
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            config_path = root / "config.json"
+            config_path.write_text(json.dumps(value), encoding="utf-8")
+            output = root / "output"
+            run_benchmark(config_path, output, workers=1)
+
+            validator = _load_output_validator()
+            validator.validate(config_path.resolve(), output.resolve())
+
     def test_output_validator_rejects_execution_identity_tampering(self) -> None:
         value = {
             "schema_version": 3,

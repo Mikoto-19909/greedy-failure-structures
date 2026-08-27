@@ -30,6 +30,7 @@ from __future__ import annotations
 import argparse
 import csv
 import hashlib
+import heapq
 import json
 import sys
 from collections import Counter
@@ -103,7 +104,7 @@ from maxcover.contracts import (  # noqa: E402
     RunRecord,
     SummaryRecord,
 )
-from maxcover.model import SolutionStatus  # noqa: E402
+from maxcover.model import MaximumCoverageInstance, SolutionStatus  # noqa: E402
 from maxcover.reporting import (  # noqa: E402
     _headline_lines,
     _render_gap_by_case_chart,
@@ -204,7 +205,9 @@ def _non_negative_integer(value: object, label: str) -> int:
     return value
 
 
-def _dense_greedy_reference(instance: object) -> tuple[tuple[int, ...], tuple[tuple[int, int], ...]]:
+def _dense_greedy_reference(
+    instance: MaximumCoverageInstance,
+) -> tuple[tuple[int, ...], tuple[tuple[int, int], ...]]:
     """Recompute the deterministic dense-Greedy trajectory independently."""
 
     selected: list[int] = []
@@ -225,6 +228,36 @@ def _dense_greedy_reference(instance: object) -> tuple[tuple[int, ...], tuple[tu
         covered |= instance.sets[best]
         available.remove(best)
     return tuple(selected), tuple(trajectory)
+
+
+def _lazy_greedy_reference(
+    instance: MaximumCoverageInstance,
+) -> tuple[int, int, tuple[tuple[int, int, int], ...]]:
+    """Replay the Lazy Greedy queue and return its independent work counts."""
+
+    queue = [(-mask.bit_count(), index) for index, mask in enumerate(instance.sets)]
+    heapq.heapify(queue)
+    covered = 0
+    marginal_evaluations = instance.set_count
+    priority_queue_pops = 0
+    trajectory: list[tuple[int, int, int]] = []
+
+    for iteration in range(instance.k):
+        while True:
+            _, index = heapq.heappop(queue)
+            priority_queue_pops += 1
+            gain = (instance.sets[index] & ~covered).bit_count()
+            marginal_evaluations += 1
+            refreshed = (-gain, index)
+            if not queue or refreshed <= queue[0]:
+                covered |= instance.sets[index]
+                trajectory.append(
+                    (index, gain, marginal_evaluations)
+                )
+                break
+            heapq.heappush(queue, refreshed)
+
+    return priority_queue_pops, marginal_evaluations, tuple(trajectory)
 
 
 def _validate_manifest_algorithm_identity(
@@ -314,8 +347,10 @@ def _validate_lazy_greedy_rows(config: object, rows: list[object]) -> None:
         algorithm for algorithm in config.algorithms
         if algorithm.enabled and algorithm.name == "greedy"
     ]
-    if len(lazy_variants) != 1 or len(greedy_variants) != 1:
-        _fail("Lazy Greedy validation requires exactly one Greedy and one Lazy Greedy variant")
+    if len(lazy_variants) != 1:
+        _fail("Lazy Greedy validation requires exactly one Lazy Greedy variant")
+    if len(greedy_variants) > 1:
+        _fail("Lazy Greedy validation supports at most one Greedy variant")
 
     planned_instances = _instances_for_config(config)
     instances_by_unit = {
@@ -323,10 +358,9 @@ def _validate_lazy_greedy_rows(config: object, rows: list[object]) -> None:
         for planned in planned_instances
     }
     pair_rows: dict[tuple[str, int, str], dict[str, object]] = {}
-    expected_algorithms = {
-        greedy_variants[0].algorithm_id: "greedy",
-        lazy_variants[0].algorithm_id: "lazy_greedy",
-    }
+    expected_algorithms = {lazy_variants[0].algorithm_id: "lazy_greedy"}
+    if greedy_variants:
+        expected_algorithms[greedy_variants[0].algorithm_id] = "greedy"
     for row in rows:
         algorithm_name = expected_algorithms.get(row.algorithm_id)
         if algorithm_name is None:
@@ -343,20 +377,43 @@ def _validate_lazy_greedy_rows(config: object, rows: list[object]) -> None:
     for unit, by_algorithm in sorted(pair_rows.items()):
         greedy_row = by_algorithm.get("greedy")
         lazy_row = by_algorithm.get("lazy_greedy")
-        if greedy_row is None or lazy_row is None:
-            _fail("each instance unit must contain Greedy and Lazy Greedy rows")
-        if greedy_row.coverage != lazy_row.coverage or greedy_row.selected != lazy_row.selected:
-            _fail("Greedy and Lazy Greedy results disagree on an instance unit")
-
+        if lazy_row is None:
+            _fail("each instance unit must contain a Lazy Greedy row")
         instance = instances_by_unit[unit]
+        try:
+            lazy_coverage = instance.coverage(lazy_row.selected)
+        except IndexError as error:
+            _fail(f"Lazy Greedy selected index is invalid: {error}")
+        if lazy_row.coverage != lazy_coverage:
+            _fail("Lazy Greedy coverage does not match the selected sets")
+        if greedy_variants:
+            if greedy_row is None:
+                _fail("each instance unit must contain Greedy and Lazy Greedy rows")
+            try:
+                greedy_coverage = instance.coverage(greedy_row.selected)
+            except IndexError as error:
+                _fail(f"Greedy selected index is invalid: {error}")
+            if greedy_row.coverage != greedy_coverage:
+                _fail("Greedy coverage does not match the selected sets")
+            if (
+                greedy_row.coverage != lazy_row.coverage
+                or greedy_row.selected != lazy_row.selected
+            ):
+                _fail("Greedy and Lazy Greedy results disagree on an instance unit")
+
         expected_selected, expected_trajectory = _dense_greedy_reference(instance)
+        expected_pops, expected_evaluations, expected_lazy_trajectory = (
+            _lazy_greedy_reference(instance)
+        )
         dense_evaluations = instance.set_count * instance.k - (
             instance.k * (instance.k - 1) // 2
         )
-        if greedy_row.nodes_or_iterations != dense_evaluations:
-            _fail("Greedy nodes_or_iterations does not match dense candidate evaluations")
         if lazy_row.selected != tuple(sorted(expected_selected)):
             _fail("Lazy Greedy selected set does not match the dense reference")
+        if greedy_variants:
+            assert greedy_row is not None
+            if greedy_row.nodes_or_iterations != dense_evaluations:
+                _fail("Greedy nodes_or_iterations does not match dense candidate evaluations")
 
         try:
             metadata = json.loads(lazy_row.algorithm_metadata)
@@ -384,14 +441,23 @@ def _validate_lazy_greedy_rows(config: object, rows: list[object]) -> None:
         )
         if initial != instance.set_count or selected_count != instance.k:
             _fail("Lazy Greedy metadata dimensions do not match the instance")
-        if marginal_evaluations != initial + priority_queue_pops:
-            _fail("Lazy Greedy marginal evaluations do not include initial queue evaluation")
-        if lazy_row.nodes_or_iterations != marginal_evaluations:
-            _fail("Lazy Greedy work field does not match marginal_evaluations")
+        if priority_queue_pops != expected_pops:
+            _fail(
+                "Lazy Greedy marginal evaluations and priority_queue_pops "
+                "do not match an independent heap replay"
+            )
+        if marginal_evaluations != expected_evaluations:
+            _fail(
+                "Lazy Greedy marginal evaluations and priority_queue_pops "
+                "do not match an independent heap replay"
+            )
+        if lazy_row.nodes_or_iterations != expected_evaluations:
+            _fail("Lazy Greedy work field does not match an independent heap replay")
         if len(trajectory) != instance.k:
             _fail("Lazy Greedy trajectory length does not match k")
 
         observed_trajectory: list[tuple[int, int]] = []
+        observed_count_trajectory: list[tuple[int, int, int]] = []
         previous_evaluations = initial
         for iteration, point in enumerate(trajectory, start=1):
             if not isinstance(point, dict) or point.get("iteration") != iteration:
@@ -412,10 +478,15 @@ def _validate_lazy_greedy_rows(config: object, rows: list[object]) -> None:
                 _fail("Lazy Greedy trajectory evaluation counts are not monotone")
             previous_evaluations = cumulative
             observed_trajectory.append((selected_index, marginal_gain))
+            observed_count_trajectory.append(
+                (selected_index, marginal_gain, cumulative)
+            )
         if tuple(observed_trajectory) != expected_trajectory:
             _fail("Lazy Greedy trajectory does not match the dense reference")
-        if previous_evaluations != marginal_evaluations:
-            _fail("Lazy Greedy trajectory does not end at the reported work count")
+        if tuple(observed_count_trajectory) != expected_lazy_trajectory:
+            _fail("Lazy Greedy trajectory counts do not match an independent heap replay")
+        if previous_evaluations != expected_evaluations:
+            _fail("Lazy Greedy trajectory does not end at the independently replayed work count")
 
 
 def _markdown_section(

@@ -20,6 +20,8 @@ would encode this test's idea of the format rather than the runner's.
 from __future__ import annotations
 
 import csv
+from dataclasses import replace
+import importlib.util
 import json
 import shutil
 import subprocess
@@ -31,6 +33,11 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 VALIDATOR = REPO_ROOT / ".github" / "scripts" / "validate_benchmark_output.py"
 CONFIG = REPO_ROOT / "configs" / "quick.json"
+LAZY_CONFIG = REPO_ROOT / "configs" / "p3_lazy_greedy.json"
+sys.path.insert(0, str(REPO_ROOT / "src"))
+
+from maxcover.config import load_config  # noqa: E402
+from maxcover.contracts import RunRecord  # noqa: E402
 
 
 def run_validator(output: Path) -> subprocess.CompletedProcess[str]:
@@ -217,6 +224,111 @@ class OutputValidatorTests(unittest.TestCase):
             "the validator expects a different manifest schema version than the "
             "runner writes; update MANIFEST_SCHEMA_VERSION in the validator",
         )
+
+
+class LazyGreedyValidatorTests(unittest.TestCase):
+    """Reverse-verify the independently recomputed Lazy Greedy facts."""
+
+    config = None
+    rows: list[RunRecord] = []
+    validator = None
+    _root: tempfile.TemporaryDirectory[str]
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls._root = tempfile.TemporaryDirectory()
+        output = Path(cls._root.name) / "output"
+        completed = subprocess.run(
+            [
+                sys.executable,
+                "run_project.py",
+                "benchmark",
+                "--config",
+                str(LAZY_CONFIG),
+                "--output",
+                str(output),
+                "--workers",
+                "2",
+            ],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+        )
+        if completed.returncode != 0:
+            raise AssertionError(f"lazy fixture run failed: {completed.stderr[-2000:]}")
+
+        cls.config = load_config(LAZY_CONFIG)
+        with (output / "raw_results.csv").open(
+            encoding="utf-8", newline=""
+        ) as handle:
+            cls.rows = [RunRecord.from_csv_row(row) for row in csv.DictReader(handle)]
+
+        spec = importlib.util.spec_from_file_location(
+            "lazy_validator_under_test", VALIDATOR
+        )
+        assert spec is not None and spec.loader is not None
+        cls.validator = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(cls.validator)
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        cls._root.cleanup()
+
+    def test_a_valid_lazy_fixture_is_accepted(self) -> None:
+        assert self.config is not None
+        assert self.validator is not None
+        self.validator._validate_lazy_greedy_rows(self.config, list(self.rows))
+
+    def test_coverage_must_match_the_selected_sets(self) -> None:
+        assert self.config is not None
+        assert self.validator is not None
+        mutated: list[RunRecord] = []
+        for row in self.rows:
+            if row.algorithm in {"greedy", "lazy_greedy"}:
+                self.assertIsNotNone(row.optimum)
+                assert row.optimum is not None
+                mutated.append(
+                    replace(
+                        row,
+                        coverage=0,
+                        optimality_gap=(
+                            None
+                            if row.optimum == 0
+                            else row.optimum / row.optimum
+                        ),
+                    )
+                )
+            else:
+                mutated.append(row)
+
+        with self.assertRaisesRegex(ValueError, "coverage does not match"):
+            self.validator._validate_lazy_greedy_rows(self.config, mutated)
+
+    def test_heap_counters_must_match_an_independent_replay(self) -> None:
+        assert self.config is not None
+        assert self.validator is not None
+        mutated: list[RunRecord] = []
+        for row in self.rows:
+            if row.algorithm != "lazy_greedy":
+                mutated.append(row)
+                continue
+            metadata = json.loads(row.algorithm_metadata)
+            search = metadata["search"]
+            search["priority_queue_pops"] += 1
+            search["marginal_evaluations"] += 1
+            metadata["trajectory"][-1]["marginal_evaluations"] += 1
+            mutated.append(
+                replace(
+                    row,
+                    nodes_or_iterations=row.nodes_or_iterations + 1,
+                    algorithm_metadata=json.dumps(
+                        metadata, sort_keys=True, separators=(",", ":")
+                    ),
+                )
+            )
+
+        with self.assertRaisesRegex(ValueError, "independent heap replay"):
+            self.validator._validate_lazy_greedy_rows(self.config, mutated)
 
 
 if __name__ == "__main__":
