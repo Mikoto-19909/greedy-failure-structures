@@ -40,6 +40,7 @@ from typing import TypeVar
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
 
+from maxcover.algorithms import ALGORITHMS  # noqa: E402
 from maxcover.benchmark import (  # noqa: E402
     _bnb_node_reduction_statistics,
     _canonical_instance_records,
@@ -60,6 +61,7 @@ from maxcover.benchmark import (  # noqa: E402
     _runtime_k_association_statistics,
     _runtime_set_count_association_statistics,
     _search_nodes_dominated_ratio_association_statistics,
+    _tasks_for_config,
     plan_benchmark,
 )
 from maxcover.config import load_config  # noqa: E402
@@ -112,7 +114,7 @@ from maxcover.reporting import (  # noqa: E402
     _render_runtime_scaling_chart,
     _render_timeout_by_case_chart,
 )
-from maxcover.reproducibility import config_hash  # noqa: E402
+from maxcover.reproducibility import canonical_json, config_hash  # noqa: E402
 
 
 Record = TypeVar(
@@ -225,17 +227,80 @@ def _dense_greedy_reference(instance: object) -> tuple[tuple[int, ...], tuple[tu
     return tuple(selected), tuple(trajectory)
 
 
-def _validate_declared_algorithm_rows(config: object, plan: object, rows: list[object]) -> None:
-    expected = Counter()
-    algorithms_by_id = {
-        algorithm.algorithm_id: algorithm for algorithm in config.algorithms
-        if algorithm.enabled
+def _validate_manifest_algorithm_identity(
+    config: object, manifest: dict[str, object]
+) -> None:
+    expected = {
+        algorithm.algorithm_id: {
+            "name": algorithm.name,
+            "version": ALGORITHMS[algorithm.name].version,
+            "enabled": algorithm.enabled,
+            "algorithm_seeds": list(algorithm.algorithm_seeds),
+            "options": ALGORITHMS[algorithm.name].option_values(algorithm.options),
+        }
+        for algorithm in config.algorithms
     }
-    for algorithm_id, count in plan.runs_by_algorithm:
-        expected[(algorithm_id, algorithms_by_id[algorithm_id].name)] = count
-    actual = Counter((row.algorithm_id, row.algorithm) for row in rows)
-    if actual != expected:
-        _fail("raw results algorithm variants do not match the execution plan")
+    if manifest.get("algorithms") != expected:
+        _fail("manifest algorithm identities do not match the execution configuration")
+
+
+def _validate_run_identity(
+    config: object, expected_hash: str, rows: list[object]
+) -> None:
+    planned_instances = _instances_for_config(config)
+    tasks = _tasks_for_config(config, expected_hash, planned_instances)
+    expected_by_run_id = {task.run_id: task for task in tasks}
+    actual_by_run_id = {row.run_id: row for row in rows}
+    missing = sorted(set(expected_by_run_id) - set(actual_by_run_id))
+    unexpected = sorted(set(actual_by_run_id) - set(expected_by_run_id))
+    if missing or unexpected:
+        _fail(
+            "raw results run_id values do not match the execution plan "
+            f"(missing={len(missing)}, unexpected={len(unexpected)})"
+        )
+
+    fields = (
+        "config_hash",
+        "case_id",
+        "case",
+        "repetition",
+        "seed",
+        "instance_id",
+        "family",
+        "universe_size",
+        "set_count",
+        "k",
+        "parameters",
+        "algorithm_id",
+        "algorithm_seed",
+        "algorithm",
+        "algorithm_options",
+    )
+    for run_id, task in expected_by_run_id.items():
+        row = actual_by_run_id[run_id]
+        expected_values = {
+            "config_hash": expected_hash,
+            "case_id": task.case_id,
+            "case": task.case_id,
+            "repetition": task.repetition,
+            "seed": task.instance.seed,
+            "instance_id": task.instance_id,
+            "family": task.instance.family,
+            "universe_size": task.instance.universe_size,
+            "set_count": task.instance.set_count,
+            "k": task.instance.k,
+            "parameters": canonical_json(dict(task.instance.parameters)),
+            "algorithm_id": task.algorithm_id,
+            "algorithm_seed": task.algorithm_seed,
+            "algorithm": task.algorithm,
+            "algorithm_options": canonical_json(task.option_values),
+        }
+        for field in fields:
+            if getattr(row, field) != expected_values[field]:
+                _fail(
+                    f"raw result {run_id} field {field!r} does not match "
+                    "the execution plan"
+                )
 
 
 def _validate_lazy_greedy_rows(config: object, rows: list[object]) -> None:
@@ -429,6 +494,7 @@ def validate(config_path: Path, output: Path) -> None:
     expected_hash = config_hash(config)
     if configuration.get("config_hash") != expected_hash:
         _fail("manifest configuration hash does not match the input config")
+    _validate_manifest_algorithm_identity(config, manifest)
     if execution.get("planned_runs") != plan.algorithm_run_count:
         _fail("manifest planned run count does not match the execution plan")
     if execution.get("planned_instances") != plan.instance_count:
@@ -1471,7 +1537,7 @@ def validate(config_path: Path, output: Path) -> None:
         _fail("raw result count does not match the execution plan")
     if len(instances) != plan.instance_count:
         _fail("instance record count does not match the execution plan")
-    _validate_declared_algorithm_rows(config, plan, rows)
+    _validate_run_identity(config, expected_hash, rows)
     instance_keys = {
         (record.case_id, record.repetition, record.instance_id)
         for record in instances

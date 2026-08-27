@@ -10,6 +10,7 @@ import sys
 import tempfile
 import unittest
 from collections import defaultdict
+from dataclasses import replace
 from pathlib import Path
 
 
@@ -19,7 +20,7 @@ sys.path.insert(0, str(ROOT / "src"))
 from maxcover.algorithms import ALGORITHMS, greedy, lazy_greedy
 from maxcover.benchmark import plan_benchmark, run_benchmark
 from maxcover.config import load_config
-from maxcover.contracts import AlgorithmRunOptions
+from maxcover.contracts import AlgorithmRunOptions, RunRecord
 from maxcover.generators import (
     adversarial_greedy_trap,
     clustered,
@@ -378,6 +379,64 @@ class LazyGreedyTests(unittest.TestCase):
             validator = _load_output_validator()
             with self.assertRaisesRegex(ValueError, "marginal evaluations"):
                 validator.validate(config_path.resolve(), output.resolve())
+
+    def test_output_validator_rejects_execution_identity_tampering(self) -> None:
+        value = {
+            "schema_version": 3,
+            "name": "lazy greedy identity validator",
+            "base_seed": 2203,
+            "repetitions": 1,
+            "algorithms": [
+                {
+                    "id": "bnb_reference",
+                    "name": "branch_and_bound_enhanced",
+                    "options": {"time_limit_seconds": 10.0},
+                },
+                {"id": "greedy_baseline", "name": "greedy"},
+                {"id": "lazy_greedy", "name": "lazy_greedy"},
+            ],
+            "cases": [
+                {
+                    "name": "tiny",
+                    "family": "uniform",
+                    "universe_size": 20,
+                    "set_count": 8,
+                    "k": 3,
+                    "density": 0.2,
+                }
+            ],
+        }
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            config_path = root / "config.json"
+            config_path.write_text(json.dumps(value), encoding="utf-8")
+            output = root / "output"
+            result = run_benchmark(config_path, output, workers=1)
+            config = load_config(config_path)
+            validator = _load_output_validator()
+            lazy_index = next(
+                index for index, row in enumerate(result.rows)
+                if row.algorithm == "lazy_greedy"
+            )
+
+            mutations = (
+                ("algorithm_seed", {"algorithm_seed": 999}),
+                ("algorithm_options", {"algorithm_options": '{"unexpected":1}'}),
+                ("run_id", {"run_id": "0" * 64}),
+                ("set_count", {"set_count": 999}),
+            )
+            for label, changes in mutations:
+                with self.subTest(label=label):
+                    tampered = list(result.rows)
+                    tampered[lazy_index] = replace(
+                        tampered[lazy_index], **changes
+                    )
+                    with self.assertRaisesRegex(ValueError, "execution plan"):
+                        validator._validate_run_identity(
+                            config,
+                            validator.config_hash(config),
+                            tampered,
+                        )
 
     def test_tie_breaking_prefers_lower_index(self) -> None:
         """When two sets have identical marginal gain, the lower index wins."""
