@@ -1,5 +1,7 @@
 # Maximum Coverage Study
 
+**English** | [简体中文](README.zh-CN.md)
+
 This repository contains research-oriented Python code for deterministic
 experiments with the Maximum Coverage problem.  It provides algorithm
 implementations, instance generators, configuration validation, benchmark
