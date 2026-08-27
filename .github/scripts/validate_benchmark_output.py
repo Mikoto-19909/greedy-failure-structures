@@ -55,6 +55,7 @@ from maxcover.benchmark import (  # noqa: E402
     _local_search_recovery_statistics,
     _local_search_remaining_gap_statistics,
     _normalize_optima,
+    _instances_for_config,
     _quality_runtime_pareto_statistics,
     _runtime_k_association_statistics,
     _runtime_set_count_association_statistics,
@@ -193,6 +194,163 @@ def _load_records(
     if not records and not allow_empty:
         _fail(f"{path.name} contains no records")
     return records
+
+
+def _non_negative_integer(value: object, label: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        _fail(f"{label} must be a non-negative integer")
+    return value
+
+
+def _dense_greedy_reference(instance: object) -> tuple[tuple[int, ...], tuple[tuple[int, int], ...]]:
+    """Recompute the deterministic dense-Greedy trajectory independently."""
+
+    selected: list[int] = []
+    trajectory: list[tuple[int, int]] = []
+    covered = 0
+    available = set(range(instance.set_count))
+    for iteration in range(instance.k):
+        best = max(
+            available,
+            key=lambda index: (
+                (instance.sets[index] & ~covered).bit_count(),
+                -index,
+            ),
+        )
+        gain = (instance.sets[best] & ~covered).bit_count()
+        selected.append(best)
+        trajectory.append((best, gain))
+        covered |= instance.sets[best]
+        available.remove(best)
+    return tuple(selected), tuple(trajectory)
+
+
+def _validate_declared_algorithm_rows(config: object, plan: object, rows: list[object]) -> None:
+    expected = Counter()
+    algorithms_by_id = {
+        algorithm.algorithm_id: algorithm for algorithm in config.algorithms
+        if algorithm.enabled
+    }
+    for algorithm_id, count in plan.runs_by_algorithm:
+        expected[(algorithm_id, algorithms_by_id[algorithm_id].name)] = count
+    actual = Counter((row.algorithm_id, row.algorithm) for row in rows)
+    if actual != expected:
+        _fail("raw results algorithm variants do not match the execution plan")
+
+
+def _validate_lazy_greedy_rows(config: object, rows: list[object]) -> None:
+    lazy_variants = [
+        algorithm for algorithm in config.algorithms
+        if algorithm.enabled and algorithm.name == "lazy_greedy"
+    ]
+    if not lazy_variants:
+        return
+    greedy_variants = [
+        algorithm for algorithm in config.algorithms
+        if algorithm.enabled and algorithm.name == "greedy"
+    ]
+    if len(lazy_variants) != 1 or len(greedy_variants) != 1:
+        _fail("Lazy Greedy validation requires exactly one Greedy and one Lazy Greedy variant")
+
+    planned_instances = _instances_for_config(config)
+    instances_by_unit = {
+        (planned.case_id, planned.repetition, planned.instance_id): planned.instance
+        for planned in planned_instances
+    }
+    pair_rows: dict[tuple[str, int, str], dict[str, object]] = {}
+    expected_algorithms = {
+        greedy_variants[0].algorithm_id: "greedy",
+        lazy_variants[0].algorithm_id: "lazy_greedy",
+    }
+    for row in rows:
+        algorithm_name = expected_algorithms.get(row.algorithm_id)
+        if algorithm_name is None:
+            continue
+        unit = (row.case_id, row.repetition, row.instance_id)
+        by_algorithm = pair_rows.setdefault(unit, {})
+        if algorithm_name in by_algorithm:
+            _fail("Lazy Greedy pairing contains duplicate algorithm rows")
+        by_algorithm[algorithm_name] = row
+
+    if set(pair_rows) != set(instances_by_unit):
+        _fail("Lazy Greedy pairing does not cover exactly the planned instance units")
+
+    for unit, by_algorithm in sorted(pair_rows.items()):
+        greedy_row = by_algorithm.get("greedy")
+        lazy_row = by_algorithm.get("lazy_greedy")
+        if greedy_row is None or lazy_row is None:
+            _fail("each instance unit must contain Greedy and Lazy Greedy rows")
+        if greedy_row.coverage != lazy_row.coverage or greedy_row.selected != lazy_row.selected:
+            _fail("Greedy and Lazy Greedy results disagree on an instance unit")
+
+        instance = instances_by_unit[unit]
+        expected_selected, expected_trajectory = _dense_greedy_reference(instance)
+        dense_evaluations = instance.set_count * instance.k - (
+            instance.k * (instance.k - 1) // 2
+        )
+        if greedy_row.nodes_or_iterations != dense_evaluations:
+            _fail("Greedy nodes_or_iterations does not match dense candidate evaluations")
+        if lazy_row.selected != tuple(sorted(expected_selected)):
+            _fail("Lazy Greedy selected set does not match the dense reference")
+
+        try:
+            metadata = json.loads(lazy_row.algorithm_metadata)
+        except json.JSONDecodeError as error:
+            _fail(f"Lazy Greedy metadata is not valid JSON: {error}")
+        search = metadata.get("search")
+        trajectory = metadata.get("trajectory")
+        if not isinstance(search, dict) or not isinstance(trajectory, list):
+            _fail("Lazy Greedy metadata must contain search and trajectory")
+        initial = _non_negative_integer(
+            search.get("initial_candidate_count"),
+            "Lazy Greedy initial_candidate_count",
+        )
+        marginal_evaluations = _non_negative_integer(
+            search.get("marginal_evaluations"),
+            "Lazy Greedy marginal_evaluations",
+        )
+        priority_queue_pops = _non_negative_integer(
+            search.get("priority_queue_pops"),
+            "Lazy Greedy priority_queue_pops",
+        )
+        selected_count = _non_negative_integer(
+            search.get("selected_count"),
+            "Lazy Greedy selected_count",
+        )
+        if initial != instance.set_count or selected_count != instance.k:
+            _fail("Lazy Greedy metadata dimensions do not match the instance")
+        if marginal_evaluations != initial + priority_queue_pops:
+            _fail("Lazy Greedy marginal evaluations do not include initial queue evaluation")
+        if lazy_row.nodes_or_iterations != marginal_evaluations:
+            _fail("Lazy Greedy work field does not match marginal_evaluations")
+        if len(trajectory) != instance.k:
+            _fail("Lazy Greedy trajectory length does not match k")
+
+        observed_trajectory: list[tuple[int, int]] = []
+        previous_evaluations = initial
+        for iteration, point in enumerate(trajectory, start=1):
+            if not isinstance(point, dict) or point.get("iteration") != iteration:
+                _fail("Lazy Greedy trajectory has an invalid iteration")
+            selected_index = _non_negative_integer(
+                point.get("selected_index"),
+                "Lazy Greedy trajectory selected_index",
+            )
+            marginal_gain = _non_negative_integer(
+                point.get("marginal_gain"),
+                "Lazy Greedy trajectory marginal_gain",
+            )
+            cumulative = _non_negative_integer(
+                point.get("marginal_evaluations"),
+                "Lazy Greedy trajectory marginal_evaluations",
+            )
+            if cumulative < previous_evaluations:
+                _fail("Lazy Greedy trajectory evaluation counts are not monotone")
+            previous_evaluations = cumulative
+            observed_trajectory.append((selected_index, marginal_gain))
+        if tuple(observed_trajectory) != expected_trajectory:
+            _fail("Lazy Greedy trajectory does not match the dense reference")
+        if previous_evaluations != marginal_evaluations:
+            _fail("Lazy Greedy trajectory does not end at the reported work count")
 
 
 def _markdown_section(
@@ -1313,6 +1471,7 @@ def validate(config_path: Path, output: Path) -> None:
         _fail("raw result count does not match the execution plan")
     if len(instances) != plan.instance_count:
         _fail("instance record count does not match the execution plan")
+    _validate_declared_algorithm_rows(config, plan, rows)
     instance_keys = {
         (record.case_id, record.repetition, record.instance_id)
         for record in instances
@@ -1359,6 +1518,7 @@ def validate(config_path: Path, output: Path) -> None:
     canonical_rows = _canonical_run_records(
         _normalize_optima(rows, instances)
     )
+    _validate_lazy_greedy_rows(config, canonical_rows)
     if [row.to_csv_row() for row in rows] != [
         row.to_csv_row() for row in canonical_rows
     ]:

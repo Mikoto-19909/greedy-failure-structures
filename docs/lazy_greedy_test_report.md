@@ -1,0 +1,94 @@
+# Lazy Greedy Functional Test Report
+
+This document records the verification process for the deterministic
+`lazy_greedy` algorithm. It is a functional and contract report, not a
+performance result or a research conclusion.
+
+## Scope
+
+The test process covers five layers:
+
+1. The implementation must reproduce the dense classical Greedy sequence,
+   including fixed index tie-breaking.
+2. The returned solution must satisfy the common `Solution` contract and the
+   metadata envelope.
+3. The registry, package-root export, configuration parser and bundled
+   configuration must expose the algorithm as a deterministic, option-free
+   variant.
+4. The benchmark runner must execute Greedy and Lazy Greedy on the same
+   instance units and preserve their result correspondence in canonical CSV
+   output and the generated report.
+5. Repository-level tests, content-boundary checks, license-manifest checks and
+   type checks must continue to pass.
+
+## Test procedure
+
+Run the focused algorithm tests first:
+
+```console
+python -m unittest tests.test_lazy_greedy -v
+```
+
+Validate the bundled experiment plan without creating output:
+
+```console
+python run_project.py benchmark --config configs/p3_lazy_greedy.json --dry-run
+```
+
+Run the complete paired workflow locally when an output artifact is wanted:
+
+```console
+python run_project.py benchmark \
+  --config configs/p3_lazy_greedy.json \
+  --output results/p3-lazy-greedy \
+  --workers 2 \
+  --force
+```
+
+Validate an existing output independently of its own checksum:
+
+```console
+python .github/scripts/validate_benchmark_output.py \
+  --config configs/p3_lazy_greedy.json \
+  --output results/p3-lazy-greedy
+```
+
+Run the repository gates before review:
+
+```console
+python -m unittest discover -s tests -v
+python .github/scripts/check_content_boundary.py --claim-mode no_quantitative_claims
+python .github/scripts/build_license_manifest.py --check
+python -m mypy
+```
+
+On Windows, `project.ps1 test` and `project.ps1 typecheck` provide the
+corresponding wrapper commands when a supported Python installation is found.
+
+## Acceptance criteria
+
+- The focused tests pass without changing the dense Greedy selection sequence.
+- Repeated Lazy Greedy calls on the same immutable instance have identical
+  selected indices and metadata.
+- The reported work value equals the metadata marginal-evaluation count.
+- Lazy Greedy rejects unsupported common options through the registry.
+- The bundled configuration dry-run expands successfully and includes a paired
+  exact reference, Greedy baseline and Lazy Greedy variant.
+- An integration run produces the normal canonical artifacts and preserves
+  Greedy/Lazy Greedy correspondence for every shared instance unit.
+- The full repository gates pass.
+
+## Interpretation
+
+A passing report establishes that Lazy Greedy is a deterministic, compatible
+algorithm variant with an independently tested result contract. It does not
+publish a runtime comparison, a general performance claim or a result about
+any external corpus. Any such study must use a separately frozen evidence
+package and an independently validated analysis.
+
+## Verification record
+
+For this revision, the focused Lazy Greedy tests, the bundled paired workflow,
+the complete repository test suite, the content-boundary check, the
+license-manifest check and the type-check gate passed. The local workflow
+output is ignored under `results/` and is not part of the published snapshot.
