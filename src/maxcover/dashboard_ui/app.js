@@ -333,9 +333,10 @@
       const [configs, algorithms, results, jobs, replays] = await Promise.all([api("/api/configs"), api("/api/algorithms"), api("/api/results"), api("/api/jobs"), api("/api/replay-files")]);
       state.configs = configs.configs; state.algorithms = algorithms.algorithms; state.results = results.results; state.jobs = jobs.jobs; state.replays = replays.replays;
       $("#api-status").textContent = t("topbar.connected"); $("#api-status").style.color = "var(--green)";
+      const selectedConfigPath = state.currentConfig?.path || $("#config-select").value;
       setSelect("#config-select", state.configs.map((item) => ({ label: item.name, value: item.path })), t("config.noConfigs"));
       renderJobs(); renderResults(); renderReplays();
-      if (state.configs.length && !state.currentConfig) { const defaultConfig = state.configs.find((item) => item.path === "quick.json") || state.configs[0]; $("#config-select").value = defaultConfig.path; await loadConfig(defaultConfig.path); }
+      if (state.configs.length) { const defaultConfig = state.configs.find((item) => item.path === "quick.json") || state.configs[0]; const nextConfigPath = state.configs.some((item) => item.path === selectedConfigPath) ? selectedConfigPath : defaultConfig.path; $("#config-select").value = nextConfigPath; if (!state.currentConfig || state.currentConfig.path !== nextConfigPath) await loadConfig(nextConfigPath); }
       if (!state.currentConfig) announceTransition("select", t("workspace.connectedTitle"), t("workspace.connectedDetail"), 6000);
     } catch (error) { $("#api-status").textContent = `${t("topbar.offline")} · ${error.message}`; $("#api-status").style.color = "var(--red)"; }
   }

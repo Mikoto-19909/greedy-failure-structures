@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import http.client
 import json
 import sys
 import tempfile
+import threading
 import time
 import unittest
 from pathlib import Path
@@ -17,6 +19,7 @@ sys.path.insert(0, str(ROOT / "src"))
 from maxcover.dashboard import (  # noqa: E402
     DashboardRequestError,
     DashboardService,
+    _DashboardHTTPServer,
 )
 
 
@@ -137,6 +140,88 @@ class DashboardServiceTests(unittest.TestCase):
         current = self.service.get_job(job["id"])
         self.assertEqual(current["status"], "completed")
         self.assertEqual(current["result_name"], "dashboard-test")
+
+
+class DashboardHttpSecurityTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.temporary = tempfile.TemporaryDirectory()
+        self.root = Path(self.temporary.name)
+        (self.root / "configs").mkdir()
+        (self.root / "configs" / "test.json").write_text(
+            json.dumps(_config()), encoding="utf-8"
+        )
+        self.server = _DashboardHTTPServer(("127.0.0.1", 0), DashboardService(self.root))
+        self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
+        self.thread.start()
+        self.port = self.server.server_address[1]
+
+    def tearDown(self) -> None:
+        self.server.shutdown()
+        self.server.server_close()
+        self.thread.join(timeout=2)
+        self.temporary.cleanup()
+
+    def _post(
+        self, path: str, payload: object, *, origin: str | None, content_type: str
+    ) -> tuple[int, dict[str, object]]:
+        connection = http.client.HTTPConnection("127.0.0.1", self.port)
+        headers = {"Content-Type": content_type}
+        if origin is not None:
+            headers["Origin"] = origin
+        connection.request("POST", path, json.dumps(payload), headers)
+        response = connection.getresponse()
+        body = json.loads(response.read().decode("utf-8"))
+        connection.close()
+        return response.status, body
+
+    def test_cross_origin_simple_post_is_rejected_before_run_dispatch(self) -> None:
+        status, body = self._post(
+            "/api/run",
+            {"config": "test.json", "output": "attacker-triggered", "force": True},
+            origin="https://attacker.example",
+            content_type="text/plain",
+        )
+        self.assertEqual(status, 403)
+        self.assertIn("same-origin", body["error"])
+        self.assertEqual(self.server.service.list_jobs(), {"jobs": []})
+
+    def test_same_origin_json_post_is_allowed(self) -> None:
+        status, body = self._post(
+            "/api/validate",
+            {"config": "test.json"},
+            origin=f"http://127.0.0.1:{self.port}",
+            content_type="application/json; charset=utf-8",
+        )
+        self.assertEqual(status, 200)
+        self.assertTrue(body["valid"])
+
+    def test_same_origin_non_json_post_is_rejected(self) -> None:
+        status, body = self._post(
+            "/api/run",
+            {"config": "test.json"},
+            origin=f"http://127.0.0.1:{self.port}",
+            content_type="text/plain",
+        )
+        self.assertEqual(status, 415)
+        self.assertIn("application/json", body["error"])
+
+    def test_non_loopback_host_is_rejected_even_when_origin_matches_it(self) -> None:
+        connection = http.client.HTTPConnection("127.0.0.1", self.port)
+        connection.request(
+            "POST",
+            "/api/run",
+            json.dumps({"config": "test.json"}),
+            {
+                "Host": f"attacker.example:{self.port}",
+                "Origin": f"http://attacker.example:{self.port}",
+                "Content-Type": "application/json",
+            },
+        )
+        response = connection.getresponse()
+        body = json.loads(response.read().decode("utf-8"))
+        connection.close()
+        self.assertEqual(response.status, 403)
+        self.assertIn("same-origin", body["error"])
 
 
 if __name__ == "__main__":

@@ -69,6 +69,18 @@ class DashboardConflictError(RuntimeError):
     status = HTTPStatus.CONFLICT
 
 
+class DashboardForbiddenError(DashboardRequestError):
+    """A state-changing request did not come from this dashboard origin."""
+
+    status = HTTPStatus.FORBIDDEN
+
+
+class DashboardUnsupportedMediaTypeError(DashboardRequestError):
+    """A state-changing request used a content type outside the JSON API."""
+
+    status = HTTPStatus.UNSUPPORTED_MEDIA_TYPE
+
+
 def _iso_now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
@@ -520,6 +532,35 @@ class _DashboardRequestHandler(BaseHTTPRequestHandler):
             raise DashboardRequestError("request body must be a JSON object")
         return value
 
+    def _validate_state_change(self) -> None:
+        """Require a browser request to prove same-origin JSON intent."""
+
+        origin = self.headers.get("Origin")
+        host = self.headers.get("Host")
+        if not origin or not host:
+            raise DashboardForbiddenError(
+                "state-changing requests require a same-origin Origin header"
+            )
+        parsed_origin = urlparse(origin)
+        parsed_host = urlparse(f"//{host}")
+        loopback_hosts = {"localhost", "127.0.0.1", "::1"}
+        if (
+            parsed_origin.scheme.lower() != "http"
+            or parsed_origin.netloc.lower() != host.lower()
+            or parsed_origin.hostname not in loopback_hosts
+            or parsed_host.hostname not in loopback_hosts
+            or parsed_origin.path not in {"", "/"}
+            or parsed_origin.query
+            or parsed_origin.fragment
+        ):
+            raise DashboardForbiddenError("state-changing requests must be same-origin")
+        content_type = self.headers.get("Content-Type", "")
+        media_type = content_type.split(";", 1)[0].strip().lower()
+        if media_type != "application/json":
+            raise DashboardUnsupportedMediaTypeError(
+                "state-changing requests must use application/json"
+            )
+
     def do_GET(self) -> None:  # noqa: N802
         try:
             parsed = urlparse(self.path)
@@ -556,6 +597,7 @@ class _DashboardRequestHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:  # noqa: N802
         try:
+            self._validate_state_change()
             payload = self._request_json()
             service = self.server.service
             if self.path == "/api/validate":
