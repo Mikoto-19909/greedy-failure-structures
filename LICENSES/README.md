@@ -39,10 +39,11 @@ For orientation — the manifest is authoritative, this paragraph is not: code a
 machine-readable inputs are MIT, while prose is CC BY 4.0. Experiment
 configurations under `configs/` are MIT rather than CC BY, because they are run
 inputs rather than documents, and the package reads one of them to run at all.
-Font files under `src/maxcover/dashboard_ui/fonts/` are OFL-1.1: they are
-vendored third-party font software, not MIT-licensed contributions of this
-repository, and the suffix rule would attach the wrong grant and copyright
-line to them.
+Font files directly in `src/maxcover/dashboard_ui/fonts/` are OFL-1.1: they
+are vendored third-party font software, not MIT-licensed contributions of
+this repository, and the suffix rule would attach the wrong grant and
+copyright line to them. The rule is scoped to that directory, not to the
+`.woff2` suffix; a font file anywhere else stays MIT under the suffix rule.
 
 The bundled fonts are:
 

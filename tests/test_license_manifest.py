@@ -415,7 +415,7 @@ class LicenseMappingTests(unittest.TestCase):
 
     The prose says: code and machine-readable inputs are MIT, prose is CC BY
     4.0, ``configs/`` is MIT specifically because those files are run inputs
-    rather than documents, and font files under
+    rather than documents, and font files directly in
     ``src/maxcover/dashboard_ui/fonts/`` are OFL-1.1 because they are vendored
     third-party font software rather than MIT-licensed contributions.
     """
@@ -443,6 +443,26 @@ class LicenseMappingTests(unittest.TestCase):
         """The OFL rule is scoped to the vendored font directory, not the suffix."""
 
         self.assertLicense("assets/logo.woff2", "MIT")
+
+    def test_a_woff2_in_a_font_subdirectory_stays_mit(self) -> None:
+        """The directory rule matches direct children, not the whole subtree."""
+
+        self.assertLicense(
+            "src/maxcover/dashboard_ui/fonts/sub/outline.woff2", "MIT"
+        )
+
+    def test_a_prose_file_inside_the_font_dir_is_cc_by(self) -> None:
+        """The directory rule does not capture non-font files inside it."""
+
+        self.assertLicense("src/maxcover/dashboard_ui/fonts/NOTICE.md", "CC-BY-4.0")
+
+    def test_the_font_suffix_test_is_case_insensitive(self) -> None:
+        """A .WOFF2 spelling must not fall through to MIT on a case-blind path."""
+
+        self.assertLicense(
+            "src/maxcover/dashboard_ui/fonts/space-grotesk-latin-600-normal.WOFF2",
+            "OFL-1.1",
+        )
 
     def test_prose_suffixes_are_cc_by(self) -> None:
         for path in (
