@@ -224,6 +224,32 @@ class DashboardHttpSecurityTests(unittest.TestCase):
         self.assertEqual(response.status, 403)
         self.assertIn("same-origin", body["error"])
 
+    def test_alternate_ipv4_loopback_host_is_allowed(self) -> None:
+        server = _DashboardHTTPServer(("127.0.0.2", 0), DashboardService(self.root))
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        port = server.server_address[1]
+        try:
+            connection = http.client.HTTPConnection("127.0.0.2", port)
+            connection.request(
+                "POST",
+                "/api/validate",
+                json.dumps({"config": "test.json"}),
+                {
+                    "Origin": f"http://127.0.0.2:{port}",
+                    "Content-Type": "application/json",
+                },
+            )
+            response = connection.getresponse()
+            body = json.loads(response.read().decode("utf-8"))
+            connection.close()
+            self.assertEqual(response.status, 200)
+            self.assertTrue(body["valid"])
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=2)
+
 
 if __name__ == "__main__":
     unittest.main()

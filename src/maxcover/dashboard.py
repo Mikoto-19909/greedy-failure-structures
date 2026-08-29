@@ -9,6 +9,7 @@ job queue, or a second implementation of the experiment logic.
 from __future__ import annotations
 
 import csv
+import ipaddress
 import json
 import re
 import threading
@@ -543,12 +544,11 @@ class _DashboardRequestHandler(BaseHTTPRequestHandler):
             )
         parsed_origin = urlparse(origin)
         parsed_host = urlparse(f"//{host}")
-        loopback_hosts = {"localhost", "127.0.0.1", "::1"}
         if (
             parsed_origin.scheme.lower() != "http"
             or parsed_origin.netloc.lower() != host.lower()
-            or parsed_origin.hostname not in loopback_hosts
-            or parsed_host.hostname not in loopback_hosts
+            or not _is_loopback_hostname(parsed_origin.hostname)
+            or not _is_loopback_hostname(parsed_host.hostname)
             or parsed_origin.path not in {"", "/"}
             or parsed_origin.query
             or parsed_origin.fragment
@@ -632,6 +632,17 @@ def _required_string(payload: Mapping[str, object], key: str) -> str:
     if not isinstance(value, str):
         raise DashboardRequestError(f"{key} is required")
     return value
+
+
+def _is_loopback_hostname(hostname: str | None) -> bool:
+    if not hostname:
+        return False
+    if hostname.lower() == "localhost":
+        return True
+    try:
+        return ipaddress.ip_address(hostname).is_loopback
+    except ValueError:
+        return False
 
 
 def serve_dashboard(

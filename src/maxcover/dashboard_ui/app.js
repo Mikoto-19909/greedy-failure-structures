@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const state = { configs: [], algorithms: [], results: [], jobs: [], replays: [], currentConfig: null, currentResult: null, currentStage: "select", language: "zh", pollTimer: null, transitionTimer: null };
+  const state = { configs: [], algorithms: [], results: [], jobs: [], replays: [], currentConfig: null, currentResult: null, currentStage: "select", language: "zh", pollTimer: null, transitionTimer: null, configRequestId: 0, configLoading: false, resultRequestId: 0 };
   const STAGE_ORDER = ["select", "preflight", "execute", "results", "replay"];
   const STATUS_LABELS = {
     zh: { queued: "排队中", running: "运行中", completed: "已完成", failed: "失败" },
@@ -97,7 +97,6 @@
     $$(`[data-i18n-aria]`).forEach((element) => { element.setAttribute("aria-label", t(element.dataset.i18nAria)); });
     if (state.currentConfig) renderConfig(state.currentConfig);
     renderJobs(); renderResults(); renderReplays();
-    if (state.currentResult) loadResult(state.currentResult, false);
     const activeView = document.querySelector(".view.active")?.dataset.view;
     if (state.currentStage === "execute") announceTransition("execute", t("run.startingTitle"), t("run.inProgress"), 0);
     else if (activeView === "experiment") announceTransition(state.currentConfig?.valid ? "preflight" : "select", t("view.experimentTitle"), state.currentConfig?.valid ? t("view.experimentReady") : t("view.experimentNeedConfig"));
@@ -220,11 +219,12 @@
     source.textContent = configInfo.source ? JSON.stringify(configInfo.source, null, 2) : t("config.noSource");
     chip.textContent = configInfo.valid ? t("status.valid") : t("status.invalid");
     chip.classList.toggle("invalid", !configInfo.valid);
-    setMessage("#config-error", configInfo.valid ? "" : (configInfo.error || "配置无效。"), true);
+    const loading = configInfo.loading === true;
+    setMessage("#config-error", loading || configInfo.valid ? "" : (configInfo.error || "配置无效。"), !loading && !configInfo.valid);
     $("#plan-empty").classList.toggle("hidden", configInfo.valid);
     $("#plan-content").classList.toggle("hidden", !configInfo.valid);
-    $("#run-button").disabled = !configInfo.valid;
-    $("#run-next-step").textContent = configInfo.valid ? t("run.planReady") : t("run.fixConfig");
+    $("#run-button").disabled = loading || !configInfo.valid;
+    $("#run-next-step").textContent = loading ? t("config.readingTitle") : configInfo.valid ? t("run.planReady") : t("run.fixConfig");
     if (!configInfo.valid) return;
     const plan = configInfo.plan;
     $("#plan-name").textContent = plan.name;
@@ -242,14 +242,23 @@
   }
 
   async function loadConfig(path) {
-    if (!path) { renderConfig({ valid: false, source: null }); announceTransition("select", t("config.waitTitle"), t("config.waitDetail"), 0); return; }
+    const requestId = ++state.configRequestId;
+    state.configLoading = Boolean(path);
+    if (!path) { state.configLoading = false; renderConfig({ path: "", valid: false, source: null }); announceTransition("select", t("config.waitTitle"), t("config.waitDetail"), 0); return; }
+    renderConfig({ path, valid: false, loading: true, source: null });
     announceTransition("select", t("config.readingTitle"), path);
     try {
       const configInfo = await api(`/api/config?path=${encodeURIComponent(path)}`);
-      renderConfig(configInfo);
+      if (requestId !== state.configRequestId || $("#config-select").value !== path) return;
+      state.configLoading = false;
+      renderConfig({ ...configInfo, path });
       if (configInfo.valid) announceTransition("preflight", t("config.planTitle"), t("config.planDetail"), 6500);
       else announceTransition("select", t("config.invalidTitle"), configInfo.error || t("config.invalidDetail"), 0);
-    } catch (error) { renderConfig({ valid: false, error: error.message }); announceTransition("select", t("config.readErrorTitle"), error.message, 0); }
+    } catch (error) {
+      if (requestId !== state.configRequestId || $("#config-select").value !== path) return;
+      state.configLoading = false;
+      renderConfig({ path, valid: false, error: error.message }); announceTransition("select", t("config.readErrorTitle"), error.message, 0);
+    }
   }
 
   async function chooseQuickConfig() {
@@ -266,6 +275,7 @@
     setSelect("#result-select", state.results.map((item) => ({ label: item.name, value: item.name })), t("results.noResult"));
     const select = $("#result-select");
     if (state.results.length) { select.value = state.currentResult && state.results.some((item) => item.name === state.currentResult) ? state.currentResult : state.results[0].name; loadResult(select.value, false); }
+    else loadResult("", false);
   }
 
   function renderSummary(rows) {
@@ -310,16 +320,22 @@
   }
 
   async function loadResult(name, notify = true) {
+    const requestId = ++state.resultRequestId;
     if (!name) { $("#result-empty").classList.remove("hidden"); $("#result-content").classList.add("hidden"); return; }
     try {
       if (notify) announceTransition("results", t("results.readingTitle"), `${name} · summary.csv / raw_results.csv`);
-      const data = await api(`/api/result?name=${encodeURIComponent(name)}`); state.currentResult = name;
+      const data = await api(`/api/result?name=${encodeURIComponent(name)}`);
+      if (requestId !== state.resultRequestId || $("#result-select").value !== name) return;
+      state.currentResult = name;
       $("#result-empty").classList.add("hidden"); $("#result-content").classList.remove("hidden");
       $("#result-summary-count").textContent = formatNumber(data.summary.length, 0); $("#result-run-count").textContent = formatNumber(data.runs.length, 0); $("#result-run-foot").textContent = data.runs.length >= data.run_limit ? t("results.firstRows", { count: formatNumber(data.run_limit, 0) }) : t("results.rawRecords");
       const resultInfo = state.results.find((item) => item.name === name); $("#result-failure-count").textContent = formatNumber(resultInfo ? resultInfo.failure_count : 0, 0); $("#result-meta").textContent = resultInfo ? t("results.updated", { time: resultInfo.modified_at }) : "";
       renderAnnotations(data.summary); renderSummary(data.summary); renderArtifacts(data);
       if (notify) announceTransition("results", t("results.loadedTitle"), t("results.loadedDetail"), 6000);
-    } catch (error) { setMessage("#result-message", error.message, true); if (notify) announceTransition("results", t("results.failedTitle"), error.message, 0); }
+    } catch (error) {
+      if (requestId !== state.resultRequestId || $("#result-select").value !== name) return;
+      setMessage("#result-message", error.message, true); if (notify) announceTransition("results", t("results.failedTitle"), error.message, 0);
+    }
   }
 
   function renderReplays() {
@@ -353,7 +369,8 @@
   }
 
   async function runBenchmark() {
-    if (!state.currentConfig?.valid) return;
+    const selectedConfigPath = $("#config-select").value;
+    if (state.configLoading || !state.currentConfig?.valid || state.currentConfig.path !== selectedConfigPath) return;
     const button = $("#run-button"); button.disabled = true; $("#run-next-step").textContent = t("run.inProgress"); announceTransition("execute", t("run.startingTitle"), t("run.startingDetail"), 0); setMessage("#run-message", t("run.queued"));
     try {
       const job = await api("/api/run", { method: "POST", body: JSON.stringify({ config: $("#config-select").value, output: $("#output-name").value, workers: Number($("#workers").value), force: $("#force-run").checked }) });
