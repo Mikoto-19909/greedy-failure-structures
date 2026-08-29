@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const state = { configs: [], algorithms: [], results: [], jobs: [], replays: [], currentConfig: null, currentResult: null, currentReplay: null, language: "zh", pollTimer: null, pollingJobId: null, configRequestId: 0, configLoading: false, resultRequestId: 0 };
+  const state = { configs: [], algorithms: [], results: [], jobs: [], replays: [], currentConfig: null, currentResult: null, currentReplay: null, language: "zh", pollTimer: null, pollingJobId: null, configRequestId: 0, configLoading: false, resultRequestId: 0, outputEdited: false };
   const STATUS_LABELS = {
     zh: { queued: "排队中", running: "运行中", completed: "已完成", failed: "失败" },
     en: { queued: "Queued", running: "Running", completed: "Completed", failed: "Failed" }
@@ -10,12 +10,12 @@
   const FRIENDLY_LABELS = {
     zh: {
       algorithm: { brute_force: "穷举搜索", branch_and_bound: "分支定界", branch_and_bound_enhanced: "增强分支定界", bnb_baseline: "分支定界基线", bnb_enhanced: "增强分支定界", bnb_reference: "分支定界参考", cp_sat_oracle: "CP-SAT 精确求解", greedy: "贪心算法", greedy_baseline: "贪心算法基线", lazy_greedy: "惰性贪心", local_search: "局部搜索", multi_start_local_search: "多起点局部搜索", randomized_greedy: "随机贪心" },
-      case: { uniform_sparse: "均匀分布 · 稀疏", uniform_dense: "均匀分布 · 稠密", overlap_core: "高重叠 · 核心", overlap_moderate: "高重叠 · 中等", overlap_extreme: "高重叠 · 极端", four_clusters: "四簇聚类", eight_clusters: "八簇聚类", greedy_trap: "贪心陷阱", greedy_trap_small: "贪心陷阱 · 小型", greedy_trap_large: "贪心陷阱 · 大型" },
+      case: { uniform_sparse: "均匀分布 · 稀疏", uniform_dense: "均匀分布 · 稠密", overlap_core: "高重叠 · 核心", overlap_moderate: "高重叠 · 中等", overlap_extreme: "高重叠 · 极端", four_clusters: "四簇聚类", eight_clusters: "八簇聚类", greedy_trap: "贪心陷阱", greedy_trap_small: "贪心陷阱 · 小型", greedy_trap_large: "贪心陷阱 · 大型", uniform: "均匀分布", high_overlap: "高重叠", clustered: "聚类结构", fixed_size: "固定大小", long_tail: "长尾", duplicate_heavy: "重复密集", dominated_heavy: "支配密集", mixed_cluster: "混合聚类", adversarial: "对抗结构" },
       artifact: { "results_summary.md": "报告摘要", "gap_by_family.svg": "按案例族查看覆盖差距", "runtime_by_algorithm.svg": "按算法查看运行耗时", "gap_by_case.svg": "按案例查看覆盖差距", "gap_vs_structural_parameter.svg": "差距与结构参数关系", "local_search_recovery.svg": "局部搜索恢复情况", "quality_runtime_pareto.svg": "质量与耗时权衡", "runtime_scaling.svg": "运行耗时扩展", "node_scaling.svg": "搜索节点扩展", "timeout_by_case.svg": "按案例查看超时" }
     },
     en: {
       algorithm: { brute_force: "Brute Force", branch_and_bound: "Branch and Bound", branch_and_bound_enhanced: "Enhanced Branch and Bound", bnb_baseline: "Branch and Bound Baseline", bnb_enhanced: "Enhanced Branch and Bound", bnb_reference: "Branch and Bound Reference", cp_sat_oracle: "CP-SAT Exact Solver", greedy: "Greedy", greedy_baseline: "Greedy Baseline", lazy_greedy: "Lazy Greedy", local_search: "Local Search", multi_start_local_search: "Multi-start Local Search", randomized_greedy: "Randomized Greedy" },
-      case: { uniform_sparse: "Uniform · Sparse", uniform_dense: "Uniform · Dense", overlap_core: "High Overlap · Core", overlap_moderate: "High Overlap · Moderate", overlap_extreme: "High Overlap · Extreme", four_clusters: "Four Clusters", eight_clusters: "Eight Clusters", greedy_trap: "Greedy Trap", greedy_trap_small: "Greedy Trap · Small", greedy_trap_large: "Greedy Trap · Large" },
+      case: { uniform_sparse: "Uniform · Sparse", uniform_dense: "Uniform · Dense", overlap_core: "High Overlap · Core", overlap_moderate: "High Overlap · Moderate", overlap_extreme: "High Overlap · Extreme", four_clusters: "Four Clusters", eight_clusters: "Eight Clusters", greedy_trap: "Greedy Trap", greedy_trap_small: "Greedy Trap · Small", greedy_trap_large: "Greedy Trap · Large", uniform: "Uniform", high_overlap: "High Overlap", clustered: "Clustered", fixed_size: "Fixed Size", long_tail: "Long Tail", duplicate_heavy: "Duplicate Heavy", dominated_heavy: "Dominated Heavy", mixed_cluster: "Mixed Cluster", adversarial: "Adversarial" },
       artifact: { "results_summary.md": "Report summary", "gap_by_family.svg": "Coverage gap by family", "runtime_by_algorithm.svg": "Runtime by algorithm", "gap_by_case.svg": "Coverage gap by case", "gap_vs_structural_parameter.svg": "Gap vs. structural parameter", "local_search_recovery.svg": "Local-search recovery", "quality_runtime_pareto.svg": "Quality/runtime trade-off", "runtime_scaling.svg": "Runtime scaling", "node_scaling.svg": "Search-node scaling", "timeout_by_case.svg": "Timeouts by case" }
     }
   };
@@ -157,7 +157,7 @@
       const count = document.createElement("span"); count.textContent = ` · ${formatNumber(entry.runs, 0)}`;
       tag.append(name, count); return tag;
     }));
-    const output = $("#output-name"); if (!output.value) output.value = configInfo.path.replace(/\.json$/i, "");
+    const output = $("#output-name"); if (!state.outputEdited) output.value = configInfo.path.replace(/\.json$/i, "");
   }
 
   async function loadConfig(path) {
@@ -216,6 +216,7 @@
           state.pollTimer = null; state.pollingJobId = null;
           $("#run-button").disabled = !state.currentConfig?.valid;
           setMessage("#run-message", job.status === "completed" ? t("run.complete", { output: job.output }) : t("run.failed", { error: job.error }), job.status === "failed");
+          if (job.status === "completed" && job.result_name) state.currentResult = job.result_name;
           await refreshAll();
           return false;
         }
@@ -236,16 +237,20 @@
   function renderSpectrum(rows) {
     const container = $("#gap-spectrum");
     container.replaceChildren();
-    const byCase = new Map();
+    const byFamily = new Map();
     rows.forEach((row) => {
       const algorithm = row.algorithm_id || row.algorithm;
       if (!GREEDY_IDS.has(algorithm)) return;
       const gap = Number(row.mean_optimality_gap);
       if (!Number.isFinite(gap)) return;
-      const current = byCase.get(row.case);
-      if (!current || gap > current.gap) byCase.set(row.case, { caseName: row.case, gap });
+      const family = row.family || row.case;
+      const current = byFamily.get(family);
+      if (current) { current.total += gap; current.count += 1; }
+      else byFamily.set(family, { familyName: family, total: gap, count: 1 });
     });
-    const entries = [...byCase.values()].sort((a, b) => b.gap - a.gap);
+    const entries = [...byFamily.values()]
+      .map((entry) => ({ familyName: entry.familyName, gap: entry.total / entry.count }))
+      .sort((a, b) => b.gap - a.gap);
     if (!entries.length) {
       const empty = document.createElement("div");
       empty.className = "spectrum-empty";
@@ -256,7 +261,7 @@
     const maxGap = Math.max(...entries.map((entry) => entry.gap), 0);
     entries.forEach((entry) => {
       const rowEl = document.createElement("div"); rowEl.className = "spectrum-row";
-      const label = document.createElement("span"); label.className = "spectrum-case"; label.textContent = friendlyLabel(entry.caseName, "case");
+      const label = document.createElement("span"); label.className = "spectrum-case"; label.textContent = friendlyLabel(entry.familyName, "case");
       const track = document.createElement("div"); track.className = "spectrum-track";
       const bar = document.createElement("div"); bar.className = "spectrum-bar";
       track.append(bar);
@@ -480,7 +485,10 @@
         const defaultConfig = state.configs.find((item) => item.path === "quick.json") || state.configs[0];
         const nextConfigPath = state.configs.some((item) => item.path === selectedConfigPath) ? selectedConfigPath : defaultConfig.path;
         $("#config-select").value = nextConfigPath;
-        if (!state.currentConfig || state.currentConfig.path !== nextConfigPath) await loadConfig(nextConfigPath);
+        // Revalidate even when the path did not change: a corrected invalid
+        // preflight or a hash conflict stays stale otherwise, and with a
+        // single configuration there is no change event to trigger a reload.
+        await loadConfig(nextConfigPath);
       }
       setSelect("#result-select", state.results.map((item) => ({ label: item.name, value: item.name })), t("results.noResult"));
       const select = $("#result-select");
@@ -495,6 +503,7 @@
 
   $("#config-select").addEventListener("change", (event) => loadConfig(event.target.value));
   $("#run-button").addEventListener("click", runBenchmark);
+  $("#output-name").addEventListener("input", () => { state.outputEdited = $("#output-name").value !== ""; });
   $("#result-select").addEventListener("change", (event) => loadResult(event.target.value));
   $("#refresh-results").addEventListener("click", refreshAll);
   $("#replay-select").addEventListener("change", (event) => { state.currentReplay = event.target.value || null; });
