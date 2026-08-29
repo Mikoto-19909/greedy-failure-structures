@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title data-i18n="document.title">Maximum Coverage · 成果展板</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand-lockup">
+          <div class="brand-mark" aria-hidden="true">MC</div>
+          <div>
+            <p class="eyebrow">MAXIMUM COVERAGE</p>
+            <h1 data-i18n="brand.title">实验成果展板</h1>
+          </div>
+        </div>
+        <div class="topbar-meta">
+          <span class="local-pill"><span class="pulse"></span> <span data-i18n="topbar.localOnly">LOCAL ONLY</span></span>
+          <span class="api-status" id="api-status" data-i18n="topbar.connecting">Connecting…</span>
+          <div class="language-toggle" role="group" aria-label="Language" data-i18n-aria="topbar.language">
+            <button class="language-button active" id="language-zh" data-language="zh">中文</button>
+            <button class="language-button" id="language-en" data-language="en">EN</button>
+          </div>
+        </div>
+      </header>
+
+      <main class="stage">
+        <section class="entry-band" aria-label="实验入口" data-i18n-aria="entry.ariaLabel">
+          <div class="entry-heading">
+            <div>
+              <p class="section-kicker" data-i18n="entry.kicker">ENTRY · 入口</p>
+              <h2 data-i18n="entry.title">启动一个实验</h2>
+              <p class="lede" data-i18n="entry.lede">选择配置，一键在本机运行。完成后，成果会挂上这面展墙。</p>
+            </div>
+          </div>
+          <div class="entry-controls">
+            <label class="field-group config-field">
+              <span class="field-label" data-i18n="fields.configFile">配置文件</span>
+              <select class="field" id="config-select"><option value="">加载中…</option></select>
+            </label>
+            <label class="field-group output-field">
+              <span class="field-label" data-i18n="fields.outputName">结果文件夹名称</span>
+              <input class="field" id="output-name" data-i18n-placeholder="fields.outputPlaceholder" placeholder="例如 quick-dashboard" maxlength="81" />
+            </label>
+            <label class="check-control"><input id="force-run" type="checkbox" /><span data-i18n="fields.forceRun">清除后重跑</span></label>
+            <button class="button button-primary run-button" id="run-button" disabled><span data-i18n="actions.runBenchmark">启动 benchmark</span> <span>↗</span></button>
+          </div>
+          <div class="plan-strip hidden" id="plan-strip" aria-live="polite">
+            <span class="plan-chip" id="plan-name">—</span>
+            <span class="plan-stat"><strong id="plan-instances">—</strong><small data-i18n="plan.instances">实例总数</small></span>
+            <span class="plan-stat"><strong id="plan-repetitions">—</strong><small data-i18n="plan.repetitions">每个实例重复</small></span>
+            <span class="plan-stat"><strong id="plan-runs">—</strong><small data-i18n="plan.runs">预计算法运行</small></span>
+            <span class="plan-algorithms" id="algorithm-plan"></span>
+          </div>
+          <div class="job-line" id="job-line" aria-live="polite"><span class="job-dot idle"></span> <span data-i18n="run.idle">空闲 · 任务状态会显示在这里。</span></div>
+          <div id="run-message" class="message hidden"></div>
+        </section>
+
+        <section class="gap-section" aria-label="差距光谱" data-i18n-aria="gap.ariaLabel">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker amber" data-i18n="gap.kicker">GAP SPECTRUM · 差距光谱</p>
+              <h2 data-i18n="gap.title">贪心在哪里失败</h2>
+              <p class="lede" data-i18n="gap.lede">每条光带对应一个案例族，长度是该族上贪心算法与最优解的平均差距。光带越长，结构越会诱导贪心犯错。</p>
+            </div>
+            <span class="spectrum-source" id="spectrum-source" data-i18n="gap.noSource">尚未选择结果集</span>
+          </div>
+          <div class="spectrum" id="gap-spectrum">
+            <div class="spectrum-empty" data-i18n="gap.empty">运行一个 benchmark 之后，光谱会从这里长出来。</div>
+          </div>
+        </section>
+
+        <section class="gallery-section" aria-label="成果画廊" data-i18n-aria="gallery.ariaLabel">
+          <div class="section-heading split">
+            <div>
+              <p class="section-kicker" data-i18n="gallery.kicker">GALLERY · 成果</p>
+              <h2 data-i18n="gallery.title">结果画廊</h2>
+              <p class="lede" data-i18n="gallery.lede">每张图是当前结果集的一份报告，装裱成作品挂在墙上。</p>
+            </div>
+            <div class="result-picker">
+              <select class="field" id="result-select"><option value="">暂无结果</option></select>
+              <button class="button button-secondary" id="refresh-results" data-i18n="actions.refreshResults">刷新</button>
+            </div>
+          </div>
+          <div class="result-meta" id="result-meta"></div>
+          <div id="result-message" class="message hidden"></div>
+          <div class="gallery-grid" id="gallery-grid">
+            <div class="frame frame-empty empty-state" data-i18n="gallery.empty">运行完成后，报告图表会挂上这面墙。先在上方启动一个实验。</div>
+          </div>
+
+          <article class="panel summary-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="section-kicker" data-i18n="gallery.summaryKicker">TABLE · 对照</p>
+                <h3 data-i18n="gallery.summaryTitle">算法对照</h3>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table id="summary-table">
+                <thead><tr><th data-i18n="table.case">案例</th><th data-i18n="table.algorithm">算法</th><th data-i18n="table.runs">运行次数</th><th data-i18n="table.coverage">平均覆盖</th><th data-i18n="table.gap">平均差距</th><th data-i18n="table.runtime">平均耗时</th><th data-i18n="table.timeouts">超时</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </article>
+
+          <div class="replay-strip" aria-label="失败案例回放" data-i18n-aria="replay.ariaLabel">
+            <div class="replay-copy">
+              <p class="section-kicker" data-i18n="replay.kicker">REPLAY · 回放</p>
+              <strong data-i18n="replay.title">失败案例回放</strong>
+              <small data-i18n="replay.lede">用记录的算法重现失败，核对结果。</small>
+            </div>
+            <select class="field" id="replay-select"><option value="" data-i18n="replay.noFiles">暂无失败案例文件</option></select>
+            <select class="field" id="replay-algorithm"><option value="" data-i18n="replay.recordedAlgorithm">使用记录算法</option></select>
+            <button class="button button-secondary" id="replay-button"><span data-i18n="actions.runReplay">运行回放</span> <span>↗</span></button>
+            <div id="replay-message" class="message hidden"></div>
+            <div id="replay-output" class="replay-output empty-state" data-i18n="replay.outputEmpty">运行后显示结果和匹配状态。</div>
+          </div>
+        </section>
+      </main>
+
+      <footer class="footer" data-i18n="footer">Maximum Coverage · 本地成果展板 · CLI 仍可使用</footer>
+    </div>
+    <script src="/app.js"></script>
+  </body>
+</html>

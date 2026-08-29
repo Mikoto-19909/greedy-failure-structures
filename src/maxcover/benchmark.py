@@ -5069,6 +5069,7 @@ def run_benchmark(
     *,
     workers: int = 1,
     force: bool = False,
+    expected_config_hash: str | None = None,
 ) -> BenchmarkResult:
     """Run or resume an experiment, checkpointing every completed run atomically."""
 
@@ -5079,6 +5080,10 @@ def run_benchmark(
     git_state = _git_state()
     config = load_config(config_path)
     identifier = config_hash(config)
+    if expected_config_hash is not None and identifier != expected_config_hash:
+        raise ValueError(
+            "configuration changed after preflight; validate it again"
+        )
     planned_instances = _instances_for_config(config)
     instance_records = [
         _instance_record(planned, identifier) for planned in planned_instances

@@ -7,7 +7,8 @@ are:
   mode, payload identity and license identifier; it is built from git's index
   rather than the working tree; only ``100644`` and ``100755`` may appear; and
   the license mapping is prose to CC BY 4.0, code and machine-readable inputs
-  (including ``configs/*.json``) to MIT.
+  (including ``configs/*.json``) to MIT, with vendored font files under
+  ``src/maxcover/dashboard_ui/fonts/`` to OFL-1.1.
 * ``docs/history/PRE_PUBLIC_DEVELOPMENT_HISTORY.md`` — a file carries a license
   grant only if it appears in the manifest with its exact identity.
 * The builder's docstrings — identity is bound to the git object, never to the
@@ -413,8 +414,10 @@ class LicenseMappingTests(unittest.TestCase):
     """The mapping must match the prose in LICENSES/README.md, not the reverse.
 
     The prose says: code and machine-readable inputs are MIT, prose is CC BY
-    4.0, and ``configs/`` is MIT specifically because those files are run inputs
-    rather than documents.
+    4.0, ``configs/`` is MIT specifically because those files are run inputs
+    rather than documents, and font files directly in
+    ``src/maxcover/dashboard_ui/fonts/`` are OFL-1.1 because they are vendored
+    third-party font software rather than MIT-licensed contributions.
     """
 
     def assertLicense(self, path: str, expected: str) -> None:
@@ -423,6 +426,43 @@ class LicenseMappingTests(unittest.TestCase):
     def test_configs_json_is_mit_because_it_is_a_run_input(self) -> None:
         for path in ("configs/full.json", "configs/quick.json", "configs/sweeps.json"):
             self.assertLicense(path, "MIT")
+
+    def test_bundled_fonts_are_ofl(self) -> None:
+        for path in (
+            "src/maxcover/dashboard_ui/fonts/ibm-plex-mono-latin-400-normal.woff2",
+            "src/maxcover/dashboard_ui/fonts/ibm-plex-mono-latin-600-normal.woff2",
+            "src/maxcover/dashboard_ui/fonts/space-grotesk-latin-600-normal.woff2",
+            "src/maxcover/dashboard_ui/fonts/space-grotesk-latin-700-normal.woff2",
+        ):
+            self.assertLicense(path, "OFL-1.1")
+
+    def test_the_ofl_text_carries_the_same_identifier(self) -> None:
+        self.assertLicense("LICENSES/OFL-1.1.txt", "OFL-1.1")
+
+    def test_a_woff2_outside_the_font_dir_stays_mit(self) -> None:
+        """The OFL rule is scoped to the vendored font directory, not the suffix."""
+
+        self.assertLicense("assets/logo.woff2", "MIT")
+
+    def test_a_woff2_in_a_font_subdirectory_stays_mit(self) -> None:
+        """The directory rule matches direct children, not the whole subtree."""
+
+        self.assertLicense(
+            "src/maxcover/dashboard_ui/fonts/sub/outline.woff2", "MIT"
+        )
+
+    def test_a_prose_file_inside_the_font_dir_is_cc_by(self) -> None:
+        """The directory rule does not capture non-font files inside it."""
+
+        self.assertLicense("src/maxcover/dashboard_ui/fonts/NOTICE.md", "CC-BY-4.0")
+
+    def test_the_font_suffix_test_is_case_insensitive(self) -> None:
+        """A .WOFF2 spelling must not fall through to MIT on a case-blind path."""
+
+        self.assertLicense(
+            "src/maxcover/dashboard_ui/fonts/space-grotesk-latin-600-normal.WOFF2",
+            "OFL-1.1",
+        )
 
     def test_prose_suffixes_are_cc_by(self) -> None:
         for path in (
@@ -455,7 +495,13 @@ class LicenseMappingTests(unittest.TestCase):
         self.assertLicense("NOTES.Txt", "CC-BY-4.0")
 
     def test_every_license_used_has_an_attribution(self) -> None:
-        for path in ("a.py", "a.md", "LICENSE"):
+        for path in (
+            "a.py",
+            "a.md",
+            "LICENSE",
+            "src/maxcover/dashboard_ui/fonts/ibm-plex-mono-latin-400-normal.woff2",
+            "LICENSES/OFL-1.1.txt",
+        ):
             self.assertIn(builder.license_for(path), builder.ATTRIBUTIONS)
 
 

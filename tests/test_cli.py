@@ -57,6 +57,7 @@ class HelpConsistencyTests(unittest.TestCase):
             "benchmark",
             "resume",
             "replay",
+            "dashboard",
         ):
             self.assertIn(command, help_text)
         self.assertIn("When COMMAND is omitted", help_text)
@@ -83,6 +84,7 @@ class HelpConsistencyTests(unittest.TestCase):
             },
             "resume": {"--config", "--output", "--workers", "--force"},
             "replay": {"--instance", "--algorithm"},
+            "dashboard": {"--host", "--port"},
         }
 
         self.assertEqual(set(subparser_action.choices), set(expected_options))

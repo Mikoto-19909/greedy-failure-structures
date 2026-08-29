@@ -44,6 +44,90 @@ COLORS = {
 }
 
 
+_ALGORITHM_LABELS = {
+    "brute_force": "穷举搜索",
+    "branch_and_bound": "分支定界",
+    "branch_and_bound_enhanced": "增强分支定界",
+    "cp_sat_oracle": "CP-SAT 精确求解",
+    "greedy": "贪心算法",
+    "lazy_greedy": "惰性贪心",
+    "local_search": "局部搜索",
+    "multi_start_local_search": "多起点局部搜索",
+    "randomized_greedy": "随机贪心",
+}
+_CASE_LABELS = {
+    "uniform_sparse": "均匀分布 · 稀疏",
+    "uniform_dense": "均匀分布 · 稠密",
+    "overlap_core": "高重叠 · 核心",
+    "overlap_moderate": "高重叠 · 中等",
+    "overlap_extreme": "高重叠 · 极端",
+    "four_clusters": "四簇聚类",
+    "eight_clusters": "八簇聚类",
+    "greedy_trap": "贪心陷阱",
+    "greedy_trap_small": "贪心陷阱 · 小型",
+    "greedy_trap_large": "贪心陷阱 · 大型",
+}
+_FAMILY_LABELS = {
+    "uniform": "均匀分布",
+    "high_overlap": "高重叠",
+    "clustered": "聚类",
+    "adversarial": "对抗构造",
+    "fixed_size_uniform": "固定大小 · 均匀分布",
+    "mixed_cluster": "混合聚类",
+    "long_tail": "长尾分布",
+}
+_PREDICTOR_LABELS = {
+    "density": "密度",
+    "overlap": "重叠度",
+    "clustering": "聚类程度",
+    "set_count": "集合数量",
+    "k": "选择预算 k",
+    "dominated_set_ratio": "被支配集合比例",
+}
+_UNIT_LABELS = {
+    "instance_seed": "实例种子",
+    "coupling_seed_block": "耦合种子区块",
+}
+_STATUS_LABELS = {
+    "estimable": "可估计",
+    "no_samples": "无可用样本",
+    "not_evaluable": "不可评估",
+    "withheld_insufficient_samples": "样本不足，暂不汇总",
+    "withheld_unestimable_interval": "区间不可估计，暂不汇总",
+}
+
+
+def _readable_identifier(value: str) -> str:
+    """Return a visible fallback without exposing an underscored identifier."""
+
+    words = value.replace("-", "_").split("_")
+    return " ".join(word.capitalize() for word in words if word)
+
+
+def _algorithm_label(value: str) -> str:
+    return _ALGORITHM_LABELS.get(value, _readable_identifier(value))
+
+
+def _case_label(value: str) -> str:
+    return _CASE_LABELS.get(value, _readable_identifier(value))
+
+
+def _family_label(value: str) -> str:
+    return _FAMILY_LABELS.get(value, _readable_identifier(value))
+
+
+def _predictor_label(value: str) -> str:
+    return _PREDICTOR_LABELS.get(value, _readable_identifier(value))
+
+
+def _unit_label(value: str) -> str:
+    return _UNIT_LABELS.get(value, _readable_identifier(value))
+
+
+def _status_label(value: str) -> str:
+    return _STATUS_LABELS.get(value, _readable_identifier(value))
+
+
 def _automatic_conclusion_status(record: ConfidenceIntervalRecord) -> str:
     """Return the operational eligibility state for an automatic metric claim."""
 
@@ -378,7 +462,10 @@ def _write_gap_chart(
         for row in statistics
         if row.metric == "optimality_gap" and row.mean is not None
     ]
-    labels = [f"{row.case_id} / {row.algorithm_id}" for row in usable]
+    labels = [
+        f"{_case_label(row.case_id)} / {_algorithm_label(row.algorithm_id)}"
+        for row in usable
+    ]
     values = [
         100 * row.mean
         for row in usable
@@ -404,7 +491,10 @@ def _write_runtime_chart(
         for row in statistics
         if row.metric == "runtime_seconds" and row.mean is not None
     ]
-    labels = [f"{row.case_id} / {row.algorithm_id}" for row in usable]
+    labels = [
+        f"{_case_label(row.case_id)} / {_algorithm_label(row.algorithm_id)}"
+        for row in usable
+    ]
     raw_means = [row.mean for row in usable if row.mean is not None]
     # Log10 milliseconds makes very fast and exact methods visible together.
     values = [max(0.0, math.log10(max(value * 1000, 1e-3)) + 3) for value in raw_means]
@@ -433,6 +523,7 @@ def _render_horizontal_chart(
     value_format: str,
     width: int = 1750,
     right: int = 690,
+    visible_subtitle: str | None = None,
 ) -> str:
     """Render deterministic horizontal bars with explicit sample diagnostics."""
 
@@ -440,13 +531,14 @@ def _render_horizontal_chart(
     row_height = 54
     height = max(360, top + row_height * max(1, len(rows)) + bottom)
     plot_width = width - left - right
+    display_subtitle = subtitle if visible_subtitle is None else visible_subtitle
     parts = [
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
         f"<title>{html.escape(title)}</title>",
         f"<desc>{html.escape(subtitle)}</desc>",
         '<rect width="100%" height="100%" fill="#ffffff"/>',
         f'<text x="{width / 2}" y="34" text-anchor="middle" font-family="Arial" font-size="22" font-weight="bold">{html.escape(title)}</text>',
-        f'<text x="{width / 2}" y="60" text-anchor="middle" font-family="Arial" font-size="12" fill="#4b5563">{html.escape(subtitle)}</text>',
+        f'<text x="{width / 2}" y="60" text-anchor="middle" font-family="Arial" font-size="12" fill="#4b5563">{html.escape(display_subtitle)}</text>',
     ]
     if not rows:
         parts.extend(
@@ -512,13 +604,14 @@ def _render_gap_by_case_chart(
         key=lambda row: (row.family, row.case_id, row.algorithm_id, row.algorithm),
     ):
         detail = (
-            f"n={record.sample_count} {record.repetition_unit}; "
-            f"runs={record.run_count}; timeout={record.timeout_count}; "
-            f"error={record.error_count}; exact_ref={record.valid_exact_reference_count}"
+            f"样本={record.sample_count} {_unit_label(record.repetition_unit)}; "
+            f"运行={record.run_count}; 超时={record.timeout_count}; "
+            f"错误={record.error_count}; 有效最优参考={record.valid_exact_reference_count}"
         )
         rows.append(
             (
-                f"{record.family} / {record.case_id} / {record.algorithm_id}",
+                f"{_family_label(record.family)} / {_case_label(record.case_id)} / "
+                f"{_algorithm_label(record.algorithm_id)}",
                 None if record.mean is None else 100 * record.mean,
                 COLORS.get(record.algorithm, "#2563eb"),
                 detail,
@@ -531,6 +624,7 @@ def _render_gap_by_case_chart(
         axis_maximum=100.0,
         axis_label="Mean relative optimality gap (%)",
         value_format=".2f",
+        visible_subtitle="来源：描述性统计；单位：实例种子；固定输入的描述性结果",
     )
 
 
@@ -563,21 +657,21 @@ def _association_chart_rows(
         ):
             if isinstance(record, GapClusteringAssociationRecord):
                 count = record.eligible_block_count
-                unit = "coupling_seed_block"
+                unit = "耦合种子区块"
                 exclusions = (
-                    f"incomplete={record.incomplete_block_count}; "
-                    f"timeout={record.timeout_count}; error={record.error_count}"
+                    f"不完整={record.incomplete_block_count}; "
+                    f"超时={record.timeout_count}; 错误={record.error_count}"
                 )
             else:
                 count = record.eligible_instance_count
-                unit = record.repetition_unit
+                unit = _unit_label(record.repetition_unit)
                 exclusions = (
-                    f"timeout={record.timeout_count}; error={record.error_count}; "
-                    f"unusable={record.unusable_result_count}"
+                    f"超时={record.timeout_count}; 错误={record.error_count}; "
+                    f"不可用={record.unusable_result_count}"
                 )
                 if isinstance(record, GapOverlapAssociationRecord):
                     exclusions += (
-                        f"; missing_predictor={record.missing_overlap_predictor_count}"
+                        f"; 缺少重叠度预测值={record.missing_overlap_predictor_count}"
                     )
             slope = "blank" if record.ols_slope is None else f"{record.ols_slope:.6f}"
             intercept = (
@@ -586,12 +680,13 @@ def _association_chart_rows(
                 else f"{record.ols_intercept:.6f}"
             )
             detail = (
-                f"n={count} {unit}; status={record.association_status}; "
-                f"OLS slope={slope}; intercept={intercept}; {exclusions}"
+                f"样本={count} {unit}; 状态={_status_label(record.association_status)}; "
+                f"OLS 斜率={slope}; 截距={intercept}; {exclusions}"
             )
             rows.append(
                 (
-                    f"{predictor} / {record.family} / {record.algorithm_id}",
+                    f"{_predictor_label(predictor)} / {_family_label(record.family)} / "
+                    f"{_algorithm_label(record.algorithm_id)}",
                     record.pearson_correlation,
                     COLORS.get(record.algorithm, "#2563eb"),
                     detail,
@@ -610,6 +705,7 @@ def _render_gap_structural_association_chart(
     subtitle = (
         "sources=gap_*_association_statistics.csv; Pearson r; descriptive, non-causal evidence"
     )
+    display_subtitle = "来源：结构参数关联统计；Pearson 相关系数；仅作描述，不表示因果关系"
     width = 1800
     left, right, top, bottom = 380, 700, 100, 55
     row_height = 54
@@ -621,7 +717,7 @@ def _render_gap_structural_association_chart(
         f"<desc>{html.escape(subtitle)}</desc>",
         '<rect width="100%" height="100%" fill="#ffffff"/>',
         f'<text x="{width / 2}" y="34" text-anchor="middle" font-family="Arial" font-size="22" font-weight="bold">{html.escape(title)}</text>',
-        f'<text x="{width / 2}" y="60" text-anchor="middle" font-family="Arial" font-size="12" fill="#4b5563">{html.escape(subtitle)}</text>',
+        f'<text x="{width / 2}" y="60" text-anchor="middle" font-family="Arial" font-size="12" fill="#4b5563">{html.escape(display_subtitle)}</text>',
     ]
     if not rows:
         parts.extend(
@@ -675,6 +771,8 @@ def _render_signed_coefficient_chart(
     title: str,
     subtitle: str,
     facets: Sequence[tuple[str, str, Sequence[ChartRow]]],
+    *,
+    visible_subtitle: str | None = None,
 ) -> str:
     """Render signed, unit-bearing coefficients on one scale per predictor."""
 
@@ -688,13 +786,14 @@ def _render_signed_coefficient_chart(
     )
     height = max(360, top + content_height + bottom)
     plot_width = width - left - right
+    display_subtitle = subtitle if visible_subtitle is None else visible_subtitle
     parts = [
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
         f"<title>{html.escape(title)}</title>",
         f"<desc>{html.escape(subtitle)}</desc>",
         '<rect width="100%" height="100%" fill="#ffffff"/>',
         f'<text x="{width / 2}" y="34" text-anchor="middle" font-family="Arial" font-size="22" font-weight="bold">{html.escape(title)}</text>',
-        f'<text x="{width / 2}" y="60" text-anchor="middle" font-family="Arial" font-size="12" fill="#4b5563">{html.escape(subtitle)}</text>',
+        f'<text x="{width / 2}" y="60" text-anchor="middle" font-family="Arial" font-size="12" fill="#4b5563">{html.escape(display_subtitle)}</text>',
     ]
     if not facets:
         parts.extend(
@@ -794,15 +893,15 @@ def _render_runtime_scaling_chart(
                 else f"{record.mean_runtime_seconds:.10f}s"
             )
             detail = (
-                f"n={record.eligible_instance_count} {record.repetition_unit}; "
-                f"cases={record.case_count}; status={record.association_status}; "
-                f"Pearson={pearson}; mean_runtime={mean_runtime}; "
-                f"incomplete_instances={record.incomplete_runtime_instance_count}; "
-                f"timeout={record.timeout_count}; error={record.error_count}"
+                f"样本={record.eligible_instance_count} {_unit_label(record.repetition_unit)}; "
+                f"案例数={record.case_count}; 状态={_status_label(record.association_status)}; "
+                f"Pearson={pearson}; 平均耗时={mean_runtime}; "
+                f"未完成实例={record.incomplete_runtime_instance_count}; "
+                f"超时={record.timeout_count}; 错误={record.error_count}"
             )
             rows.append(
                 (
-                    f"{record.family} / {record.algorithm_id}",
+                    f"{_family_label(record.family)} / {_algorithm_label(record.algorithm_id)}",
                     getattr(record, slope_name),
                     COLORS.get(record.algorithm, "#2563eb"),
                     detail,
@@ -814,7 +913,7 @@ def _render_runtime_scaling_chart(
     if canonical_set_count:
         facets.append(
             (
-                "predictor=set_count",
+                "集合数量",
                 "OLS slope (seconds per set)",
                 rows_for(canonical_set_count, "ols_slope_seconds_per_set"),
             )
@@ -822,7 +921,7 @@ def _render_runtime_scaling_chart(
     if canonical_k:
         facets.append(
             (
-                "predictor=k",
+                "选择预算 k",
                 "OLS slope (seconds per budget unit)",
                 rows_for(canonical_k, "ols_slope_seconds_per_budget_unit"),
             )
@@ -831,6 +930,7 @@ def _render_runtime_scaling_chart(
         "Completed Runtime Scaling by Structural Predictor",
         "sources=runtime_set_count_association_statistics.csv + runtime_k_association_statistics.csv; unit=instance_seed; machine-specific descriptive evidence; censored runtime excluded",
         facets,
+        visible_subtitle="来源：运行耗时与结构参数关联统计；单位：实例种子；排除删失耗时",
     )
 
 
@@ -859,15 +959,15 @@ def _render_node_scaling_chart(
             else f"{record.mean_search_nodes:.10f}"
         )
         detail = (
-            f"n={record.eligible_instance_count} {record.repetition_unit}; "
-            f"cases={record.case_count}; status={record.association_status}; "
-            f"Pearson={pearson}; mean_nodes={mean_nodes}; "
-            f"optimal_runs={record.optimal_run_count}/{record.run_count}; "
-            f"timeout={record.timeout_count}; error={record.error_count}"
+            f"样本={record.eligible_instance_count} {_unit_label(record.repetition_unit)}; "
+            f"案例数={record.case_count}; 状态={_status_label(record.association_status)}; "
+            f"Pearson={pearson}; 平均搜索节点={mean_nodes}; "
+            f"最优运行={record.optimal_run_count}/{record.run_count}; "
+            f"超时={record.timeout_count}; 错误={record.error_count}"
         )
         rows.append(
             (
-                f"{record.family} / {record.algorithm_id}",
+                f"{_family_label(record.family)} / {_algorithm_label(record.algorithm_id)}",
                 record.ols_slope_nodes_per_ratio_unit,
                 COLORS.get(record.algorithm, "#2563eb"),
                 detail,
@@ -875,7 +975,7 @@ def _render_node_scaling_chart(
         )
     facets = (
         (
-            "predictor=dominated_set_ratio",
+            "被支配集合比例",
             "OLS slope (search nodes per ratio unit)",
             rows,
         ),
@@ -884,6 +984,7 @@ def _render_node_scaling_chart(
         "Branch-and-Bound Node Scaling versus Dominated-Set Ratio",
         "source=search_nodes_dominated_ratio_association_statistics.csv; unit=instance_seed; complete optimal unseeded BnB searches only; descriptive fixed-corpus evidence",
         facets,
+        visible_subtitle="来源：搜索节点与结构参数关联统计；单位：实例种子；仅纳入已证明最优的搜索",
     )
 
 
@@ -907,19 +1008,20 @@ def _render_timeout_by_case_chart(
             else f"{record.mean_censor_time_seconds:.10f}s"
         )
         detail = (
-            f"n={record.instance_count} {record.repetition_unit}; "
-            f"status={record.censoring_status}; runs={record.run_count}; "
-            f"right_censored={record.right_censored_run_count} runs/"
-            f"{record.right_censored_instance_count} instances; "
-            f"errors={record.error_run_count} runs/"
-            f"{record.error_affected_instance_count} instances; "
-            f"fully_censored={record.fully_right_censored_instance_count}; "
-            f"censor_samples={record.censoring_sample_count}; "
-            f"mean_censor_time={mean_censor_time} (diagnostic only)"
+            f"样本={record.instance_count} {_unit_label(record.repetition_unit)}; "
+            f"状态={_status_label(record.censoring_status)}; 运行={record.run_count}; "
+            f"右删失={record.right_censored_run_count} 次/"
+            f"{record.right_censored_instance_count} 个实例; "
+            f"错误={record.error_run_count} 次/"
+            f"{record.error_affected_instance_count} 个实例; "
+            f"完全删失={record.fully_right_censored_instance_count}; "
+            f"删失样本={record.censoring_sample_count}; "
+            f"平均删失时间={mean_censor_time}（仅作诊断）"
         )
         rows.append(
             (
-                f"{record.family} / {record.case_id} / {record.algorithm_id}",
+                f"{_family_label(record.family)} / {_case_label(record.case_id)} / "
+                f"{_algorithm_label(record.algorithm_id)}",
                 100 * record.censoring_rate,
                 COLORS.get(record.algorithm, "#2563eb"),
                 detail,
@@ -934,6 +1036,7 @@ def _render_timeout_by_case_chart(
         value_format=".2f",
         width=2100,
         right=1040,
+        visible_subtitle="来源：删失运行统计；单位：实例种子；删失时间仅作诊断",
     )
 
 
@@ -960,16 +1063,17 @@ def _render_local_search_recovery_chart(
             else f"{100 * record.eligible_pair_rate:.2f}%"
         )
         detail = (
-            f"n={record.eligible_pair_count} paired {record.repetition_unit}; "
-            f"eligible_rate={eligible_rate}; instances={record.instance_count}; "
-            f"greedy_failures={record.greedy_failure_count}; "
-            f"timeouts={record.greedy_timeout_count + record.local_search_timeout_count}; "
-            f"errors={record.greedy_error_count + record.local_search_error_count}"
+            f"样本={record.eligible_pair_count} 对应的{_unit_label(record.repetition_unit)}; "
+            f"可评估比例={eligible_rate}; 实例={record.instance_count}; "
+            f"贪心失败数={record.greedy_failure_count}; "
+            f"超时={record.greedy_timeout_count + record.local_search_timeout_count}; "
+            f"错误={record.greedy_error_count + record.local_search_error_count}"
         )
         rows.append(
             (
-                f"{record.family} / {record.case_id} / "
-                f"{record.greedy_algorithm_id}->{record.local_search_algorithm_id}",
+                f"{_family_label(record.family)} / {_case_label(record.case_id)} / "
+                f"{_algorithm_label(record.greedy_algorithm_id)} → "
+                f"{_algorithm_label(record.local_search_algorithm_id)}",
                 (
                     None
                     if record.mean_gap_recovery_rate is None
@@ -986,6 +1090,7 @@ def _render_local_search_recovery_chart(
         axis_maximum=100.0,
         axis_label="Mean recoverable gap restored (%)",
         value_format=".2f",
+        visible_subtitle="来源：局部搜索恢复统计；单位：成对实例种子",
     )
 
 
@@ -997,6 +1102,7 @@ def _render_quality_runtime_pareto_chart(
         "source=quality_runtime_pareto_statistics.csv; common instance_seed units; "
         "runtime is machine-specific"
     )
+    display_subtitle = "来源：质量与耗时权衡统计；按共同实例种子对照；耗时随机器变化"
     grouped: dict[tuple[str, str], list[QualityRuntimeParetoRecord]] = {}
     canonical_records = [
         QualityRuntimeParetoRecord.from_csv_row(record.to_csv_row())
@@ -1021,7 +1127,7 @@ def _render_quality_runtime_pareto_chart(
         f"<desc>{html.escape(subtitle)}</desc>",
         '<rect width="100%" height="100%" fill="#ffffff"/>',
         f'<text x="{width / 2}" y="34" text-anchor="middle" font-family="Arial" font-size="22" font-weight="bold">{html.escape(title)}</text>',
-        f'<text x="{width / 2}" y="60" text-anchor="middle" font-family="Arial" font-size="12" fill="#4b5563">{html.escape(subtitle)}</text>',
+        f'<text x="{width / 2}" y="60" text-anchor="middle" font-family="Arial" font-size="12" fill="#4b5563">{html.escape(display_subtitle)}</text>',
     ]
     if not grouped:
         parts.extend(
@@ -1053,7 +1159,7 @@ def _render_quality_runtime_pareto_chart(
             max_gap = 1.0
         parts.extend(
             [
-                f'<text x="{left}" y="{panel_top + 20}" font-family="Arial" font-size="15" font-weight="bold">{html.escape(family + " / " + case_id)}</text>',
+                f'<text x="{left}" y="{panel_top + 20}" font-family="Arial" font-size="15" font-weight="bold">{html.escape(_family_label(family) + " / " + _case_label(case_id))}</text>',
                 f'<line x1="{left}" y1="{plot_top}" x2="{left}" y2="{plot_top + plot_height}" stroke="#111827"/>',
                 f'<line x1="{left}" y1="{plot_top + plot_height}" x2="{left + plot_width}" y2="{plot_top + plot_height}" stroke="#111827"/>',
                 f'<text x="{left}" y="{plot_top + plot_height + 14}" text-anchor="middle" font-family="Arial" font-size="9">0</text>',
@@ -1082,8 +1188,8 @@ def _render_quality_runtime_pareto_chart(
             detail_y = plot_top + 12 + row_index * 40
             parts.extend(
                 [
-                    f'<text x="{right_start}" y="{detail_y}" font-family="Arial" font-size="10" fill="#111827">{html.escape(record.algorithm_id)}: n={record.eligible_instance_count} {html.escape(record.repetition_unit)}; status={record.pareto_status}</text>',
-                    f'<text x="{right_start}" y="{detail_y + 16}" font-family="Arial" font-size="10" fill="#4b5563">gap={gap}; runtime={runtime}; timeout={record.timeout_count}; error={record.error_count}; no_ref={record.no_exact_reference_count}</text>',
+                    f'<text x="{right_start}" y="{detail_y}" font-family="Arial" font-size="10" fill="#111827">{html.escape(_algorithm_label(record.algorithm_id))}: 样本={record.eligible_instance_count} {_unit_label(record.repetition_unit)}; 状态={_status_label(record.pareto_status)}</text>',
+                    f'<text x="{right_start}" y="{detail_y + 16}" font-family="Arial" font-size="10" fill="#4b5563">差距={gap}; 耗时={runtime}; 超时={record.timeout_count}; 错误={record.error_count}; 无有效参考={record.no_exact_reference_count}</text>',
                 ]
             )
             if record not in usable:
@@ -1103,7 +1209,7 @@ def _render_quality_runtime_pareto_chart(
             parts.extend(
                 [
                     f'<circle cx="{x:.2f}" cy="{y:.2f}" r="7" fill="{color}" stroke="#111827" stroke-width="{stroke_width}" opacity="{opacity}"/>',
-                    f'<text x="{x + 9:.2f}" y="{label_y:.2f}" font-family="Arial" font-size="10">{html.escape(record.algorithm_id)}</text>',
+                    f'<text x="{x + 9:.2f}" y="{label_y:.2f}" font-family="Arial" font-size="10">{html.escape(_algorithm_label(record.algorithm_id))}</text>',
                 ]
             )
         panel_top += panel_heights[(family, case_id)]

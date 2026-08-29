@@ -1,5 +1,5 @@
 param(
-    [ValidateSet("quick", "demo", "test", "test-fast", "typecheck", "full")]
+    [ValidateSet("quick", "demo", "test", "test-fast", "typecheck", "full", "dashboard")]
     [string]$Action = "quick"
 )
 
@@ -85,6 +85,7 @@ try {
         }
         "typecheck" { & $Python -m mypy }
         "full"  { & $Python run_project.py benchmark --config configs/full.json --output results/full }
+        "dashboard" { & $Python run_project.py dashboard }
     }
     if ($LASTEXITCODE -ne 0) {
         throw "The project command failed with exit code $LASTEXITCODE."

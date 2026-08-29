@@ -1,0 +1,29 @@
+{
+  "schema_version": 3,
+  "name": "P6.4 greedy-trap construction contrast",
+  "base_seed": 6404,
+  "repetitions": 5,
+  "algorithms": [
+    { "name": "greedy" },
+    { "name": "local_search" },
+    { "name": "brute_force", "options": { "max_set_count": 22 } },
+    { "name": "branch_and_bound_enhanced", "options": { "time_limit_seconds": 5.0 } }
+  ],
+  "cases": [
+    {
+      "name": "trap_v1",
+      "family": "adversarial",
+      "block_size": 12,
+      "distractor_count": 8,
+      "construction_version": 1
+    },
+    {
+      "name": "trap_v2",
+      "family": "adversarial",
+      "block_size": 12,
+      "distractor_count": 8,
+      "construction_version": 2,
+      "sweep": { "trap_count": [7, 9, 12] }
+    }
+  ]
+}

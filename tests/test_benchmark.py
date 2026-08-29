@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import json
+import re
 import sys
 import tempfile
 import unittest
@@ -192,40 +193,46 @@ class BenchmarkTests(unittest.TestCase):
             chart_expectations = {
                 "gap_by_case.svg": (
                     "source=descriptive_statistics.csv",
-                    "n=1 instance_seed",
+                    "样本=1 实例种子",
                 ),
                 "gap_vs_structural_parameter.svg": (
                     "sources=gap_*_association_statistics.csv",
-                    "status=",
+                    "状态=",
                 ),
                 "local_search_recovery.svg": (
                     "source=local_search_recovery_statistics.csv",
-                    "paired instance_seed",
+                    "样本=0 对应的实例种子",
                 ),
                 "quality_runtime_pareto.svg": (
                     "source=quality_runtime_pareto_statistics.csv",
-                    "n=1 instance_seed",
+                    "样本=1 实例种子",
                 ),
                 "runtime_scaling.svg": (
                     "sources=runtime_set_count_association_statistics.csv + runtime_k_association_statistics.csv",
-                    "n=1 instance_seed",
-                    "incomplete_instances=0",
+                    "样本=1 实例种子",
+                    "未完成实例=0",
                 ),
                 "node_scaling.svg": (
                     "source=search_nodes_dominated_ratio_association_statistics.csv",
-                    "descriptive fixed-corpus evidence",
+                    "来源：搜索节点与结构参数关联统计",
                 ),
                 "timeout_by_case.svg": (
                     "source=censored_runtime_statistics.csv",
-                    "n=1 instance_seed",
-                    "right_censored=0 runs/0 instances",
-                    "mean_censor_time=blank (diagnostic only)",
+                    "样本=1 实例种子",
+                    "右删失=0 次/0 个实例",
+                    "平均删失时间=blank（仅作诊断）",
                 ),
             }
             for filename, markers in chart_expectations.items():
                 chart = (output / filename).read_text(encoding="utf-8")
                 for marker in markers:
                     self.assertIn(marker, chart, f"{filename}: {marker}")
+                visible_chart = re.sub(r"<desc>.*?</desc>", "", chart, flags=re.DOTALL)
+                self.assertNotRegex(
+                    visible_chart,
+                    r"\b[a-z][a-z0-9]*_[a-z0-9_]+\b",
+                    f"{filename} exposes an underscored identifier in visible text",
+                )
             report = (output / "results_summary.md").read_text(encoding="utf-8")
             self.assertIn(
                 "## P5.2 mean/max relative optimality gap",
@@ -304,6 +311,35 @@ class BenchmarkTests(unittest.TestCase):
             ) as handle:
                 self.assertEqual(
                     tuple(next(csv.reader(handle))), InstanceRecord.CSV_FIELDS
+                )
+
+    def test_expected_config_hash_is_checked_before_execution(self) -> None:
+        config = {
+            "schema_version": 3,
+            "name": "hash guard",
+            "base_seed": 1,
+            "repetitions": 1,
+            "algorithms": [{"name": "greedy"}],
+            "cases": [
+                {
+                    "name": "tiny",
+                    "family": "uniform",
+                    "universe_size": 8,
+                    "set_count": 4,
+                    "k": 2,
+                    "density": 0.25,
+                }
+            ],
+        }
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            config_path = root / "config.json"
+            config_path.write_text(json.dumps(config), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "changed after preflight"):
+                run_benchmark(
+                    config_path,
+                    root / "output",
+                    expected_config_hash="0" * 64,
                 )
 
 
