@@ -241,8 +241,11 @@
     rows.forEach((row) => {
       const algorithm = row.algorithm_id || row.algorithm;
       if (!GREEDY_IDS.has(algorithm)) return;
-      const gap = Number(row.mean_optimality_gap);
-      if (!Number.isFinite(gap)) return;
+      const gap = row.mean_optimality_gap;
+      // A missing optimum arrives as null from the API; Number(null) is 0,
+      // which would drag every family average down instead of excluding the
+      // row, so require a real number rather than a coercible one.
+      if (typeof gap !== "number" || !Number.isFinite(gap)) return;
       const family = row.family || row.case;
       const current = byFamily.get(family);
       if (current) { current.total += gap; current.count += 1; }
@@ -268,7 +271,7 @@
       const value = document.createElement("span"); value.className = "spectrum-value"; value.textContent = formatPercent(entry.gap);
       rowEl.append(label, track, value);
       container.append(rowEl);
-      const width = `${Math.max((entry.gap / maxGap) * 100, 1.5)}%`;
+      const width = maxGap > 0 ? `${Math.max((entry.gap / maxGap) * 100, 1.5)}%` : "0%";
       requestAnimationFrame(() => { requestAnimationFrame(() => { bar.style.width = width; }); });
     });
     const note = document.createElement("p"); note.className = "spectrum-note"; note.textContent = t("gap.note");
