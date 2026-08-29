@@ -16,6 +16,7 @@ from .benchmark import (
     summarize_benchmark,
 )
 from .config import load_config
+from .dashboard import serve_dashboard
 from .generators import adversarial_greedy_trap
 
 
@@ -264,6 +265,25 @@ def build_parser() -> argparse.ArgumentParser:
         choices=sorted(ALGORITHMS),
         help="algorithm override; defaults to the algorithm recorded in the file",
     )
+    dashboard = subparsers.add_parser(
+        "dashboard",
+        help="serve the local experiment dashboard",
+        description=(
+            "Serve a local browser frontend over the existing configuration, "
+            "benchmark, reporting, and replay functions."
+        ),
+    )
+    dashboard.add_argument(
+        "--host",
+        default="127.0.0.1",
+        help="interface to bind (default: 127.0.0.1)",
+    )
+    dashboard.add_argument(
+        "--port",
+        type=int,
+        default=8501,
+        help="TCP port to bind (default: 8501; 0 selects a free port)",
+    )
     return parser
 
 
@@ -317,6 +337,8 @@ def _dispatch(parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
             )
             print(message, file=sys.stdout if matches else sys.stderr)
             return 0 if matches else 1
+    elif command == "dashboard":
+        serve_dashboard(args.host, args.port)
     return 0
 
 

@@ -103,7 +103,7 @@ python -m mypy
 
 Read its output narrowly. `pyproject.toml` sets `ignore_errors = true` for
 `maxcover.benchmark` and `maxcover.reporting` — roughly 40% of the source by
-line — so `Success: no issues found in 19 source files` means the remaining
+line — so `Success: no issues found in 20 source files` means the remaining
 modules are clean, not that the package is. Those two modules carry a real
 backlog of unresolved type errors; the exemption keeps the check enforceable
 everywhere else instead of leaving it permanently red. Reducing that backlog is
@@ -117,6 +117,21 @@ On Windows, the convenience wrapper provides equivalent commands:
 ./project.ps1 typecheck
 ./project.ps1 quick
 ```
+
+To use the local experiment dashboard:
+
+```console
+python run_project.py dashboard
+```
+
+Then open the printed local URL in a browser. The dashboard can validate a
+configuration, start or resume a benchmark under `results/`, inspect generated
+CSV/report artifacts, and replay serialized failure instances. It is a local
+frontend over the same engine used by the CLI; it does not provide accounts,
+remote execution, or a hosted service. Use `--host` and `--port` on the
+`dashboard` command when the default binding needs to change.
+The browser UI includes a Chinese/English language toggle for the full control
+surface and its dynamic run, result, and replay states.
 
 ## Reproducibility notes
 
@@ -147,23 +162,25 @@ Anything of that kind requires the frozen evidence chain
 [`CONTRIBUTING.md`](CONTRIBUTING.md) describes, and CI enforces the rule over
 every tracked file rather than trusting the convention.
 
-## Planned direction
+## Dashboard
 
-A future goal is to add an interactive experiment dashboard as a second frontend
-to the existing experiment engine. The dashboard should let a local user
-configure and validate experiments, start or resume benchmark runs, inspect
-locally generated outputs, compare algorithm behaviour, and replay serialized
-failure cases without reimplementing the underlying research logic.
+The repository includes an interactive experiment dashboard as a second
+frontend to the existing experiment engine. A local user can configure and
+validate experiments, start or resume benchmark runs, inspect locally generated
+outputs, compare algorithm behaviour, and replay serialized failure cases
+without reimplementing the underlying research logic.
 
-The command-line interface remains the current supported interface. The planned
-dashboard is not a hosted multi-user platform: its first scope is a local
-frontend over the same configuration, benchmark, reporting, validation, and
-replay functions already used by the CLI. Database-backed accounts, remote job
-queues, and hosted execution are explicitly outside that initial goal.
+The command-line interface remains fully supported. The dashboard is not a
+hosted multi-user platform: it is a local frontend over the same configuration,
+benchmark, reporting, validation, and replay functions used by the CLI.
+Database-backed accounts, remote job queues, and hosted execution are outside
+its scope.
 
 ## Project layout
 
 - `src/maxcover/`: algorithms, generators, benchmark execution, and reporting
+- `src/maxcover/dashboard.py` and `src/maxcover/dashboard_ui/`: local dashboard
+  service and browser frontend
 - `configs/`: reproducible experiment configurations
 - `tests/`: deterministic unit and contract tests
 - `run_project.py`: primary command-line entry point

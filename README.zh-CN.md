@@ -75,7 +75,7 @@ python -m pip install -e ".[typecheck]"
 python -m mypy
 ```
 
-需要谨慎理解它的输出。`pyproject.toml` 对 `maxcover.benchmark` 和 `maxcover.reporting` 设置了 `ignore_errors = true`——按源码行数计算，这两部分大约占 40%。因此，`Success: no issues found in 19 source files` 的含义只是其余模块通过了检查，而不是整个包都没有类型问题。这两个模块确实还存在尚未解决的类型错误积压；保留豁免可以让其他区域的类型检查继续保持可执行和可强制，而不是让整个检查长期处于红灯状态。欢迎逐步减少这部分积压，豁免列表就是确认当前哪些模块尚未纳入覆盖范围的位置。
+需要谨慎理解它的输出。`pyproject.toml` 对 `maxcover.benchmark` 和 `maxcover.reporting` 设置了 `ignore_errors = true`——按源码行数计算，这两部分大约占 40%。因此，`Success: no issues found in 20 source files` 的含义只是其余模块通过了检查，而不是整个包都没有类型问题。这两个模块确实还存在尚未解决的类型错误积压；保留豁免可以让其他区域的类型检查继续保持可执行和可强制，而不是让整个检查长期处于红灯状态。欢迎逐步减少这部分积压，豁免列表就是确认当前哪些模块尚未纳入覆盖范围的位置。
 
 在 Windows 上，可以使用便捷包装脚本执行等价命令：
 
@@ -84,6 +84,19 @@ python -m mypy
 ./project.ps1 typecheck
 ./project.ps1 quick
 ```
+
+启动本地实验 dashboard：
+
+```console
+python run_project.py dashboard
+```
+
+然后在浏览器中打开命令行打印的本地地址。dashboard 可以校验配置、启动或
+恢复 `results/` 下的 benchmark、浏览生成的 CSV/报告产物，以及 replay 序列化
+的 failure instance。它只是复用 CLI 所使用的同一套本地引擎，不提供账号、远程
+执行或托管服务；如果需要改变默认绑定，可以给 `dashboard` 命令传入 `--host`
+和 `--port`。
+浏览器界面提供中文/英文切换按钮，动态的运行状态、结果和回放状态也会随语言切换。
 
 ## 可复现性说明
 
@@ -102,6 +115,8 @@ python -m mypy
 ## 项目结构
 
 - `src/maxcover/`：算法、生成器、基准测试执行与报告
+- `src/maxcover/dashboard.py` 和 `src/maxcover/dashboard_ui/`：本地 dashboard
+  服务及浏览器前端
 - `configs/`：可复现的实验配置
 - `tests/`：确定性的单元测试与契约测试
 - `run_project.py`：主要命令行入口

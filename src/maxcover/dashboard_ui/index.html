@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title data-i18n="document.title">Maximum Coverage · Local Lab</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand-lockup">
+          <div class="brand-mark" aria-hidden="true">MC</div>
+          <div>
+            <p class="eyebrow">MAXIMUM COVERAGE</p>
+            <h1 data-i18n="brand.title">Local experiment lab</h1>
+          </div>
+        </div>
+        <div class="topbar-meta">
+          <span class="local-pill"><span class="pulse"></span> <span data-i18n="topbar.localOnly">LOCAL ONLY</span></span>
+          <span class="api-status" id="api-status" data-i18n="topbar.connecting">Connecting…</span>
+          <div class="language-toggle" role="group" aria-label="Language" data-i18n-aria="topbar.language">
+            <button class="language-button active" id="language-zh" data-language="zh">中文</button>
+            <button class="language-button" id="language-en" data-language="en">EN</button>
+          </div>
+        </div>
+      </header>
+
+      <div class="workspace">
+        <aside class="sidebar">
+          <nav class="nav" aria-label="主导航" data-i18n-aria="nav.ariaLabel">
+            <button class="nav-item active" data-view-target="overview">
+              <span class="nav-index">01</span><span data-i18n="nav.overview">总览</span>
+            </button>
+            <button class="nav-item" data-view-target="experiment">
+              <span class="nav-index">02</span><span data-i18n="nav.experiment">实验工作台</span>
+            </button>
+            <button class="nav-item" data-view-target="results">
+              <span class="nav-index">03</span><span data-i18n="nav.results">结果浏览</span>
+            </button>
+            <button class="nav-item" data-view-target="replay">
+              <span class="nav-index">04</span><span data-i18n="nav.replay">失败案例回放</span>
+            </button>
+          </nav>
+          <div class="sidebar-note">
+            <span class="note-dot"></span>
+            <p data-i18n="sidebar.note">前端直接连接本地实验引擎。配置、运行和输出都保留在当前工作区。</p>
+          </div>
+        </aside>
+
+        <main class="main-content">
+          <div class="workflow-bar" id="workflow-bar" aria-label="实验流程" data-i18n-aria="workflow.ariaLabel">
+            <div class="workflow-label"><span class="section-kicker" data-i18n="workflow.kicker">WORKFLOW</span><span data-i18n="workflow.progress">阶段进度</span></div>
+            <div class="workflow-steps">
+              <button class="workflow-step current" data-stage="select" data-view-target="experiment"><span class="step-number">01</span><span class="step-copy"><strong data-i18n="workflow.config">配置</strong><small data-i18n="workflow.configHint">选择实验</small></span></button>
+              <span class="step-connector" aria-hidden="true"></span>
+              <button class="workflow-step" data-stage="preflight" data-view-target="experiment"><span class="step-number">02</span><span class="step-copy"><strong data-i18n="workflow.preflight">校验</strong><small data-i18n="workflow.preflightHint">生成计划</small></span></button>
+              <span class="step-connector" aria-hidden="true"></span>
+              <button class="workflow-step" data-stage="execute" data-view-target="experiment"><span class="step-number">03</span><span class="step-copy"><strong data-i18n="workflow.execute">执行</strong><small data-i18n="workflow.executeHint">运行 benchmark</small></span></button>
+              <span class="step-connector" aria-hidden="true"></span>
+              <button class="workflow-step" data-stage="results" data-view-target="results"><span class="step-number">04</span><span class="step-copy"><strong data-i18n="workflow.results">结果</strong><small data-i18n="workflow.resultsHint">检查产物</small></span></button>
+              <span class="step-connector" aria-hidden="true"></span>
+              <button class="workflow-step" data-stage="replay" data-view-target="replay"><span class="step-number">05</span><span class="step-copy"><strong data-i18n="workflow.replay">回放</strong><small data-i18n="workflow.replayHint">重现失败</small></span></button>
+            </div>
+          </div>
+          <div class="transition-banner hidden" id="transition-banner" role="status" aria-live="polite">
+            <span class="transition-marker" aria-hidden="true"></span>
+            <div><strong id="transition-title" data-i18n="transition.startTitle">准备开始</strong><span id="transition-detail" data-i18n="transition.startDetail">选择一个配置进入实验阶段。</span></div>
+          </div>
+
+          <section class="view active" data-view="overview">
+            <div class="page-heading split-heading">
+              <div>
+                <p class="section-kicker" data-i18n="kickers.overview">WORKSPACE / OVERVIEW</p>
+                <h2 data-i18n="overview.title">实验控制台</h2>
+                <p class="lede" data-i18n="overview.lede">从一个小型预设开始，按步骤完成配置、运行、检查和回放。</p>
+              </div>
+              <button class="button button-primary" data-view-target="experiment"><span data-i18n="actions.newExperiment">新建实验</span> <span>↗</span></button>
+            </div>
+
+            <div class="metric-grid">
+              <article class="metric-card accent-blue">
+                <div class="metric-label" data-i18n="metrics.configs">可用配置</div>
+                <div class="metric-value" id="metric-configs">—</div>
+                <div class="metric-foot" data-i18n="metrics.configsFoot">来自 configs/</div>
+              </article>
+              <article class="metric-card accent-orange">
+                <div class="metric-label" data-i18n="metrics.results">本地结果集</div>
+                <div class="metric-value" id="metric-results">—</div>
+                <div class="metric-foot" data-i18n="metrics.resultsFoot">来自 results/</div>
+              </article>
+              <article class="metric-card accent-green">
+                <div class="metric-label" data-i18n="metrics.job">当前任务</div>
+                <div class="metric-value metric-value-small" id="metric-job">空闲</div>
+                <div class="metric-foot" id="metric-job-foot" data-i18n="metrics.jobFoot">等待启动</div>
+              </article>
+            </div>
+
+            <div class="content-grid two-column">
+              <article class="panel panel-large">
+                <div class="panel-heading">
+                  <div>
+                    <p class="section-kicker" data-i18n="kickers.recent">RECENT ACTIVITY</p>
+                    <h3 data-i18n="overview.recentJobs">最近任务</h3>
+                  </div>
+                  <button class="text-button" data-view-target="experiment"><span data-i18n="actions.openWorkbench">查看工作台</span> →</button>
+                </div>
+                <div id="recent-jobs" class="activity-list empty-state" data-i18n="overview.noJobs">还没有 dashboard 任务。</div>
+              </article>
+              <article class="panel panel-large getting-started">
+                <div class="panel-heading">
+                  <div><p class="section-kicker" data-i18n="kickers.startHere">START HERE</p><h3 data-i18n="overview.startTitle">第一次使用？从 quick 开始</h3></div>
+                  <span class="status-chip" data-i18n="overview.recommended">推荐</span>
+                </div>
+                <p class="start-copy" data-i18n="overview.startCopy">quick.json 是适合第一次操作的预设。你可以先查看它会运行什么，再决定是否启动。</p>
+                <ol class="onboarding-list">
+                  <li><span>01</span><div><strong data-i18n="overview.step1">选择 quick.json</strong><small data-i18n="overview.step1Hint">载入并校验配置</small></div></li>
+                  <li><span>02</span><div><strong data-i18n="overview.step2">确认执行计划</strong><small data-i18n="overview.step2Hint">先看实例和运行数量</small></div></li>
+                  <li><span>03</span><div><strong data-i18n="overview.step3">启动并查看结果</strong><small data-i18n="overview.step3Hint">完成后可继续 replay</small></div></li>
+                </ol>
+                <button class="button button-primary" id="choose-quick"><span data-i18n="actions.startQuick">用 quick.json 开始</span> <span>→</span></button>
+              </article>
+            </div>
+          </section>
+
+          <section class="view" data-view="experiment">
+            <div class="page-heading">
+              <p class="section-kicker" data-i18n="kickers.experiment">WORKSPACE / EXPERIMENT</p>
+              <h2 data-i18n="experiment.title">实验工作台</h2>
+              <p class="lede" data-i18n="experiment.lede">先选一个配置。系统会自动校验并展示计划，确认后再启动或恢复本地 benchmark。</p>
+            </div>
+            <div class="tip-card">
+              <span class="tip-icon" aria-hidden="true">i</span>
+              <div><strong data-i18n="experiment.tipTitle">推荐上手路径</strong><span data-i18n="experiment.tipCopy">先用 quick.json 熟悉流程；大规模配置可以在确认计划后再运行。</span></div>
+              <button class="text-button" id="choose-quick-inline" data-i18n="actions.chooseQuick">选择 quick.json →</button>
+            </div>
+            <div class="content-grid experiment-grid">
+              <article class="panel config-panel">
+                <div class="panel-heading"><div><p class="section-kicker" data-i18n="kickers.select">01 · SELECT</p><h3 data-i18n="experiment.configTitle">实验配置</h3></div><span class="status-chip" id="config-validity" data-i18n="status.notSelected">未选择</span></div>
+                <label class="field-label" for="config-select" data-i18n="fields.configFile">配置文件</label>
+                <select class="field" id="config-select"><option value="">加载中…</option></select>
+                <p class="field-help" data-i18n="experiment.configHelp">配置文件只读；选择后会自动显示可执行的实验计划。</p>
+                <div id="config-error" class="message error-message hidden"></div>
+                <div class="source-wrap">
+                  <div class="source-label" data-i18n="experiment.sourcePreview">SOURCE PREVIEW</div>
+                  <pre id="config-source" class="code-preview">选择一个配置查看源文件。</pre>
+                </div>
+                <div class="annotation-panel">
+                  <div class="annotation-heading"><span data-i18n="annotations.fieldsTitle">字段说明</span><small data-i18n="annotations.rawHint">原始字段名保留在括号内</small></div>
+                  <div class="field-glossary">
+                    <div><code>universe_size</code><strong data-i18n="glossary.universe">元素总数</strong><small data-i18n="glossary.universeHint">问题中可被覆盖的元素数量</small></div>
+                    <div><code>set_count</code><strong data-i18n="glossary.setCount">候选集合数</strong><small data-i18n="glossary.setCountHint">可供算法选择的集合数量</small></div>
+                    <div><code>k</code><strong data-i18n="glossary.budget">选择预算</strong><small data-i18n="glossary.budgetHint">最多可以选择的集合数</small></div>
+                    <div><code>repetitions</code><strong data-i18n="glossary.repetitions">重复次数</strong><small data-i18n="glossary.repetitionsHint">同一案例使用不同实例种子运行的次数</small></div>
+                  </div>
+                </div>
+              </article>
+              <article class="panel plan-panel">
+                <div class="panel-heading"><div><p class="section-kicker" data-i18n="kickers.preflight">02 · PREFLIGHT</p><h3 data-i18n="experiment.planTitle">执行计划</h3></div><button class="text-button" id="validate-button" data-i18n="actions.revalidate">重新校验</button></div>
+                <div id="plan-empty" class="empty-state" data-i18n="experiment.planEmpty">选择配置后，这里会显示实例、重复次数和预计运行数。</div>
+                <div id="plan-content" class="hidden">
+                  <div class="plan-name" id="plan-name">—</div>
+                  <div class="plan-metrics">
+                    <div><span data-i18n="plan.instances">实例总数</span><strong id="plan-instances">—</strong></div>
+                    <div><span data-i18n="plan.repetitions">每个实例重复</span><strong id="plan-repetitions">—</strong></div>
+                    <div><span data-i18n="plan.runs">预计算法运行</span><strong id="plan-runs">—</strong></div>
+                  </div>
+                  <p class="panel-hint" data-i18n="experiment.planHint">运行数量 = 实例数 × 启用算法及其重复次数。这里仅做计划校验，不会启动算法。</p>
+                  <div class="algorithm-list" id="algorithm-plan"></div>
+                  <div class="case-strip" id="case-plan"></div>
+                </div>
+              </article>
+            </div>
+            <article class="panel run-panel">
+              <div class="panel-heading"><div><p class="section-kicker" data-i18n="kickers.execute">03 · EXECUTE</p><h3 data-i18n="experiment.executeTitle">启动本地运行</h3></div><span class="status-chip muted" data-i18n="status.resumable">可恢复</span></div>
+              <div class="run-controls">
+                <label class="field-group"><span class="field-label" data-i18n="fields.outputName">结果文件夹名称</span><input class="field" id="output-name" data-i18n-placeholder="fields.outputPlaceholder" placeholder="例如 quick-dashboard" maxlength="81" /><small class="field-help" data-i18n="fields.outputHelp">结果会写入 results/ 下。</small></label>
+                <label class="field-group workers-field"><span class="field-label" data-i18n="fields.workers">并行 worker</span><input class="field" id="workers" type="number" min="1" max="32" value="1" /><small class="field-help" data-i18n="fields.workersHelp">新手保持 1 即可。</small></label>
+                <label class="check-control"><input id="force-run" type="checkbox" /><span data-i18n="fields.forceRun">清除后重跑</span></label>
+                <button class="button button-primary run-button" id="run-button"><span data-i18n="actions.runBenchmark">启动 benchmark</span> <span>↗</span></button>
+              </div>
+              <div class="run-guide"><span data-i18n="run.nextLabel">下一步</span><strong id="run-next-step" data-i18n="run.selectFirst">先选择并校验一个配置。</strong></div>
+              <div id="run-message" class="message hidden"></div>
+              <div class="job-console" id="job-console" aria-live="polite"><span class="console-prompt">›</span> <span data-i18n="run.consoleEmpty">任务状态会显示在这里。</span></div>
+            </article>
+          </section>
+
+          <section class="view" data-view="results">
+            <div class="page-heading split-heading">
+              <div><p class="section-kicker" data-i18n="kickers.results">WORKSPACE / RESULTS</p><h2 data-i18n="results.title">结果浏览</h2><p class="lede" data-i18n="results.lede">查看本机 results/ 中的运行汇总、报告图表和可回放案例。</p></div>
+              <button class="button button-secondary" id="refresh-results" data-i18n="actions.refreshResults">刷新结果列表</button>
+            </div>
+            <div class="result-picker-row"><label class="field-label" for="result-select" data-i18n="results.selectLabel">选择结果集</label><select class="field" id="result-select"><option value="">暂无结果</option></select><span class="result-meta" id="result-meta"></span></div>
+            <div id="result-message" class="message hidden"></div>
+            <div id="result-empty" class="panel empty-state"><span data-i18n="results.empty">运行完成后，结果集会出现在这里。你也可以先回到实验工作台启动 quick.json。</span><br /><button class="text-button" data-view-target="experiment" data-i18n="actions.goWorkbench">去实验工作台 →</button></div>
+            <div id="result-content" class="hidden">
+              <div class="annotation-panel result-annotation-panel">
+                <div class="annotation-heading"><span data-i18n="annotations.resultsTitle">结果标注</span><small data-i18n="annotations.resultsHint">中文含义为主，原始标识用于和 CSV / SVG 对照</small></div>
+                <div id="result-annotations" class="result-annotations"></div>
+              </div>
+              <div class="metric-grid result-metrics">
+                <article class="metric-card accent-blue"><div class="metric-label" data-i18n="results.summaryRecords">汇总记录</div><div class="metric-value" id="result-summary-count">—</div><div class="metric-foot">summary.csv</div></article>
+                <article class="metric-card accent-orange"><div class="metric-label" data-i18n="results.runRecords">运行记录</div><div class="metric-value" id="result-run-count">—</div><div class="metric-foot" id="result-run-foot">raw_results.csv</div></article>
+                <article class="metric-card accent-green"><div class="metric-label" data-i18n="results.failureFiles">失败案例文件</div><div class="metric-value" id="result-failure-count">—</div><div class="metric-foot" data-i18n="results.failureFoot">可继续 replay</div></article>
+              </div>
+              <div class="content-grid two-column result-grid">
+                <article class="panel panel-large"><div class="panel-heading"><div><p class="section-kicker" data-i18n="kickers.summary">SUMMARY</p><h3 data-i18n="results.comparison">算法对照</h3></div></div><div class="table-wrap"><table id="summary-table"><thead><tr><th data-i18n="table.case">案例</th><th data-i18n="table.algorithm">算法</th><th data-i18n="table.runs">运行次数</th><th data-i18n="table.coverage">平均覆盖</th><th data-i18n="table.gap">平均差距</th><th data-i18n="table.runtime">平均耗时</th><th data-i18n="table.timeouts">超时</th></tr></thead><tbody></tbody></table></div></article>
+                <article class="panel panel-large"><div class="panel-heading"><div><p class="section-kicker" data-i18n="kickers.reports">REPORTS</p><h3 data-i18n="results.reports">生成的报告</h3></div></div><div id="artifact-list" class="artifact-list"></div></article>
+              </div>
+              <article class="panel panel-large chart-panel"><div class="panel-heading"><div><p class="section-kicker" data-i18n="kickers.visualCheck">VISUAL CHECK</p><h3 data-i18n="results.preview">报告预览</h3></div><span class="status-chip muted">SVG</span></div><div class="chart-grid" id="chart-grid"></div></article>
+            </div>
+          </section>
+
+          <section class="view" data-view="replay">
+            <div class="page-heading"><p class="section-kicker" data-i18n="kickers.replay">WORKSPACE / REPLAY</p><h2 data-i18n="replay.title">失败案例回放</h2><p class="lede" data-i18n="replay.lede">选择 results/ 下的序列化失败案例，用记录的算法重新运行并核对结果。</p></div>
+            <div class="content-grid two-column">
+              <article class="panel panel-large">
+                <div class="panel-heading"><div><p class="section-kicker" data-i18n="kickers.selectInstance">SELECT INSTANCE</p><h3 data-i18n="replay.instanceTitle">序列化失败案例</h3></div><span class="status-chip" id="replay-count">0 个文件</span></div>
+                <label class="field-label" for="replay-select" data-i18n="replay.fileLabel">失败案例文件</label>
+                <select class="field" id="replay-select"><option value="" data-i18n="replay.noFiles">暂无失败案例文件</option></select>
+                <label class="field-label spaced-label" for="replay-algorithm" data-i18n="replay.algorithmLabel">替换算法（可选）</label>
+                <select class="field" id="replay-algorithm"><option value="" data-i18n="replay.recordedAlgorithm">使用记录算法</option></select>
+                <p class="field-help" data-i18n="replay.algorithmHelp">留空会使用 artifact 中记录的算法；选择其他算法可做对照运行。</p>
+                <button class="button button-primary full-button" id="replay-button"><span data-i18n="actions.runReplay">运行回放</span> <span>↗</span></button>
+                <div id="replay-message" class="message hidden"></div>
+              </article>
+              <article class="panel panel-large replay-output-panel"><div class="panel-heading"><div><p class="section-kicker" data-i18n="kickers.output">OUTPUT</p><h3 data-i18n="replay.outputTitle">重现结果</h3></div></div><div id="replay-output" class="replay-output empty-state" data-i18n="replay.outputEmpty">运行后显示结果和匹配状态。</div></article>
+            </div>
+          </section>
+        </main>
+      </div>
+      <footer class="footer" data-i18n="footer">Maximum Coverage · local dashboard · CLI remains available</footer>
+    </div>
+    <script src="/app.js"></script>
+  </body>
+</html>
