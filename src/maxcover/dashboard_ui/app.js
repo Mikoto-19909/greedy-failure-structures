@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const state = { configs: [], algorithms: [], results: [], jobs: [], replays: [], currentConfig: null, currentResult: null, currentStage: "select", language: "zh", pollTimer: null, transitionTimer: null, configRequestId: 0, configLoading: false, resultRequestId: 0 };
+  const state = { configs: [], algorithms: [], results: [], jobs: [], replays: [], currentConfig: null, currentResult: null, currentReplay: null, currentStage: "select", language: "zh", pollTimer: null, pollingJobId: null, transitionTimer: null, configRequestId: 0, configLoading: false, resultRequestId: 0 };
   const STAGE_ORDER = ["select", "preflight", "execute", "results", "replay"];
   const STATUS_LABELS = {
     zh: { queued: "排队中", running: "运行中", completed: "已完成", failed: "失败" },
@@ -168,7 +168,7 @@
     element.classList.toggle("error", error);
   }
 
-  function setSelect(selector, options, emptyLabel) {
+  function setSelect(selector, options, emptyLabel, includeEmpty = false) {
     const select = $(selector);
     select.replaceChildren();
     if (!options.length) {
@@ -177,6 +177,7 @@
       return;
     }
     select.disabled = false;
+    if (includeEmpty) select.append(new Option(emptyLabel, ""));
     options.forEach((option) => select.append(new Option(option.label, option.value)));
   }
 
@@ -339,9 +340,14 @@
   }
 
   function renderReplays() {
+    const selectedReplayPath = state.currentReplay || $("#replay-select").value;
     $("#replay-count").textContent = state.language === "en" ? `${state.replays.length} files` : `${state.replays.length} 个文件`;
     setSelect("#replay-select", state.replays.map((item) => ({ label: `${friendlyLabel(item.result, "case")} · ${friendlyLabel(item.algorithm_id || item.algorithm, "algorithm")}`, value: item.path })), t("replay.noFiles"));
-    setSelect("#replay-algorithm", state.algorithms.map((item) => ({ label: `${friendlyLabel(item.name, "algorithm")} · ${item.name}`, value: item.name })), t("replay.recordedAlgorithm"));
+    if (state.replays.length) {
+      state.currentReplay = state.replays.some((item) => item.path === selectedReplayPath) ? selectedReplayPath : state.replays[0].path;
+      $("#replay-select").value = state.currentReplay;
+    } else state.currentReplay = null;
+    setSelect("#replay-algorithm", state.algorithms.map((item) => ({ label: `${friendlyLabel(item.name, "algorithm")} · ${item.name}`, value: item.name })), t("replay.recordedAlgorithm"), true);
   }
 
   async function refreshAll() {
@@ -352,19 +358,24 @@
       const selectedConfigPath = state.currentConfig?.path || $("#config-select").value;
       setSelect("#config-select", state.configs.map((item) => ({ label: item.name, value: item.path })), t("config.noConfigs"));
       renderJobs(); renderResults(); renderReplays();
+      const activeJob = state.jobs.find((job) => ["queued", "running"].includes(job.status));
+      if (activeJob && !state.pollingJobId) pollJob(activeJob.id);
       if (state.configs.length) { const defaultConfig = state.configs.find((item) => item.path === "quick.json") || state.configs[0]; const nextConfigPath = state.configs.some((item) => item.path === selectedConfigPath) ? selectedConfigPath : defaultConfig.path; $("#config-select").value = nextConfigPath; if (!state.currentConfig || state.currentConfig.path !== nextConfigPath) await loadConfig(nextConfigPath); }
       if (!state.currentConfig) announceTransition("select", t("workspace.connectedTitle"), t("workspace.connectedDetail"), 6000);
     } catch (error) { $("#api-status").textContent = `${t("topbar.offline")} · ${error.message}`; $("#api-status").style.color = "var(--red)"; }
   }
 
   async function pollJob(jobId) {
+    if (state.pollingJobId === jobId) return;
     if (state.pollTimer) { clearInterval(state.pollTimer); state.pollTimer = null; }
+    state.pollingJobId = jobId;
+    $("#run-button").disabled = true;
     const tick = async () => {
       try {
         const job = await api(`/api/jobs/${jobId}`); state.jobs = [job, ...state.jobs.filter((item) => item.id !== job.id)]; renderJobs(); $("#job-console").innerHTML = `<span class="console-prompt">›</span> ${STATUS_LABELS[state.language][job.status] || job.status} · ${job.config} → results/${job.output}`;
-        if (["completed", "failed"].includes(job.status)) { if (state.pollTimer) clearInterval(state.pollTimer); state.pollTimer = null; $("#run-button").disabled = false; setMessage("#run-message", job.status === "completed" ? t("run.complete", { output: job.output }) : t("run.failed", { error: job.error }), job.status === "failed"); if (job.status === "completed") announceTransition("results", t("run.completedTitle"), t("run.completedDetail"), 0); await refreshAll(); if (job.status === "completed") showView("results", false); return false; }
+        if (["completed", "failed"].includes(job.status)) { if (state.pollTimer) clearInterval(state.pollTimer); state.pollTimer = null; state.pollingJobId = null; $("#run-button").disabled = false; setMessage("#run-message", job.status === "completed" ? t("run.complete", { output: job.output }) : t("run.failed", { error: job.error }), job.status === "failed"); if (job.status === "completed") announceTransition("results", t("run.completedTitle"), t("run.completedDetail"), 0); await refreshAll(); if (job.status === "completed") showView("results", false); return false; }
         return true;
-      } catch (error) { if (state.pollTimer) clearInterval(state.pollTimer); state.pollTimer = null; setMessage("#run-message", error.message, true); $("#run-button").disabled = false; return false; }
+      } catch (error) { if (state.pollTimer) clearInterval(state.pollTimer); state.pollTimer = null; state.pollingJobId = null; setMessage("#run-message", error.message, true); $("#run-button").disabled = false; return false; }
     };
     if (await tick()) state.pollTimer = setInterval(tick, 1000);
   }
@@ -398,6 +409,7 @@
   $("#validate-button").addEventListener("click", () => loadConfig($("#config-select").value));
   $("#run-button").addEventListener("click", runBenchmark);
   $("#result-select").addEventListener("change", (event) => loadResult(event.target.value));
+  $("#replay-select").addEventListener("change", (event) => { state.currentReplay = event.target.value || null; });
   $("#refresh-results").addEventListener("click", refreshAll);
   $("#replay-button").addEventListener("click", replay);
   $$('[data-language]').forEach((button) => button.addEventListener("click", () => { applyLanguage(button.dataset.language); refreshAll(); }));

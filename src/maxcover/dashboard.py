@@ -12,6 +12,7 @@ import csv
 import ipaddress
 import json
 import re
+import socket
 import threading
 import uuid
 import warnings
@@ -493,6 +494,9 @@ class _DashboardHTTPServer(ThreadingHTTPServer):
     def __init__(self, address: tuple[str, int], service: DashboardService) -> None:
         if not _is_loopback_hostname(address[0]):
             raise ValueError("dashboard host must be a loopback address")
+        self.address_family = (
+            socket.AF_INET6 if _is_ipv6_hostname(address[0]) else socket.AF_INET
+        )
         self.service = service
         super().__init__(address, _DashboardRequestHandler)
 
@@ -658,6 +662,13 @@ def _is_loopback_hostname(hostname: str | None) -> bool:
         return False
 
 
+def _is_ipv6_hostname(hostname: str) -> bool:
+    try:
+        return ipaddress.ip_address(hostname).version == 6
+    except ValueError:
+        return False
+
+
 def serve_dashboard(
     host: str = "127.0.0.1", port: int = 8501, *, project_root: Path = PROJECT_ROOT
 ) -> None:
@@ -672,7 +683,8 @@ def serve_dashboard(
     address = server.server_address
     actual_host = cast(str, address[0])
     actual_port = cast(int, address[1])
-    print(f"Dashboard running at http://{actual_host}:{actual_port}/")
+    display_host = f"[{actual_host}]" if ":" in actual_host else actual_host
+    print(f"Dashboard running at http://{display_host}:{actual_port}/")
     try:
         server.serve_forever()
     except KeyboardInterrupt:

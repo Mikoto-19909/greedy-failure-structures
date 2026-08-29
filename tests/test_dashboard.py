@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import http.client
 import json
+import socket
 import sys
 import tempfile
 import threading
@@ -268,6 +269,37 @@ class DashboardHttpSecurityTests(unittest.TestCase):
             connection.close()
             self.assertEqual(response.status, 200)
             self.assertTrue(body["valid"])
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=2)
+
+    def test_ipv6_loopback_binding_is_supported(self) -> None:
+        try:
+            server = _DashboardHTTPServer(("::1", 0), DashboardService(self.root))
+        except OSError as error:
+            self.skipTest(f"IPv6 loopback is unavailable: {error}")
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        port = server.server_address[1]
+        try:
+            connection = http.client.HTTPConnection("::1", port)
+            connection.request(
+                "POST",
+                "/api/validate",
+                json.dumps({"config": "test.json"}),
+                {
+                    "Host": f"[::1]:{port}",
+                    "Origin": f"http://[::1]:{port}",
+                    "Content-Type": "application/json",
+                },
+            )
+            response = connection.getresponse()
+            body = json.loads(response.read().decode("utf-8"))
+            connection.close()
+            self.assertEqual(response.status, 200)
+            self.assertTrue(body["valid"])
+            self.assertEqual(server.address_family, socket.AF_INET6)
         finally:
             server.shutdown()
             server.server_close()
