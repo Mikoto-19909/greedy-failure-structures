@@ -26,6 +26,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 from .algorithms import ALGORITHMS
 from .benchmark import REPORT_FILENAMES, plan_benchmark, replay_instance_file, run_benchmark
 from .config import load_config
+from .reproducibility import config_hash
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -254,6 +255,7 @@ class DashboardService:
             "path": path.name,
             "source": source,
             "valid": True,
+            "config_hash": config_hash(config),
             "warnings": [str(item.message) for item in captured],
             "plan": {
                 "name": plan.name,
@@ -272,9 +274,17 @@ class DashboardService:
         config_value = payload.get("config")
         if not isinstance(config_value, str):
             raise DashboardRequestError("config is required")
+        expected_config_hash = payload.get("config_hash")
+        if not isinstance(expected_config_hash, str):
+            raise DashboardRequestError("config_hash is required")
         config_info = self.inspect_config(config_value)
         if config_info.get("valid") is not True:
             raise DashboardRequestError(cast(str, config_info.get("error", "invalid configuration")))
+        current_config_hash = config_info.get("config_hash")
+        if expected_config_hash != current_config_hash:
+            raise DashboardConflictError(
+                "configuration changed after preflight; validate it again"
+            )
 
         output_value = payload.get("output")
         output_name = output_value if isinstance(output_value, str) else Path(config_value).stem
@@ -310,14 +320,14 @@ class DashboardService:
             self._jobs[job.job_id] = job
             thread = threading.Thread(
                 target=self._run_job,
-                args=(job.job_id,),
+                args=(job.job_id, expected_config_hash),
                 name=f"maxcover-dashboard-{job.job_id[:8]}",
                 daemon=True,
             )
             thread.start()
         return job.payload()
 
-    def _run_job(self, job_id: str) -> None:
+    def _run_job(self, job_id: str, expected_config_hash: str) -> None:
         with self._lock:
             job = self._jobs[job_id]
             job.status = "running"
@@ -328,6 +338,7 @@ class DashboardService:
                 self.results_root / job.output,
                 workers=job.workers,
                 force=job.force,
+                expected_config_hash=expected_config_hash,
             )
         except Exception as error:
             with self._lock:
@@ -480,6 +491,8 @@ class _DashboardHTTPServer(ThreadingHTTPServer):
     service: DashboardService
 
     def __init__(self, address: tuple[str, int], service: DashboardService) -> None:
+        if not _is_loopback_hostname(address[0]):
+            raise ValueError("dashboard host must be a loopback address")
         self.service = service
         super().__init__(address, _DashboardRequestHandler)
 
@@ -652,6 +665,8 @@ def serve_dashboard(
 
     if not 0 <= port <= 65_535:
         raise ValueError("port must be between 0 and 65535")
+    if not _is_loopback_hostname(host):
+        raise ValueError("dashboard host must be a loopback address")
     service = DashboardService(project_root)
     server = _DashboardHTTPServer((host, port), service)
     address = server.server_address

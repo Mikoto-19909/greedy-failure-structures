@@ -17,9 +17,11 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from maxcover.dashboard import (  # noqa: E402
+    DashboardConflictError,
     DashboardRequestError,
     DashboardService,
     _DashboardHTTPServer,
+    serve_dashboard,
 )
 
 
@@ -65,6 +67,7 @@ class DashboardServiceTests(unittest.TestCase):
 
         inspected = self.service.inspect_config("test.json")
         self.assertTrue(inspected["valid"])
+        self.assertRegex(inspected["config_hash"], r"^[0-9a-f]{64}$")
         plan = inspected["plan"]
         self.assertEqual(plan["instance_count"], 1)
         self.assertEqual(plan["algorithm_run_count"], 1)
@@ -124,8 +127,15 @@ class DashboardServiceTests(unittest.TestCase):
         )
 
     def test_run_creates_one_local_job_and_reuses_benchmark_runner(self) -> None:
+        config_hash = self.service.inspect_config("test.json")["config_hash"]
         with patch("maxcover.dashboard.run_benchmark") as run:
-            job = self.service.start_run({"config": "test.json", "output": "dashboard-test"})
+            job = self.service.start_run(
+                {
+                    "config": "test.json",
+                    "config_hash": config_hash,
+                    "output": "dashboard-test",
+                }
+            )
             deadline = time.monotonic() + 2
             while self.service.get_job(job["id"])["status"] in {"queued", "running"}:
                 if time.monotonic() >= deadline:
@@ -137,10 +147,23 @@ class DashboardServiceTests(unittest.TestCase):
                 resolved_root / "results" / "dashboard-test",
                 workers=1,
                 force=False,
+                expected_config_hash=config_hash,
             )
         current = self.service.get_job(job["id"])
         self.assertEqual(current["status"], "completed")
         self.assertEqual(current["result_name"], "dashboard-test")
+
+    def test_run_rejects_a_config_changed_after_preflight(self) -> None:
+        config_hash = self.service.inspect_config("test.json")["config_hash"]
+        changed = _config()
+        changed["name"] = "changed after preflight"
+        (self.root / "configs" / "test.json").write_text(
+            json.dumps(changed), encoding="utf-8"
+        )
+        with self.assertRaises(DashboardConflictError):
+            self.service.start_run(
+                {"config": "test.json", "config_hash": config_hash}
+            )
 
 
 class DashboardHttpSecurityTests(unittest.TestCase):
@@ -249,6 +272,10 @@ class DashboardHttpSecurityTests(unittest.TestCase):
             server.shutdown()
             server.server_close()
             thread.join(timeout=2)
+
+    def test_non_loopback_bindings_are_rejected_before_serving(self) -> None:
+        with self.assertRaisesRegex(ValueError, "loopback"):
+            serve_dashboard("0.0.0.0", 0, project_root=self.root)
 
 
 if __name__ == "__main__":

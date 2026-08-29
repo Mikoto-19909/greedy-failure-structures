@@ -128,8 +128,10 @@ Then open the printed local URL in a browser. The dashboard can validate a
 configuration, start or resume a benchmark under `results/`, inspect generated
 CSV/report artifacts, and replay serialized failure instances. It is a local
 frontend over the same engine used by the CLI; it does not provide accounts,
-remote execution, or a hosted service. Use `--host` and `--port` on the
-`dashboard` command when the default binding needs to change.
+remote execution, or a hosted service. Use another loopback address with
+`--host`, and `--port` on the `dashboard` command when the default binding
+needs to change; non-loopback bindings are rejected because state-changing
+requests are intentionally local-only.
 The browser UI includes a Chinese/English language toggle for the full control
 surface and its dynamic run, result, and replay states.
 

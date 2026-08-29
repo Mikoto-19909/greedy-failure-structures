@@ -358,22 +358,23 @@
   }
 
   async function pollJob(jobId) {
-    if (state.pollTimer) clearInterval(state.pollTimer);
+    if (state.pollTimer) { clearInterval(state.pollTimer); state.pollTimer = null; }
     const tick = async () => {
       try {
         const job = await api(`/api/jobs/${jobId}`); state.jobs = [job, ...state.jobs.filter((item) => item.id !== job.id)]; renderJobs(); $("#job-console").innerHTML = `<span class="console-prompt">›</span> ${STATUS_LABELS[state.language][job.status] || job.status} · ${job.config} → results/${job.output}`;
-        if (["completed", "failed"].includes(job.status)) { clearInterval(state.pollTimer); state.pollTimer = null; $("#run-button").disabled = false; setMessage("#run-message", job.status === "completed" ? t("run.complete", { output: job.output }) : t("run.failed", { error: job.error }), job.status === "failed"); if (job.status === "completed") announceTransition("results", t("run.completedTitle"), t("run.completedDetail"), 0); await refreshAll(); if (job.status === "completed") showView("results", false); }
-      } catch (error) { clearInterval(state.pollTimer); state.pollTimer = null; setMessage("#run-message", error.message, true); $("#run-button").disabled = false; }
+        if (["completed", "failed"].includes(job.status)) { if (state.pollTimer) clearInterval(state.pollTimer); state.pollTimer = null; $("#run-button").disabled = false; setMessage("#run-message", job.status === "completed" ? t("run.complete", { output: job.output }) : t("run.failed", { error: job.error }), job.status === "failed"); if (job.status === "completed") announceTransition("results", t("run.completedTitle"), t("run.completedDetail"), 0); await refreshAll(); if (job.status === "completed") showView("results", false); return false; }
+        return true;
+      } catch (error) { if (state.pollTimer) clearInterval(state.pollTimer); state.pollTimer = null; setMessage("#run-message", error.message, true); $("#run-button").disabled = false; return false; }
     };
-    await tick(); state.pollTimer = setInterval(tick, 1000);
+    if (await tick()) state.pollTimer = setInterval(tick, 1000);
   }
 
   async function runBenchmark() {
     const selectedConfigPath = $("#config-select").value;
-    if (state.configLoading || !state.currentConfig?.valid || state.currentConfig.path !== selectedConfigPath) return;
+    if (state.configLoading || !state.currentConfig?.valid || state.currentConfig.path !== selectedConfigPath || typeof state.currentConfig.config_hash !== "string") return;
     const button = $("#run-button"); button.disabled = true; $("#run-next-step").textContent = t("run.inProgress"); announceTransition("execute", t("run.startingTitle"), t("run.startingDetail"), 0); setMessage("#run-message", t("run.queued"));
     try {
-      const job = await api("/api/run", { method: "POST", body: JSON.stringify({ config: $("#config-select").value, output: $("#output-name").value, workers: Number($("#workers").value), force: $("#force-run").checked }) });
+      const job = await api("/api/run", { method: "POST", body: JSON.stringify({ config: $("#config-select").value, config_hash: state.currentConfig.config_hash, output: $("#output-name").value, workers: Number($("#workers").value), force: $("#force-run").checked }) });
       announceTransition("execute", t("run.startedTitle"), `${job.config} → results/${job.output}`, 0);
       await pollJob(job.id);
     } catch (error) { button.disabled = false; setMessage("#run-message", error.message, true); }
