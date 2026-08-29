@@ -511,6 +511,10 @@ class _DashboardRequestHandler(BaseHTTPRequestHandler):
         "app.js": ("app.js", "text/javascript; charset=utf-8"),
         "styles.css": ("styles.css", "text/css; charset=utf-8"),
         "favicon.svg": ("favicon.svg", "image/svg+xml; charset=utf-8"),
+        "fonts/space-grotesk-latin-600-normal.woff2": ("fonts/space-grotesk-latin-600-normal.woff2", "font/woff2"),
+        "fonts/space-grotesk-latin-700-normal.woff2": ("fonts/space-grotesk-latin-700-normal.woff2", "font/woff2"),
+        "fonts/ibm-plex-mono-latin-400-normal.woff2": ("fonts/ibm-plex-mono-latin-400-normal.woff2", "font/woff2"),
+        "fonts/ibm-plex-mono-latin-600-normal.woff2": ("fonts/ibm-plex-mono-latin-600-normal.woff2", "font/woff2"),
     }
 
     def log_message(self, format: str, *args: object) -> None:
@@ -561,11 +565,16 @@ class _DashboardRequestHandler(BaseHTTPRequestHandler):
             )
         parsed_origin = urlparse(origin)
         parsed_host = urlparse(f"//{host}")
+        try:
+            origin_port = parsed_origin.port or 80
+            host_port = parsed_host.port or 80
+        except ValueError:
+            raise DashboardForbiddenError("state-changing requests must be same-origin") from None
         if (
             parsed_origin.scheme.lower() != "http"
-            or parsed_origin.netloc.lower() != host.lower()
             or not _is_loopback_hostname(parsed_origin.hostname)
             or not _is_loopback_hostname(parsed_host.hostname)
+            or origin_port != host_port
             or parsed_origin.path not in {"", "/"}
             or parsed_origin.query
             or parsed_origin.fragment

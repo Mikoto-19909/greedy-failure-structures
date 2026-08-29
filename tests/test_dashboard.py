@@ -248,6 +248,42 @@ class DashboardHttpSecurityTests(unittest.TestCase):
         self.assertEqual(response.status, 403)
         self.assertIn("same-origin", body["error"])
 
+    def test_mixed_loopback_spellings_on_same_port_are_allowed(self) -> None:
+        connection = http.client.HTTPConnection("127.0.0.1", self.port)
+        connection.request(
+            "POST",
+            "/api/validate",
+            json.dumps({"config": "test.json"}),
+            {
+                "Host": f"localhost:{self.port}",
+                "Origin": f"http://127.0.0.1:{self.port}",
+                "Content-Type": "application/json",
+            },
+        )
+        response = connection.getresponse()
+        body = json.loads(response.read().decode("utf-8"))
+        connection.close()
+        self.assertEqual(response.status, 200)
+        self.assertTrue(body["valid"])
+
+    def test_different_port_is_rejected_even_when_both_are_loopback(self) -> None:
+        connection = http.client.HTTPConnection("127.0.0.1", self.port)
+        connection.request(
+            "POST",
+            "/api/validate",
+            json.dumps({"config": "test.json"}),
+            {
+                "Host": f"localhost:{self.port}",
+                "Origin": f"http://localhost:{self.port + 1}",
+                "Content-Type": "application/json",
+            },
+        )
+        response = connection.getresponse()
+        body = json.loads(response.read().decode("utf-8"))
+        connection.close()
+        self.assertEqual(response.status, 403)
+        self.assertIn("same-origin", body["error"])
+
     def test_alternate_ipv4_loopback_host_is_allowed(self) -> None:
         server = _DashboardHTTPServer(("127.0.0.2", 0), DashboardService(self.root))
         thread = threading.Thread(target=server.serve_forever, daemon=True)
