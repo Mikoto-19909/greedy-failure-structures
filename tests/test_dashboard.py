@@ -131,9 +131,10 @@ class DashboardServiceTests(unittest.TestCase):
                 if time.monotonic() >= deadline:
                     self.fail("dashboard job did not finish")
                 time.sleep(0.01)
+            resolved_root = self.root.resolve()
             run.assert_called_once_with(
-                self.root / "configs" / "test.json",
-                self.root / "results" / "dashboard-test",
+                resolved_root / "configs" / "test.json",
+                resolved_root / "results" / "dashboard-test",
                 workers=1,
                 force=False,
             )
