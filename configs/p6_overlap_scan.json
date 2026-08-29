@@ -1,0 +1,34 @@
+{
+  "schema_version": 3,
+  "name": "P6.2 high-overlap parameter grid",
+  "base_seed": 6202,
+  "repetitions": 5,
+  "algorithms": [
+    { "name": "greedy" },
+    { "name": "local_search" },
+    { "name": "brute_force", "options": { "max_set_count": 30 } },
+    { "name": "branch_and_bound_enhanced", "options": { "time_limit_seconds": 5.0 } }
+  ],
+  "cases": [
+    {
+      "name": "core_fraction",
+      "family": "high_overlap",
+      "universe_size": 160,
+      "set_count": 24,
+      "k": 5,
+      "core_probability": 0.8,
+      "peripheral_probability": 0.05,
+      "sweep": { "core_fraction": [0.2, 0.35, 0.5] }
+    },
+    {
+      "name": "core_probability",
+      "family": "high_overlap",
+      "universe_size": 160,
+      "set_count": 24,
+      "k": 5,
+      "core_fraction": 0.35,
+      "peripheral_probability": 0.05,
+      "sweep": { "core_probability": [0.6, 0.75, 0.9] }
+    }
+  ]
+}

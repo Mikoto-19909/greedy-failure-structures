@@ -1,0 +1,30 @@
+{
+  "schema_version": 3,
+  "name": "P6.3 uniform scale scan",
+  "base_seed": 6303,
+  "repetitions": 5,
+  "algorithms": [
+    { "name": "greedy" },
+    { "name": "local_search" },
+    { "name": "brute_force", "options": { "max_set_count": 30 } },
+    { "name": "branch_and_bound_enhanced", "options": { "time_limit_seconds": 5.0 } }
+  ],
+  "cases": [
+    {
+      "name": "universe_scale",
+      "family": "uniform",
+      "set_count": 20,
+      "k": 5,
+      "density": 0.15,
+      "sweep": { "universe_size": [80, 160, 320] }
+    },
+    {
+      "name": "density_scale",
+      "family": "uniform",
+      "universe_size": 160,
+      "set_count": 20,
+      "k": 5,
+      "sweep": { "density": [0.08, 0.15, 0.3] }
+    }
+  ]
+}
