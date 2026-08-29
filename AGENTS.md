@@ -19,6 +19,12 @@ migration provenance. They are historical records, not instructions to import
 from, publish from or synchronize with another repository. Do not add a second
 development path or a recurring cross-repository publication workflow.
 
+## Git Workflow Conventions
+- PRs must follow **single-responsibility** — never cherry-pick unrelated governance or config commits into a feature PR.
+- After merging PRs, always clean up: delete merged branches and verify no stale branches remain.
+- When formatting hooks fail (dirty worktree), stash or fix the formatted files before retrying the push — do not try to bypass hooks.
+- Standard branch workflow: feature branch → PR → CI pass → merge → branch cleanup.
+
 ## Authorship
 
 Do not attribute a commit to an AI assistant. No `Co-Authored-By` trailer naming
