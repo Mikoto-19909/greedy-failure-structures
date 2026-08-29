@@ -7,6 +7,26 @@ experiments with the Maximum Coverage problem.  It provides algorithm
 implementations, instance generators, configuration validation, benchmark
 execution, reporting, and replay utilities.
 
+## Research highlights
+
+**Algorithm library.** Nine algorithms spanning greedy approximation, randomised
+heuristics, local search, and exact methods (brute-force, branch-and-bound,
+CP-SAT). Each is a standalone function with a common interface, making paired
+comparisons and drop-in substitution straightforward.
+
+**Controlled experiment framework.** Nine parameterised instance families
+(uniform random, high-overlap, clustered, fixed-size, long-tail,
+duplicate-heavy, dominated-heavy, mixed-cluster, adversarial) generate instances with
+explicit structural control. The benchmark pipeline enforces deterministic
+seeds, independent output validation, and configuration hashing so that every
+run is replayable from its recorded inputs.
+
+**Engineering governance.** A CI suite covering algorithm contracts, generator
+invariants, configuration compatibility, content-boundary enforcement, and
+license verification. The content-boundary check ensures that the repository
+publishes runnable code and no quantitative claims — results are produced
+locally by the consumer, not asserted by the source.
+
 ## Requirements
 
 - Python 3.11 or newer
