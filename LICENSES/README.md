@@ -23,6 +23,8 @@ grant over them would cover bytes the manifest cannot identify.
 - Entries marked `MIT` are licensed under the root [`LICENSE`](../LICENSE).
 - Entries marked `CC-BY-4.0` are licensed under
   [`CONTENT-CC-BY.txt`](CONTENT-CC-BY.txt).
+- Entries marked `OFL-1.1` are licensed under
+  [`OFL-1.1.txt`](OFL-1.1.txt).
 
 The manifest licenses its own canonical bytes under the identifier in its
 `manifest_license` field. It is not placed in its own file array, because its
@@ -37,6 +39,21 @@ For orientation — the manifest is authoritative, this paragraph is not: code a
 machine-readable inputs are MIT, while prose is CC BY 4.0. Experiment
 configurations under `configs/` are MIT rather than CC BY, because they are run
 inputs rather than documents, and the package reads one of them to run at all.
+Font files under `src/maxcover/dashboard_ui/fonts/` are OFL-1.1: they are
+vendored third-party font software, not MIT-licensed contributions of this
+repository, and the suffix rule would attach the wrong grant and copyright
+line to them.
+
+The bundled fonts are:
+
+- **IBM Plex Mono** (Regular 400, SemiBold 600), Copyright 2017 IBM Corp.
+  All rights reserved., with Reserved Font Name "Plex".
+- **Space Grotesk** (SemiBold 600, Bold 700), Copyright 2020 The Space
+  Grotesk Project Authors (https://github.com/floriankarsten/space-grotesk).
+
+Both are distributed under the SIL Open Font License 1.1
+([`OFL-1.1.txt`](OFL-1.1.txt)), whose text carries the same identifier, the
+way `CONTENT-CC-BY.txt` carries CC BY 4.0.
 
 ## Two manifests, two purposes
 

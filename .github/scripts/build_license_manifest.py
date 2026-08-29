@@ -54,9 +54,22 @@ SCHEMA_VERSION = 2
 # cli.py reads one of them to run at all.
 CONTENT_SUFFIXES = frozenset({".md", ".rst", ".txt"})
 
+# Bundled third-party fonts are OFL-1.1, not MIT: the suffix rule would attach
+# this repository's MIT grant and copyright line to IBM's and the Space Grotesk
+# authors' work. The OFL text file carries the same identifier, the way
+# CONTENT-CC-BY.txt carries CC-BY-4.0. Per-font copyright notices live in
+# LICENSES/README.md next to the mapping prose.
+FONT_LICENSE = "OFL-1.1"
+FONT_DIR = "src/maxcover/dashboard_ui/fonts"
+OFL_TEXT_PATH = "LICENSES/OFL-1.1.txt"
+
 ATTRIBUTIONS = {
     "CC-BY-4.0": "Copyright (c) 2026 Liang Dao. Licensed under CC BY 4.0.",
     "MIT": "Copyright (c) 2026 Liang Dao. Licensed under the MIT License.",
+    "OFL-1.1": (
+        "Bundled font software under the SIL Open Font License 1.1 "
+        "(LICENSES/OFL-1.1.txt); per-font copyright notices in LICENSES/README.md."
+    ),
 }
 
 REGULAR_MODE = "100644"
@@ -102,9 +115,17 @@ class IndexEntry(NamedTuple):
 
 
 def license_for(path: str) -> str:
+    posix = PurePosixPath(path)
+    if posix.as_posix() == OFL_TEXT_PATH:
+        return FONT_LICENSE
+    if (
+        posix.parent.as_posix() == FONT_DIR
+        and posix.suffix.casefold() == ".woff2"
+    ):
+        return FONT_LICENSE
     return (
         "CC-BY-4.0"
-        if PurePosixPath(path).suffix.casefold() in CONTENT_SUFFIXES
+        if posix.suffix.casefold() in CONTENT_SUFFIXES
         else "MIT"
     )
 
