@@ -116,7 +116,7 @@ Observed checks:
 - The focused Lazy Greedy suite passed all 13 tests.
 - The bundled dry-run expanded successfully.
 - The paired workflow completed and its independent artifact validator passed.
-- The complete repository suite passed all 404 tests; the two optional CP-SAT
+- The complete repository suite passed all 407 tests; the two optional CP-SAT
   integration tests were skipped because OR-Tools was not installed.
 - The content-boundary check, license-manifest check, and configured mypy gate
   passed.
