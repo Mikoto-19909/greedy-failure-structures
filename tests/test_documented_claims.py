@@ -25,13 +25,18 @@ drop a config from the legacy list, could say a clean mypy run proves the whole
 package is typed, and every test stayed green. Substring presence says a word
 appears somewhere, not that the sentence containing it is true.
 
-So each test now does one of two things:
+So each test now does one of these things:
 
 - runs the behaviour and asserts what it actually produces — `demo` really is
   executed and its output parsed, the configs really are loaded and the warning
-  caught, git really is queried for what is tracked;
+  caught, git really is queried for what is tracked, greedy really is run twice
+  and both selections compared;
 - extracts the *specific figure* the document states and compares it to the
-  measured value, so a wrong number fails rather than merely a missing word.
+  measured value, so a wrong number fails rather than merely a missing word;
+- extracts the *structure* the document states — the "must reproduce" and "may
+  vary" lists of the determinism FAQ, the phase endpoint of the schema range —
+  and compares it to what the code and the configs actually deliver, so an
+  inverted boundary fails rather than merely a missing phrase.
 
 Verbatim sentence matching is still avoided: it makes every copy-edit a failure,
 which is how a test gets deleted. The difference is that a claim's *content* is
@@ -44,6 +49,7 @@ import json
 import re
 import subprocess
 import sys
+import tempfile
 import tomllib
 import unittest
 import warnings
@@ -140,24 +146,411 @@ class LegacyConfigClaimTests(unittest.TestCase):
         assert match is not None
         self.assertEqual(int(match.group(1)), self._schema_version("sweeps.json"))
 
-    def test_the_readme_states_the_correct_schema_for_the_current_configs(self) -> None:
-        # Matched over the README with newlines collapsed, since the sentence
-        # wraps across lines.
-        readme = re.sub(r"\s+", " ", _read("README.md"))
-        match = re.search(
-            r"`configs/p3_\*`\s+through\s+`configs/p5_\*`\s+configurations?"
-            r"\s+are\s+schema\s+(\d+)",
-            readme,
-        )
-        self.assertIsNotNone(match, "the README no longer states the p3–p5 schema")
-        assert match is not None
-        documented = int(match.group(1))
-        for path in sorted((REPO_ROOT / "configs").glob("p[345]_*.json")):
-            with self.subTest(config=path.name):
-                self.assertEqual(
-                    int(json.loads(path.read_text(encoding="utf-8"))["schema_version"]),
-                    documented,
+    def test_the_readmes_state_the_correct_schema_for_current_configs(self) -> None:
+        # Each language states the phase range explicitly. The endpoint and
+        # version are measured from the configs on disk instead of hard-coded,
+        # so a newly added phase that the documents omit no longer stays green.
+        patterns = {
+            "README.md": (
+                r"`configs/p3_\*`\s+through\s+`configs/p(\d+)_\*`\s+"
+                r"configurations?\s+are\s+schema\s+(\d+)"
+            ),
+            "README.zh-CN.md": (
+                r"`configs/p3_\*`\s+到\s+`configs/p(\d+)_\*`\s+的配置"
+                r"\s*使用\s+schema\s+(\d+)"
+            ),
+        }
+        documented_ranges: set[tuple[int, int]] = set()
+        for name, pattern in patterns.items():
+            with self.subTest(document=name):
+                text = re.sub(r"\s+", " ", _read(name))
+                match = re.search(pattern, text)
+                self.assertIsNotNone(
+                    match, f"{name} no longer states the current phase schema range"
                 )
+                assert match is not None
+                documented_ranges.add((int(match.group(1)), int(match.group(2))))
+
+        self.assertEqual(
+            len(documented_ranges),
+            1,
+            "the bilingual README phase ranges disagree",
+        )
+        endpoint, schema = next(iter(documented_ranges))
+
+        phase_schemas: dict[int, set[int]] = {}
+        for path in sorted((REPO_ROOT / "configs").glob("p[0-9]*_*.json")):
+            match = re.match(r"p(\d+)_", path.name)
+            assert match is not None  # the glob prefix guarantees a phase number
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            phase_schemas.setdefault(int(match.group(1)), set()).add(
+                int(payload["schema_version"])
+            )
+
+        self.assertEqual(
+            max(phase_schemas),
+            endpoint,
+            "the README phase endpoint no longer matches the configs on disk",
+        )
+        for phase in range(3, endpoint + 1):
+            with self.subTest(phase=phase):
+                self.assertEqual(
+                    phase_schemas.get(phase),
+                    {schema},
+                    "a phase between p3 and the endpoint is missing or uses a "
+                    "schema other than the one the READMEs state",
+                )
+
+
+class DocumentationNavigationClaimTests(unittest.TestCase):
+    """The two README entry points must expose the same core workflow docs."""
+
+    @staticmethod
+    def _link_targets(name: str) -> set[str]:
+        return set(re.findall(r"\[[^\]]+\]\(([^)]+)\)", _read(name)))
+
+    def test_bilingual_readmes_link_the_core_workflow_documents(self) -> None:
+        expected = {
+            "docs/README.md",
+            "docs/cli.md",
+            "docs/output_schema.md",
+            "docs/lazy_greedy_test_report.md",
+        }
+        for name in ("README.md", "README.zh-CN.md"):
+            with self.subTest(document=name):
+                self.assertTrue(
+                    expected <= self._link_targets(name),
+                    f"{name} does not link every core workflow document",
+                )
+
+    def test_cli_reference_covers_every_public_command(self) -> None:
+        sys.path.insert(0, str(SOURCE_ROOT))
+        try:
+            from maxcover.cli import build_parser
+        finally:
+            sys.path.remove(str(SOURCE_ROOT))
+
+        parser = build_parser()
+        command_action = next(
+            action for action in parser._actions if action.dest == "command"
+        )
+        implemented = set(command_action.choices)
+        documented = set(
+            re.findall(r"(?m)^### `([a-z-]+)`\s*$", _read("docs/cli.md"))
+        )
+        self.assertEqual(
+            documented,
+            implemented,
+            "docs/cli.md command sections no longer match the CLI parser",
+        )
+
+    @staticmethod
+    def _replay_document(
+        algorithm: str, options: dict[str, object], directory: str
+    ) -> Path:
+        path = Path(directory) / "replay.json"
+        path.write_text(
+            json.dumps(
+                {
+                    "instance": {
+                        "schema_version": 1,
+                        "encoding": "elements",
+                        "universe_size": 3,
+                        "sets": [[0, 1], [1, 2]],
+                        "k": 1,
+                        "family": "test",
+                        "seed": 11,
+                        "parameters": {},
+                    },
+                    "replay": {"algorithm": algorithm, "options": options},
+                }
+            ),
+            encoding="utf-8",
+        )
+        return path
+
+    def test_replay_override_restriction_is_enforced(self) -> None:
+        # docs/cli.md says an override is valid only when the replacement
+        # algorithm accepts the recorded option contract, and that greedy
+        # rejects exact-solver options rather than remapping them. Run both
+        # directions instead of trusting the sentence.
+        sys.path.insert(0, str(SOURCE_ROOT))
+        try:
+            from maxcover.benchmark import replay_instance_file
+        finally:
+            sys.path.remove(str(SOURCE_ROOT))
+
+        with tempfile.TemporaryDirectory() as directory:
+            timeout = self._replay_document(
+                "brute_force",
+                {"time_limit_seconds": 0.5, "max_set_count": 18},
+                directory,
+            )
+            with self.assertRaises(ValueError):
+                replay_instance_file(timeout, "greedy")
+
+        with tempfile.TemporaryDirectory() as directory:
+            bounded = self._replay_document(
+                "branch_and_bound", {"time_limit_seconds": 5.0}, directory
+            )
+            solution, _ = replay_instance_file(bounded, "brute_force")
+            self.assertEqual(
+                solution.algorithm,
+                "brute_force",
+                "a replacement whose contract covers the recorded options "
+                "should run, as docs/cli.md describes",
+            )
+
+
+class BilingualFaqClaimTests(unittest.TestCase):
+    """English and Simplified Chinese FAQs must evolve as one document."""
+
+    FAQ_FILES = ("docs/faq.md", "docs/faq.zh-CN.md")
+    FAQ_SECTION_MARKER = re.compile(r"<!--\s*faq:id=([a-z0-9-]+)\s*-->")
+
+    @staticmethod
+    def _section_ids(text: str) -> list[str]:
+        return re.findall(r"<!--\s*faq:id=([a-z0-9-]+)\s*-->", text)
+
+    @classmethod
+    def _section(cls, text: str, section_id: str) -> str:
+        """Return one complete FAQ section bounded by its stable marker."""
+
+        markers = list(cls.FAQ_SECTION_MARKER.finditer(text))
+        for index, marker in enumerate(markers):
+            if marker.group(1) != section_id:
+                continue
+            end = markers[index + 1].start() if index + 1 < len(markers) else len(text)
+            return text[marker.end() : end]
+        raise AssertionError(f"FAQ section marker not found: {section_id}")
+
+    @staticmethod
+    def _link_targets(text: str) -> set[str]:
+        return set(re.findall(r"\[[^\]]+\]\(([^)]+)\)", text))
+
+    def test_bilingual_faqs_have_the_same_section_ids(self) -> None:
+        ids = {name: self._section_ids(_read(name)) for name in self.FAQ_FILES}
+        self.assertTrue(ids["docs/faq.md"], "English FAQ has no section IDs")
+        for name, values in ids.items():
+            self.assertEqual(
+                len(values),
+                len(set(values)),
+                f"{name} repeats a FAQ section ID",
+            )
+        self.assertEqual(
+            ids["docs/faq.md"],
+            ids["docs/faq.zh-CN.md"],
+            "English and Chinese FAQs no longer cover the same sections in order",
+        )
+
+    def test_bilingual_faqs_link_the_same_supporting_documents(self) -> None:
+        expected = {"cli.md", "output_schema.md", "failure_mechanisms.md"}
+        targets = {name: self._link_targets(_read(name)) for name in self.FAQ_FILES}
+        self.assertEqual(
+            targets["docs/faq.md"],
+            targets["docs/faq.zh-CN.md"],
+            "English and Chinese FAQs no longer use the same supporting links",
+        )
+        self.assertTrue(
+            expected <= targets["docs/faq.md"],
+            "the FAQs do not link all supporting documents",
+        )
+
+    def test_bilingual_faqs_state_the_reproducibility_boundary(self) -> None:
+        # The determinism section pins two lists: what a run must reproduce and
+        # what may vary. Phrase presence cannot catch an inversion — the section
+        # could keep every phrase while moving coverage into the "may vary" list
+        # — so both lists are extracted from the section and compared, and the
+        # timeout exemption the section states must remain part of the claim.
+        documents = {name: _read(name) for name in self.FAQ_FILES}
+        sections = {
+            name: re.sub(r"\s+", " ", self._section(text, "determinism"))
+            for name, text in documents.items()
+        }
+        must_reproduce = {
+            "docs/faq.md": (
+                "instance identities",
+                "selected set indices",
+                "coverage values",
+                "canonical row ordering",
+            ),
+            "docs/faq.zh-CN.md": (
+                "实例身份",
+                "选中的集合索引",
+                "覆盖值",
+                "规范行排序",
+            ),
+        }
+        may_vary = {
+            "docs/faq.md": ("Wall-clock runtime", "timestamps", "environment metadata"),
+            "docs/faq.zh-CN.md": ("实际运行时间", "时间戳", "环境元数据"),
+        }
+        reproduce_patterns = {
+            "docs/faq.md": r"completed runs reproduce the ([^.]*)\.",
+            "docs/faq.zh-CN.md": r"已完成的运行会复现([^。]*)",
+        }
+        vary_patterns = {
+            "docs/faq.md": r"(Wall-clock runtime[^.]*) may vary by machine",
+            "docs/faq.zh-CN.md": r"(实际运行时间[^。]*)可能\s*因机器而异",
+        }
+        for name, section in sections.items():
+            with self.subTest(document=name):
+                reproduced = re.search(reproduce_patterns[name], section)
+                self.assertIsNotNone(
+                    reproduced, f"{name} no longer states what a run must reproduce"
+                )
+                assert reproduced is not None
+                for item in must_reproduce[name]:
+                    self.assertIn(item, reproduced.group(1))
+
+                varied = re.search(vary_patterns[name], section)
+                self.assertIsNotNone(
+                    varied, f"{name} no longer states what may vary by machine"
+                )
+                assert varied is not None
+                for item in may_vary[name]:
+                    self.assertIn(item, varied.group(1))
+
+                # The two lists must stay disjoint: an inverted boundary keeps
+                # every phrase but moves it to the other side.
+                for item in must_reproduce[name]:
+                    self.assertNotIn(item, varied.group(1))
+                for item in may_vary[name]:
+                    self.assertNotIn(item, reproduced.group(1))
+
+        exemptions = {
+            "docs/faq.md": (
+                r"A run stopped by its wall-clock limit reports the incumbent[^.]*"
+                r"exempt from this guarantee"
+            ),
+            "docs/faq.zh-CN.md": (
+                r"被墙钟限制中止的运行报告其在限制触发时已达成的 incumbent[^。]*"
+                r"不受此保证约束"
+            ),
+        }
+        for name, pattern in exemptions.items():
+            with self.subTest(document=name):
+                self.assertRegex(
+                    sections[name],
+                    pattern,
+                    f"{name} no longer exempts timeout incumbents from the "
+                    "reproducibility guarantee",
+                )
+
+    def test_bilingual_faqs_state_the_causality_boundary(self) -> None:
+        documents = {name: _read(name) for name in self.FAQ_FILES}
+        sections = {
+            name: re.sub(r"\s+", " ", self._section(text, "synthetic-families"))
+            for name, text in documents.items()
+        }
+        # The section's conclusion is a negative one: descriptive associations
+        # do not establish causality or generalisation. The whole predicate is
+        # matched so the sentence cannot be inverted while keeping its phrases.
+        self.assertRegex(
+            sections["docs/faq.md"],
+            r"estimate descriptive associations[^.]*does not by itself establish "
+            r"causality[^.]*real-world generalisation",
+        )
+        self.assertRegex(
+            sections["docs/faq.zh-CN.md"],
+            r"估计描述性关联[^。]*不能建立因果关系[^。]*真实世界的\s*泛化能力",
+        )
+
+    def test_completed_deterministic_runs_reproduce_selection_and_coverage(
+        self,
+    ) -> None:
+        # The determinism section guarantees that completed runs reproduce
+        # selection and coverage; the guarantee is exercised rather than quoted.
+        sys.path.insert(0, str(SOURCE_ROOT))
+        try:
+            from maxcover.algorithms import ALGORITHMS
+            from maxcover.contracts import AlgorithmRunOptions
+            from maxcover.generators import uniform_random
+        finally:
+            sys.path.remove(str(SOURCE_ROOT))
+
+        instance = uniform_random(
+            universe_size=40, set_count=12, k=4, density=0.25, seed=11
+        )
+        first = ALGORITHMS["greedy"].run(instance, AlgorithmRunOptions())
+        second = ALGORITHMS["greedy"].run(instance, AlgorithmRunOptions())
+        self.assertEqual(first.selected, second.selected)
+        self.assertEqual(first.coverage, second.coverage)
+
+    def test_algorithm_seed_contract_matches_the_faq_statement(self) -> None:
+        # The section says randomised algorithms require an explicit seed and
+        # deterministic ones reject one; that contract is enforced by the
+        # registry, so the test runs it instead of checking the words.
+        sys.path.insert(0, str(SOURCE_ROOT))
+        try:
+            from maxcover.algorithms import ALGORITHMS
+            from maxcover.contracts import AlgorithmRunOptions
+            from maxcover.generators import uniform_random
+        finally:
+            sys.path.remove(str(SOURCE_ROOT))
+
+        instance = uniform_random(
+            universe_size=40, set_count=12, k=4, density=0.25, seed=11
+        )
+        with self.assertRaises(ValueError):
+            ALGORITHMS["greedy"].run(instance, AlgorithmRunOptions(algorithm_seed=1))
+        with self.assertRaises(RuntimeError):
+            ALGORITHMS["randomized_greedy"].run(instance, AlgorithmRunOptions())
+
+
+class MechanismWorkflowClaimTests(unittest.TestCase):
+    """Mechanism workflows must support the exact-reference claims they make."""
+
+    @staticmethod
+    def _algorithm_names(config_name: str) -> set[str]:
+        payload = json.loads(_read(config_name))
+        return {
+            item if isinstance(item, str) else item["name"]
+            for item in payload["algorithms"]
+        }
+
+    @staticmethod
+    def _exact_algorithm_names() -> set[str]:
+        sys.path.insert(0, str(SOURCE_ROOT))
+        try:
+            from maxcover.algorithms import ALGORITHMS
+        finally:
+            sys.path.remove(str(SOURCE_ROOT))
+        return {name for name, specification in ALGORITHMS.items() if specification.exact}
+
+    def test_every_documented_mechanism_command_has_an_exact_algorithm(self) -> None:
+        paths = set(
+            re.findall(
+                r"--config\s+(configs/[A-Za-z0-9_]+\.json)",
+                _read("docs/failure_mechanisms.md"),
+            )
+        )
+        self.assertEqual(
+            paths,
+            {
+                "configs/p4_dominated_heavy.json",
+                "configs/p4_duplicate_heavy.json",
+                "configs/p4_long_tail.json",
+                "configs/p6_clustered_scan.json",
+                "configs/p6_overlap_scan.json",
+                "configs/p6_trap_construction.json",
+            },
+            "the mechanism guide's runnable workflow set changed",
+        )
+        exact = self._exact_algorithm_names()
+        for path in sorted(paths):
+            with self.subTest(config=path):
+                self.assertTrue(
+                    self._algorithm_names(path) & exact,
+                    f"{path} cannot support the guide's exact-reference analysis",
+                )
+
+    def test_sweeps_really_has_no_exact_reference(self) -> None:
+        self.assertFalse(
+            self._algorithm_names("configs/sweeps.json")
+            & self._exact_algorithm_names(),
+            "sweeps.json gained an exact algorithm; update the guide's limitation",
+        )
 
 
 class TypeCheckClaimTests(unittest.TestCase):

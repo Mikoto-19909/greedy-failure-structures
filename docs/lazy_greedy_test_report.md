@@ -97,11 +97,31 @@ publish a runtime comparison, a general performance claim or a result about
 any external corpus. Any such study must use a separately frozen evidence
 package and an independently validated analysis.
 
-## Verification record
+## Verification snapshot
 
-For this revision, the focused Lazy Greedy tests (including tie-breaking,
-zero-gain, full-coverage, `k = set_count` and serial/parallel metadata
-consistency), the bundled paired workflow, the complete repository test suite,
-the content-boundary check, the license-manifest check and the type-check gate
-passed. The local workflow output is ignored under `results/` and is not part
-of the published snapshot.
+This snapshot was recorded on 2026-08-30 for the documentation-and-test working
+tree on `codex/minimal-doc-delivery`, based on executable-code commit
+`b0fa4610f5ef1f1956720fa0d4b2d3ec0e8240c9`. The changes under verification do
+not modify package source or experiment configurations.
+
+Environment:
+
+- Python 3.12.13
+- mypy 2.3.0
+- Windows 11 (`Windows-11-10.0.26200-SP0`)
+- OR-Tools not installed
+
+Observed checks:
+
+- The focused Lazy Greedy suite passed all 13 tests.
+- The bundled dry-run expanded successfully.
+- The paired workflow completed and its independent artifact validator passed.
+- The complete repository suite passed all 407 tests; the two optional CP-SAT
+  integration tests were skipped because OR-Tools was not installed.
+- The content-boundary check, license-manifest check, and configured mypy gate
+  passed.
+
+The focused suite covers tie-breaking, zero-gain and full-coverage cases,
+`k = set_count`, result correspondence, validator replay, and serial/parallel
+metadata consistency. The paired workflow output remains ignored under
+`results/` and is not part of the published snapshot.

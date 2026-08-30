@@ -1,128 +1,119 @@
-# Greedy Failure Mechanisms
+# Structural Stressors and Greedy Failure Mechanisms
 
-This document describes the structural conditions under which greedy algorithms
-for Maximum Coverage tend to perform poorly. Each mechanism is illustrated by a
-generator family included in this repository; concrete numbers are produced
-locally by the commands shown, not stored in this file.
+This document separates structures that directly trap Greedy from structures
+that primarily stress preprocessing or exact search. Each workflow produces
+local evidence from a committed configuration; this file stores no experiment
+result or quantitative research claim.
 
 ## 1. Duplicate-heavy structure
 
-**Mechanism.** When many candidate sets are near-copies of each other, greedy's
-first-mover advantage is amplified: it selects one copy early and then wastes
-subsequent picks on sets that add almost nothing. The OPT, by contrast, can
-choose a diverse set of non-overlapping copies that collectively cover more
-elements.
+**Role.** Exact copies increase candidate redundancy and make deduplication a
+meaningful preprocessing question. Copies alone do not force standard Greedy to
+waste a choice: after one copy is selected, another has zero marginal gain while
+any productive alternative remains. This family is therefore primarily a
+search- and preprocessing-stress case rather than a direct Greedy trap.
 
-**Structural signature.** High `duplicate_set_ratio`; many pairs of sets with
-Jaccard similarity near 1.
+**Structural signature.** High `duplicate_set_ratio`; many candidate pairs with
+identical membership.
 
 ```console
-python run_project.py benchmark \
-  --config configs/p4_duplicate_heavy.json \
-  --output results/p4_duplicate_heavy
+python run_project.py benchmark --config configs/p4_duplicate_heavy.json --output results/p4_duplicate_heavy
 ```
 
 ## 2. Dominated sets
 
-**Mechanism.** A dominated set is one whose elements are a strict subset of
-another set's elements. Greedy is attracted to dominated sets when they appear
-early in the ordering (or have a temporarily high marginal gain due to prior
-selections), wasting a budget slot on a set that contributes nothing the
-dominator wouldn't already cover.
+**Role.** A dominated set is a strict subset of another available set. For the
+same current coverage state, its marginal gain cannot exceed its dominator's,
+so dominance alone does not create a standard Greedy failure. The family tests
+whether dominance elimination reduces exact-search work without changing the
+solution represented in original set indices.
 
-**Structural signature.** High `dominated_set_ratio`; large gap between the
-dominator's coverage and the dominated set's coverage.
+**Structural signature.** High `dominated_set_ratio`; many strict subset/
+superset candidate relationships.
 
 ```console
-python run_project.py benchmark \
-  --config configs/p4_dominated_heavy.json \
-  --output results/p4_dominated_heavy
+python run_project.py benchmark --config configs/p4_dominated_heavy.json --output results/p4_dominated_heavy
 ```
 
-## 3. Adversarial greedy traps
+## 3. Adversarial Greedy traps
 
-**Mechanism.** The generator constructs instances where a small "bait" set
-offers a high initial marginal gain, drawing greedy into a local optimum.
-Subsequent picks cannot recover the coverage lost by not choosing the
-globally optimal first set. This is the purest form of greedy failure: a
-single early decision that cannot be undone.
+**Mechanism.** The construction places a bait set first whose initial marginal
+gain is larger than either globally complementary block. Once Greedy selects the
+bait, its remaining choice cannot recover the coverage obtained by selecting
+the two complementary blocks. Version 2 carries a construction certificate for
+its known optimum.
 
-**Structural signature.** Small block of high-gain sets with overlapping
-coverage, surrounded by many low-gain "distractor" sets.
+**Structural signature.** A high-gain bait set overlaps both complementary
+blocks, with optional distractors constrained not to repair the lost coverage.
 
 ```console
-python run_project.py demo
+python run_project.py benchmark --config configs/p6_trap_construction.json --output results/p6_trap_construction
 ```
 
-The default demo uses the `adversarial_greedy_trap` generator with
-`block_size=12, distractor_count=4, seed=7`.
+For a transparent single-instance demonstration, run `python run_project.py
+demo`. Its values are computed locally from the fixed source-defined instance.
 
-## 4. Long-tail set sizes
+## 4. Long-tail coverage concentration
 
-**Mechanism.** When most sets are small and a few are very large, greedy tends
-to pick the large sets early (high absolute gain) and then struggles to cover
-the remaining elements with the many small sets that individually add little.
-The OPT may instead pick a carefully chosen combination of small sets that
-collectively outperform the single large set.
+**Mechanism to test.** A long-tailed element-weight construction changes how
+coverage is concentrated across candidate sets. High concentration can create
+large early gains followed by weak residual gains, but it does not guarantee a
+Greedy failure. The paired scan measures whether changing the concentration
+parameter changes exact-reference gaps while holding the common random stream
+fixed.
 
-**Structural signature.** High variance in `set_size`; low
-`mean_set_size` relative to `universe_size`.
+**Structural signature.** Variation in `coverage_skew_gini` under paired
+generator seeds and fixed nominal set size.
 
 ```console
-python run_project.py benchmark \
-  --config configs/p4_long_tail.json \
-  --output results/p4_long_tail
+python run_project.py benchmark --config configs/p4_long_tail.json --output results/p4_long_tail
 ```
 
 ## 5. High overlap
 
-**Mechanism.** When all candidate sets share a large common core, greedy's
-marginal-gain calculation is dominated by the identical core coverage, making
-it nearly indifferent between sets. The resulting selections are effectively
-random among the overlapping sets, and the per-set unique coverage — which is
-what actually matters — is not prioritised.
+**Mechanism to test.** A shared core makes initial gains similar and leaves each
+set's unique fringe to determine later marginal gains. Near ties increase the
+importance of the repository's deterministic lower-index tie-breaking; the
+selection is not random. The parameter grid tests whether measured overlap is
+associated with an exact-reference gap.
 
-**Structural signature.** High `pairwise_overlap_mean_jaccard`; low
-`coverage_skew_gini` (coverage is evenly distributed, not concentrated).
+**Structural signature.** High `pairwise_overlap_mean_jaccard`, interpreted
+alongside actual density and exact-reference availability.
 
 ```console
-python run_project.py benchmark \
-  --config configs/sweeps.json \
-  --output results/sweeps
+python run_project.py benchmark --config configs/p6_overlap_scan.json --output results/p6_overlap_scan
 ```
 
 ## 6. Clustered structure
 
-**Mechanism.** When the universe is partitioned into clusters and sets are
-concentrated within clusters, greedy may exhaust one cluster's coverage before
-moving to the next. If the budget `k` is small relative to the number of
-clusters, greedy misses entire clusters while the OPT spreads picks across
-them.
+**Mechanism to test.** Sets concentrated within clusters can make early choices
+overrepresent one region when the budget is small relative to the number of
+clusters. This is a hypothesis evaluated by the scan, not a guarantee for every
+generated instance.
 
-**Structural signature.** Low `actual_density` relative to cluster count; high
-coverage concentration within a few clusters.
-
-```console
-python run_project.py benchmark \
-  --config configs/sweeps.json \
-  --output results/sweeps
-```
-
-## Using these mechanisms
-
-The generator families in `src/maxcover/generators.py` expose one or more of
-these mechanisms. The controlled experiment framework (see
-`configs/`) lets you sweep structural parameters while holding other factors
-fixed, producing the evidence needed to establish which mechanisms are
-responsible for observed greedy failures.
-
-To reproduce the structural analysis:
+**Structural signature.** The configured `clusters`, `within_probability`, and
+`outside_probability` levels together with realized instance metrics.
 
 ```console
-python run_project.py benchmark --config configs/sweeps.json --output results/sweeps
+python run_project.py benchmark --config configs/p6_clustered_scan.json --output results/p6_clustered_scan
 ```
 
-The output CSVs in `results/sweeps/` contain per-instance structural metrics
-and per-algorithm coverage values. The analysis scripts (not included in this
-repository — see the content boundary in `CONTRIBUTING.md`) read those CSVs to
-compute failure rates, approximation ratios, and structural correlations.
+## Interpreting the workflows
+
+Every P4/P6 command above includes at least one registered exact algorithm.
+Only an exact run that proves `optimal`, or an independently validated
+instance certificate, supplies a reference optimum. A timeout or merely
+feasible incumbent does not prove one by itself. Optimum-relative failure and
+gap rows therefore report their exact-reference eligibility explicitly.
+
+`configs/sweeps.json` is an exploratory structural sweep containing Greedy and
+Local Search only. It does not include an exact reference, so its outputs alone
+cannot establish an approximation ratio or an exact-reference Greedy failure
+rate. It remains useful for configuration expansion, structural metrics, and
+raw coverage inspection.
+
+The benchmark runner writes typed CSV, Markdown, SVG, and manifest artifacts.
+See [`output_schema.md`](output_schema.md) for their semantics and
+[`cli.md`](cli.md) for validation and replay commands. Any future published
+research conclusion still requires the frozen evidence chain described in
+[`CONTRIBUTING.md`](../CONTRIBUTING.md).

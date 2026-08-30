@@ -52,13 +52,18 @@ python run_project.py quick
 python run_project.py benchmark --config configs/sweeps.json --dry-run
 ```
 
+确定性的 lazy-greedy 变体包含一个配对功能工作流，配置见
+[`configs/p3_lazy_greedy.json`](configs/p3_lazy_greedy.json)。完整验证流程见
+[`docs/lazy_greedy_test_report.md`](docs/lazy_greedy_test_report.md)；该报告只记录
+兼容性和功能检查，不构成性能结论。
+
 运行配置好的基准测试并写入本地输出：
 
 ```console
 python run_project.py benchmark --config configs/full.json --output results/full
 ```
 
-上面两个命令都会产生一个 `LegacyConfigWarning`：`configs/quick.json` 和 `configs/full.json` 使用 schema v1，加载器会在每次运行时于内存中将它们迁移到 schema 3。这个警告是预期行为。这两个文件会刻意保留在 v1，而不会直接重写——因为 `config_hash` 是基于规范化后的配置计算的，重写文件会改变该哈希，并使已经依据它记录的运行身份失去对应关系；`CONTRIBUTING.md` 将这种变化归类为破坏性变更。`configs/sweeps.json` 使用 schema 2；`configs/p3_*` 到 `configs/p5_*` 的配置使用 schema 3，因此不会产生警告。
+上面两个命令都会产生一个 `LegacyConfigWarning`：`configs/quick.json` 和 `configs/full.json` 使用 schema v1，加载器会在每次运行时于内存中将它们迁移到 schema 3。这个警告是预期行为。这两个文件会刻意保留在 v1，而不会直接重写——因为 `config_hash` 是基于规范化后的配置计算的，重写文件会改变该哈希，并使已经依据它记录的运行身份失去对应关系；`CONTRIBUTING.md` 将这种变化归类为破坏性变更。`configs/sweeps.json` 使用 schema 2；`configs/p3_*` 到 `configs/p6_*` 的配置使用 schema 3，因此不会产生警告。
 
 `results/` 下生成的文件都是本地产物，不属于仓库快照的一部分。
 
@@ -132,7 +137,15 @@ python run_project.py dashboard
 - `project.ps1`：Windows 便捷包装脚本
 - `LICENSE_MANIFEST.json`：封闭的许可证允许列表，由 CI 校验
 - `PUBLIC_SNAPSHOT_MANIFEST.json`：创建本仓库时那次一次性导出的迁移归档
+- [`docs/README.md`](docs/README.md)：文档索引与范围说明
+- [`docs/cli.md`](docs/cli.md)：完整命令行工作流
+- [`docs/output_schema.md`](docs/output_schema.md)：生成产物的语义说明
+- [`docs/failure_mechanisms.md`](docs/failure_mechanisms.md) 和
+  [`docs/faq.md`](docs/faq.md)：结构机制说明与项目常见问题
+- [`docs/faq.zh-CN.md`](docs/faq.zh-CN.md)：简体中文 FAQ，与英文版本逐节同步维护
 - `docs/history/`：迁移来源说明与公开前开发历史
+- [`docs/lazy_greedy_test_report.md`](docs/lazy_greedy_test_report.md)：
+  lazy-greedy 功能验证流程
 
 ## 贡献与支持
 

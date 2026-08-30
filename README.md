@@ -89,7 +89,7 @@ memory on every run. The warning is expected. Those two files stay at v1
 deliberately — `config_hash` is computed over the normalized configuration, so
 rewriting them would change the hash and orphan the run identities already
 recorded against it, which `CONTRIBUTING.md` classes as a breaking change.
-`configs/sweeps.json` is schema 2; the `configs/p3_*` through `configs/p5_*`
+`configs/sweeps.json` is schema 2; the `configs/p3_*` through `configs/p6_*`
 configurations are schema 3 and warn about nothing.
 
 Generated files under `results/` are local artifacts and are not part of the
@@ -210,8 +210,15 @@ its scope.
 - `LICENSE_MANIFEST.json`: the closed license allow-list, verified by CI
 - `PUBLIC_SNAPSHOT_MANIFEST.json`: the migration archive for the one export
   that created this repository
+- [`docs/README.md`](docs/README.md): documentation index and scope guide
+- [`docs/cli.md`](docs/cli.md): complete command-line workflow
+- [`docs/output_schema.md`](docs/output_schema.md): generated artifact semantics
+- [`docs/failure_mechanisms.md`](docs/failure_mechanisms.md) and
+  [`docs/faq.md`](docs/faq.md): structural guidance and project rationale
+- [`docs/faq.zh-CN.md`](docs/faq.zh-CN.md): Simplified Chinese FAQ
 - `docs/history/`: migration provenance and pre-public development history
-- `docs/lazy_greedy_test_report.md`: lazy-greedy functional verification process
+- [`docs/lazy_greedy_test_report.md`](docs/lazy_greedy_test_report.md):
+  lazy-greedy functional verification process
 
 ## Contributing and support
 
