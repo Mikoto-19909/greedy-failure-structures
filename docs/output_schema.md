@@ -112,7 +112,9 @@ ineligibility or unavailable data and must not be interpreted as zero.
 The runner writes self-contained JSON files under `failures/` for replayable
 timeout or error cases. Each file includes the serialized instance, recorded
 algorithm identity and options, and the result fields used for comparison. The
-`replay` command can use the recorded algorithm or an explicit replacement.
+`replay` command can use the recorded algorithm or an explicit replacement, but
+the replacement receives the recorded options and must accept that option
+contract; replay does not translate options between algorithms.
 
 ## Manifest and independent validation
 

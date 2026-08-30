@@ -97,10 +97,14 @@ Replay a serialized case using its recorded algorithm:
 python run_project.py replay --instance results/p6_uniform_scale/failures/<run-id>.json
 ```
 
-Use `--algorithm NAME` to select another registered algorithm. When the file
-contains a recorded result, a coverage or selection mismatch produces a nonzero
-exit status. Replay artifacts are self-contained and do not regenerate their
-instances from a generator.
+Use `--algorithm NAME` to request a replacement algorithm. The replacement
+receives the options recorded in the replay file, so the override is valid only
+when that algorithm accepts the recorded option contract. For example, a
+time-limited exact-solver artifact cannot be replayed with `greedy`, because
+Greedy rejects exact-solver options; the command does not remap options for the
+replacement. When the file contains a recorded result, a coverage or selection
+mismatch produces a nonzero exit status. Replay artifacts are self-contained
+and do not regenerate their instances from a generator.
 
 ### `dashboard`
 
