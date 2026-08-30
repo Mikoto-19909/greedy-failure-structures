@@ -25,13 +25,18 @@ drop a config from the legacy list, could say a clean mypy run proves the whole
 package is typed, and every test stayed green. Substring presence says a word
 appears somewhere, not that the sentence containing it is true.
 
-So each test now does one of two things:
+So each test now does one of these things:
 
 - runs the behaviour and asserts what it actually produces — `demo` really is
   executed and its output parsed, the configs really are loaded and the warning
-  caught, git really is queried for what is tracked;
+  caught, git really is queried for what is tracked, greedy really is run twice
+  and both selections compared;
 - extracts the *specific figure* the document states and compares it to the
-  measured value, so a wrong number fails rather than merely a missing word.
+  measured value, so a wrong number fails rather than merely a missing word;
+- extracts the *structure* the document states — the "must reproduce" and "may
+  vary" lists of the determinism FAQ, the phase endpoint of the schema range —
+  and compares it to what the code and the configs actually deliver, so an
+  inverted boundary fails rather than merely a missing phrase.
 
 Verbatim sentence matching is still avoided: it makes every copy-edit a failure,
 which is how a test gets deleted. The difference is that a claim's *content* is
@@ -44,6 +49,7 @@ import json
 import re
 import subprocess
 import sys
+import tempfile
 import tomllib
 import unittest
 import warnings
@@ -141,16 +147,16 @@ class LegacyConfigClaimTests(unittest.TestCase):
         self.assertEqual(int(match.group(1)), self._schema_version("sweeps.json"))
 
     def test_the_readmes_state_the_correct_schema_for_current_configs(self) -> None:
-        # Each language states the phase range explicitly. Extract the endpoint
-        # and version rather than checking for a phase name somewhere in prose,
-        # which would not catch the next phase being omitted again.
+        # Each language states the phase range explicitly. The endpoint and
+        # version are measured from the configs on disk instead of hard-coded,
+        # so a newly added phase that the documents omit no longer stays green.
         patterns = {
             "README.md": (
-                r"`configs/p3_\*`\s+through\s+`configs/p(\d)_\*`\s+"
+                r"`configs/p3_\*`\s+through\s+`configs/p(\d+)_\*`\s+"
                 r"configurations?\s+are\s+schema\s+(\d+)"
             ),
             "README.zh-CN.md": (
-                r"`configs/p3_\*`\s+到\s+`configs/p(\d)_\*`\s+的配置"
+                r"`configs/p3_\*`\s+到\s+`configs/p(\d+)_\*`\s+的配置"
                 r"\s*使用\s+schema\s+(\d+)"
             ),
         }
@@ -166,15 +172,33 @@ class LegacyConfigClaimTests(unittest.TestCase):
                 documented_ranges.add((int(match.group(1)), int(match.group(2))))
 
         self.assertEqual(
-            documented_ranges,
-            {(6, 3)},
-            "the bilingual README phase ranges disagree or do not end at p6/schema 3",
+            len(documented_ranges),
+            1,
+            "the bilingual README phase ranges disagree",
         )
-        for path in sorted((REPO_ROOT / "configs").glob("p[3456]_*.json")):
-            with self.subTest(config=path.name):
+        endpoint, schema = next(iter(documented_ranges))
+
+        phase_schemas: dict[int, set[int]] = {}
+        for path in sorted((REPO_ROOT / "configs").glob("p[0-9]*_*.json")):
+            match = re.match(r"p(\d+)_", path.name)
+            assert match is not None  # the glob prefix guarantees a phase number
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            phase_schemas.setdefault(int(match.group(1)), set()).add(
+                int(payload["schema_version"])
+            )
+
+        self.assertEqual(
+            max(phase_schemas),
+            endpoint,
+            "the README phase endpoint no longer matches the configs on disk",
+        )
+        for phase in range(3, endpoint + 1):
+            with self.subTest(phase=phase):
                 self.assertEqual(
-                    int(json.loads(path.read_text(encoding="utf-8"))["schema_version"]),
-                    3,
+                    phase_schemas.get(phase),
+                    {schema},
+                    "a phase between p3 and the endpoint is missing or uses a "
+                    "schema other than the one the READMEs state",
                 )
 
 
@@ -219,6 +243,63 @@ class DocumentationNavigationClaimTests(unittest.TestCase):
             implemented,
             "docs/cli.md command sections no longer match the CLI parser",
         )
+
+    @staticmethod
+    def _replay_document(
+        algorithm: str, options: dict[str, object], directory: str
+    ) -> Path:
+        path = Path(directory) / "replay.json"
+        path.write_text(
+            json.dumps(
+                {
+                    "instance": {
+                        "schema_version": 1,
+                        "encoding": "elements",
+                        "universe_size": 3,
+                        "sets": [[0, 1], [1, 2]],
+                        "k": 1,
+                        "family": "test",
+                        "seed": 11,
+                        "parameters": {},
+                    },
+                    "replay": {"algorithm": algorithm, "options": options},
+                }
+            ),
+            encoding="utf-8",
+        )
+        return path
+
+    def test_replay_override_restriction_is_enforced(self) -> None:
+        # docs/cli.md says an override is valid only when the replacement
+        # algorithm accepts the recorded option contract, and that greedy
+        # rejects exact-solver options rather than remapping them. Run both
+        # directions instead of trusting the sentence.
+        sys.path.insert(0, str(SOURCE_ROOT))
+        try:
+            from maxcover.benchmark import replay_instance_file
+        finally:
+            sys.path.remove(str(SOURCE_ROOT))
+
+        with tempfile.TemporaryDirectory() as directory:
+            timeout = self._replay_document(
+                "brute_force",
+                {"time_limit_seconds": 0.5, "max_set_count": 18},
+                directory,
+            )
+            with self.assertRaises(ValueError):
+                replay_instance_file(timeout, "greedy")
+
+        with tempfile.TemporaryDirectory() as directory:
+            bounded = self._replay_document(
+                "branch_and_bound", {"time_limit_seconds": 5.0}, directory
+            )
+            solution, _ = replay_instance_file(bounded, "brute_force")
+            self.assertEqual(
+                solution.algorithm,
+                "brute_force",
+                "a replacement whose contract covers the recorded options "
+                "should run, as docs/cli.md describes",
+            )
 
 
 class BilingualFaqClaimTests(unittest.TestCase):
@@ -275,37 +356,146 @@ class BilingualFaqClaimTests(unittest.TestCase):
             "the FAQs do not link all supporting documents",
         )
 
-    def test_bilingual_faqs_state_the_runtime_variability_boundary(self) -> None:
+    def test_bilingual_faqs_state_the_reproducibility_boundary(self) -> None:
+        # The determinism section pins two lists: what a run must reproduce and
+        # what may vary. Phrase presence cannot catch an inversion — the section
+        # could keep every phrase while moving coverage into the "may vary" list
+        # — so both lists are extracted from the section and compared, and the
+        # timeout exemption the section states must remain part of the claim.
         documents = {name: _read(name) for name in self.FAQ_FILES}
-        runtime = {
+        sections = {
             name: re.sub(r"\s+", " ", self._section(text, "determinism"))
             for name, text in documents.items()
         }
-        causal = {
+        must_reproduce = {
+            "docs/faq.md": (
+                "instance identities",
+                "selected set indices",
+                "coverage values",
+                "canonical row ordering",
+            ),
+            "docs/faq.zh-CN.md": (
+                "实例身份",
+                "选中的集合索引",
+                "覆盖值",
+                "规范行排序",
+            ),
+        }
+        may_vary = {
+            "docs/faq.md": ("Wall-clock runtime", "timestamps", "environment metadata"),
+            "docs/faq.zh-CN.md": ("实际运行时间", "时间戳", "环境元数据"),
+        }
+        reproduce_patterns = {
+            "docs/faq.md": r"completed runs reproduce the ([^.]*)\.",
+            "docs/faq.zh-CN.md": r"已完成的运行会复现([^。]*)",
+        }
+        vary_patterns = {
+            "docs/faq.md": r"(Wall-clock runtime[^.]*) may vary by machine",
+            "docs/faq.zh-CN.md": r"(实际运行时间[^。]*)可能\s*因机器而异",
+        }
+        for name, section in sections.items():
+            with self.subTest(document=name):
+                reproduced = re.search(reproduce_patterns[name], section)
+                self.assertIsNotNone(
+                    reproduced, f"{name} no longer states what a run must reproduce"
+                )
+                assert reproduced is not None
+                for item in must_reproduce[name]:
+                    self.assertIn(item, reproduced.group(1))
+
+                varied = re.search(vary_patterns[name], section)
+                self.assertIsNotNone(
+                    varied, f"{name} no longer states what may vary by machine"
+                )
+                assert varied is not None
+                for item in may_vary[name]:
+                    self.assertIn(item, varied.group(1))
+
+                # The two lists must stay disjoint: an inverted boundary keeps
+                # every phrase but moves it to the other side.
+                for item in must_reproduce[name]:
+                    self.assertNotIn(item, varied.group(1))
+                for item in may_vary[name]:
+                    self.assertNotIn(item, reproduced.group(1))
+
+        exemptions = {
+            "docs/faq.md": (
+                r"A run stopped by its wall-clock limit reports the incumbent[^.]*"
+                r"exempt from this guarantee"
+            ),
+            "docs/faq.zh-CN.md": (
+                r"被墙钟限制中止的运行报告其在限制触发时已达成的 incumbent[^。]*"
+                r"不受此保证约束"
+            ),
+        }
+        for name, pattern in exemptions.items():
+            with self.subTest(document=name):
+                self.assertRegex(
+                    sections[name],
+                    pattern,
+                    f"{name} no longer exempts timeout incumbents from the "
+                    "reproducibility guarantee",
+                )
+
+    def test_bilingual_faqs_state_the_causality_boundary(self) -> None:
+        documents = {name: _read(name) for name in self.FAQ_FILES}
+        sections = {
             name: re.sub(r"\s+", " ", self._section(text, "synthetic-families"))
             for name, text in documents.items()
         }
+        # The section's conclusion is a negative one: descriptive associations
+        # do not establish causality or generalisation. The whole predicate is
+        # matched so the sentence cannot be inverted while keeping its phrases.
+        self.assertRegex(
+            sections["docs/faq.md"],
+            r"estimate descriptive associations[^.]*does not by itself establish "
+            r"causality[^.]*real-world generalisation",
+        )
+        self.assertRegex(
+            sections["docs/faq.zh-CN.md"],
+            r"估计描述性关联[^。]*不能建立因果关系[^。]*真实世界的\s*泛化能力",
+        )
 
-        # These assertions are scoped to the normative FAQ sections and check
-        # the relationships the claims state, rather than isolated vocabulary.
-        self.assertRegex(
-            runtime["docs/faq.md"],
-            r"Wall-clock runtime.*timestamps.*environment metadata.*"
-            r"may vary by machine",
+    def test_completed_deterministic_runs_reproduce_selection_and_coverage(
+        self,
+    ) -> None:
+        # The determinism section guarantees that completed runs reproduce
+        # selection and coverage; the guarantee is exercised rather than quoted.
+        sys.path.insert(0, str(SOURCE_ROOT))
+        try:
+            from maxcover.algorithms import ALGORITHMS
+            from maxcover.contracts import AlgorithmRunOptions
+            from maxcover.generators import uniform_random
+        finally:
+            sys.path.remove(str(SOURCE_ROOT))
+
+        instance = uniform_random(
+            universe_size=40, set_count=12, k=4, density=0.25, seed=11
         )
-        self.assertRegex(
-            runtime["docs/faq.zh-CN.md"],
-            r"实际运行时间.*时间戳.*环境元数据.*可能因机器而异",
+        first = ALGORITHMS["greedy"].run(instance, AlgorithmRunOptions())
+        second = ALGORITHMS["greedy"].run(instance, AlgorithmRunOptions())
+        self.assertEqual(first.selected, second.selected)
+        self.assertEqual(first.coverage, second.coverage)
+
+    def test_algorithm_seed_contract_matches_the_faq_statement(self) -> None:
+        # The section says randomised algorithms require an explicit seed and
+        # deterministic ones reject one; that contract is enforced by the
+        # registry, so the test runs it instead of checking the words.
+        sys.path.insert(0, str(SOURCE_ROOT))
+        try:
+            from maxcover.algorithms import ALGORITHMS
+            from maxcover.contracts import AlgorithmRunOptions
+            from maxcover.generators import uniform_random
+        finally:
+            sys.path.remove(str(SOURCE_ROOT))
+
+        instance = uniform_random(
+            universe_size=40, set_count=12, k=4, density=0.25, seed=11
         )
-        self.assertRegex(
-            causal["docs/faq.md"],
-            r"descriptive associations.*does not by itself establish causality.*"
-            r"real-world generalisation",
-        )
-        self.assertRegex(
-            causal["docs/faq.zh-CN.md"],
-            r"描述性关联.*不能建立因果关系.*真实世界.*泛化能力",
-        )
+        with self.assertRaises(ValueError):
+            ALGORITHMS["greedy"].run(instance, AlgorithmRunOptions(algorithm_seed=1))
+        with self.assertRaises(RuntimeError):
+            ALGORITHMS["randomized_greedy"].run(instance, AlgorithmRunOptions())
 
 
 class MechanismWorkflowClaimTests(unittest.TestCase):
