@@ -225,10 +225,23 @@ class BilingualFaqClaimTests(unittest.TestCase):
     """English and Simplified Chinese FAQs must evolve as one document."""
 
     FAQ_FILES = ("docs/faq.md", "docs/faq.zh-CN.md")
+    FAQ_SECTION_MARKER = re.compile(r"<!--\s*faq:id=([a-z0-9-]+)\s*-->")
 
     @staticmethod
     def _section_ids(text: str) -> list[str]:
         return re.findall(r"<!--\s*faq:id=([a-z0-9-]+)\s*-->", text)
+
+    @classmethod
+    def _section(cls, text: str, section_id: str) -> str:
+        """Return one complete FAQ section bounded by its stable marker."""
+
+        markers = list(cls.FAQ_SECTION_MARKER.finditer(text))
+        for index, marker in enumerate(markers):
+            if marker.group(1) != section_id:
+                continue
+            end = markers[index + 1].start() if index + 1 < len(markers) else len(text)
+            return text[marker.end() : end]
+        raise AssertionError(f"FAQ section marker not found: {section_id}")
 
     @staticmethod
     def _link_targets(text: str) -> set[str]:
@@ -263,12 +276,36 @@ class BilingualFaqClaimTests(unittest.TestCase):
         )
 
     def test_bilingual_faqs_state_the_runtime_variability_boundary(self) -> None:
-        english = _read("docs/faq.md")
-        chinese = _read("docs/faq.zh-CN.md")
-        self.assertIn("Wall-clock runtime", english)
-        self.assertIn("实际运行时间", chinese)
-        self.assertIn("does not by itself establish causality", english)
-        self.assertIn("不能建立因果关系", chinese)
+        documents = {name: _read(name) for name in self.FAQ_FILES}
+        runtime = {
+            name: re.sub(r"\s+", " ", self._section(text, "determinism"))
+            for name, text in documents.items()
+        }
+        causal = {
+            name: re.sub(r"\s+", " ", self._section(text, "synthetic-families"))
+            for name, text in documents.items()
+        }
+
+        # These assertions are scoped to the normative FAQ sections and check
+        # the relationships the claims state, rather than isolated vocabulary.
+        self.assertRegex(
+            runtime["docs/faq.md"],
+            r"Wall-clock runtime.*timestamps.*environment metadata.*"
+            r"may vary by machine",
+        )
+        self.assertRegex(
+            runtime["docs/faq.zh-CN.md"],
+            r"实际运行时间.*时间戳.*环境元数据.*可能因机器而异",
+        )
+        self.assertRegex(
+            causal["docs/faq.md"],
+            r"descriptive associations.*does not by itself establish causality.*"
+            r"real-world generalisation",
+        )
+        self.assertRegex(
+            causal["docs/faq.zh-CN.md"],
+            r"描述性关联.*不能建立因果关系.*真实世界.*泛化能力",
+        )
 
 
 class MechanismWorkflowClaimTests(unittest.TestCase):
