@@ -140,24 +140,190 @@ class LegacyConfigClaimTests(unittest.TestCase):
         assert match is not None
         self.assertEqual(int(match.group(1)), self._schema_version("sweeps.json"))
 
-    def test_the_readme_states_the_correct_schema_for_the_current_configs(self) -> None:
-        # Matched over the README with newlines collapsed, since the sentence
-        # wraps across lines.
-        readme = re.sub(r"\s+", " ", _read("README.md"))
-        match = re.search(
-            r"`configs/p3_\*`\s+through\s+`configs/p5_\*`\s+configurations?"
-            r"\s+are\s+schema\s+(\d+)",
-            readme,
+    def test_the_readmes_state_the_correct_schema_for_current_configs(self) -> None:
+        # Each language states the phase range explicitly. Extract the endpoint
+        # and version rather than checking for a phase name somewhere in prose,
+        # which would not catch the next phase being omitted again.
+        patterns = {
+            "README.md": (
+                r"`configs/p3_\*`\s+through\s+`configs/p(\d)_\*`\s+"
+                r"configurations?\s+are\s+schema\s+(\d+)"
+            ),
+            "README.zh-CN.md": (
+                r"`configs/p3_\*`\s+到\s+`configs/p(\d)_\*`\s+的配置"
+                r"\s*使用\s+schema\s+(\d+)"
+            ),
+        }
+        documented_ranges: set[tuple[int, int]] = set()
+        for name, pattern in patterns.items():
+            with self.subTest(document=name):
+                text = re.sub(r"\s+", " ", _read(name))
+                match = re.search(pattern, text)
+                self.assertIsNotNone(
+                    match, f"{name} no longer states the current phase schema range"
+                )
+                assert match is not None
+                documented_ranges.add((int(match.group(1)), int(match.group(2))))
+
+        self.assertEqual(
+            documented_ranges,
+            {(6, 3)},
+            "the bilingual README phase ranges disagree or do not end at p6/schema 3",
         )
-        self.assertIsNotNone(match, "the README no longer states the p3–p5 schema")
-        assert match is not None
-        documented = int(match.group(1))
-        for path in sorted((REPO_ROOT / "configs").glob("p[345]_*.json")):
+        for path in sorted((REPO_ROOT / "configs").glob("p[3456]_*.json")):
             with self.subTest(config=path.name):
                 self.assertEqual(
                     int(json.loads(path.read_text(encoding="utf-8"))["schema_version"]),
-                    documented,
+                    3,
                 )
+
+
+class DocumentationNavigationClaimTests(unittest.TestCase):
+    """The two README entry points must expose the same core workflow docs."""
+
+    @staticmethod
+    def _link_targets(name: str) -> set[str]:
+        return set(re.findall(r"\[[^\]]+\]\(([^)]+)\)", _read(name)))
+
+    def test_bilingual_readmes_link_the_core_workflow_documents(self) -> None:
+        expected = {
+            "docs/README.md",
+            "docs/cli.md",
+            "docs/output_schema.md",
+            "docs/lazy_greedy_test_report.md",
+        }
+        for name in ("README.md", "README.zh-CN.md"):
+            with self.subTest(document=name):
+                self.assertTrue(
+                    expected <= self._link_targets(name),
+                    f"{name} does not link every core workflow document",
+                )
+
+    def test_cli_reference_covers_every_public_command(self) -> None:
+        sys.path.insert(0, str(SOURCE_ROOT))
+        try:
+            from maxcover.cli import build_parser
+        finally:
+            sys.path.remove(str(SOURCE_ROOT))
+
+        parser = build_parser()
+        command_action = next(
+            action for action in parser._actions if action.dest == "command"
+        )
+        implemented = set(command_action.choices)
+        documented = set(
+            re.findall(r"(?m)^### `([a-z-]+)`\s*$", _read("docs/cli.md"))
+        )
+        self.assertEqual(
+            documented,
+            implemented,
+            "docs/cli.md command sections no longer match the CLI parser",
+        )
+
+
+class BilingualFaqClaimTests(unittest.TestCase):
+    """English and Simplified Chinese FAQs must evolve as one document."""
+
+    FAQ_FILES = ("docs/faq.md", "docs/faq.zh-CN.md")
+
+    @staticmethod
+    def _section_ids(text: str) -> list[str]:
+        return re.findall(r"<!--\s*faq:id=([a-z0-9-]+)\s*-->", text)
+
+    @staticmethod
+    def _link_targets(text: str) -> set[str]:
+        return set(re.findall(r"\[[^\]]+\]\(([^)]+)\)", text))
+
+    def test_bilingual_faqs_have_the_same_section_ids(self) -> None:
+        ids = {name: self._section_ids(_read(name)) for name in self.FAQ_FILES}
+        self.assertTrue(ids["docs/faq.md"], "English FAQ has no section IDs")
+        for name, values in ids.items():
+            self.assertEqual(
+                len(values),
+                len(set(values)),
+                f"{name} repeats a FAQ section ID",
+            )
+        self.assertEqual(
+            ids["docs/faq.md"],
+            ids["docs/faq.zh-CN.md"],
+            "English and Chinese FAQs no longer cover the same sections in order",
+        )
+
+    def test_bilingual_faqs_link_the_same_supporting_documents(self) -> None:
+        expected = {"cli.md", "output_schema.md", "failure_mechanisms.md"}
+        targets = {name: self._link_targets(_read(name)) for name in self.FAQ_FILES}
+        self.assertEqual(
+            targets["docs/faq.md"],
+            targets["docs/faq.zh-CN.md"],
+            "English and Chinese FAQs no longer use the same supporting links",
+        )
+        self.assertTrue(
+            expected <= targets["docs/faq.md"],
+            "the FAQs do not link all supporting documents",
+        )
+
+    def test_bilingual_faqs_state_the_runtime_variability_boundary(self) -> None:
+        english = _read("docs/faq.md")
+        chinese = _read("docs/faq.zh-CN.md")
+        self.assertIn("Wall-clock runtime", english)
+        self.assertIn("实际运行时间", chinese)
+        self.assertIn("does not by itself establish causality", english)
+        self.assertIn("不能建立因果关系", chinese)
+
+
+class MechanismWorkflowClaimTests(unittest.TestCase):
+    """Mechanism workflows must support the exact-reference claims they make."""
+
+    @staticmethod
+    def _algorithm_names(config_name: str) -> set[str]:
+        payload = json.loads(_read(config_name))
+        return {
+            item if isinstance(item, str) else item["name"]
+            for item in payload["algorithms"]
+        }
+
+    @staticmethod
+    def _exact_algorithm_names() -> set[str]:
+        sys.path.insert(0, str(SOURCE_ROOT))
+        try:
+            from maxcover.algorithms import ALGORITHMS
+        finally:
+            sys.path.remove(str(SOURCE_ROOT))
+        return {name for name, specification in ALGORITHMS.items() if specification.exact}
+
+    def test_every_documented_mechanism_command_has_an_exact_algorithm(self) -> None:
+        paths = set(
+            re.findall(
+                r"--config\s+(configs/[A-Za-z0-9_]+\.json)",
+                _read("docs/failure_mechanisms.md"),
+            )
+        )
+        self.assertEqual(
+            paths,
+            {
+                "configs/p4_dominated_heavy.json",
+                "configs/p4_duplicate_heavy.json",
+                "configs/p4_long_tail.json",
+                "configs/p6_clustered_scan.json",
+                "configs/p6_overlap_scan.json",
+                "configs/p6_trap_construction.json",
+            },
+            "the mechanism guide's runnable workflow set changed",
+        )
+        exact = self._exact_algorithm_names()
+        for path in sorted(paths):
+            with self.subTest(config=path):
+                self.assertTrue(
+                    self._algorithm_names(path) & exact,
+                    f"{path} cannot support the guide's exact-reference analysis",
+                )
+
+    def test_sweeps_really_has_no_exact_reference(self) -> None:
+        self.assertFalse(
+            self._algorithm_names("configs/sweeps.json")
+            & self._exact_algorithm_names(),
+            "sweeps.json gained an exact algorithm; update the guide's limitation",
+        )
 
 
 class TypeCheckClaimTests(unittest.TestCase):
