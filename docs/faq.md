@@ -103,10 +103,14 @@ substitute for a frozen, independently validated study.
 ## What does determinism mean here?
 
 With the same normalized configuration, algorithm version, and explicit seed,
-the instance identities, selected set indices, coverage values, and canonical
-row ordering must be the same. Wall-clock runtime, timestamps, and environment
-metadata may vary by machine. Randomised algorithms therefore require an
-explicit algorithm seed, while deterministic algorithms reject one.
+completed runs reproduce the instance identities, selected set indices,
+coverage values, and canonical row ordering. Wall-clock runtime, timestamps,
+and environment metadata may vary by machine. A run stopped by its wall-clock
+limit reports the incumbent it had reached when the limit fired; because
+progress is checked against the wall clock, that incumbent and its coverage can
+differ across machines and are exempt from this guarantee. Randomised
+algorithms therefore require an explicit algorithm seed, while deterministic
+algorithms reject one.
 
 <!-- faq:id=reproduction -->
 ## How do I reproduce a workflow?
