@@ -41,6 +41,37 @@ the status explains why and unavailable numeric fields remain blank.
 completed runtime observations. Timeout duration is not silently treated as a
 completed runtime.
 
+## Exact-reference coverage and censoring diagnostics
+
+`reference_status.csv` contains one row for every generated instance. It records
+the effective reference status, every enabled configured exact variant's status, the
+proof sources, certificate availability, and cross-validation state. A solver
+excluded by its configured set-count cutoff is recorded as `not_run`; it is not
+silently omitted.
+
+`reference_coverage_statistics.csv` groups those rows by family, normalized
+generator parameters, and status. Its denominator is every generated instance
+in the slice, and its numerator is the instances with at least one validated
+optimum proof. The status rows distinguish `optimal`, `feasible`, `timeout`,
+`error`, `known_optimum_certificate`, and `not_run` outcomes.
+
+`reference_censoring_bias_statistics.csv` compares retained instances (a proved
+reference exists) with excluded instances (no proof) within the same family and
+parameter slice. It reports size and measured-structure means and the excluded
+mean minus the retained mean. Comparisons remain blank unless both groups have
+observations; no missing value is replaced with zero.
+
+`reference_cutoff_sensitivity_statistics.csv` preserves each enabled configured exact
+variant's time and set-count cutoffs, status counts, solver-only reference
+coverage, and effective coverage after independently validated certificates are
+included. Configure multiple variants with different cutoffs to obtain a direct
+sensitivity comparison on the same generated instances.
+
+When brute force and Branch-and-Bound or CP-SAT both prove an optimum for the
+same eligible small instance, `reference_status.csv` marks that cross-check.
+Any disagreement between optimal exact sources or a known-optimum certificate
+already stops normalization with an error.
+
 ## Paired algorithm analyses
 
 The runner writes these typed files when their required variants and valid
@@ -87,6 +118,10 @@ local-search recovery, quality/runtime, search-node, and timeout views. Their
 filenames are enumerated by `REPORT_FILENAMES` in
 [`benchmark.py`](../src/maxcover/benchmark.py).
 
+`reference_coverage_by_case.svg` is the cartography missingness layer. Its bars
+use all generated instances and preserve the unresolved reference statuses
+instead of displaying only the instances eligible for gap analysis.
+
 A header-only CSV or a chart with no applicable typed rows is a valid artifact.
 It means the configured run did not supply the inputs required by that analysis;
 it does not mean the metric equals zero.
@@ -102,6 +137,11 @@ it does not mean the metric equals zero.
   normalized row may still carry a reference optimum from an independently
   validated instance certificate or another exact run for the same instance.
 - `error` means no valid algorithm result was produced.
+- `known_optimum_certificate` means the generator supplied an independently
+  validated feasible solution and optimum upper-bound proof.
+- `not_run` is a derived reference-diagnostic status used when a configured
+  exact variant is ineligible under its set-count cutoff, or when no exact
+  source was configured. It is not an algorithm `SolutionStatus`.
 
 Failure rates, relative gaps, and other optimum-relative analyses require a
 valid optimal reference for the same instance. Blank values express

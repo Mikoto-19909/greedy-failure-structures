@@ -24,6 +24,10 @@ from maxcover.contracts import (
     InstanceRecord,
     LocalSearchRecoveryRecord,
     LocalSearchRemainingGapRecord,
+    ReferenceCensoringBiasRecord,
+    ReferenceCoverageRecord,
+    ReferenceCutoffSensitivityRecord,
+    ReferenceStatusRecord,
     RunRecord,
     SummaryRecord,
 )
@@ -154,6 +158,29 @@ class BenchmarkTests(unittest.TestCase):
                 )
             )
             self.assertEqual(len(result.instances), 1)
+            self.assertEqual(len(result.reference_statuses), 1)
+            self.assertIsInstance(result.reference_statuses[0], ReferenceStatusRecord)
+            self.assertEqual(len(result.reference_coverage_statistics), 6)
+            self.assertTrue(
+                all(
+                    isinstance(row, ReferenceCoverageRecord)
+                    for row in result.reference_coverage_statistics
+                )
+            )
+            self.assertEqual(len(result.reference_censoring_bias_statistics), 11)
+            self.assertTrue(
+                all(
+                    isinstance(row, ReferenceCensoringBiasRecord)
+                    for row in result.reference_censoring_bias_statistics
+                )
+            )
+            self.assertEqual(len(result.reference_cutoff_sensitivity_statistics), 2)
+            self.assertTrue(
+                all(
+                    isinstance(row, ReferenceCutoffSensitivityRecord)
+                    for row in result.reference_cutoff_sensitivity_statistics
+                )
+            )
             self.assertIsInstance(result.instances[0], InstanceRecord)
             self.assertEqual(result.output_dir, output)
             options = {row.algorithm: json.loads(row.algorithm_options) for row in result.rows}
@@ -173,6 +200,10 @@ class BenchmarkTests(unittest.TestCase):
                 "descriptive_statistics.csv",
                 "confidence_interval_statistics.csv",
                 "censored_runtime_statistics.csv",
+                "reference_status.csv",
+                "reference_coverage_statistics.csv",
+                "reference_censoring_bias_statistics.csv",
+                "reference_cutoff_sensitivity_statistics.csv",
                 "greedy_failure_statistics.csv",
                 "heuristic_exact_runtime_ratio_statistics.csv",
                 "local_search_recovery_statistics.csv",
@@ -187,6 +218,7 @@ class BenchmarkTests(unittest.TestCase):
                 "runtime_scaling.svg",
                 "node_scaling.svg",
                 "timeout_by_case.svg",
+                "reference_coverage_by_case.svg",
                 "manifest.json",
             ):
                 self.assertTrue((output / filename).is_file(), filename)
@@ -221,6 +253,10 @@ class BenchmarkTests(unittest.TestCase):
                     "样本=1 实例种子",
                     "右删失=0 次/0 个实例",
                     "平均删失时间=blank（仅作诊断）",
+                ),
+                "reference_coverage_by_case.svg": (
+                    "source=reference_status.csv",
+                    "有证明参考 1/1 · 缺失 0",
                 ),
             }
             for filename, markers in chart_expectations.items():

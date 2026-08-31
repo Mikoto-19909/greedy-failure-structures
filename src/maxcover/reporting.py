@@ -24,6 +24,10 @@ from .contracts import (
     LocalSearchRecoveryRecord,
     LocalSearchRemainingGapRecord,
     QualityRuntimeParetoRecord,
+    ReferenceCensoringBiasRecord,
+    ReferenceCoverageRecord,
+    ReferenceCutoffSensitivityRecord,
+    ReferenceStatusRecord,
     RuntimeKAssociationRecord,
     RuntimeSetCountAssociationRecord,
     SearchNodesDominatedRatioAssociationRecord,
@@ -94,6 +98,22 @@ _STATUS_LABELS = {
     "not_evaluable": "不可评估",
     "withheld_insufficient_samples": "样本不足，暂不汇总",
     "withheld_unestimable_interval": "区间不可估计，暂不汇总",
+}
+_REFERENCE_STATUS_LABELS = {
+    "known_optimum_certificate": "已知最优证书",
+    "optimal": "求解器证明最优",
+    "feasible": "仅有可行解",
+    "timeout": "超时",
+    "error": "错误",
+    "not_run": "未运行",
+}
+_REFERENCE_STATUS_COLORS = {
+    "known_optimum_certificate": "#047857",
+    "optimal": "#16a34a",
+    "feasible": "#d97706",
+    "timeout": "#dc2626",
+    "error": "#7f1d1d",
+    "not_run": "#9ca3af",
 }
 
 
@@ -1040,6 +1060,79 @@ def _render_timeout_by_case_chart(
     )
 
 
+def _render_reference_coverage_chart(
+    records: Sequence[ReferenceStatusRecord],
+) -> str:
+    """Render proved-reference coverage and every missing-reference status."""
+
+    grouped: dict[tuple[str, str], list[ReferenceStatusRecord]] = {}
+    for record in records:
+        grouped.setdefault((record.family, record.case_id), []).append(record)
+    ordered_groups = sorted(grouped.items())
+    width = 1080
+    left = 245
+    plot_width = 540
+    row_height = 36
+    top = 142
+    height = max(260, top + max(1, len(ordered_groups)) * row_height + 58)
+    desc = html.escape(
+        "source=reference_status.csv; denominator=all generated instances; "
+        "missing references remain visible by effective status"
+    )
+    parts = [
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
+        f"<desc>{desc}</desc>",
+        '<rect width="100%" height="100%" fill="#ffffff"/>',
+        '<text x="32" y="34" font-family="Arial" font-size="20" font-weight="700">精确参考覆盖率与缺失层</text>',
+        '<text x="32" y="58" font-family="Arial" font-size="12" fill="#4b5563">分母为全部生成实例；绿色为可证明最优，其他颜色保留未获得参考的原因</text>',
+    ]
+    legend_x = 32
+    for status in _REFERENCE_STATUS_LABELS:
+        color = _REFERENCE_STATUS_COLORS[status]
+        label = _REFERENCE_STATUS_LABELS[status]
+        parts.extend(
+            [
+                f'<rect x="{legend_x}" y="78" width="12" height="12" fill="{color}"/>',
+                f'<text x="{legend_x + 17}" y="89" font-family="Arial" font-size="11">{label}</text>',
+            ]
+        )
+        legend_x += 112 if status != "known_optimum_certificate" else 128
+    if not ordered_groups:
+        parts.extend(
+            [
+                '<rect x="32" y="126" width="1016" height="72" rx="8" fill="#f3f4f6"/>',
+                '<text x="540" y="168" text-anchor="middle" font-family="Arial" font-size="14" fill="#4b5563">没有生成实例</text>',
+            ]
+        )
+    for row_index, ((family, case_id), group) in enumerate(ordered_groups):
+        y = top + row_index * row_height
+        total = len(group)
+        counts = {
+            status: sum(record.reference_status == status for record in group)
+            for status in _REFERENCE_STATUS_LABELS
+        }
+        proved = sum(record.provably_optimal for record in group)
+        parts.append(
+            f'<text x="{left - 12}" y="{y + 14}" text-anchor="end" font-family="Arial" font-size="11">{html.escape(_family_label(family))} · {html.escape(_case_label(case_id))}</text>'
+        )
+        cursor = float(left)
+        for status in _REFERENCE_STATUS_LABELS:
+            segment_width = plot_width * counts[status] / total
+            if segment_width:
+                parts.append(
+                    f'<rect x="{cursor:.2f}" y="{y}" width="{segment_width:.2f}" height="20" fill="{_REFERENCE_STATUS_COLORS[status]}"/>'
+                )
+            cursor += segment_width
+        parts.extend(
+            [
+                f'<rect x="{left}" y="{y}" width="{plot_width}" height="20" fill="none" stroke="#374151" stroke-width="0.8"/>',
+                f'<text x="{left + plot_width + 14}" y="{y + 14}" font-family="Arial" font-size="11">有证明参考 {proved}/{total} · 缺失 {total - proved}</text>',
+            ]
+        )
+    parts.append("</svg>")
+    return "\n".join(parts)
+
+
 def _render_local_search_recovery_chart(
     records: Sequence[LocalSearchRecoveryRecord],
 ) -> str:
@@ -1258,6 +1351,14 @@ def _write_markdown(
         ConfidenceIntervalRecord
     ],
     censored_runtime_statistics: Sequence[CensoredRuntimeRecord],
+    reference_statuses: Sequence[ReferenceStatusRecord],
+    reference_coverage_statistics: Sequence[ReferenceCoverageRecord],
+    reference_censoring_bias_statistics: Sequence[
+        ReferenceCensoringBiasRecord
+    ],
+    reference_cutoff_sensitivity_statistics: Sequence[
+        ReferenceCutoffSensitivityRecord
+    ],
 ) -> None:
     lines = [
         f"# Results: {config.name}",
@@ -1325,6 +1426,132 @@ def _write_markdown(
             f"{coverage_text} | {gap_text} | {runtime_text} | "
             f"{100 * coverage.timeout_rate:.2f}% | "
             f"{coverage.valid_exact_reference_count}/{coverage.instance_count} |"
+        )
+    lines.extend(
+        [
+            "",
+            "## Exact-reference coverage and censoring diagnostics",
+            "",
+            "Reference coverage is the number of generated instances with a "
+            "validated optimum proof divided by all generated instances in the "
+            "same family and parameter slice. A known-optimum certificate is an "
+            "independent proof source. Missing references remain classified as "
+            "feasible-only, timeout, error, or not-run instead of disappearing "
+            "from gap analysis.",
+            "",
+            "| Family | Parameters | Generated | Proved references | Coverage | "
+            "Certificate / solver proofs | Cross-validated | Status counts |",
+            "|---|---|---:|---:|---:|---:|---:|---|",
+        ]
+    )
+    coverage_groups: dict[
+        tuple[str, str, str], dict[str, ReferenceCoverageRecord]
+    ] = {}
+    for record in reference_coverage_statistics:
+        coverage_groups.setdefault(
+            (record.config_hash, record.family, record.parameters), {}
+        )[record.status] = record
+    small_cross_validation_counts: dict[tuple[str, str], int] = {}
+    for record in reference_statuses:
+        key = (record.family, record.parameters)
+        small_cross_validation_counts[key] = (
+            small_cross_validation_counts.get(key, 0)
+            + int(record.small_instance_cross_validated)
+        )
+    if not coverage_groups:
+        lines.append(
+            "| n/a | n/a | 0 | 0 | n/a | 0 / 0 | 0 / 0 | no generated instances |"
+        )
+    for (_config_hash, family, parameters), status_rows in sorted(
+        coverage_groups.items()
+    ):
+        first = next(iter(status_rows.values()))
+        status_text = "; ".join(
+            f"{_REFERENCE_STATUS_LABELS[status]}="
+            f"{status_rows[status].status_instance_count}"
+            for status in _REFERENCE_STATUS_LABELS
+        )
+        safe_parameters = parameters.replace("|", "\\|")
+        small_count = small_cross_validation_counts.get((family, parameters), 0)
+        lines.append(
+            f"| {family} | `{safe_parameters}` | "
+            f"{first.generated_instance_count} | "
+            f"{first.provably_optimal_instance_count} | "
+            f"{100 * first.reference_coverage:.2f}% | "
+            f"{first.certificate_reference_count} / "
+            f"{first.solver_reference_count} | "
+            f"{first.cross_validated_instance_count} / {small_count} small | "
+            f"{status_text} |"
+        )
+    lines.extend(
+        [
+            "",
+            "Retained instances have a validated optimum; excluded instances do "
+            "not. The difference is excluded mean minus retained mean within the "
+            "same family and parameter slice. It is descriptive and is left "
+            "blank unless both groups have observations.",
+            "",
+            "| Family | Parameters | Metric | Retained n / mean | Excluded n / "
+            "mean | Excluded - retained | Status |",
+            "|---|---|---|---:|---:|---:|---|",
+        ]
+    )
+    estimable_bias = [
+        record
+        for record in reference_censoring_bias_statistics
+        if record.comparison_status == "estimable"
+    ]
+    if not estimable_bias:
+        lines.append(
+            "| n/a | n/a | no slice contains both retained and excluded "
+            "observations | 0 / n/a | 0 / n/a | n/a | missing_group |"
+        )
+    for record in estimable_bias:
+        assert record.retained_mean is not None
+        assert record.excluded_mean is not None
+        assert record.excluded_minus_retained is not None
+        safe_parameters = record.parameters.replace("|", "\\|")
+        lines.append(
+            f"| {record.family} | `{safe_parameters}` | {record.metric} | "
+            f"{record.retained_observation_count} / {record.retained_mean:.10f} | "
+            f"{record.excluded_observation_count} / {record.excluded_mean:.10f} | "
+            f"{record.excluded_minus_retained:.10f} | "
+            f"{record.comparison_status} |"
+        )
+    lines.extend(
+        [
+            "",
+            "Each exact variant retains its configured time and set-count "
+            "cutoffs. Comparing rows with different cutoffs is the sensitivity "
+            "analysis; solver coverage excludes certificates, while effective "
+            "coverage includes either that solver's proof or a validated "
+            "certificate.",
+            "",
+            "| Family | Parameters | Exact variant | Time cutoff (s) | Set cutoff | "
+            "Statuses O/F/T/E/NR | Solver coverage | Effective coverage |",
+            "|---|---|---|---:|---:|---:|---:|---:|",
+        ]
+    )
+    if not reference_cutoff_sensitivity_statistics:
+        lines.append(
+            "| n/a | n/a | no configured exact variant | n/a | n/a | "
+            "0/0/0/0/0 | n/a | n/a |"
+        )
+    for record in reference_cutoff_sensitivity_statistics:
+        time_cutoff = (
+            "none"
+            if record.time_limit_seconds is None
+            else f"{record.time_limit_seconds:.10f}"
+        )
+        set_cutoff = "none" if record.max_set_count is None else str(record.max_set_count)
+        safe_parameters = record.parameters.replace("|", "\\|")
+        lines.append(
+            f"| {record.family} | `{safe_parameters}` | {record.algorithm_id} | "
+            f"{time_cutoff} | {set_cutoff} | "
+            f"{record.optimal_count}/{record.feasible_count}/"
+            f"{record.timeout_count}/{record.error_count}/{record.not_run_count} | "
+            f"{100 * record.solver_reference_coverage:.2f}% | "
+            f"{100 * record.effective_reference_coverage:.2f}% |"
         )
     lines.extend(
         [
@@ -2165,6 +2392,14 @@ def write_report_artifacts(
         ConfidenceIntervalRecord
     ] = (),
     censored_runtime_statistics: Sequence[CensoredRuntimeRecord] = (),
+    reference_statuses: Sequence[ReferenceStatusRecord] = (),
+    reference_coverage_statistics: Sequence[ReferenceCoverageRecord] = (),
+    reference_censoring_bias_statistics: Sequence[
+        ReferenceCensoringBiasRecord
+    ] = (),
+    reference_cutoff_sensitivity_statistics: Sequence[
+        ReferenceCutoffSensitivityRecord
+    ] = (),
 ) -> None:
     _write_markdown(
         output_dir / "results_summary.md",
@@ -2187,6 +2422,10 @@ def write_report_artifacts(
         search_nodes_dominated_ratio_association_statistics,
         confidence_interval_statistics,
         censored_runtime_statistics,
+        reference_statuses,
+        reference_coverage_statistics,
+        reference_censoring_bias_statistics,
+        reference_cutoff_sensitivity_statistics,
     )
     _write_gap_chart(output_dir / "gap_by_family.svg", statistics)
     _write_runtime_chart(output_dir / "runtime_by_algorithm.svg", statistics)
@@ -2224,5 +2463,9 @@ def write_report_artifacts(
     )
     (output_dir / "timeout_by_case.svg").write_text(
         _render_timeout_by_case_chart(censored_runtime_statistics),
+        encoding="utf-8",
+    )
+    (output_dir / "reference_coverage_by_case.svg").write_text(
+        _render_reference_coverage_chart(reference_statuses),
         encoding="utf-8",
     )
