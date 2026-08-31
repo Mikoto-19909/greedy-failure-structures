@@ -88,7 +88,7 @@ python -m pip install -e ".[typecheck]"
 python -m mypy
 ```
 
-需要谨慎理解它的输出。`pyproject.toml` 对 `maxcover.benchmark` 和 `maxcover.reporting` 设置了 `ignore_errors = true`——按源码行数计算，这两部分大约占 40%。因此，`Success: no issues found in 20 source files` 的含义只是其余模块通过了检查，而不是整个包都没有类型问题。这两个模块确实还存在尚未解决的类型错误积压；保留豁免可以让其他区域的类型检查继续保持可执行和可强制，而不是让整个检查长期处于红灯状态。欢迎逐步减少这部分积压，豁免列表就是确认当前哪些模块尚未纳入覆盖范围的位置。
+需要谨慎理解它的输出。`pyproject.toml` 对 `maxcover.benchmark` 和 `maxcover.reporting` 设置了 `ignore_errors = true`——按源码行数计算，这两部分大约占 40%。因此，`Success: no issues found in 21 source files` 的含义只是其余模块通过了检查，而不是整个包都没有类型问题。这两个模块确实还存在尚未解决的类型错误积压；保留豁免可以让其他区域的类型检查继续保持可执行和可强制，而不是让整个检查长期处于红灯状态。欢迎逐步减少这部分积压，豁免列表就是确认当前哪些模块尚未纳入覆盖范围的位置。
 
 在 Windows 上，可以使用便捷包装脚本执行等价命令：
 

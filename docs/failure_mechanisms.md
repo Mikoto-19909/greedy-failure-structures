@@ -5,6 +5,11 @@ that primarily stress preprocessing or exact search. Each workflow produces
 local evidence from a committed configuration; this file stores no experiment
 result or quantitative research claim.
 
+Before interpreting algorithm outcomes, run `python run_project.py
+audit-stressors` and inspect the target monotonicity, dimension controls,
+matched uniform controls, and non-target metric ranges. The audit contract is
+documented in [`generator_isolation.md`](generator_isolation.md).
+
 ## 1. Duplicate-heavy structure
 
 **Role.** Exact copies increase candidate redundancy and make deduplication a
