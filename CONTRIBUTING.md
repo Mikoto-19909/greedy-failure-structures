@@ -85,7 +85,7 @@ python -m mypy
 
 A clean mypy run is narrower than it looks. `pyproject.toml` exempts
 `maxcover.benchmark` and `maxcover.reporting` with `ignore_errors = true`, which
-is about 40% of the source by line, and those modules hold a real backlog of
+is about 35% of the source by line, and those modules hold a real backlog of
 unresolved errors. So mypy passing does not mean your change is type-clean if it
 lands in either — check it by temporarily removing the override for the module
 you touched. Reducing that backlog is welcome as its own change; do not remove an

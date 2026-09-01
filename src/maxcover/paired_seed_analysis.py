@@ -1,0 +1,664 @@
+"""Compare paired-seed and independent-seed treatment-minus-control differences.
+
+This module answers one question with two benchmark directories: does sharing a
+seed between a treatment case and its matched control within a repetition
+reduce the spread of the treatment-minus-control difference relative to
+generating the two independently?
+
+The analysis reads only the canonical raw_results.csv artifacts produced by the
+benchmark runner. For every family-algorithm-metric cell it builds two
+difference distributions, one from the paired run and one from the unpaired
+run, each holding one difference per repetition:
+
+    difference = value(treatment) - value(control)
+
+For the coverage metric a positive difference means the treatment covered more
+elements; for the optimality-gap metric a positive difference means the
+treatment is further from the reference optimum. The sample variance of the
+two difference distributions is the variance comparison: a variance ratio
+below one means the paired scheme has the tighter difference spread.
+
+The convention for finding a matched control is a case-name suffix: the case
+named X plus the control suffix is the control of the case named X. Every pair
+must share a seed within each repetition in the paired run; the module
+verifies that property and raises when it does not hold.
+
+Run it as a module:
+
+    python -m maxcover.paired_seed_analysis --paired-results results/pairing-v1/paired --unpaired-results results/pairing-v1/unpaired --output results/pairing-v1/analysis
+
+Numeric results are written to the output directory (comparison.csv and
+differences.csv) and are local evidence only.
+"""
+
+from __future__ import annotations
+
+import argparse
+import csv
+import io
+from collections.abc import Iterable, Mapping
+from dataclasses import dataclass
+from pathlib import Path
+from statistics import correlation, fmean, stdev, variance
+from typing import ClassVar
+
+from ._run_contracts import RunRecord
+
+
+METRICS = ("coverage", "optimality_gap")
+DEFAULT_CONTROL_SUFFIX = "_control"
+
+
+class AnalysisError(ValueError):
+    """One or more inconsistencies in the paired-seed comparison inputs."""
+
+    def __init__(self, issues: Iterable[str]) -> None:
+        messages = tuple(issues)
+        if not messages:
+            raise ValueError("an analysis error requires at least one issue")
+        self.issues = messages
+        super().__init__("; ".join(messages))
+
+
+@dataclass(frozen=True, slots=True)
+class DifferenceSeries:
+    """One difference per repetition under one scheme for one analysis cell."""
+
+    scheme: str
+    family: str
+    treatment_case: str
+    control_case: str
+    algorithm_id: str
+    algorithm: str
+    metric: str
+    repetitions: tuple[int, ...]
+    differences: tuple[float, ...]
+    treatment_values: tuple[float, ...]
+    control_values: tuple[float, ...]
+    treatment_seeds: tuple[int | None, ...]
+    control_seeds: tuple[int | None, ...]
+    missing_count: int
+
+
+@dataclass(frozen=True, slots=True)
+class DifferenceSummary:
+    """Sample statistics of one difference distribution."""
+
+    n: int
+    mean: float | None
+    sample_variance: float | None
+    sample_standard_deviation: float | None
+    minimum: float | None
+    maximum: float | None
+    treatment_control_correlation: float | None
+
+    @classmethod
+    def of(
+        cls,
+        differences: tuple[float, ...],
+        treatment_values: tuple[float, ...],
+        control_values: tuple[float, ...],
+    ) -> "DifferenceSummary":
+        if not differences:
+            return cls(0, None, None, None, None, None, None)
+        spread = stdev(differences) if len(differences) > 1 else None
+        paired_correlation: float | None = None
+        if len(differences) > 1:
+            try:
+                paired_correlation = correlation(treatment_values, control_values)
+            except (ValueError, ZeroDivisionError):
+                paired_correlation = None
+        return cls(
+            n=len(differences),
+            mean=fmean(differences),
+            sample_variance=None if spread is None else variance(differences),
+            sample_standard_deviation=spread,
+            minimum=min(differences),
+            maximum=max(differences),
+            treatment_control_correlation=paired_correlation,
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class ComparisonRow:
+    """One family-by-algorithm-by-metric comparison row."""
+
+    CSV_FIELDS: ClassVar[tuple[str, ...]] = (
+        "family",
+        "treatment_case",
+        "control_case",
+        "algorithm_id",
+        "algorithm",
+        "metric",
+        "expected_repetitions",
+        "paired_count",
+        "unpaired_count",
+        "paired_missing_count",
+        "unpaired_missing_count",
+        "paired_seed_shared_count",
+        "unpaired_seed_shared_count",
+        "paired_mean_difference",
+        "unpaired_mean_difference",
+        "paired_variance_difference",
+        "unpaired_variance_difference",
+        "paired_standard_deviation_difference",
+        "unpaired_standard_deviation_difference",
+        "variance_ratio_paired_over_unpaired",
+        "paired_treatment_control_correlation",
+        "unpaired_treatment_control_correlation",
+        "paired_minimum_difference",
+        "paired_maximum_difference",
+        "unpaired_minimum_difference",
+        "unpaired_maximum_difference",
+    )
+
+    family: str
+    treatment_case: str
+    control_case: str
+    algorithm_id: str
+    algorithm: str
+    metric: str
+    expected_repetitions: int
+    paired: DifferenceSummary
+    unpaired: DifferenceSummary
+    paired_missing_count: int
+    unpaired_missing_count: int
+    paired_seed_shared_count: int
+    unpaired_seed_shared_count: int
+
+    def variance_ratio(self) -> float | None:
+        if (
+            self.paired.sample_variance is not None
+            and self.unpaired.sample_variance is not None
+            and self.unpaired.sample_variance > 0
+        ):
+            return self.paired.sample_variance / self.unpaired.sample_variance
+        return None
+
+    def to_csv_row(self) -> dict[str, object]:
+        def optional(value: float | None) -> str:
+            return "" if value is None else f"{value:.10g}"
+
+        return {
+            "family": self.family,
+            "treatment_case": self.treatment_case,
+            "control_case": self.control_case,
+            "algorithm_id": self.algorithm_id,
+            "algorithm": self.algorithm,
+            "metric": self.metric,
+            "expected_repetitions": self.expected_repetitions,
+            "paired_count": self.paired.n,
+            "unpaired_count": self.unpaired.n,
+            "paired_missing_count": self.paired_missing_count,
+            "unpaired_missing_count": self.unpaired_missing_count,
+            "paired_seed_shared_count": self.paired_seed_shared_count,
+            "unpaired_seed_shared_count": self.unpaired_seed_shared_count,
+            "paired_mean_difference": optional(self.paired.mean),
+            "unpaired_mean_difference": optional(self.unpaired.mean),
+            "paired_variance_difference": optional(self.paired.sample_variance),
+            "unpaired_variance_difference": optional(self.unpaired.sample_variance),
+            "paired_standard_deviation_difference": optional(
+                self.paired.sample_standard_deviation
+            ),
+            "unpaired_standard_deviation_difference": optional(
+                self.unpaired.sample_standard_deviation
+            ),
+            "variance_ratio_paired_over_unpaired": optional(self.variance_ratio()),
+            "paired_treatment_control_correlation": optional(
+                self.paired.treatment_control_correlation
+            ),
+            "unpaired_treatment_control_correlation": optional(
+                self.unpaired.treatment_control_correlation
+            ),
+            "paired_minimum_difference": optional(self.paired.minimum),
+            "paired_maximum_difference": optional(self.paired.maximum),
+            "unpaired_minimum_difference": optional(self.unpaired.minimum),
+            "unpaired_maximum_difference": optional(self.unpaired.maximum),
+        }
+
+
+def load_run_records(results_dir: Path) -> list[RunRecord]:
+    """Read and validate one canonical raw_results.csv."""
+
+    path = results_dir / "raw_results.csv"
+    if not path.is_file():
+        raise AnalysisError([f"missing raw_results.csv in {results_dir}"])
+    records: list[RunRecord] = []
+    with path.open("r", encoding="utf-8", newline="") as handle:
+        for row in csv.DictReader(handle):
+            records.append(RunRecord.from_csv_row(row))
+    if not records:
+        raise AnalysisError([f"empty raw_results.csv in {results_dir}"])
+    return records
+
+
+def _record_metric_value(row: RunRecord, metric: str) -> float | None:
+    if metric == "coverage":
+        return None if row.coverage is None else float(row.coverage)
+    if metric == "optimality_gap":
+        return None if row.optimality_gap is None else row.optimality_gap
+    raise ValueError(f"unsupported metric {metric!r}")
+
+
+def _unit_rows(
+    records: Iterable[RunRecord],
+) -> dict[tuple[str, int, str], list[RunRecord]]:
+    """Group records by case, repetition, and algorithm; one run per unit."""
+
+    units: dict[tuple[str, int, str], list[RunRecord]] = {}
+    for record in records:
+        units.setdefault(
+            (record.case_id, record.repetition, record.algorithm_id), []
+        ).append(record)
+    for key, group in units.items():
+        if len(group) != 1:
+            case_id, repetition, algorithm_id = key
+            raise AnalysisError(
+                [
+                    f"algorithm variant {algorithm_id!r} has {len(group)} runs for case"
+                    f" {case_id!r} repetition {repetition}; seeded algorithm variants"
+                    " are not supported by the paired-seed analysis"
+                ]
+            )
+    return units
+
+
+def _build_series(
+    records: list[RunRecord],
+    *,
+    scheme: str,
+    family: str,
+    treatment_case: str,
+    control_case: str,
+    algorithm_id: str,
+    algorithm: str,
+    metric: str,
+    expected_repetitions: int,
+    require_seed_sharing: bool,
+) -> DifferenceSeries:
+    """Build one difference per repetition for one analysis cell."""
+
+    units = _unit_rows(records)
+    repetitions: list[int] = []
+    differences: list[float] = []
+    treatment_values: list[float] = []
+    control_values: list[float] = []
+    treatment_seeds: list[int | None] = []
+    control_seeds: list[int | None] = []
+    missing = 0
+    for repetition in range(expected_repetitions):
+        treatment_rows = units.get((treatment_case, repetition, algorithm_id))
+        control_rows = units.get((control_case, repetition, algorithm_id))
+        if treatment_rows is None or control_rows is None:
+            missing += 1
+            continue
+        treatment_row = treatment_rows[0]
+        control_row = control_rows[0]
+        treatment_dims = (
+            treatment_row.universe_size,
+            treatment_row.set_count,
+            treatment_row.k,
+        )
+        control_dims = (
+            control_row.universe_size,
+            control_row.set_count,
+            control_row.k,
+        )
+        if treatment_dims != control_dims:
+            raise AnalysisError(
+                [
+                    f"case {treatment_case!r} and its control differ in dimensions"
+                    f" at repetition {repetition}: {treatment_dims} versus {control_dims}"
+                ]
+            )
+        seeds_equal = (
+            treatment_row.seed is not None and treatment_row.seed == control_row.seed
+        )
+        if require_seed_sharing and not seeds_equal:
+            raise AnalysisError(
+                [
+                    f"paired scheme requires a shared seed for {treatment_case!r}"
+                    f" and {control_case!r} at repetition {repetition} but the seeds"
+                    f" differ ({treatment_row.seed} versus {control_row.seed})"
+                ]
+            )
+        treatment_value = _record_metric_value(treatment_row, metric)
+        control_value = _record_metric_value(control_row, metric)
+        if treatment_value is None or control_value is None:
+            missing += 1
+            continue
+        repetitions.append(repetition)
+        differences.append(treatment_value - control_value)
+        treatment_values.append(treatment_value)
+        control_values.append(control_value)
+        treatment_seeds.append(treatment_row.seed)
+        control_seeds.append(control_row.seed)
+    return DifferenceSeries(
+        scheme=scheme,
+        family=family,
+        treatment_case=treatment_case,
+        control_case=control_case,
+        algorithm_id=algorithm_id,
+        algorithm=algorithm,
+        metric=metric,
+        repetitions=tuple(repetitions),
+        differences=tuple(differences),
+        treatment_values=tuple(treatment_values),
+        control_values=tuple(control_values),
+        treatment_seeds=tuple(treatment_seeds),
+        control_seeds=tuple(control_seeds),
+        missing_count=missing,
+    )
+
+
+def _analysis_cells(
+    paired_records: list[RunRecord],
+    unpaired_records: list[RunRecord],
+    *,
+    control_suffix: str,
+) -> list[tuple[str, str, str, str, str]]:
+    """Validate the two run sets and enumerate comparison cells."""
+
+    paired_cases = {record.case_id for record in paired_records}
+    unpaired_cases = {record.case_id for record in unpaired_records}
+    if paired_cases != unpaired_cases:
+        raise AnalysisError(
+            [
+                "paired and unpaired runs must cover the same cases",
+                f"  only in paired: {sorted(paired_cases - unpaired_cases)}",
+                f"  only in unpaired: {sorted(unpaired_cases - paired_cases)}",
+            ]
+        )
+    paired_algorithms = {record.algorithm_id for record in paired_records}
+    unpaired_algorithms = {record.algorithm_id for record in unpaired_records}
+    if paired_algorithms != unpaired_algorithms:
+        raise AnalysisError(
+            [
+                "paired and unpaired runs must cover the same algorithms",
+                f"  only in paired: {sorted(paired_algorithms - unpaired_algorithms)}",
+                f"  only in unpaired: {sorted(unpaired_algorithms - paired_algorithms)}",
+            ]
+        )
+    paired_repetitions = {record.repetition for record in paired_records}
+    unpaired_repetitions = {record.repetition for record in unpaired_records}
+    if paired_repetitions != unpaired_repetitions:
+        raise AnalysisError(
+            [
+                "paired and unpaired runs must cover the same repetitions",
+                f"  only in paired: {sorted(paired_repetitions - unpaired_repetitions)}",
+                f"  only in unpaired: {sorted(unpaired_repetitions - paired_repetitions)}",
+            ]
+        )
+
+    controls: list[str] = []
+    for case in sorted(paired_cases):
+        if not case.endswith(control_suffix):
+            continue
+        treatment = case[: -len(control_suffix)]
+        if treatment not in paired_cases:
+            raise AnalysisError(
+                [
+                    f"control case {case!r} has no matching treatment case"
+                    f" {treatment!r}; the pair must share dimensions"
+                ]
+            )
+        controls.append(case)
+    if not controls:
+        raise AnalysisError(
+            [
+                f"no control case found; cases must end with {control_suffix!r}"
+            ]
+        )
+
+    names = {record.algorithm_id: record.algorithm for record in paired_records}
+    cells: list[tuple[str, str, str, str, str]] = []
+    for control_case in sorted(controls):
+        treatment_case = control_case[: -len(control_suffix)]
+        families = {
+            record.family
+            for record in paired_records + unpaired_records
+            if record.case_id == treatment_case
+        }
+        if len(families) != 1:
+            raise AnalysisError(
+                [
+                    f"treatment case {treatment_case!r} spans multiple families in"
+                    f" one run set: {sorted(families)}"
+                ]
+            )
+        family = next(iter(families))
+        for algorithm_id in sorted(paired_algorithms):
+            cells.append(
+                (
+                    family,
+                    treatment_case,
+                    control_case,
+                    algorithm_id,
+                    names[algorithm_id],
+                )
+            )
+    return cells
+
+
+def analyze_pairing(
+    paired_records: list[RunRecord],
+    unpaired_records: list[RunRecord],
+    *,
+    control_suffix: str = DEFAULT_CONTROL_SUFFIX,
+) -> tuple[list[ComparisonRow], list[dict[str, object]]]:
+    """Compute comparison rows and flattened seed-level difference samples."""
+
+    if not control_suffix:
+        raise AnalysisError(["control suffix must not be empty"])
+    cells = _analysis_cells(
+        paired_records, unpaired_records, control_suffix=control_suffix
+    )
+    repetition_count = 1 + max(
+        record.repetition for record in paired_records + unpaired_records
+    )
+    comparison: list[ComparisonRow] = []
+    samples: list[dict[str, object]] = []
+    for family, treatment, control, algorithm_id, algorithm in cells:
+        for metric in METRICS:
+            paired = _build_series(
+                paired_records,
+                scheme="paired",
+                family=family,
+                treatment_case=treatment,
+                control_case=control,
+                algorithm_id=algorithm_id,
+                algorithm=algorithm,
+                metric=metric,
+                expected_repetitions=repetition_count,
+                require_seed_sharing=True,
+            )
+            unpaired = _build_series(
+                unpaired_records,
+                scheme="unpaired",
+                family=family,
+                treatment_case=treatment,
+                control_case=control,
+                algorithm_id=algorithm_id,
+                algorithm=algorithm,
+                metric=metric,
+                expected_repetitions=repetition_count,
+                require_seed_sharing=False,
+            )
+            comparison.append(
+                ComparisonRow(
+                    family=family,
+                    treatment_case=treatment,
+                    control_case=control,
+                    algorithm_id=algorithm_id,
+                    algorithm=algorithm,
+                    metric=metric,
+                    expected_repetitions=repetition_count,
+                    paired=DifferenceSummary.of(
+                        paired.differences, paired.treatment_values, paired.control_values
+                    ),
+                    unpaired=DifferenceSummary.of(
+                        unpaired.differences,
+                        unpaired.treatment_values,
+                        unpaired.control_values,
+                    ),
+                    paired_missing_count=paired.missing_count,
+                    unpaired_missing_count=unpaired.missing_count,
+                    paired_seed_shared_count=sum(
+                        1
+                        for a, b in zip(paired.treatment_seeds, paired.control_seeds)
+                        if a is not None and a == b
+                    ),
+                    unpaired_seed_shared_count=sum(
+                        1
+                        for a, b in zip(
+                            unpaired.treatment_seeds, unpaired.control_seeds
+                        )
+                        if a is not None and a == b
+                    ),
+                )
+            )
+            for index, repetition in enumerate(paired.repetitions):
+                samples.append(
+                    {
+                        "scheme": "paired",
+                        "family": family,
+                        "treatment_case": treatment,
+                        "control_case": control,
+                        "algorithm_id": algorithm_id,
+                        "algorithm": algorithm,
+                        "metric": metric,
+                        "repetition": repetition,
+                        "treatment_value": paired.treatment_values[index],
+                        "control_value": paired.control_values[index],
+                        "difference": paired.differences[index],
+                        "treatment_seed": paired.treatment_seeds[index],
+                        "control_seed": paired.control_seeds[index],
+                        "seeds_equal": (
+                            paired.treatment_seeds[index] is not None
+                            and paired.treatment_seeds[index]
+                            == paired.control_seeds[index]
+                        ),
+                    }
+                )
+            for index, repetition in enumerate(unpaired.repetitions):
+                samples.append(
+                    {
+                        "scheme": "unpaired",
+                        "family": family,
+                        "treatment_case": treatment,
+                        "control_case": control,
+                        "algorithm_id": algorithm_id,
+                        "algorithm": algorithm,
+                        "metric": metric,
+                        "repetition": repetition,
+                        "treatment_value": unpaired.treatment_values[index],
+                        "control_value": unpaired.control_values[index],
+                        "difference": unpaired.differences[index],
+                        "treatment_seed": unpaired.treatment_seeds[index],
+                        "control_seed": unpaired.control_seeds[index],
+                        "seeds_equal": (
+                            unpaired.treatment_seeds[index] is not None
+                            and unpaired.treatment_seeds[index]
+                            == unpaired.control_seeds[index]
+                        ),
+                    }
+                )
+    return comparison, samples
+
+
+DIFFERENCE_FIELDS = (
+    "scheme",
+    "family",
+    "treatment_case",
+    "control_case",
+    "algorithm_id",
+    "algorithm",
+    "metric",
+    "repetition",
+    "treatment_value",
+    "control_value",
+    "difference",
+    "treatment_seed",
+    "control_seed",
+    "seeds_equal",
+)
+
+
+def _write_csv(
+    path: Path,
+    fieldnames: tuple[str, ...],
+    rows: Iterable[Mapping[str, object]],
+) -> None:
+    stream = io.StringIO(newline="")
+    writer = csv.DictWriter(stream, fieldnames=fieldnames, lineterminator="\n")
+    writer.writeheader()
+    writer.writerows(rows)
+    path.write_text(stream.getvalue(), encoding="utf-8")
+
+
+def _format_optional(value: float | None) -> str:
+    return "n/a" if value is None else f"{value:.6g}"
+
+
+def _print_summary(rows: list[ComparisonRow]) -> None:
+    print(
+        "family | algorithm | metric | n(p) | n(u) | mean(p) | mean(u) | "
+        "stddev(p) | stddev(u) | variance ratio"
+    )
+    for row in rows:
+        ratio = row.variance_ratio()
+        print(
+            " | ".join(
+                [
+                    row.family,
+                    row.algorithm_id,
+                    row.metric,
+                    str(row.paired.n),
+                    str(row.unpaired.n),
+                    _format_optional(row.paired.mean),
+                    _format_optional(row.unpaired.mean),
+                    _format_optional(row.paired.sample_standard_deviation),
+                    _format_optional(row.unpaired.sample_standard_deviation),
+                    _format_optional(ratio),
+                ]
+            )
+        )
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        description=(
+            "Compare paired-seed and independent-seed treatment-minus-control "
+            "difference variance from two benchmark output directories."
+        ),
+    )
+    parser.add_argument("--paired-results", type=Path, required=True, metavar="DIR")
+    parser.add_argument("--unpaired-results", type=Path, required=True, metavar="DIR")
+    parser.add_argument("--output", type=Path, required=True, metavar="DIR")
+    parser.add_argument(
+        "--control-suffix",
+        default=DEFAULT_CONTROL_SUFFIX,
+        metavar="SUFFIX",
+        help=f"case-name suffix marking a control (default: {DEFAULT_CONTROL_SUFFIX})",
+    )
+    args = parser.parse_args(argv)
+
+    paired = load_run_records(args.paired_results)
+    unpaired = load_run_records(args.unpaired_results)
+    comparison, samples = analyze_pairing(
+        paired, unpaired, control_suffix=args.control_suffix
+    )
+    args.output.mkdir(parents=True, exist_ok=True)
+    _write_csv(
+        args.output / "comparison.csv",
+        ComparisonRow.CSV_FIELDS,
+        [row.to_csv_row() for row in comparison],
+    )
+    _write_csv(args.output / "differences.csv", DIFFERENCE_FIELDS, samples)
+    _print_summary(comparison)
+    print(f"Comparison written to {args.output / 'comparison.csv'}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
