@@ -1,0 +1,374 @@
+{
+  "schema_version": 3,
+  "name": "Structural gap cartography",
+  "base_seed": 7301,
+  "repetitions": 30,
+  "algorithms": [
+    {
+      "id": "exact_reference",
+      "name": "branch_and_bound_enhanced",
+      "options": { "time_limit_seconds": 10.0 }
+    },
+    { "name": "greedy" },
+    { "name": "lazy_greedy" },
+    { "name": "local_search" },
+    {
+      "name": "randomized_greedy",
+      "algorithm_seeds": [0, 1, 2, 3, 4],
+      "options": { "rcl_size": 3 }
+    },
+    {
+      "name": "multi_start_local_search",
+      "algorithm_seeds": [0, 1, 2, 3, 4],
+      "options": {
+        "restart_count": 8,
+        "max_iterations_per_restart": 200,
+        "time_limit_seconds": 2.0
+      }
+    }
+  ],
+  "cases": [
+    {
+      "name": "overlap_low",
+      "seed_group": "overlap_low",
+      "family": "high_overlap",
+      "universe_size": 48,
+      "set_count": 16,
+      "k": 4,
+      "core_fraction": 0.2,
+      "core_probability": 0.8,
+      "peripheral_probability": 0.05
+    },
+    {
+      "name": "overlap_low_control",
+      "seed_group": "overlap_low",
+      "family": "uniform",
+      "universe_size": 48,
+      "set_count": 16,
+      "k": 4,
+      "density": 0.2
+    },
+    {
+      "name": "overlap_medium",
+      "seed_group": "overlap_medium",
+      "family": "high_overlap",
+      "universe_size": 48,
+      "set_count": 16,
+      "k": 4,
+      "core_fraction": 0.5,
+      "core_probability": 0.8,
+      "peripheral_probability": 0.05
+    },
+    {
+      "name": "overlap_medium_control",
+      "seed_group": "overlap_medium",
+      "family": "uniform",
+      "universe_size": 48,
+      "set_count": 16,
+      "k": 4,
+      "density": 0.425
+    },
+    {
+      "name": "overlap_high",
+      "seed_group": "overlap_high",
+      "family": "high_overlap",
+      "universe_size": 48,
+      "set_count": 16,
+      "k": 4,
+      "core_fraction": 0.8,
+      "core_probability": 0.8,
+      "peripheral_probability": 0.05
+    },
+    {
+      "name": "overlap_high_control",
+      "seed_group": "overlap_high",
+      "family": "uniform",
+      "universe_size": 48,
+      "set_count": 16,
+      "k": 4,
+      "density": 0.65
+    },
+    {
+      "name": "cluster_low",
+      "seed_group": "cluster_low",
+      "family": "clustered",
+      "universe_size": 48,
+      "set_count": 16,
+      "k": 4,
+      "clusters": 4,
+      "within_probability": 0.3,
+      "outside_probability": 0.02
+    },
+    {
+      "name": "cluster_low_control",
+      "seed_group": "cluster_low",
+      "family": "uniform",
+      "universe_size": 48,
+      "set_count": 16,
+      "k": 4,
+      "density": 0.09
+    },
+    {
+      "name": "cluster_medium",
+      "seed_group": "cluster_medium",
+      "family": "clustered",
+      "universe_size": 48,
+      "set_count": 16,
+      "k": 4,
+      "clusters": 4,
+      "within_probability": 0.6,
+      "outside_probability": 0.02
+    },
+    {
+      "name": "cluster_medium_control",
+      "seed_group": "cluster_medium",
+      "family": "uniform",
+      "universe_size": 48,
+      "set_count": 16,
+      "k": 4,
+      "density": 0.165
+    },
+    {
+      "name": "cluster_high",
+      "seed_group": "cluster_high",
+      "family": "clustered",
+      "universe_size": 48,
+      "set_count": 16,
+      "k": 4,
+      "clusters": 4,
+      "within_probability": 0.9,
+      "outside_probability": 0.02
+    },
+    {
+      "name": "cluster_high_control",
+      "seed_group": "cluster_high",
+      "family": "uniform",
+      "universe_size": 48,
+      "set_count": 16,
+      "k": 4,
+      "density": 0.24
+    },
+    {
+      "name": "long_tail_low",
+      "seed_group": "long_tail_low",
+      "family": "long_tail",
+      "universe_size": 32,
+      "set_count": 16,
+      "k": 4,
+      "set_size": 6,
+      "gamma": 0.0
+    },
+    {
+      "name": "long_tail_low_control",
+      "seed_group": "long_tail_low",
+      "family": "uniform",
+      "universe_size": 32,
+      "set_count": 16,
+      "k": 4,
+      "density": 0.1875
+    },
+    {
+      "name": "long_tail_medium",
+      "seed_group": "long_tail_medium",
+      "family": "long_tail",
+      "universe_size": 32,
+      "set_count": 16,
+      "k": 4,
+      "set_size": 6,
+      "gamma": 0.75
+    },
+    {
+      "name": "long_tail_medium_control",
+      "seed_group": "long_tail_medium",
+      "family": "uniform",
+      "universe_size": 32,
+      "set_count": 16,
+      "k": 4,
+      "density": 0.1875
+    },
+    {
+      "name": "long_tail_high",
+      "seed_group": "long_tail_high",
+      "family": "long_tail",
+      "universe_size": 32,
+      "set_count": 16,
+      "k": 4,
+      "set_size": 6,
+      "gamma": 2.0
+    },
+    {
+      "name": "long_tail_high_control",
+      "seed_group": "long_tail_high",
+      "family": "uniform",
+      "universe_size": 32,
+      "set_count": 16,
+      "k": 4,
+      "density": 0.1875
+    },
+    {
+      "name": "duplicate_low",
+      "seed_group": "duplicate_low",
+      "family": "duplicate_heavy",
+      "universe_size": 32,
+      "base_set_count": 8,
+      "k": 4,
+      "set_size": 6,
+      "copy_factor": 1
+    },
+    {
+      "name": "duplicate_low_control",
+      "seed_group": "duplicate_low",
+      "family": "uniform",
+      "universe_size": 32,
+      "set_count": 8,
+      "k": 4,
+      "density": 0.1875
+    },
+    {
+      "name": "duplicate_medium",
+      "seed_group": "duplicate_medium",
+      "family": "duplicate_heavy",
+      "universe_size": 32,
+      "base_set_count": 8,
+      "k": 4,
+      "set_size": 6,
+      "copy_factor": 2
+    },
+    {
+      "name": "duplicate_medium_control",
+      "seed_group": "duplicate_medium",
+      "family": "uniform",
+      "universe_size": 32,
+      "set_count": 16,
+      "k": 4,
+      "density": 0.1875
+    },
+    {
+      "name": "duplicate_high",
+      "seed_group": "duplicate_high",
+      "family": "duplicate_heavy",
+      "universe_size": 32,
+      "base_set_count": 8,
+      "k": 4,
+      "set_size": 6,
+      "copy_factor": 3
+    },
+    {
+      "name": "duplicate_high_control",
+      "seed_group": "duplicate_high",
+      "family": "uniform",
+      "universe_size": 32,
+      "set_count": 24,
+      "k": 4,
+      "density": 0.1875
+    },
+    {
+      "name": "dominated_low",
+      "seed_group": "dominated_low",
+      "family": "dominated_heavy",
+      "anchor_count": 6,
+      "anchor_size": 6,
+      "k": 3,
+      "child_count": 0
+    },
+    {
+      "name": "dominated_low_control",
+      "seed_group": "dominated_low",
+      "family": "uniform",
+      "universe_size": 36,
+      "set_count": 6,
+      "k": 3,
+      "density": 0.1666274103876557
+    },
+    {
+      "name": "dominated_medium",
+      "seed_group": "dominated_medium",
+      "family": "dominated_heavy",
+      "anchor_count": 6,
+      "anchor_size": 6,
+      "k": 3,
+      "child_count": 1
+    },
+    {
+      "name": "dominated_medium_control",
+      "seed_group": "dominated_medium",
+      "family": "uniform",
+      "universe_size": 36,
+      "set_count": 12,
+      "k": 3,
+      "density": 0.12477087051223823
+    },
+    {
+      "name": "dominated_high",
+      "seed_group": "dominated_high",
+      "family": "dominated_heavy",
+      "anchor_count": 6,
+      "anchor_size": 6,
+      "k": 3,
+      "child_count": 3
+    },
+    {
+      "name": "dominated_high_control",
+      "seed_group": "dominated_high",
+      "family": "uniform",
+      "universe_size": 36,
+      "set_count": 24,
+      "k": 3,
+      "density": 0.10362551500689314
+    },
+    {
+      "name": "adversarial_low",
+      "seed_group": "adversarial_low",
+      "family": "adversarial",
+      "block_size": 12,
+      "distractor_count": 4,
+      "construction_version": 2,
+      "trap_count": 12
+    },
+    {
+      "name": "adversarial_low_control",
+      "seed_group": "adversarial_low",
+      "family": "uniform",
+      "universe_size": 24,
+      "set_count": 7,
+      "k": 2,
+      "density": 0.5714285714285714
+    },
+    {
+      "name": "adversarial_medium",
+      "seed_group": "adversarial_medium",
+      "family": "adversarial",
+      "block_size": 12,
+      "distractor_count": 4,
+      "construction_version": 2,
+      "trap_count": 9
+    },
+    {
+      "name": "adversarial_medium_control",
+      "seed_group": "adversarial_medium",
+      "family": "uniform",
+      "universe_size": 24,
+      "set_count": 7,
+      "k": 2,
+      "density": 0.5357142857142857
+    },
+    {
+      "name": "adversarial_high",
+      "seed_group": "adversarial_high",
+      "family": "adversarial",
+      "block_size": 12,
+      "distractor_count": 4,
+      "construction_version": 2,
+      "trap_count": 7
+    },
+    {
+      "name": "adversarial_high_control",
+      "seed_group": "adversarial_high",
+      "family": "uniform",
+      "universe_size": 24,
+      "set_count": 7,
+      "k": 2,
+      "density": 0.5119047619047619
+    }
+  ]
+}

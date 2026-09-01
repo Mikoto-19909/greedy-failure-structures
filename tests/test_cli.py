@@ -88,6 +88,13 @@ class HelpConsistencyTests(unittest.TestCase):
                 "--force",
                 "--dry-run",
             },
+            "cartography": {
+                "--config",
+                "--design",
+                "--output",
+                "--workers",
+                "--force",
+            },
             "resume": {"--config", "--output", "--workers", "--force"},
             "replay": {"--instance", "--algorithm"},
             "dashboard": {"--host", "--port"},

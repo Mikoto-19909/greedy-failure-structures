@@ -17,6 +17,7 @@ from .benchmark import (
     run_benchmark,
     summarize_benchmark,
 )
+from .cartography import run_cartography
 from .config import load_config
 from .dashboard import serve_dashboard
 from .generators import adversarial_greedy_trap
@@ -314,6 +315,22 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="validate, expand, and size the experiment without writing output",
     )
+    cartography = subparsers.add_parser(
+        "cartography",
+        help="run or resume the structural gap cartography workflow",
+        description=(
+            "Run a benchmark with a matched-control cartography design and write "
+            "seed-level gap distributions, paired differences, and SVG maps."
+        ),
+    )
+    _add_execution_arguments(cartography)
+    cartography.add_argument(
+        "--design",
+        type=Path,
+        required=True,
+        metavar="PATH",
+        help="cartography design mapping stressor levels to uniform controls",
+    )
     resume = subparsers.add_parser(
         "resume",
         help="resume a checkpointed benchmark",
@@ -403,6 +420,18 @@ def _dispatch(parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
             args.output.resolve(),
             workers=args.workers,
             force=args.force,
+        )
+    elif command == "cartography":
+        result = run_cartography(
+            args.config.resolve(),
+            args.design.resolve(),
+            args.output.resolve(),
+            workers=args.workers,
+            force=args.force,
+        )
+        print(
+            f"Completed {len(result.rows)} algorithm runs. "
+            f"Cartography artifacts: {result.output_dir}"
         )
     elif command == "replay":
         solution, matches = replay_instance_file(

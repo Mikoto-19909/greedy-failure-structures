@@ -97,11 +97,14 @@ class CaseConfig:
     family: str
     parameters: Mapping[str, object]
     case_id: str = ""
+    seed_group: str | None = None
 
     def __post_init__(self) -> None:
         _require_nonempty_string("case name", self.name)
         case_id = self.name if self.case_id == "" else self.case_id
         _require_nonempty_string("case_id", case_id)
+        if self.seed_group is not None:
+            _require_nonempty_string("seed_group", self.seed_group)
         _require_nonempty_string("case family", self.family)
         if self.family not in GENERATORS:
             raise ValueError(f"unknown instance family {self.family!r}")
@@ -451,7 +454,10 @@ def _parse_v2_algorithms(
 
 
 def _parse_cases(
-    raw: object, issues: list[tuple[str, str]]
+    raw: object,
+    issues: list[tuple[str, str]],
+    *,
+    extended: bool = False,
 ) -> list[CaseConfig]:
     if not isinstance(raw, list) or not raw:
         issues.append(("$.cases", "must be a non-empty array"))
@@ -498,9 +504,23 @@ def _parse_cases(
         if isinstance(family, str) and family in GENERATORS:
             generator = GENERATORS[family]
             allowed = set(generator.parameters)
+            case_metadata_fields = {"name", "family", "sweep"}
+            if extended:
+                case_metadata_fields.add("seed_group")
             for field in case:
-                if field not in {"name", "family", "sweep"} and field not in allowed:
+                if (
+                    field not in case_metadata_fields
+                    and field not in allowed
+                ):
                     issues.append((f"{case_path}.{field}", "unknown field"))
+
+            seed_group = case.get("seed_group")
+            if extended and seed_group is not None and (
+                not isinstance(seed_group, str) or not seed_group.strip()
+            ):
+                issues.append(
+                    (f"{case_path}.seed_group", "must be a non-empty string")
+                )
 
             raw_sweep = case.get("sweep")
             if "sweep" in case:
@@ -585,7 +605,13 @@ def _parse_cases(
                 case_id = _expanded_case_id(case_name, selected)
                 try:
                     expanded = CaseConfig(
-                        case_name, family, expanded_parameters, case_id
+                        case_name,
+                        family,
+                        expanded_parameters,
+                        case_id,
+                        cast(str | None, case.get("seed_group"))
+                        if extended
+                        else None,
                     )
                 except ValueError as error:
                     message = str(error)
@@ -679,7 +705,11 @@ def parse_config(value: object) -> ExperimentConfig:
         issues.append(("$.algorithms", "at least one algorithm must be enabled"))
     cases: list[CaseConfig] = []
     if "cases" in data:
-        cases = _parse_cases(data["cases"], issues)
+        cases = _parse_cases(
+            data["cases"],
+            issues,
+            extended=version == CONFIG_SCHEMA_VERSION,
+        )
 
     if issues:
         raise ConfigurationError(issues)
