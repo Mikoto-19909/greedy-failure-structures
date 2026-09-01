@@ -18,6 +18,8 @@ frozen experiment results or quantitative research claims. See
 
 - [`failure_mechanisms.md`](failure_mechanisms.md): structural stressors,
   direct greedy traps, and the configurations that exercise them
+- [`generator_isolation.md`](generator_isolation.md): target-metric monotonicity,
+  confound checks, overlap tails, cluster separation, and matched controls
 - [`faq.md`](faq.md): project rationale, algorithm roles, and determinism
 - [`faq.zh-CN.md`](faq.zh-CN.md): Simplified Chinese translation maintained
   section-for-section with the English FAQ

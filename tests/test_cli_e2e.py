@@ -72,6 +72,29 @@ class CliEndToEndTests(unittest.TestCase):
         self.assertIn("Adversarial greedy-trap demonstration", demo.stdout)
         self.assertIn("branch_and_bound", demo.stdout)
 
+        audit = self._run(
+            "audit-stressors",
+            "--config",
+            str(self.workspace / "configs" / "p4_long_tail.json"),
+            "--strict",
+        )
+        self._assert_success(audit)
+        audit_report = json.loads(audit.stdout)
+        self.assertEqual(audit_report["schema_version"], 1)
+        self.assertEqual(len(audit_report["scans"]), 1)
+        self.assertEqual(audit_report["scans"][0]["assessment"], "pass")
+
+        controlled_audit = self._run("audit-stressors", "--strict")
+        self._assert_success(controlled_audit)
+        controlled_report = json.loads(controlled_audit.stdout)
+        self.assertEqual(len(controlled_report["scans"]), 6)
+        self.assertTrue(
+            all(
+                scan["assessment"] == "pass"
+                for scan in controlled_report["scans"]
+            )
+        )
+
     def test_config_to_summary_checkpoint_lifecycle(self) -> None:
         config_path = self.workspace / "e2e.json"
         output_dir = self.workspace / "output"

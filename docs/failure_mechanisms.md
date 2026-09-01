@@ -5,6 +5,21 @@ that primarily stress preprocessing or exact search. Each workflow produces
 local evidence from a committed configuration; this file stores no experiment
 result or quantitative research claim.
 
+Before interpreting algorithm outcomes, run `python run_project.py
+audit-stressors` and inspect the target monotonicity, dimension controls,
+matched uniform controls, and non-target metric ranges. The audit contract is
+documented in [`generator_isolation.md`](generator_isolation.md).
+
+The controlled replacement workflow keeps the legacy configurations intact
+and runs all six stressor scans from one configuration:
+
+```console
+python run_project.py benchmark --config configs/p7_controlled_stressors.json --output results/p7_controlled_stressors
+```
+
+The P4/P6 commands below remain reproducible mechanism and preprocessing
+workflows, but their dimensions or incidence must not be assumed invariant.
+
 ## 1. Duplicate-heavy structure
 
 **Role.** Exact copies increase candidate redundancy and make deduplication a
@@ -100,7 +115,8 @@ python run_project.py benchmark --config configs/p6_clustered_scan.json --output
 
 ## Interpreting the workflows
 
-Every P4/P6 command above includes at least one registered exact algorithm.
+Every P4/P6 command above and the P7 controlled command include at least one
+registered exact algorithm.
 Only an exact run that proves `optimal`, or an independently validated
 instance certificate, supplies a reference optimum. A timeout or merely
 feasible incumbent does not prove one by itself. Optimum-relative failure and
