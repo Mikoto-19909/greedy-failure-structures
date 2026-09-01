@@ -15,6 +15,12 @@ from ._association_contracts import (
     SearchNodesDominatedRatioAssociationRecord,
 )
 from ._instance_contracts import InstanceRecord
+from ._reference_contracts import (
+    ReferenceCensoringBiasRecord,
+    ReferenceCoverageRecord,
+    ReferenceCutoffSensitivityRecord,
+    ReferenceStatusRecord,
+)
 from ._run_contracts import RunRecord, SummaryRecord
 from ._statistics_contracts import (
     BranchAndBoundNodeReductionRecord,
@@ -46,6 +52,14 @@ class BenchmarkResult:
         ConfidenceIntervalRecord, ...
     ] = ()
     censored_runtime_statistics: tuple[CensoredRuntimeRecord, ...] = ()
+    reference_statuses: tuple[ReferenceStatusRecord, ...] = ()
+    reference_coverage_statistics: tuple[ReferenceCoverageRecord, ...] = ()
+    reference_censoring_bias_statistics: tuple[
+        ReferenceCensoringBiasRecord, ...
+    ] = ()
+    reference_cutoff_sensitivity_statistics: tuple[
+        ReferenceCutoffSensitivityRecord, ...
+    ] = ()
     greedy_failure_statistics: tuple[GreedyFailureRecord, ...] = ()
     local_search_recovery_statistics: tuple[LocalSearchRecoveryRecord, ...] = ()
     local_search_remaining_gap_statistics: tuple[
@@ -97,6 +111,22 @@ class BenchmarkResult:
             self,
             "censored_runtime_statistics",
             tuple(self.censored_runtime_statistics),
+        )
+        object.__setattr__(self, "reference_statuses", tuple(self.reference_statuses))
+        object.__setattr__(
+            self,
+            "reference_coverage_statistics",
+            tuple(self.reference_coverage_statistics),
+        )
+        object.__setattr__(
+            self,
+            "reference_censoring_bias_statistics",
+            tuple(self.reference_censoring_bias_statistics),
+        )
+        object.__setattr__(
+            self,
+            "reference_cutoff_sensitivity_statistics",
+            tuple(self.reference_cutoff_sensitivity_statistics),
         )
         object.__setattr__(
             self,
@@ -188,6 +218,33 @@ class BenchmarkResult:
             raise TypeError(
                 "censored_runtime_statistics must contain only "
                 "CensoredRuntimeRecord values"
+            )
+        if not all(
+            isinstance(row, ReferenceStatusRecord) for row in self.reference_statuses
+        ):
+            raise TypeError("reference_statuses must contain ReferenceStatusRecord values")
+        if not all(
+            isinstance(row, ReferenceCoverageRecord)
+            for row in self.reference_coverage_statistics
+        ):
+            raise TypeError(
+                "reference_coverage_statistics must contain ReferenceCoverageRecord values"
+            )
+        if not all(
+            isinstance(row, ReferenceCensoringBiasRecord)
+            for row in self.reference_censoring_bias_statistics
+        ):
+            raise TypeError(
+                "reference_censoring_bias_statistics must contain "
+                "ReferenceCensoringBiasRecord values"
+            )
+        if not all(
+            isinstance(row, ReferenceCutoffSensitivityRecord)
+            for row in self.reference_cutoff_sensitivity_statistics
+        ):
+            raise TypeError(
+                "reference_cutoff_sensitivity_statistics must contain "
+                "ReferenceCutoffSensitivityRecord values"
             )
         if not all(
             isinstance(row, GreedyFailureRecord)
