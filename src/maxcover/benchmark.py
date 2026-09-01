@@ -225,7 +225,7 @@ def plan_benchmark(config: ExperimentConfig) -> BenchmarkPlan:
         if algorithm.enabled
     }
     for case_index, case in enumerate(config.cases):
-        seed = config.base_seed + case_index * 10_000
+        seed = _case_seed(config, case, case_index, 0)
         instance = case.generate(seed)
         for algorithm in config.algorithms:
             if not algorithm.enabled:
@@ -4039,6 +4039,25 @@ def _coupling_seed(base_seed: int, pair_id: str) -> int:
     return int.from_bytes(hashlib.sha256(payload.encode("utf-8")).digest()[:8], "big")
 
 
+def _case_seed(
+    config: ExperimentConfig,
+    case: CaseConfig,
+    case_index: int,
+    repetition: int,
+) -> int:
+    """Return a stable instance seed, shared only by an explicit seed group."""
+
+    if case.seed_group is None:
+        return config.base_seed + case_index * 10_000 + repetition
+    payload = canonical_json(
+        {"base_seed": config.base_seed, "seed_group": case.seed_group}
+    )
+    group_offset = int.from_bytes(
+        hashlib.sha256(payload.encode("utf-8")).digest()[:8], "big"
+    )
+    return group_offset + repetition
+
+
 _STRUCTURAL_COUPLING_INTENSITY = {
     "long_tail": "gamma",
     "duplicate_heavy": "copy_factor",
@@ -4137,13 +4156,29 @@ def _instances_for_config(config: ExperimentConfig) -> list[_PlannedInstance]:
     fixed_size_pairs = _fixed_size_control_pairs(config)
     for case_index, case in enumerate(config.cases):
         for repetition in range(config.repetitions):
-            seed = config.base_seed + case_index * 10_000 + repetition
+            seed = _case_seed(config, case, case_index, repetition)
             pair_id = None
             coupled_seed = None
             fixed_size_pair = fixed_size_pairs.get(case.case_id)
             if fixed_size_pair is not None:
                 pair_id = f"{fixed_size_pair}|repetition={repetition}"
                 coupled_seed = _coupling_seed(config.base_seed, pair_id)
+                instance = case.generate(
+                    seed,
+                    derived_parameters={"coupling_seed": coupled_seed},
+                )
+            elif case.seed_group is not None and (
+                case.family in P4_3_COUPLED_FAMILIES
+                or (
+                    case.family == "adversarial"
+                    and case.parameters.get("construction_version", 1) == 2
+                )
+            ):
+                pair_id = (
+                    f"seed_group={canonical_json(case.seed_group)}"
+                    f"|repetition={repetition}"
+                )
+                coupled_seed = seed
                 instance = case.generate(
                     seed,
                     derived_parameters={"coupling_seed": coupled_seed},
@@ -5449,11 +5484,18 @@ def run_benchmark(
     workers: int = 1,
     force: bool = False,
     expected_config_hash: str | None = None,
+    checkpoint_interval: int = 1,
 ) -> BenchmarkResult:
-    """Run or resume an experiment, checkpointing every completed run atomically."""
+    """Run or resume an experiment with atomic periodic checkpoints."""
 
     if isinstance(workers, bool) or not isinstance(workers, int) or workers <= 0:
         raise ValueError("workers must be a positive integer")
+    if (
+        isinstance(checkpoint_interval, bool)
+        or not isinstance(checkpoint_interval, int)
+        or checkpoint_interval <= 0
+    ):
+        raise ValueError("checkpoint_interval must be a positive integer")
     started_at = datetime.now(timezone.utc)
     started = time.perf_counter()
     git_state = _git_state()
@@ -5502,17 +5544,20 @@ def run_benchmark(
         executor = ProcessPoolExecutor(max_workers=workers, mp_context=context)
         completed_runs = executor.map(_execute_task, pending)
     try:
-        for completed in completed_runs:
+        for completed_index, completed in enumerate(completed_runs, start=1):
             record = _record_for_completed(completed)
             records[record.run_id] = record
             _write_replay_artifact(output_dir, completed)
-            checkpoint_rows = [
-                records[run_identifier]
-                for run_identifier in expected_ids
-                if run_identifier in records
-            ]
-            checkpoint = _normalize_optima(checkpoint_rows, instance_records)
-            _write_csv(output_dir / "raw_results.csv", checkpoint, RunRecord.CSV_FIELDS)
+            if completed_index % checkpoint_interval == 0:
+                checkpoint_rows = [
+                    records[run_identifier]
+                    for run_identifier in expected_ids
+                    if run_identifier in records
+                ]
+                checkpoint = _normalize_optima(checkpoint_rows, instance_records)
+                _write_csv(
+                    output_dir / "raw_results.csv", checkpoint, RunRecord.CSV_FIELDS
+                )
     finally:
         if executor is not None:
             executor.shutdown(wait=True, cancel_futures=True)

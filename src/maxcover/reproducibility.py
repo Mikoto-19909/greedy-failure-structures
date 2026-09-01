@@ -153,6 +153,11 @@ def config_payload(config: ExperimentConfig) -> dict[str, object]:
                 "case_id": case.case_id,
                 "family": case.family,
                 "parameters": dict(case.parameters),
+                **(
+                    {"seed_group": case.seed_group}
+                    if case.seed_group is not None
+                    else {}
+                ),
             }
             for case in config.cases
         ],
