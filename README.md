@@ -3,7 +3,7 @@
 **English** | [简体中文](README.zh-CN.md)
 
 This repository contains research-oriented Python code for deterministic
-experiments with the Maximum Coverage problem.  It provides algorithm
+experiments with the Maximum Coverage problem. It provides algorithm
 implementations, instance generators, configuration validation, benchmark
 execution, reporting, and replay utilities.
 
@@ -173,12 +173,12 @@ deliberate boundary, not an omission — see
 [`docs/history/PRE_PUBLIC_DEVELOPMENT_HISTORY.md`](docs/history/PRE_PUBLIC_DEVELOPMENT_HISTORY.md)
 for what preceded this repository.
 
-The boundary is about what this repository *publishes*, and the distinction is
+The boundary is about what this repository _publishes_, and the distinction is
 worth stating because the code does compute numbers. `demo` prints a coverage
 gap, and a benchmark run writes CSVs full of measurements to `results/`. Neither
 crosses the boundary: both are produced on your machine when you run them, from
 inputs committed here, and neither is checked in or asserted as a finding. What
-the boundary excludes is a claim carried *by this repository* — a figure in the
+the boundary excludes is a claim carried _by this repository_ — a figure in the
 README, a results table in the documentation, a stored corpus of outcomes.
 Anything of that kind requires the frozen evidence chain
 [`CONTRIBUTING.md`](CONTRIBUTING.md) describes, and CI enforces the rule over
@@ -229,6 +229,6 @@ its scope.
 
 ## License
 
-Code is licensed under the MIT License.  Documentation and other non-code
+Code is licensed under the MIT License. Documentation and other non-code
 content in this snapshot are licensed under Creative Commons Attribution 4.0.
 See [`LICENSES/README.md`](LICENSES/README.md) for the closed file-level mapping.

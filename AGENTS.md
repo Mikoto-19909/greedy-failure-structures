@@ -20,6 +20,7 @@ from, publish from or synchronize with another repository. Do not add a second
 development path or a recurring cross-repository publication workflow.
 
 ## Git Workflow Conventions
+
 - PRs must follow **single-responsibility** — never cherry-pick unrelated governance or config commits into a feature PR.
 - After merging PRs, always clean up: delete merged branches and verify no stale branches remain.
 - When formatting hooks fail (dirty worktree), stash or fix the formatted files before retrying the push — do not try to bypass hooks.
@@ -46,7 +47,7 @@ and every relative link resolving to a tracked path.
 Three things about this check are load-bearing:
 
 - **A clean run is not evidence that the boundary holds.** It means the boundary
-  holds *or* the checker is blind to what you added. Those are different, and the
+  holds _or_ the checker is blind to what you added. Those are different, and the
   second has happened repeatedly.
 - **It rejects some things it should not, and the list of exclusions is part of
   the design.** If it flags a sentence that is legitimate, widen the exclusion
@@ -103,7 +104,7 @@ python -m mypy
 ```
 
 Two ordering facts will otherwise waste your time. `build_license_manifest.py`
-reads the git *index*, so stage your changes first, then regenerate, then stage
+reads the git _index_, so stage your changes first, then regenerate, then stage
 the manifest. And reading a file and writing it back through a script can change
 its line endings on a Windows checkout, which makes an unchanged file look
 modified — restore such a file with git rather than by rewriting the original
@@ -140,8 +141,8 @@ Two consequences follow, and neither is a judgement call:
    too.** This is where the gaps concentrate.
 
 Conduct such a review by **reverse verification**: take each normative statement
-in the document, construct an input the statement says must be rejected, *run
-it*, and report whether the rule was actually enforced. Deriving test cases by
+in the document, construct an input the statement says must be rejected, _run
+it_, and report whether the rule was actually enforced. Deriving test cases by
 reading the implementation and asking what the code does is the failure mode
 that let these through — the cases have to come from the declaration.
 

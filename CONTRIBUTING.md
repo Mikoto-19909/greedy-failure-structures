@@ -50,7 +50,7 @@ to documentation, to release notes, or to commit messages.
 `demo` prints a coverage gap and a benchmark run writes measurement CSVs under
 `results/`. Both are generated on the machine that runs them, from inputs
 committed here, and neither is tracked. The rule governs claims this repository
-*carries* — a figure in prose, a results table, a stored corpus of outcomes —
+_carries_ — a figure in prose, a results table, a stored corpus of outcomes —
 not what its code produces when you execute it. If you are unsure which side a
 change falls on, the practical test is whether `git status` would show it.
 
