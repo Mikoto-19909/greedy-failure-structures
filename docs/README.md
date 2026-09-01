@@ -13,6 +13,9 @@ frozen experiment results or quantitative research claims. See
   dashboard workflows
 - [`output_schema.md`](output_schema.md): generated CSV, report, replay, and
   manifest semantics
+- [`reproducibility_matrix.md`](reproducibility_matrix.md): which raw result
+  fields must reproduce bit-for-bit and which are exempt, plus the matrix that
+  enforces it across operating systems and Python versions
 
 ## Experiment guidance
 
