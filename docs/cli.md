@@ -66,6 +66,45 @@ The configuration hash and deterministic run identifiers must match the current
 plan. `--force` removes runner-owned artifacts in that result directory and
 reruns every planned identifier; unrelated files are left in place.
 
+### `cartography`
+
+Run the six documented stressor families at multiple strength levels against
+dimension-matched uniform controls:
+
+```console
+python run_project.py cartography --config configs/structural_gap_cartography.json --design designs/structural_gap_cartography.json --output results/structural_gap_cartography --workers 4
+```
+
+`seed_group` is an optional schema-3 case field. Cases in the same group use
+the same generated-instance seed at each repetition; cases without it retain
+the historical case-index seed schedule. The design validator requires each
+declared stressor/control pair to share a non-empty group and equal universe,
+candidate-count, and budget dimensions. The analysis checks the observed seeds
+again before computing a paired difference.
+
+Randomized algorithm seeds are nested within an instance seed. Their gaps are
+averaged within an instance before the across-instance distribution and paired
+intervals are computed, so algorithm-seed repetitions are not counted as
+independent instances. Use `precision_diagnostics.csv` to decide whether the
+configured repetition count meets the design's confidence-interval half-width
+target. The cartography runner checkpoints each batch of 100 newly completed
+runs and writes the complete canonical CSV at the end; after interruption it
+resumes from the last completed batch. Ordinary benchmark calls retain the
+default per-run checkpoint interval. With `--force`, stale cartography-owned
+CSV, SVG, summary, and manifest files are removed before benchmark execution;
+unrelated files in the output directory are preserved.
+
+After a completed run, independently recompute the cartography statistics from
+the canonical benchmark rows:
+
+```console
+python .github/scripts/validate_cartography_output.py --config configs/structural_gap_cartography.json --design designs/structural_gap_cartography.json --output results/structural_gap_cartography
+```
+
+Run the benchmark output validator first; the cartography validator treats its
+validated `raw_results.csv` as the canonical input and separately checks the
+cartography CSV values, layout, and manifest checksums.
+
 ### `resume`
 
 Resume an interrupted compatible checkpoint explicitly:

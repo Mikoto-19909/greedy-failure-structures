@@ -62,6 +62,38 @@ instance-equal pairs are available:
 variants. `stochastic_summary.csv` summarizes explicitly seeded stochastic
 algorithm runs.
 
+## Structural gap cartography artifacts
+
+The `cartography` command adds a separate, checksummed local analysis package:
+
+- `structural_gap_statistics.csv` reports `1 - coverage / optimum` by stressor
+  family, strength, treatment/control role, algorithm, and instance seed. It
+  includes the mean, median, sample standard deviation, quartiles, range, and a
+  two-sided Student-t confidence interval.
+- `paired_control_differences.csv` reports seed-paired
+  `stressor_gap - control_gap` distributions with the same descriptive and
+  interval fields. Missing exact references are counted and excluded rather
+  than converted to zero.
+- `precision_diagnostics.csv` estimates the seed count needed to reach the
+  design's fixed confidence-interval half-width target using the observed
+  paired-difference standard deviation.
+- `stressor_strength_gap.svg` plots stressor strength against mean gap and its
+  interval for each heuristic algorithm.
+- `family_algorithm_gap.svg` is the family-by-algorithm map, using an
+  equal-weight mean across the configured strength-level means.
+- `cartography_manifest.json` binds the benchmark configuration, design, raw
+  results, and every cartography artifact by SHA-256.
+
+`validate_cartography_output.py` does not trust those hashes as proof of the
+calculation. It independently rebuilds the instance-seed aggregates, paired
+differences, intervals, and precision diagnostics from `raw_results.csv`, then
+checks the stored values and the manifest bindings.
+
+For algorithms with multiple `algorithm_seeds`, one instance contributes the
+arithmetic mean of its complete algorithm-seed gaps. The independent unit for
+distribution and interval calculations is therefore the generated instance
+seed, not an individual randomized-algorithm run.
+
 ## Structural association analyses
 
 The following files associate instance-equal response values with measured or

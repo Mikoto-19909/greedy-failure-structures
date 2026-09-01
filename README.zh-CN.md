@@ -63,6 +63,17 @@ python run_project.py benchmark --config configs/sweeps.json --dry-run
 python run_project.py benchmark --config configs/full.json --output results/full
 ```
 
+运行带匹配控制组的 structural gap cartography 工作流：
+
+```console
+python run_project.py cartography --config configs/structural_gap_cartography.json --design designs/structural_gap_cartography.json --output results/structural_gap_cartography --workers 4
+```
+
+该配置覆盖 [`docs/failure_mechanisms.md`](docs/failure_mechanisms.md) 中的六类
+结构 stressor、匹配维度的均匀控制组、多个强度水平、五种指定启发式算法和一个精确
+参考算法。工作流会在 `results/` 下生成 seed 级分布、控制组配对差值、精度诊断和
+两张 SVG 图；这些本地测量结果仍不属于被跟踪的仓库快照。
+
 上面两个命令都会产生一个 `LegacyConfigWarning`：`configs/quick.json` 和 `configs/full.json` 使用 schema v1，加载器会在每次运行时于内存中将它们迁移到 schema 3。这个警告是预期行为。这两个文件会刻意保留在 v1，而不会直接重写——因为 `config_hash` 是基于规范化后的配置计算的，重写文件会改变该哈希，并使已经依据它记录的运行身份失去对应关系；`CONTRIBUTING.md` 将这种变化归类为破坏性变更。`configs/sweeps.json` 使用 schema 2；`configs/p3_*` 到 `configs/p6_*` 的配置使用 schema 3，因此不会产生警告。
 
 `results/` 下生成的文件都是本地产物，不属于仓库快照的一部分。
@@ -88,7 +99,7 @@ python -m pip install -e ".[typecheck]"
 python -m mypy
 ```
 
-需要谨慎理解它的输出。`pyproject.toml` 对 `maxcover.benchmark` 和 `maxcover.reporting` 设置了 `ignore_errors = true`——按源码行数计算，这两部分大约占 40%。因此，`Success: no issues found in 20 source files` 的含义只是其余模块通过了检查，而不是整个包都没有类型问题。这两个模块确实还存在尚未解决的类型错误积压；保留豁免可以让其他区域的类型检查继续保持可执行和可强制，而不是让整个检查长期处于红灯状态。欢迎逐步减少这部分积压，豁免列表就是确认当前哪些模块尚未纳入覆盖范围的位置。
+需要谨慎理解它的输出。`pyproject.toml` 对 `maxcover.benchmark` 和 `maxcover.reporting` 设置了 `ignore_errors = true`——按源码行数计算，这两部分大约占 40%。因此，`Success: no issues found in 21 source files` 的含义只是其余模块通过了检查，而不是整个包都没有类型问题。这两个模块确实还存在尚未解决的类型错误积压；保留豁免可以让其他区域的类型检查继续保持可执行和可强制，而不是让整个检查长期处于红灯状态。欢迎逐步减少这部分积压，豁免列表就是确认当前哪些模块尚未纳入覆盖范围的位置。
 
 在 Windows 上，可以使用便捷包装脚本执行等价命令：
 

@@ -83,6 +83,19 @@ Run a configured benchmark and write local outputs:
 python run_project.py benchmark --config configs/full.json --output results/full
 ```
 
+Run the matched-control structural gap cartography workflow:
+
+```console
+python run_project.py cartography --config configs/structural_gap_cartography.json --design designs/structural_gap_cartography.json --output results/structural_gap_cartography --workers 4
+```
+
+This configuration covers the six structural stressors described in
+[`docs/failure_mechanisms.md`](docs/failure_mechanisms.md), matched uniform
+controls, multiple strength levels, the five requested heuristic algorithms,
+and an exact reference. It writes seed-level distributions, paired-control
+differences, precision diagnostics, and two SVG maps under `results/`; those
+locally generated measurements remain outside the tracked repository snapshot.
+
 Both commands above emit a `LegacyConfigWarning`: `configs/quick.json` and
 `configs/full.json` are schema v1, and the loader migrates them to schema 3 in
 memory on every run. The warning is expected. Those two files stay at v1
@@ -123,7 +136,7 @@ python -m mypy
 
 Read its output narrowly. `pyproject.toml` sets `ignore_errors = true` for
 `maxcover.benchmark` and `maxcover.reporting` — roughly 40% of the source by
-line — so `Success: no issues found in 20 source files` means the remaining
+line — so `Success: no issues found in 21 source files` means the remaining
 modules are clean, not that the package is. Those two modules carry a real
 backlog of unresolved type errors; the exemption keeps the check enforceable
 everywhere else instead of leaving it permanently red. Reducing that backlog is

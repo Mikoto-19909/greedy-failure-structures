@@ -1,0 +1,133 @@
+{
+  "schema_version": 1,
+  "minimum_instance_seeds": 30,
+  "precision_target_half_width": 0.02,
+  "levels": [
+    {
+      "family": "high_overlap",
+      "strength": 0.2,
+      "strength_label": "core_fraction=0.2",
+      "stressor_case_id": "overlap_low",
+      "control_case_id": "overlap_low_control"
+    },
+    {
+      "family": "high_overlap",
+      "strength": 0.5,
+      "strength_label": "core_fraction=0.5",
+      "stressor_case_id": "overlap_medium",
+      "control_case_id": "overlap_medium_control"
+    },
+    {
+      "family": "high_overlap",
+      "strength": 0.8,
+      "strength_label": "core_fraction=0.8",
+      "stressor_case_id": "overlap_high",
+      "control_case_id": "overlap_high_control"
+    },
+    {
+      "family": "clustered",
+      "strength": 0.3,
+      "strength_label": "within_probability=0.3",
+      "stressor_case_id": "cluster_low",
+      "control_case_id": "cluster_low_control"
+    },
+    {
+      "family": "clustered",
+      "strength": 0.6,
+      "strength_label": "within_probability=0.6",
+      "stressor_case_id": "cluster_medium",
+      "control_case_id": "cluster_medium_control"
+    },
+    {
+      "family": "clustered",
+      "strength": 0.9,
+      "strength_label": "within_probability=0.9",
+      "stressor_case_id": "cluster_high",
+      "control_case_id": "cluster_high_control"
+    },
+    {
+      "family": "long_tail",
+      "strength": 0.0,
+      "strength_label": "gamma=0",
+      "stressor_case_id": "long_tail_low",
+      "control_case_id": "long_tail_low_control"
+    },
+    {
+      "family": "long_tail",
+      "strength": 0.75,
+      "strength_label": "gamma=0.75",
+      "stressor_case_id": "long_tail_medium",
+      "control_case_id": "long_tail_medium_control"
+    },
+    {
+      "family": "long_tail",
+      "strength": 2.0,
+      "strength_label": "gamma=2",
+      "stressor_case_id": "long_tail_high",
+      "control_case_id": "long_tail_high_control"
+    },
+    {
+      "family": "duplicate_heavy",
+      "strength": 1.0,
+      "strength_label": "copy_factor=1",
+      "stressor_case_id": "duplicate_low",
+      "control_case_id": "duplicate_low_control"
+    },
+    {
+      "family": "duplicate_heavy",
+      "strength": 2.0,
+      "strength_label": "copy_factor=2",
+      "stressor_case_id": "duplicate_medium",
+      "control_case_id": "duplicate_medium_control"
+    },
+    {
+      "family": "duplicate_heavy",
+      "strength": 3.0,
+      "strength_label": "copy_factor=3",
+      "stressor_case_id": "duplicate_high",
+      "control_case_id": "duplicate_high_control"
+    },
+    {
+      "family": "dominated_heavy",
+      "strength": 0.0,
+      "strength_label": "child_count=0",
+      "stressor_case_id": "dominated_low",
+      "control_case_id": "dominated_low_control"
+    },
+    {
+      "family": "dominated_heavy",
+      "strength": 1.0,
+      "strength_label": "child_count=1",
+      "stressor_case_id": "dominated_medium",
+      "control_case_id": "dominated_medium_control"
+    },
+    {
+      "family": "dominated_heavy",
+      "strength": 3.0,
+      "strength_label": "child_count=3",
+      "stressor_case_id": "dominated_high",
+      "control_case_id": "dominated_high_control"
+    },
+    {
+      "family": "adversarial",
+      "strength": 0.0,
+      "strength_label": "severity=0 (trap_count=12)",
+      "stressor_case_id": "adversarial_low",
+      "control_case_id": "adversarial_low_control"
+    },
+    {
+      "family": "adversarial",
+      "strength": 0.125,
+      "strength_label": "severity=0.125 (trap_count=9)",
+      "stressor_case_id": "adversarial_medium",
+      "control_case_id": "adversarial_medium_control"
+    },
+    {
+      "family": "adversarial",
+      "strength": 0.20833333333333334,
+      "strength_label": "severity=0.2083 (trap_count=7)",
+      "stressor_case_id": "adversarial_high",
+      "control_case_id": "adversarial_high_control"
+    }
+  ]
+}
