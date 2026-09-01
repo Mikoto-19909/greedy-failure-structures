@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import argparse
 import csv
+import json
+import math
 import sys
 from pathlib import Path
 from typing import cast
@@ -18,9 +20,17 @@ from .benchmark import (
 from .config import load_config
 from .dashboard import serve_dashboard
 from .generators import adversarial_greedy_trap
+from .stressor_audit import (
+    DEFAULT_INCIDENCE_RELATIVE_TOLERANCE,
+    audit_stressor_configs,
+    stressor_audit_has_failures,
+)
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_STRESSOR_AUDIT_CONFIGS = (
+    PROJECT_ROOT / "configs" / "p7_controlled_stressors.json",
+)
 
 
 def _run(
@@ -117,6 +127,36 @@ def _positive_integer(value: str) -> int:
     return parsed
 
 
+def _nonnegative_finite(value: str) -> float:
+    try:
+        parsed = float(value)
+    except ValueError as error:
+        raise argparse.ArgumentTypeError(
+            "must be a finite non-negative number"
+        ) from error
+    if not math.isfinite(parsed) or parsed < 0:
+        raise argparse.ArgumentTypeError("must be a finite non-negative number")
+    return parsed
+
+
+def _audit_stressors(
+    config_paths: list[Path] | None,
+    *,
+    incidence_tolerance: float,
+    strict: bool,
+) -> int:
+    selected_paths = (
+        DEFAULT_STRESSOR_AUDIT_CONFIGS if config_paths is None else config_paths
+    )
+    configs = [load_config(path.resolve()) for path in selected_paths]
+    report = audit_stressor_configs(
+        configs,
+        incidence_relative_tolerance=incidence_tolerance,
+    )
+    print(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True))
+    return 2 if strict and stressor_audit_has_failures(report) else 0
+
+
 def _add_execution_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--config",
@@ -161,6 +201,43 @@ def build_parser() -> argparse.ArgumentParser:
         "demo",
         help="show a transparent greedy failure case",
         description="Print a small adversarial example and three algorithm solutions.",
+    )
+    audit_stressors = subparsers.add_parser(
+        "audit-stressors",
+        help="audit whether generator sweeps isolate their structural target",
+        description=(
+            "Generate instances without running benchmark algorithms, measure target "
+            "and non-target structure, attach matched uniform controls, and print a "
+            "JSON audit to standard output."
+        ),
+    )
+    audit_stressors.add_argument(
+        "--config",
+        action="append",
+        type=Path,
+        metavar="PATH",
+        help=(
+            "configuration to audit; repeat for multiple files (defaults to the "
+            "committed controlled stressor scans)"
+        ),
+    )
+    audit_stressors.add_argument(
+        "--incidence-tolerance",
+        type=_nonnegative_finite,
+        default=DEFAULT_INCIDENCE_RELATIVE_TOLERANCE,
+        metavar="FRACTION",
+        help=(
+            "maximum relative range of level-mean incidence treated as stable "
+            f"(default: {DEFAULT_INCIDENCE_RELATIVE_TOLERANCE})"
+        ),
+    )
+    audit_stressors.add_argument(
+        "--strict",
+        action="store_true",
+        help=(
+            "return a non-zero status when any requested scan fails isolation or "
+            "is skipped"
+        ),
     )
     validate_config = subparsers.add_parser(
         "validate-config",
@@ -293,6 +370,12 @@ def _dispatch(parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
     command = args.command or "quick"
     if command == "demo":
         _demo()
+    elif command == "audit-stressors":
+        return _audit_stressors(
+            args.config,
+            incidence_tolerance=args.incidence_tolerance,
+            strict=args.strict,
+        )
     elif command == "quick":
         _run(
             PROJECT_ROOT / "configs" / "quick.json",

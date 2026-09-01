@@ -3722,11 +3722,16 @@ def _coupling_seed(base_seed: int, pair_id: str) -> int:
     return int.from_bytes(hashlib.sha256(payload.encode("utf-8")).digest()[:8], "big")
 
 
-_P4_3_COUPLING_INTENSITY = {
+_STRUCTURAL_COUPLING_INTENSITY = {
     "long_tail": "gamma",
     "duplicate_heavy": "copy_factor",
     "dominated_heavy": "child_count",
     "mixed_cluster": "bridge_fraction",
+    "controlled_high_overlap": "shared_core_size",
+    "controlled_clustered": "within_core_size",
+    "controlled_duplicate": "copy_factor",
+    "controlled_dominated": "dominated_pair_count",
+    "controlled_adversarial": "trap_count",
 }
 
 
@@ -3747,9 +3752,9 @@ def _structural_coupling_pair_id(
     parameters: Mapping[str, object],
     repetition: int,
 ) -> str:
-    """Identify one P4.3 scan after removing its structural intensity."""
+    """Identify one coupled scan after removing its structural intensity."""
 
-    intensity = _P4_3_COUPLING_INTENSITY[family]
+    intensity = _STRUCTURAL_COUPLING_INTENSITY[family]
     fixed_parameters = {
         name: value for name, value in parameters.items() if name != intensity
     }
@@ -3842,7 +3847,7 @@ def _instances_for_config(config: ExperimentConfig) -> list[_PlannedInstance]:
                     seed,
                     derived_parameters={"coupling_seed": coupled_seed},
                 )
-            elif case.family in P4_3_COUPLED_FAMILIES:
+            elif case.family in _STRUCTURAL_COUPLING_INTENSITY:
                 resolved_parameters = _resolved_case_parameters(
                     case.family, case.parameters
                 )
@@ -3877,10 +3882,14 @@ def _instance_record(
 ) -> InstanceRecord:
     instance = planned.instance
     metrics = analyze_instance(instance)
-    constructed = instance.family == "adversarial"
+    controlled_family = instance.family.startswith("controlled_")
+    adversarial_construction = instance.family in {
+        "adversarial",
+        "controlled_adversarial",
+    }
     if instance.family in P4_3_INSTANCE_ORIGINS:
         origin = P4_3_INSTANCE_ORIGINS[instance.family]
-    elif constructed:
+    elif adversarial_construction or controlled_family:
         origin = "constructed"
     elif instance.family in {"uniform", "high_overlap", "clustered"}:
         origin = "stochastic"
@@ -3892,7 +3901,7 @@ def _instance_record(
     certificate = known_optimum_certificate(instance)
     severity = None
     realized_trap_fraction = None
-    is_adversarial = constructed
+    is_adversarial = adversarial_construction
     research_question_id = P4_3_RESEARCH_QUESTION_IDS.get(instance.family)
     paired_uniform_control = (
         instance.family == "uniform"
@@ -3900,7 +3909,18 @@ def _instance_record(
     )
     if paired_uniform_control:
         research_question_id = P4_3_RESEARCH_QUESTION_IDS["fixed_size"]
-    if constructed and version == 2:
+    if instance.family == "controlled_adversarial":
+        block_size = int(instance.parameters["block_size"])
+        trap_count = int(instance.parameters["trap_count"])
+        severity = (block_size - trap_count) / (2 * block_size)
+        realized_trap_fraction = trap_count / block_size
+        is_adversarial = severity > 0
+        research_question_id = "controlled_adversarial_severity"
+        if instance.parameters.get("coupling_seed") != planned.coupling_seed:
+            raise ValueError(
+                "controlled adversarial coupling seed conflicts with the instance"
+            )
+    elif adversarial_construction and version == 2:
         block_size = int(instance.parameters["block_size"])
         trap_count = int(instance.parameters["trap_count"])
         severity = (block_size - trap_count) / (2 * block_size)

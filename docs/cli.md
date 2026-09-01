@@ -38,6 +38,22 @@ python run_project.py demo
 The output demonstrates behavior on that one source-defined instance. It is not
 a result about an experiment corpus.
 
+### `audit-stressors`
+
+Audit whether the committed generator sweeps change their intended structural
+target while exposing dimension and incidence confounders:
+
+```console
+python run_project.py audit-stressors
+```
+
+The default command audits `configs/p7_controlled_stressors.json`. It prints
+JSON and does not run the benchmark algorithms. Repeat `--config PATH` to
+select legacy or custom configurations, and add `--strict` when failed gross
+isolation checks should produce a non-zero status. See
+[`generator_isolation.md`](generator_isolation.md) for metric and control
+semantics.
+
 ### `validate-config`
 
 Validate JSON shape, expand sweeps, and preflight algorithms without running

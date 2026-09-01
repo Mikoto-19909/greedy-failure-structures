@@ -52,6 +52,7 @@ class HelpConsistencyTests(unittest.TestCase):
         for command in (
             "quick",
             "demo",
+            "audit-stressors",
             "validate-config",
             "summarize",
             "benchmark",
@@ -73,6 +74,11 @@ class HelpConsistencyTests(unittest.TestCase):
         expected_options = {
             "quick": set(),
             "demo": set(),
+            "audit-stressors": {
+                "--config",
+                "--incidence-tolerance",
+                "--strict",
+            },
             "validate-config": {"--config"},
             "summarize": {"--config", "--output"},
             "benchmark": {

@@ -534,6 +534,7 @@ class MechanismWorkflowClaimTests(unittest.TestCase):
                 "configs/p6_clustered_scan.json",
                 "configs/p6_overlap_scan.json",
                 "configs/p6_trap_construction.json",
+                "configs/p7_controlled_stressors.json",
             },
             "the mechanism guide's runnable workflow set changed",
         )

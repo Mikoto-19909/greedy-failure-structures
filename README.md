@@ -89,7 +89,7 @@ memory on every run. The warning is expected. Those two files stay at v1
 deliberately — `config_hash` is computed over the normalized configuration, so
 rewriting them would change the hash and orphan the run identities already
 recorded against it, which `CONTRIBUTING.md` classes as a breaking change.
-`configs/sweeps.json` is schema 2; the `configs/p3_*` through `configs/p6_*`
+`configs/sweeps.json` is schema 2; the `configs/p3_*` through `configs/p7_*`
 configurations are schema 3 and warn about nothing.
 
 Generated files under `results/` are local artifacts and are not part of the
@@ -123,7 +123,7 @@ python -m mypy
 
 Read its output narrowly. `pyproject.toml` sets `ignore_errors = true` for
 `maxcover.benchmark` and `maxcover.reporting` — roughly 40% of the source by
-line — so `Success: no issues found in 20 source files` means the remaining
+line — so `Success: no issues found in 21 source files` means the remaining
 modules are clean, not that the package is. Those two modules carry a real
 backlog of unresolved type errors; the exemption keeps the check enforceable
 everywhere else instead of leaving it permanently red. Reducing that backlog is

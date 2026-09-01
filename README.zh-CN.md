@@ -63,7 +63,7 @@ python run_project.py benchmark --config configs/sweeps.json --dry-run
 python run_project.py benchmark --config configs/full.json --output results/full
 ```
 
-上面两个命令都会产生一个 `LegacyConfigWarning`：`configs/quick.json` 和 `configs/full.json` 使用 schema v1，加载器会在每次运行时于内存中将它们迁移到 schema 3。这个警告是预期行为。这两个文件会刻意保留在 v1，而不会直接重写——因为 `config_hash` 是基于规范化后的配置计算的，重写文件会改变该哈希，并使已经依据它记录的运行身份失去对应关系；`CONTRIBUTING.md` 将这种变化归类为破坏性变更。`configs/sweeps.json` 使用 schema 2；`configs/p3_*` 到 `configs/p6_*` 的配置使用 schema 3，因此不会产生警告。
+上面两个命令都会产生一个 `LegacyConfigWarning`：`configs/quick.json` 和 `configs/full.json` 使用 schema v1，加载器会在每次运行时于内存中将它们迁移到 schema 3。这个警告是预期行为。这两个文件会刻意保留在 v1，而不会直接重写——因为 `config_hash` 是基于规范化后的配置计算的，重写文件会改变该哈希，并使已经依据它记录的运行身份失去对应关系；`CONTRIBUTING.md` 将这种变化归类为破坏性变更。`configs/sweeps.json` 使用 schema 2；`configs/p3_*` 到 `configs/p7_*` 的配置使用 schema 3，因此不会产生警告。
 
 `results/` 下生成的文件都是本地产物，不属于仓库快照的一部分。
 
@@ -88,7 +88,7 @@ python -m pip install -e ".[typecheck]"
 python -m mypy
 ```
 
-需要谨慎理解它的输出。`pyproject.toml` 对 `maxcover.benchmark` 和 `maxcover.reporting` 设置了 `ignore_errors = true`——按源码行数计算，这两部分大约占 40%。因此，`Success: no issues found in 20 source files` 的含义只是其余模块通过了检查，而不是整个包都没有类型问题。这两个模块确实还存在尚未解决的类型错误积压；保留豁免可以让其他区域的类型检查继续保持可执行和可强制，而不是让整个检查长期处于红灯状态。欢迎逐步减少这部分积压，豁免列表就是确认当前哪些模块尚未纳入覆盖范围的位置。
+需要谨慎理解它的输出。`pyproject.toml` 对 `maxcover.benchmark` 和 `maxcover.reporting` 设置了 `ignore_errors = true`——按源码行数计算，这两部分大约占 40%。因此，`Success: no issues found in 21 source files` 的含义只是其余模块通过了检查，而不是整个包都没有类型问题。这两个模块确实还存在尚未解决的类型错误积压；保留豁免可以让其他区域的类型检查继续保持可执行和可强制，而不是让整个检查长期处于红灯状态。欢迎逐步减少这部分积压，豁免列表就是确认当前哪些模块尚未纳入覆盖范围的位置。
 
 在 Windows 上，可以使用便捷包装脚本执行等价命令：
 

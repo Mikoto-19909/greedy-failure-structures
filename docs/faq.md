@@ -75,6 +75,11 @@ and exact-search behaviour; no family guarantees a Greedy failure on every
 generated instance. See [`failure_mechanisms.md`](failure_mechanisms.md) for
 the runnable family workflows.
 
+The registry also includes `controlled_high_overlap`, `controlled_clustered`,
+`controlled_duplicate`, `controlled_dominated`, and
+`controlled_adversarial`. These new names preserve every legacy generator
+identity while providing fixed-dimension, fixed-incidence stressor scans.
+
 <!-- faq:id=synthetic-families -->
 
 ## Why parameterised instance families instead of real-world data?
