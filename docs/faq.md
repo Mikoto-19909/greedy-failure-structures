@@ -1,6 +1,7 @@
 # Frequently Asked Questions
 
 <!-- faq:id=problem-definition -->
+
 ## What is Maximum Coverage?
 
 Given a finite universe of elements, a collection of candidate sets, and a
@@ -10,6 +11,7 @@ covers as many elements as possible. In this repository, `universe_size`,
 distinct elements in the selected union.
 
 <!-- faq:id=why-study -->
+
 ## Why study Maximum Coverage?
 
 Maximum Coverage is a monotone submodular optimisation problem with a familiar
@@ -19,6 +21,7 @@ The question is about instance structure and algorithm behaviour, not about
 replacing the classical theoretical guarantee.
 
 <!-- faq:id=theoretical-bound -->
+
 ## Why not just use the theoretical bound?
 
 The classical Greedy guarantee describes a worst-case relationship between the
@@ -28,6 +31,7 @@ in a particular experiment. A theoretical guarantee and an empirical
 structural analysis answer different questions.
 
 <!-- faq:id=algorithm-roles -->
+
 ## Why so many algorithms?
 
 Each algorithm has a distinct role:
@@ -49,6 +53,7 @@ Each algorithm has a distinct role:
   OR-Tools dependency.
 
 <!-- faq:id=reference-status -->
+
 ## What counts as a valid exact reference?
 
 Only an exact run that closes its bound and returns `optimal` can provide the
@@ -59,6 +64,7 @@ produced. See [`output_schema.md`](output_schema.md) for the artifact-level
 status rules.
 
 <!-- faq:id=instance-families -->
+
 ## Which instance families are included?
 
 The generator registry includes `uniform`, `high_overlap`, `clustered`,
@@ -70,6 +76,7 @@ generated instance. See [`failure_mechanisms.md`](failure_mechanisms.md) for
 the runnable family workflows.
 
 <!-- faq:id=synthetic-families -->
+
 ## Why parameterised instance families instead of real-world data?
 
 Real-world data can vary along many dimensions at once, which makes it
@@ -80,6 +87,7 @@ estimate descriptive associations; it does not by itself establish causality
 or real-world generalisation.
 
 <!-- faq:id=no-results -->
+
 ## Why are there no frozen experiment results in the repository?
 
 This repository is a code-first reproducible experiment engine. It publishes
@@ -91,6 +99,7 @@ independent validation. The current snapshot deliberately does not carry that
 research result package.
 
 <!-- faq:id=content-boundary -->
+
 ## Why is the content boundary enforced?
 
 The repository publishes runnable code and no quantitative research claims.
@@ -100,6 +109,7 @@ enforced rule keeps this repository a tool for producing evidence rather than a
 substitute for a frozen, independently validated study.
 
 <!-- faq:id=determinism -->
+
 ## What does determinism mean here?
 
 With the same normalized configuration, algorithm version, and explicit seed,
@@ -113,6 +123,7 @@ algorithms therefore require an explicit algorithm seed, while deterministic
 algorithms reject one.
 
 <!-- faq:id=reproduction -->
+
 ## How do I reproduce a workflow?
 
 Start with [`cli.md`](cli.md) for configuration validation, benchmark
