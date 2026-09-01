@@ -59,6 +59,10 @@ from maxcover.benchmark import (  # noqa: E402
     _normalize_optima,
     _instances_for_config,
     _quality_runtime_pareto_statistics,
+    _reference_censoring_bias_statistics,
+    _reference_coverage_statistics,
+    _reference_cutoff_sensitivity_statistics,
+    _reference_status_records,
     _runtime_k_association_statistics,
     _runtime_set_count_association_statistics,
     _search_nodes_dominated_ratio_association_statistics,
@@ -95,6 +99,15 @@ from maxcover.contracts import (  # noqa: E402
     LocalSearchRemainingGapRecord,
     QUALITY_RUNTIME_PARETO_SCHEMA_VERSION,
     QualityRuntimeParetoRecord,
+    REFERENCE_CENSORING_BIAS_SCHEMA_VERSION,
+    REFERENCE_COVERAGE_SCHEMA_VERSION,
+    REFERENCE_CUTOFF_SENSITIVITY_SCHEMA_VERSION,
+    REFERENCE_STATUS_SCHEMA_VERSION,
+    REFERENCE_STATUSES,
+    ReferenceCensoringBiasRecord,
+    ReferenceCoverageRecord,
+    ReferenceCutoffSensitivityRecord,
+    ReferenceStatusRecord,
     RUNTIME_K_ASSOCIATION_SCHEMA_VERSION,
     RuntimeKAssociationRecord,
     RUNTIME_SET_COUNT_ASSOCIATION_SCHEMA_VERSION,
@@ -112,6 +125,7 @@ from maxcover.reporting import (  # noqa: E402
     _render_local_search_recovery_chart,
     _render_node_scaling_chart,
     _render_quality_runtime_pareto_chart,
+    _render_reference_coverage_chart,
     _render_runtime_scaling_chart,
     _render_timeout_by_case_chart,
 )
@@ -138,6 +152,10 @@ Record = TypeVar(
     RuntimeSetCountAssociationRecord,
     RuntimeKAssociationRecord,
     SearchNodesDominatedRatioAssociationRecord,
+    ReferenceStatusRecord,
+    ReferenceCoverageRecord,
+    ReferenceCensoringBiasRecord,
+    ReferenceCutoffSensitivityRecord,
 )
 
 # The manifest's own schema version, as written by `benchmark.py`.
@@ -172,6 +190,11 @@ REQUIRED_OUTPUTS = {
     "local_search_recovery.svg",
     "quality_runtime_pareto_statistics.csv",
     "quality_runtime_pareto.svg",
+    "reference_status.csv",
+    "reference_coverage_statistics.csv",
+    "reference_censoring_bias_statistics.csv",
+    "reference_cutoff_sensitivity_statistics.csv",
+    "reference_coverage_by_case.svg",
     "runtime_scaling.svg",
     "node_scaling.svg",
     "timeout_by_case.svg",
@@ -615,6 +638,10 @@ def validate(config_path: Path, output: Path) -> None:
             "timeout_by_case.svg": [
                 "censored_runtime_statistics.csv"
             ],
+            "reference_coverage_by_case.svg": [
+                "reference_status.csv",
+                "reference_coverage_statistics.csv",
+            ],
         },
         "sample_annotation": "required",
         "repetition_unit_annotation": "required",
@@ -624,6 +651,44 @@ def validate(config_path: Path, output: Path) -> None:
     }
     if manifest.get("p6_chart_contract") != expected_p6_chart_contract:
         _fail("manifest P6 chart contract is missing or inconsistent")
+    expected_reference_coverage_contract = {
+        "schema_version": 1,
+        "status_artifact": "reference_status.csv",
+        "status_artifact_schema_version": REFERENCE_STATUS_SCHEMA_VERSION,
+        "coverage_artifact": "reference_coverage_statistics.csv",
+        "coverage_artifact_schema_version": REFERENCE_COVERAGE_SCHEMA_VERSION,
+        "censoring_bias_artifact": "reference_censoring_bias_statistics.csv",
+        "censoring_bias_artifact_schema_version": (
+            REFERENCE_CENSORING_BIAS_SCHEMA_VERSION
+        ),
+        "cutoff_sensitivity_artifact": (
+            "reference_cutoff_sensitivity_statistics.csv"
+        ),
+        "cutoff_sensitivity_artifact_schema_version": (
+            REFERENCE_CUTOFF_SENSITIVITY_SCHEMA_VERSION
+        ),
+        "denominator": "all_generated_instances_within_family_and_parameters",
+        "numerator": "instances_with_at_least_one_validated_optimum_proof",
+        "reference_status_precedence": list(REFERENCE_STATUSES),
+        "solver_status_detail": (
+            "all_enabled_configured_exact_variants_per_instance"
+        ),
+        "ineligible_solver_status": "not_run",
+        "certificate_policy": "validated_independent_optimum_proof",
+        "cross_validation_policy": (
+            "all_optimal_exact_sources_must_agree; small_instance_flag_requires_"
+            "brute_force_and_branch_and_bound_or_cp_sat_agreement"
+        ),
+        "censoring_bias_estimand": (
+            "excluded_mean_minus_retained_mean_within_family_and_parameters"
+        ),
+        "cutoff_sensitivity_denominator": "all_generated_instances",
+        "missing_reference_chart": "reference_coverage_by_case.svg",
+        "significance_testing": "not_in_scope",
+        "causal_inference": "not_in_scope",
+    }
+    if manifest.get("reference_coverage_contract") != expected_reference_coverage_contract:
+        _fail("manifest reference-coverage contract is missing or inconsistent")
     confidence_interval_contract = manifest.get(
         "confidence_interval_contract"
     )
@@ -1544,6 +1609,23 @@ def validate(config_path: Path, output: Path) -> None:
         CensoredRuntimeRecord,
         allow_empty=True,
     )
+    reference_statuses = _load_records(
+        output / "reference_status.csv",
+        ReferenceStatusRecord,
+    )
+    reference_coverage = _load_records(
+        output / "reference_coverage_statistics.csv",
+        ReferenceCoverageRecord,
+    )
+    reference_censoring_bias = _load_records(
+        output / "reference_censoring_bias_statistics.csv",
+        ReferenceCensoringBiasRecord,
+    )
+    reference_cutoff_sensitivity = _load_records(
+        output / "reference_cutoff_sensitivity_statistics.csv",
+        ReferenceCutoffSensitivityRecord,
+        allow_empty=True,
+    )
     greedy_failure = _load_records(
         output / "greedy_failure_statistics.csv",
         GreedyFailureRecord,
@@ -1655,6 +1737,7 @@ def validate(config_path: Path, output: Path) -> None:
     canonical_rows = _canonical_run_records(
         _normalize_optima(rows, instances)
     )
+    canonical_instances = _canonical_instance_records(instances)
     _validate_lazy_greedy_rows(config, canonical_rows)
     if [row.to_csv_row() for row in rows] != [
         row.to_csv_row() for row in canonical_rows
@@ -1685,6 +1768,40 @@ def validate(config_path: Path, output: Path) -> None:
         _fail(
             "censored-runtime statistics do not match canonical raw results"
         )
+    expected_reference_statuses = _reference_status_records(
+        config,
+        canonical_rows,
+        canonical_instances,
+    )
+    if [record.to_csv_row() for record in reference_statuses] != [
+        record.to_csv_row() for record in expected_reference_statuses
+    ]:
+        _fail("reference statuses do not match canonical instances and raw results")
+    expected_reference_coverage = _reference_coverage_statistics(
+        expected_reference_statuses
+    )
+    if [record.to_csv_row() for record in reference_coverage] != [
+        record.to_csv_row() for record in expected_reference_coverage
+    ]:
+        _fail("reference coverage does not use all generated instances")
+    expected_reference_censoring_bias = _reference_censoring_bias_statistics(
+        expected_reference_statuses,
+        canonical_instances,
+    )
+    if [record.to_csv_row() for record in reference_censoring_bias] != [
+        record.to_csv_row() for record in expected_reference_censoring_bias
+    ]:
+        _fail("reference censoring-bias comparisons do not match canonical evidence")
+    expected_reference_cutoff_sensitivity = (
+        _reference_cutoff_sensitivity_statistics(
+            config,
+            expected_reference_statuses,
+        )
+    )
+    if [record.to_csv_row() for record in reference_cutoff_sensitivity] != [
+        record.to_csv_row() for record in expected_reference_cutoff_sensitivity
+    ]:
+        _fail("reference cutoff sensitivity does not match exact-solver statuses")
     expected_local_search_recovery = _local_search_recovery_statistics(
         canonical_rows
     )
@@ -1897,6 +2014,9 @@ def validate(config_path: Path, output: Path) -> None:
         ),
         "timeout_by_case.svg": _render_timeout_by_case_chart(
             censored_runtime
+        ),
+        "reference_coverage_by_case.svg": _render_reference_coverage_chart(
+            reference_statuses
         ),
     }
     for filename, expected_chart in expected_charts.items():

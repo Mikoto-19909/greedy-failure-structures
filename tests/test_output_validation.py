@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import csv
 from dataclasses import replace
+import hashlib
 import importlib.util
 import json
 import shutil
@@ -112,6 +113,20 @@ class OutputValidatorTests(unittest.TestCase):
             f"stdout: {result.stdout[-800:]}",
         )
 
+    def refreshManifestEntry(self, filename: str) -> None:
+        artifact = self.output / filename
+        payload = artifact.read_bytes()
+        manifest_path = self.output / "manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest["outputs"][filename] = {
+            "bytes": len(payload),
+            "sha256": hashlib.sha256(payload).hexdigest(),
+        }
+        manifest_path.write_text(
+            json.dumps(manifest, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+
     # -- the baseline ----------------------------------------------------
 
     def test_a_real_run_validates(self) -> None:
@@ -142,6 +157,29 @@ class OutputValidatorTests(unittest.TestCase):
             writer.writeheader()
             writer.writerows(rows)
         self.assertRejected("a coverage value was altered")
+
+    def test_reference_coverage_is_recomputed_after_checksum_refresh(self) -> None:
+        path = self.output / "reference_coverage_statistics.csv"
+        rows = list(csv.DictReader(path.read_text(encoding="utf-8").splitlines()))
+        target = next(row for row in rows if row["status"] == "feasible")
+        denominator = int(target["generated_instance_count"])
+        target["status_instance_count"] = "1"
+        target["status_rate"] = f"{1 / denominator:.10f}"
+        with path.open("w", encoding="utf-8", newline="") as handle:
+            writer = csv.DictWriter(handle, fieldnames=list(rows[0]))
+            writer.writeheader()
+            writer.writerows(rows)
+        self.refreshManifestEntry(path.name)
+        self.assertRejected("reference coverage disagrees with instance statuses")
+
+    def test_reference_missingness_chart_is_recomputed_after_checksum_refresh(self) -> None:
+        path = self.output / "reference_coverage_by_case.svg"
+        path.write_text(
+            path.read_text(encoding="utf-8").replace("缺失 0", "缺失 1", 1),
+            encoding="utf-8",
+        )
+        self.refreshManifestEntry(path.name)
+        self.assertRejected("reference missingness chart disagrees with typed statuses")
 
     def test_a_dropped_run_row_is_rejected(self) -> None:
         path = self.output / "raw_results.csv"
