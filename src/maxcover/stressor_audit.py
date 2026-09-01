@@ -106,7 +106,7 @@ def analyze_stressor_structure(
     raw_clusters = instance.parameters.get("clusters")
     clusters = (
         raw_clusters
-        if instance.family == "clustered"
+        if instance.family in {"clustered", "controlled_clustered"}
         and isinstance(raw_clusters, int)
         and not isinstance(raw_clusters, bool)
         else None
@@ -252,6 +252,33 @@ _AUDIT_SPECS: Mapping[tuple[str, str], _AuditSpec] = {
     ("adversarial", "trap_count"): _AuditSpec(
         "trap_count", "adversarial_severity", "decreasing", _adversarial_severity
     ),
+    ("controlled_high_overlap", "shared_core_size"): _AuditSpec(
+        "shared_core_size",
+        "pairwise_overlap_mean_jaccard",
+        "increasing",
+        _basic_metric("pairwise_overlap_mean_jaccard"),
+    ),
+    ("controlled_clustered", "within_core_size"): _AuditSpec(
+        "within_core_size",
+        "cluster_separation_jaccard",
+        "increasing",
+        _supplementary_metric("cluster_separation_jaccard"),
+    ),
+    ("controlled_duplicate", "copy_factor"): _AuditSpec(
+        "copy_factor",
+        "duplicate_set_ratio",
+        "increasing",
+        _basic_metric("duplicate_set_ratio"),
+    ),
+    ("controlled_dominated", "dominated_pair_count"): _AuditSpec(
+        "dominated_pair_count",
+        "dominated_set_ratio",
+        "increasing",
+        _basic_metric("dominated_set_ratio"),
+    ),
+    ("controlled_adversarial", "trap_count"): _AuditSpec(
+        "trap_count", "adversarial_severity", "decreasing", _adversarial_severity
+    ),
 }
 
 
@@ -360,6 +387,9 @@ def _level_summary(level: int | float, rows: Sequence[_Observation]) -> dict[str
         },
         "metrics": {
             "incidence_count_mean": fmean(item.incidence_count for item in basics),
+            "covered_element_count_mean": fmean(
+                item.covered_element_count for item in basics
+            ),
             "actual_density_mean": fmean(item.actual_density for item in basics),
             "unique_set_ratio_mean": fmean(
                 item.unique_set_count / row.set_count
@@ -405,6 +435,9 @@ def _level_summary(level: int | float, rows: Sequence[_Observation]) -> dict[str
             ),
             "incidence_count_mean": fmean(
                 item.incidence_count for item in control_basics
+            ),
+            "covered_element_count_mean": fmean(
+                item.covered_element_count for item in control_basics
             ),
             "actual_density_mean": fmean(item.actual_density for item in control_basics),
             "unique_set_ratio_mean": fmean(
@@ -464,7 +497,7 @@ def _audit_scan(
             control_supplementary = analyze_stressor_structure(control)
             bait_first: bool | None = None
             certificate_verified: bool | None = None
-            if family == "adversarial":
+            if family in {"adversarial", "controlled_adversarial"}:
                 bait_first = greedy(instance).selected[0] == 0
                 certificate_verified = known_optimum_certificate(instance) is not None
             rows.append(
@@ -528,7 +561,7 @@ def _audit_scan(
     maximum_control_incidence_error = max(control_incidence_relative_errors)
     target_monotonic = _monotonic(target_means, spec.expected_direction)
     adversarial_checks: dict[str, object] | None = None
-    if family == "adversarial":
+    if family in {"adversarial", "controlled_adversarial"}:
         bait_values = [row.greedy_selected_bait_first for row in rows]
         certificate_values = [row.certificate_verified for row in rows]
         adversarial_checks = {

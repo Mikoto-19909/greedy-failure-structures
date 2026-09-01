@@ -54,6 +54,11 @@
 测试预处理及精确搜索行为；没有任何实例族保证每个生成实例都会导致 Greedy
 失败。可运行的实例族工作流见 [`failure_mechanisms.md`](failure_mechanisms.md)。
 
+注册表还包括 `controlled_high_overlap`、`controlled_clustered`、
+`controlled_duplicate`、`controlled_dominated` 和
+`controlled_adversarial`。这些新名称保留所有旧生成器的身份，同时提供固定维度、
+固定 incidence 的结构压力扫描。
+
 <!-- faq:id=synthetic-families -->
 ## 为什么使用参数化实例族，而不使用真实世界数据？
 

@@ -89,7 +89,7 @@ memory on every run. The warning is expected. Those two files stay at v1
 deliberately — `config_hash` is computed over the normalized configuration, so
 rewriting them would change the hash and orphan the run identities already
 recorded against it, which `CONTRIBUTING.md` classes as a breaking change.
-`configs/sweeps.json` is schema 2; the `configs/p3_*` through `configs/p6_*`
+`configs/sweeps.json` is schema 2; the `configs/p3_*` through `configs/p7_*`
 configurations are schema 3 and warn about nothing.
 
 Generated files under `results/` are local artifacts and are not part of the

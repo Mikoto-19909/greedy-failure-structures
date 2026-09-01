@@ -111,6 +111,24 @@ def known_optimum_certificate(
             source="constructed_certificate",
             proof_kind="covers_universe",
         )
+    elif instance.family == "controlled_adversarial":
+        block_size = instance.parameters.get("block_size")
+        if isinstance(block_size, bool) or not isinstance(block_size, int):
+            raise ValueError("controlled adversarial block_size must be an integer")
+        if instance.universe_size != 2 * block_size or instance.k != 2:
+            raise ValueError(
+                "controlled adversarial dimensions conflict with block_size"
+            )
+        if instance.set_count < 4:
+            raise ValueError(
+                "controlled adversarial instance is missing certificate sets"
+            )
+        certificate = KnownOptimumCertificate(
+            value=2 * block_size,
+            selected=(1, 2),
+            source="constructed_certificate",
+            proof_kind="covers_universe",
+        )
     elif instance.family == "dominated_heavy":
         anchor_size = instance.parameters.get("anchor_size")
         if isinstance(anchor_size, bool) or not isinstance(anchor_size, int):

@@ -6,13 +6,22 @@ runs no benchmark algorithm except the deterministic Greedy check required for
 the adversarial bait, and prints a JSON document to standard output. The output
 is local evidence and is not tracked by the repository.
 
-## Current limitation
+## Current scope
 
-The canonical strict audit is expected to return a non-zero status because
-gross confound-control failures remain across multiple generator families.
-Adding and validating the audit detects this open problem; it does not resolve
-it. Until the affected generators or scans are redesigned, the audit must not
-be cited as evidence that the suite isolates one structural stressor at a time.
+The default audit uses `configs/p7_controlled_stressors.json`. Its controlled
+families hold universe size, candidate-set count, budget, and total incidence
+exactly fixed across intensity levels. The earlier P4/P6 scans remain available
+with their original identities and known gross confound-control failures; they
+are not silently reinterpreted as controlled experiments.
+
+With the committed controlled configuration unchanged, the default `--strict`
+invocation is expected to succeed as a functional contract.
+
+Passing the controlled gross checks does not prove that every non-target
+structural statistic is constant. Some target constructions mechanically move
+coverage concentration, union size, or overlap tails. Those movements remain
+in the report and must be accepted explicitly, controlled in the analysis, or
+used to narrow the paper's claim.
 
 Run the canonical audit with:
 
@@ -41,6 +50,19 @@ The registered audit targets are:
 - versioned `adversarial`: constructed severity over `trap_count`, together
   with Greedy choosing index zero first and successful optimum-certificate
   validation.
+
+The controlled counterparts are:
+
+- `controlled_duplicate`: balanced copies over `copy_factor` at fixed total
+  set count and fixed set size;
+- `controlled_dominated`: neutral disjoint pairs converted to strict-subset
+  pairs over `dominated_pair_count`, with constant pair incidence;
+- `controlled_high_overlap`: a shared core over `shared_core_size`, with an
+  exact fixed cardinality for every set;
+- `controlled_clustered`: per-cluster shared cores over `within_core_size`,
+  with disjoint cluster cores and set-specific fringes;
+- `controlled_adversarial`: a certified bait over `trap_count`, with a
+  compensating dominated padding set that keeps total incidence constant.
 
 For the `clustered` generator, a set's cluster label is its index modulo the
 declared cluster count. That is the same assignment used by the generator.
@@ -71,6 +93,6 @@ summary statistic. A paper-level isolation claim should name which non-target
 movements are accepted, controlled in a model, or grounds for redesigning the
 scan.
 
-The canonical `instances.csv` schema is unchanged. Supplementary audit fields
-exist only in the JSON printed by this command, so existing run identities and
-benchmark artifacts remain compatible.
+The controlled families use new registry names instead of changing legacy
+factory semantics. The canonical `instances.csv` schema is unchanged, and
+existing run identities and benchmark artifacts remain compatible.

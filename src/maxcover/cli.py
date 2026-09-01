@@ -29,12 +29,7 @@ from .stressor_audit import (
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_STRESSOR_AUDIT_CONFIGS = (
-    PROJECT_ROOT / "configs" / "p4_duplicate_heavy.json",
-    PROJECT_ROOT / "configs" / "p4_dominated_heavy.json",
-    PROJECT_ROOT / "configs" / "p4_long_tail.json",
-    PROJECT_ROOT / "configs" / "p6_overlap_scan.json",
-    PROJECT_ROOT / "configs" / "p6_clustered_scan.json",
-    PROJECT_ROOT / "configs" / "p4_adversarial_severity.json",
+    PROJECT_ROOT / "configs" / "p7_controlled_stressors.json",
 )
 
 
@@ -223,8 +218,7 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="PATH",
         help=(
             "configuration to audit; repeat for multiple files (defaults to the "
-            "committed duplicate, dominated, long-tail, overlap, clustered, and "
-            "adversarial scans)"
+            "committed controlled stressor scans)"
         ),
     )
     audit_stressors.add_argument(

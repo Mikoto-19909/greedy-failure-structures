@@ -1,0 +1,72 @@
+{
+  "schema_version": 3,
+  "name": "P7 controlled structural stressor scans",
+  "base_seed": 7101,
+  "repetitions": 10,
+  "algorithms": [
+    { "name": "greedy" },
+    { "name": "local_search" },
+    { "name": "brute_force", "options": { "max_set_count": 40 } },
+    { "name": "branch_and_bound", "options": { "time_limit_seconds": 5.0 } },
+    {
+      "name": "branch_and_bound_enhanced",
+      "options": { "time_limit_seconds": 5.0 }
+    }
+  ],
+  "cases": [
+    {
+      "name": "controlled_overlap",
+      "family": "controlled_high_overlap",
+      "universe_size": 200,
+      "set_count": 24,
+      "k": 5,
+      "set_size": 8,
+      "sweep": { "shared_core_size": [0, 2, 4, 6] }
+    },
+    {
+      "name": "controlled_clustered",
+      "family": "controlled_clustered",
+      "universe_size": 224,
+      "set_count": 24,
+      "k": 5,
+      "clusters": 4,
+      "set_size": 8,
+      "sweep": { "within_core_size": [0, 2, 4, 6] }
+    },
+    {
+      "name": "controlled_duplicates",
+      "family": "controlled_duplicate",
+      "universe_size": 160,
+      "set_count": 24,
+      "k": 4,
+      "set_size": 6,
+      "sweep": { "copy_factor": [1, 2, 3, 4] }
+    },
+    {
+      "name": "controlled_dominance",
+      "family": "controlled_dominated",
+      "universe_size": 96,
+      "set_count": 16,
+      "k": 4,
+      "anchor_size": 6,
+      "child_size": 3,
+      "sweep": { "dominated_pair_count": [0, 2, 4, 6] }
+    },
+    {
+      "name": "long_tail_gamma",
+      "family": "long_tail",
+      "universe_size": 32,
+      "set_count": 20,
+      "k": 5,
+      "set_size": 6,
+      "sweep": { "gamma": [0.0, 0.5, 1.0, 2.0] }
+    },
+    {
+      "name": "controlled_adversarial_severity",
+      "family": "controlled_adversarial",
+      "block_size": 12,
+      "distractor_count": 8,
+      "sweep": { "trap_count": [7, 8, 9, 10, 11] }
+    }
+  ]
+}

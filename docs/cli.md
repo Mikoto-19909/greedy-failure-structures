@@ -47,8 +47,9 @@ target while exposing dimension and incidence confounders:
 python run_project.py audit-stressors
 ```
 
-The command prints JSON and does not run the benchmark algorithms. Repeat
-`--config PATH` to select configurations, and add `--strict` when failed gross
+The default command audits `configs/p7_controlled_stressors.json`. It prints
+JSON and does not run the benchmark algorithms. Repeat `--config PATH` to
+select legacy or custom configurations, and add `--strict` when failed gross
 isolation checks should produce a non-zero status. See
 [`generator_isolation.md`](generator_isolation.md) for metric and control
 semantics.

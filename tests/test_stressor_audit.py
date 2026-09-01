@@ -161,6 +161,7 @@ class CanonicalGeneratorIsolationAuditTests(unittest.TestCase):
                 self.assertTrue(controls["uniform_control_dimensions_match"])
                 ranges = scan["measured_metric_level_mean_ranges"]
                 self.assertIn("actual_density_mean", ranges)
+                self.assertIn("covered_element_count_mean", ranges)
                 self.assertIn("unique_set_ratio_mean", ranges)
                 self.assertIn("coverage_skew_gini_mean", ranges)
                 self.assertIn("pairwise_overlap_q50_jaccard_mean", ranges)
@@ -177,6 +178,9 @@ class CanonicalGeneratorIsolationAuditTests(unittest.TestCase):
                     )
                     self.assertIn(
                         "unique_set_ratio_mean", level["uniform_control"]
+                    )
+                    self.assertIn(
+                        "covered_element_count_mean", level["uniform_control"]
                     )
 
     def test_adversarial_bait_and_certificate_are_verified_for_every_instance(self) -> None:
