@@ -1,0 +1,113 @@
+name: reproducibility matrix
+
+# Runs the quick benchmark on every OS x Python cell of the matrix, uploads
+# each cell raw results, then compares every cell against the baseline cell
+# (ubuntu-latest, Python 3.12) with compare_matrix_outputs.py.
+#
+# The comparison and the declaration it enforces live in
+# docs/reproducibility_matrix.md; the compare script is the enforcement half
+# of that pair and exits nonzero on any disagreement.
+#
+# This workflow is intentionally not wired into branch protection: it is a new
+# reporting gate, and whether the check is required for merge is a repository
+# settings decision rather than a property of this file.
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: reproducibility-matrix-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHONUTF8: "1"
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  benchmark:
+    name: benchmark (${{ matrix.os }}, Python ${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+        python-version:
+          - "3.11"
+          - "3.12"
+          - "3.13"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      # The base package has no third-party dependencies, so no pip install is
+      # needed and no dependency cache is used.
+      - name: Run the quick benchmark with a single worker
+        run: >-
+          python run_project.py benchmark
+          --config configs/quick.json
+          --output results/quick-matrix
+          --workers 1
+      - name: Upload the run artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: cell-${{ matrix.os }}-${{ matrix.python-version }}
+          path: |
+            results/quick-matrix/raw_results.csv
+            results/quick-matrix/manifest.json
+          if-no-files-found: error
+
+  compare:
+    name: compare cells against the baseline
+    needs: benchmark
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Download every cell artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: cell-*
+          path: matrix-results
+      # The first --result is the baseline. The report is written to stdout and
+      # captured by tee so it is visible in the logs and uploaded next step;
+      # pipeline fail-fast makes a disagreement fail this job.
+      - name: Compare every cell with the baseline cell
+        shell: bash
+        run: >-
+          python .github/scripts/compare_matrix_outputs.py
+          --result matrix-results/cell-ubuntu-latest-3.12
+          --result matrix-results/cell-ubuntu-latest-3.11
+          --result matrix-results/cell-ubuntu-latest-3.13
+          --result matrix-results/cell-windows-latest-3.11
+          --result matrix-results/cell-windows-latest-3.12
+          --result matrix-results/cell-windows-latest-3.13
+          | tee reproducibility-matrix-report.txt
+      - name: Upload the matrix report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: matrix-report
+          path: reproducibility-matrix-report.txt
+          if-no-files-found: error
