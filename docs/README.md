@@ -28,6 +28,8 @@ frozen experiment results or quantitative research claims. See
   section-for-section with the English FAQ
 - [`lazy_greedy_test_report.md`](lazy_greedy_test_report.md): reproducible
   functional verification for Lazy Greedy
+- [`paired_seed_audit.md`](paired_seed_audit.md): RNG stream consumption by
+  instance family and the semantics of the paired-seed scheme
 
 ## Project policy and history
 

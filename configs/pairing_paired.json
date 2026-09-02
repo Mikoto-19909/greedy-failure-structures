@@ -1,0 +1,57 @@
+{
+  "schema_version": 3,
+  "name": "Paired-seed treatment-control study (paired scheme)",
+  "base_seed": 4401,
+  "repetitions": 10,
+  "algorithms": [
+    {
+      "name": "greedy"
+    },
+    {
+      "name": "branch_and_bound_enhanced",
+      "options": {
+        "time_limit_seconds": 10
+      }
+    }
+  ],
+  "cases": [
+    {
+      "name": "overlap",
+      "seed_group": "paired_overlap",
+      "family": "high_overlap",
+      "universe_size": 48,
+      "set_count": 16,
+      "k": 4,
+      "core_fraction": 0.5,
+      "core_probability": 0.8,
+      "peripheral_probability": 0.05
+    },
+    {
+      "name": "overlap_control",
+      "seed_group": "paired_overlap",
+      "family": "uniform",
+      "universe_size": 48,
+      "set_count": 16,
+      "k": 4,
+      "density": 0.425
+    },
+    {
+      "name": "trap",
+      "seed_group": "paired_trap",
+      "family": "adversarial",
+      "block_size": 12,
+      "distractor_count": 4,
+      "construction_version": 2,
+      "trap_count": 9
+    },
+    {
+      "name": "trap_control",
+      "seed_group": "paired_trap",
+      "family": "uniform",
+      "universe_size": 24,
+      "set_count": 7,
+      "k": 2,
+      "density": 0.5773809523370421
+    }
+  ]
+}
