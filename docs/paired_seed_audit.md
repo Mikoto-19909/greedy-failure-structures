@@ -176,4 +176,7 @@ For each family pair and each algorithm it forms one treatment-minus-control
 difference per repetition, from the paired run and from the unpaired run, and
 compares the spread of the two difference distributions. The numeric results
 are written under results/, which is local evidence and is not tracked
-documentation; this document records the method and nothing measured.
+documentation. The analysis also writes `analysis_manifest.json` with the
+input raw-result and benchmark-manifest digests, the analysis source commit and
+dirty state, and the output CSV digests. This document records the method and
+nothing measured.
