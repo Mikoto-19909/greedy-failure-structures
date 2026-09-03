@@ -1,15 +1,12 @@
 name: commit policy
 
-# Enforces the two commit rules CONTRIBUTING.md declares: no quantitative
-# research claim in a commit message, and no AI attribution.
+# Enforces the two commit rules CONTRIBUTING.md declares: evidence-backed
+# quantitative claims stay in tracked research documents rather than commit
+# messages, and commits carry no AI attribution.
 #
-# Both were declared and neither was enforced. content-boundary.yml scans
-# tracked file content and never reads git history, so a commit whose subject
-# stated a failure rate and whose body carried a Co-Authored-By trailer naming a
-# model passed every existing check. This workflow closes that gap and is kept
-# separate for the same reason the boundary check is: it reads git history
-# rather than the work tree, so it has different inputs and a different
-# failure mode.
+# content-boundary.yml scans tracked file content and never reads git history.
+# This workflow remains separate because it reads commit history, with different
+# inputs and a different failure mode.
 #
 # No paths: filter. A commit message is checked regardless of which files the
 # commit touches, so a path filter could only skip commits that need checking.

@@ -1,12 +1,11 @@
 name: content boundary
 
-# Enforces the published content boundary: no quantitative research claims, no
-# personal paths, no credential-shaped strings, and no broken internal links.
+# Enforces the published content boundary: evidence-backed claim publication,
+# no personal paths, no credential-shaped strings, and no broken internal links.
 #
-# Deliberately separate from tests.yml. The claim mode is an input rather than
-# an assumption, so widening the boundary later — for a release that does carry
-# evidence-backed results — changes this workflow's inputs, not its structure,
-# and adds a sibling workflow rather than rewriting either.
+# Claim-to-evidence mapping is reviewed through experiments/core_rq/CLAIMS.md;
+# this workflow permits quantitative prose and keeps the other repository-wide
+# content checks active.
 
 on:
   push:
@@ -34,7 +33,7 @@ jobs:
     strategy:
       matrix:
         claim-mode:
-          - no_quantitative_claims
+          - evidence_backed_claims
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

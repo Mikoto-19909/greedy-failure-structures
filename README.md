@@ -23,9 +23,10 @@ run is replayable from its recorded inputs.
 
 **Engineering governance.** A CI suite covering algorithm contracts, generator
 invariants, configuration compatibility, content-boundary enforcement, and
-license verification. The content-boundary check ensures that the repository
-publishes runnable code and no quantitative claims — results are produced
-locally by the consumer, not asserted by the source.
+license verification. The active content-boundary mode permits evidence-backed
+research claims while continuing to reject personal paths, credential-shaped
+strings, and broken internal links. Claim-to-evidence mappings are checked in
+review rather than inferred from a clean CI run.
 
 ## Requirements
 
@@ -176,26 +177,28 @@ surface and its dynamic run, result, and replay states.
 - Runtime observations can vary with the machine and optional solver.
 - The starter workflow is a functional check, not a performance claim.
 
+## Reviewing published research
+
+Start with the external [research analysis](analysis/README.md). The
+authoritative mapping from each claim ID to its result rows, configuration,
+manifest, and validation record is the
+[core claim ledger](experiments/core_rq/CLAIMS.md). Neither document currently
+publishes a quantitative research claim.
+
 ## Scope
 
-This is a code-first snapshot. It publishes runnable code, its tests and its
-configurations, and it publishes **no quantitative research claims**: no
-experiment results, no performance comparisons, no measurements. That is a
-deliberate boundary, not an omission — see
-[`CONTRIBUTING.md`](CONTRIBUTING.md) for the rule and
-[`docs/history/PRE_PUBLIC_DEVELOPMENT_HISTORY.md`](docs/history/PRE_PUBLIC_DEVELOPMENT_HISTORY.md)
-for what preceded this repository.
+This is a code-first repository that may publish a small number of validated
+core research claims. Full benchmark output remains local under `results/`.
+Minimum frozen evidence for a public claim belongs in `experiments/core_rq/`,
+and the external research narrative belongs in `analysis/`; see
+[`CONTRIBUTING.md`](CONTRIBUTING.md) for the publication rule.
 
-The boundary is about what this repository _publishes_, and the distinction is
-worth stating because the code does compute numbers. `demo` prints a coverage
-gap, and a benchmark run writes CSVs full of measurements to `results/`. Neither
-crosses the boundary: both are produced on your machine when you run them, from
-inputs committed here, and neither is checked in or asserted as a finding. What
-the boundary excludes is a claim carried _by this repository_ — a figure in the
-README, a results table in the documentation, a stored corpus of outcomes.
-Anything of that kind requires the frozen evidence chain
-[`CONTRIBUTING.md`](CONTRIBUTING.md) describes, and CI enforces the rule over
-every tracked file rather than trusting the convention.
+The distinction matters because the code computes numbers routinely. `demo`
+prints a coverage gap, and a benchmark run writes measurement CSVs to
+`results/`. Those local outputs do not become public findings. A tracked
+quantitative statement becomes a public claim only through the claim ledger,
+frozen evidence, and recorded independent validation. CI permits that prose but
+does not prove that the human-maintained mapping is correct.
 
 ## Dashboard
 
@@ -217,6 +220,9 @@ its scope.
 - `src/maxcover/dashboard.py` and `src/maxcover/dashboard_ui/`: local dashboard
   service and browser frontend
 - `configs/`: reproducible experiment configurations
+- [`experiments/core_rq/CLAIMS.md`](experiments/core_rq/CLAIMS.md): authoritative
+  mapping from public claims to frozen evidence and validation records
+- [`analysis/README.md`](analysis/README.md): external research analysis entry
 - `tests/`: deterministic unit and contract tests
 - `run_project.py`: primary command-line entry point
 - `project.ps1`: Windows convenience wrapper

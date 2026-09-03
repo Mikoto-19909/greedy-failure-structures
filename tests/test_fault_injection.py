@@ -540,15 +540,15 @@ class ContentBoundaryFaultInjectionTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout)
         tmp.cleanup()
 
-    def test_the_wider_claim_mode_is_currently_a_noop(self) -> None:
+    def test_evidence_mode_defers_claim_binding_to_review(self) -> None:
         tmp = self._repo()
         root = Path(tmp.name)
         claim = _FRAGMENT_FAILED + _FRAGMENT_COUNT
         (root / "finding.md").write_text("# Notes\n\n" + claim + "\n", encoding="utf-8")
         subprocess.run(["git", "add", "-A"], cwd=root, check=True, capture_output=True)
         result = self._check(root, mode="evidence_backed_claims")
-        # The checker documents that evidence binding belongs to its own
-        # workflow, so the wider mode currently verifies nothing.
+        # The checker permits quantitative prose; CLAIMS.md and review bind it
+        # to evidence outside this function.
         self.assertEqual(
             result.returncode,
             0,

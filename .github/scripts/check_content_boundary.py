@@ -2,7 +2,7 @@
 
 Three things are verified over every tracked text file:
 
-1. no quantitative research claim, under the active claim mode;
+1. quantitative research claims according to the active claim mode;
 2. no personal path or credential-shaped string;
 3. in every file GitHub renders as Markdown, every relative link resolves to
    a tracked path — inline, reference-style and HTML syntax alike.
@@ -12,9 +12,9 @@ echo the matched text, and the report never enumerates paths that are not
 already public — this output is readable by anyone once the repository is
 public, so it must not become an inventory of anything private.
 
-The claim mode is an argument, not a constant: a future release that carries
-evidence-backed results will run this with a wider mode rather than bypassing
-the check.
+The claim mode is an argument, not a constant. The active evidence-backed mode
+permits quantitative prose while repository policy and review bind each claim
+to its frozen evidence; the sensitive-content and link checks remain active.
 """
 
 from __future__ import annotations
@@ -396,8 +396,8 @@ def check_quantitative(path: str, text: str, claim_mode: str) -> list[str]:
     """
 
     if claim_mode != "no_quantitative_claims":
-        # A wider mode still needs its claims bound to a frozen evidence chain,
-        # but that verification belongs to its own workflow, not to this check.
+        # Evidence binding is the human-reviewed CLAIMS.md contract. This check
+        # still scans the same tracked files for sensitive content and links.
         return []
     if PurePosixPath(path).suffix.casefold() not in PROSE_SUFFIXES:
         return []
@@ -418,7 +418,7 @@ def check_quantitative(path: str, text: str, claim_mode: str) -> list[str]:
                     ):
                         findings.append(
                             f"{path}:{line_number}: reads as a quantitative result "
-                            f"claim ({label}); this repository publishes none"
+                            f"claim ({label}); the selected claim mode permits none"
                         )
                         break
         line_number += len(lines) + 1
