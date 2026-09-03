@@ -73,32 +73,34 @@ by the mutation, not by a broken fixture.
 
 Each matrix cell is asserted by exactly one case in
 `tests/test_fault_injection.py`, and every assertion reads the same contract
-the cell states:
+the cell states. Where a mutation class has several tested variants, the
+cell is split into one named subcell per case below, so the one-to-one
+mapping stays checkable:
 
 | Test method | Matrix evidence |
 |---|---|
 | test_the_fixture_itself_validates | baseline row |
 | test_coverage_tamper_is_rejected | row 1 validator cell |
-| test_selected_tamper_on_a_non_lazy_run_is_a_measured_blind_spot | row 2 blind spot |
-| test_selected_tamper_on_an_exact_run_is_a_measured_blind_spot | row 2 blind spot |
+| test_selected_tamper_on_a_non_lazy_run_is_a_measured_blind_spot | row 2 blind spot, greedy-row variant |
+| test_selected_tamper_on_an_exact_run_is_a_measured_blind_spot | row 2 blind spot, exact-row variant |
 | test_gap_tamper_is_rejected | row 3 validator cell |
 | test_manifest_checksum_tamper_is_rejected | row 4 checksum cell |
 | test_raw_result_seed_tamper_is_rejected | row 5 validator cell (raw rows) |
 | test_instance_seed_tamper_is_a_measured_blind_spot | row 5 validator cell (instance records) |
 | test_seed_and_run_id_tampers_are_rejected | row 5 plan-identity note |
-| test_raw_row_order_tamper_is_a_measured_blind_spot | row 6 blind spot |
-| test_instance_row_order_tamper_is_a_measured_blind_spot | row 6 blind spot |
-| test_status_only_disguise_is_rejected | row 7 validator cell |
-| test_complete_feasible_to_optimal_disguise_is_rejected | row 7 validator cell |
-| test_partial_certificate_injection_is_rejected | row 8 validator cell |
-| test_certificate_injection_on_a_stochastic_family_is_rejected | row 8 validator cell |
-| test_certificate_injection_on_a_legacy_adversarial_instance_is_rejected | row 8 validator cell |
-| test_conclusion_outside_the_headline_section_is_a_measured_blind_spot | row 9 blind spot |
-| test_duplicate_headline_section_is_a_measured_blind_spot | row 9 blind spot |
-| test_headline_value_tamper_is_rejected | row 9 validator cell |
-| test_headline_section_rename_is_rejected | row 9 validator cell |
-| test_a_tracked_conclusion_without_evidence_is_rejected | row 9 content boundary cell |
-| test_an_untracked_results_artifact_is_not_scanned | row 9 content boundary cell |
+| test_raw_row_order_tamper_is_a_measured_blind_spot | row 6 blind spot, raw-results variant |
+| test_instance_row_order_tamper_is_a_measured_blind_spot | row 6 blind spot, instance-records variant |
+| test_status_only_disguise_is_rejected | row 7 validator cell, status-only variant |
+| test_complete_feasible_to_optimal_disguise_is_rejected | row 7 validator cell, consistent-flip variant |
+| test_partial_certificate_injection_is_rejected | row 8 validator cell, partial-certificate variant |
+| test_certificate_injection_on_a_stochastic_family_is_rejected | row 8 validator cell, stochastic-family variant |
+| test_certificate_injection_on_a_legacy_adversarial_instance_is_rejected | row 8 validator cell, legacy-adversarial variant |
+| test_conclusion_outside_the_headline_section_is_a_measured_blind_spot | row 9 blind spot, outside-the-checked-section variant |
+| test_duplicate_headline_section_is_a_measured_blind_spot | row 9 blind spot, duplicate-section variant |
+| test_headline_value_tamper_is_rejected | row 9 validator cell, in-section value variant |
+| test_headline_section_rename_is_rejected | row 9 validator cell, section-rename variant |
+| test_a_tracked_conclusion_without_evidence_is_rejected | row 9 content boundary cell, tracked-file variant |
+| test_an_untracked_results_artifact_is_not_scanned | row 9 content boundary cell, untracked-artifact variant |
 | test_claim_mode_without_quantitative_claims_allows_plain_prose | content boundary control |
 | test_the_wider_claim_mode_is_currently_a_noop | row 9 content boundary blind spot |
 
