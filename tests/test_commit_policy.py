@@ -3,16 +3,13 @@
 Every case here is derived from a declaration, not from the implementation.
 The declarations are in CONTRIBUTING.md:
 
-- "This repository publishes no quantitative research claims. [...] Do not add
-  them to the README, to documentation, to release notes, or to commit
-  messages." (the single-claim-source section, stated as enforced)
+- Evidence-backed quantitative claims belong in tracked research documents and
+  their claim ledger, not in commit messages.
 - "Do not attribute commits to an AI assistant. No `Co-Authored-By` trailer
   naming a model, and no 'generated with' line."
 
-Both were declared and neither was enforced: the pre-existing content checker
-reads tracked file content and never opens git history, so a commit stating a
-failure rate in its subject and carrying an AI trailer in its body passed every
-check in the repository.
+The pre-existing content checker reads tracked file content and never opens git
+history, so commit-message and authorship rules need their own check.
 
 The rejection cases are built as real commits in real temporary repositories
 and checked through the script's command-line entry point, because that is what

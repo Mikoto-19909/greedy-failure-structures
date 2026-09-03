@@ -18,10 +18,12 @@ and names the measured mechanism; that is a blind spot, not an endorsement.
    execution plan, so a fault survives a correctly refreshed manifest checksum.
 2. The manifest (`manifest.json`) records byte counts and digests per artifact;
    it proves a file was not altered after the run, and nothing more.
-3. The content boundary (`.github/scripts/check_content_boundary.py`) rejects
-   quantitative research claims in tracked prose files under the active claim
-   mode. It enumerates `git ls-files` only, so benchmark artifacts under
-   `results/` are out of its scope.
+3. The content boundary (`.github/scripts/check_content_boundary.py`) runs in
+   `evidence_backed_claims` mode. It permits quantitative prose while continuing
+   to reject sensitive content and broken links in tracked files. The retained
+   strict mode rejects quantitative claims when selected explicitly. Neither
+   mode scans benchmark artifacts under `results/`, and claim-to-evidence
+   mapping is reviewed through `experiments/core_rq/CLAIMS.md`.
 
 ## Matrix
 
@@ -35,7 +37,7 @@ and names the measured mechanism; that is a blind spot, not an endorsement.
 | canonical row order shuffled | not detected (blind spot) | detected when record stale; not detected after refresh | not applicable | every recomputation keys on run_id or sorts by group key, so row order is outside the checked contract; the repository's determinism prose names reproducible ordering as a contract (see the open question below) |
 | feasible-to-optimal disguise without certificate | detected | detected when record stale; not detected after refresh | not applicable | a status flip alone trips record validation; a fully consistent flip (status, coverage, gap, exact flag, bound) trips the derived-statistics recomputation; no single-file path was measured to pass |
 | fake certificate contradicting results | detected (record contract) | detected when record stale; not detected after refresh | not applicable | the validator never re-verifies certificate proofs: the artifacts carry no set data and the checker imports no certificate module. On `quick` every family forbids certificate fields outright, so the only blocking rule reached is the record contract; on certificate-bearing families the record check is structural only (judged from code, not measured here) |
-| conclusion without evidence chain in the summary | detected inside the checked section; not detected outside it (blind spot) | detected when record stale; not detected after refresh | not applicable for the untracked artifact; detected when the same content is tracked | the validator compares only the slice between the first `## Headline checks` heading and the next heading; a fabricated conclusion placed elsewhere, or in a duplicated section, is never compared. The content boundary scans tracked files only, and its wider claim mode currently verifies nothing |
+| conclusion without evidence chain in the summary | detected inside the checked section; not detected outside it (blind spot) | detected when record stale; not detected after refresh | not applicable for the untracked artifact; rejected by the strict claim mode and permitted by the active evidence-backed mode | the validator compares only the slice between the first `## Headline checks` heading and the next heading; a fabricated conclusion placed elsewhere, or in a duplicated section, is never compared. The content boundary is not the claim-to-evidence reviewer |
 
 ## Measured evidence, row by row
 
@@ -66,8 +68,8 @@ by the mutation, not by a broken fixture.
    as a second headline section; a value change inside the checked section was
    rejected, and renaming the checked heading was rejected as a missing
    section boundary. The same sentence in a tracked prose file was rejected by
-   the content boundary; an untracked `results/` artifact was not scanned;
-   and the wider evidence-backed claim mode accepted it.
+   the strict claim mode and accepted by the active evidence-backed mode; an
+   untracked `results/` artifact was not scanned in either mode.
 
 ## Consistency self-check
 
@@ -102,7 +104,7 @@ mapping stays checkable:
 | test_a_tracked_conclusion_without_evidence_is_rejected | row 9 content boundary cell, tracked-file variant |
 | test_an_untracked_results_artifact_is_not_scanned | row 9 content boundary cell, untracked-artifact variant |
 | test_claim_mode_without_quantitative_claims_allows_plain_prose | content boundary control |
-| test_the_wider_claim_mode_is_currently_a_noop | row 9 content boundary blind spot |
+| test_evidence_mode_defers_claim_binding_to_review | row 9 active content-boundary mode |
 
 No cell in the matrix asserts a behaviour the tests do not carry, and no test
 asserts a behaviour the matrix does not state: the two documents were written

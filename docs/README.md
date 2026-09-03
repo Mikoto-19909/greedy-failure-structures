@@ -1,9 +1,9 @@
 # Documentation
 
 This repository is a code-first reproducible experiment engine. It publishes
-runnable code, tests, configurations, and documentation, but it does not carry
-frozen experiment results or quantitative research claims. See
-[`CONTRIBUTING.md`](../CONTRIBUTING.md) for the enforced content boundary.
+runnable code, tests, configurations, and documentation, and it may carry a
+small number of validated core research claims. See
+[`CONTRIBUTING.md`](../CONTRIBUTING.md) for the publication boundary.
 
 ## Getting started
 
@@ -16,6 +16,12 @@ frozen experiment results or quantitative research claims. See
 - [`reproducibility_matrix.md`](reproducibility_matrix.md): which raw result
   fields must reproduce bit-for-bit and which are exempt, plus the matrix that
   enforces it across operating systems and Python versions
+
+## Published research
+
+- [`analysis/README.md`](../analysis/README.md): external research analysis
+- [`experiments/core_rq/CLAIMS.md`](../experiments/core_rq/CLAIMS.md):
+  authoritative claim-to-evidence and validation mapping
 
 ## Experiment guidance
 
@@ -41,4 +47,6 @@ frozen experiment results or quantitative research claims. See
   mapping
 
 Generated files under `results/` are local artifacts. They are inputs to local
-inspection and independent validation, not tracked documentation.
+inspection and independent validation, not tracked documentation. Only the
+minimum evidence named by the claim ledger is copied into the public evidence
+directory.

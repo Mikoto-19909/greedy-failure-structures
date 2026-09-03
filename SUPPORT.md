@@ -35,12 +35,12 @@ Please do not use issues to report a suspected vulnerability — see
 
 ## What this project will not answer
 
-**How well the algorithms perform.** This repository deliberately contains no
-experiment results, no performance comparisons and no measurements, so questions
-of the form "how much worse is greedy on X" have no answer here. That is a
-scope decision, not an omission: any such claim requires a complete frozen
-evidence chain, and publishing one is separate work. See
-[CONTRIBUTING.md](CONTRIBUTING.md) for the rule.
+**How well the algorithms perform beyond published evidence.** Start with the
+[research analysis](analysis/README.md) and its
+[claim ledger](experiments/core_rq/CLAIMS.md). A performance statement has an
+answer here only when that ledger binds it to frozen evidence and independent
+validation. Broader comparisons remain outside the repository's published
+evidence; see [CONTRIBUTING.md](CONTRIBUTING.md) for the rule.
 
 **Whether it fits your production use case.** The code solves a well-defined
 research problem on synthetic instances. Nothing here is tuned, hardened or

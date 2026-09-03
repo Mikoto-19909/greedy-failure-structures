@@ -211,10 +211,12 @@ class DocumentationNavigationClaimTests(unittest.TestCase):
 
     def test_bilingual_readmes_link_the_core_workflow_documents(self) -> None:
         expected = {
+            "analysis/README.md",
             "docs/README.md",
             "docs/cli.md",
             "docs/output_schema.md",
             "docs/lazy_greedy_test_report.md",
+            "experiments/core_rq/CLAIMS.md",
         }
         for name in ("README.md", "README.zh-CN.md"):
             with self.subTest(document=name):

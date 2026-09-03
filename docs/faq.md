@@ -93,25 +93,26 @@ or real-world generalisation.
 
 <!-- faq:id=no-results -->
 
-## Why are there no frozen experiment results in the repository?
+## Where are frozen experiment results published?
 
 This repository is a code-first reproducible experiment engine. It publishes
 the algorithms, generators, configurations, validators, and reporting logic,
-while benchmark outputs are generated locally under `results/`. A published
-quantitative statement requires a separate frozen evidence chain containing the
-inputs, exact commit, environment metadata, analysis procedure, and
-independent validation. The current snapshot deliberately does not carry that
-research result package.
+while full benchmark outputs are generated locally under `results/`. Minimum
+frozen evidence for a public claim belongs in `experiments/core_rq/`; its
+authoritative mapping is the
+[`CLAIMS.md` ledger](../experiments/core_rq/CLAIMS.md). The external narrative
+belongs in [`analysis/`](../analysis/README.md). The claim ledger currently
+contains no quantitative research claim.
 
 <!-- faq:id=content-boundary -->
 
 ## Why is the content boundary enforced?
 
-The repository publishes runnable code and no quantitative research claims.
-The boundary prevents a number in prose, a results table, or a stored output
-corpus from being separated from the evidence needed to verify it. The
-enforced rule keeps this repository a tool for producing evidence rather than a
-substitute for a frozen, independently validated study.
+The repository may publish a small number of validated core research claims.
+The boundary keeps full exploratory output local, places minimum frozen evidence
+in one public directory, and requires each quantitative research claim to lead
+back to its claim-ledger entry. CI permits quantitative prose but does not verify
+the human-maintained evidence mapping.
 
 <!-- faq:id=determinism -->
 

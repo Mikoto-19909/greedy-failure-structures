@@ -1,12 +1,10 @@
 """Check commits against the two commit rules CONTRIBUTING.md declares.
 
-CONTRIBUTING.md states both of these as enforced, and neither was:
+CONTRIBUTING.md states both of these as enforced:
 
-1. "This repository publishes no quantitative research claims. [...] Do not add
-   them to the README, to documentation, to release notes, or to commit
-   messages." The content-boundary checker reads tracked file *content* and
-   never opens `git log`, so the commit-message half of that sentence had no
-   enforcement at all.
+1. Evidence-backed quantitative claims belong in tracked research documents and
+   their claim ledger, not in commit messages. The content-boundary checker reads
+   tracked file *content* and never opens `git log`, so this is a separate rule.
 
 2. "Do not attribute commits to an AI assistant. No `Co-Authored-By` trailer
    naming a model, and no 'generated with' line."
@@ -125,7 +123,7 @@ GENERATED_BY_AI = re.compile(
 # amending pushed history costs more than it buys.
 #
 # Nothing may be added here without the same reasoning. New commits describe the
-# form instead — see CONTRIBUTING.md.
+# form instead and keep quantitative claim content in tracked research documents.
 KNOWN_EXCEPTIONS = frozenset(
     {
         "d34cca38",
@@ -387,7 +385,7 @@ def check_quantitative(commit: Commit) -> list[str]:
             if pattern.search(line):
                 findings.append(
                     f"message reads as a quantitative research claim "
-                    f"({label}); this repository publishes none"
+                    f"({label}); commit messages carry no evidence mapping"
                 )
                 break
     return sorted(set(findings))
