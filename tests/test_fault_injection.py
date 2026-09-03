@@ -94,6 +94,22 @@ def _write_rows(
         writer.writerows(rows)
 
 
+def _different_selection(current: str, universe_size: int) -> str:
+    """Return a selection guaranteed to differ from ``current``.
+
+    Every index is rotated by one slot modulo the universe size, which maps
+    any proper subset of the indices onto another selection of the same size;
+    a selection that already covers the whole universe is the only fixed
+    point, so the last index is dropped instead.
+    """
+    indices = [int(part) for part in current.split()]
+    if not indices:
+        raise ValueError(f"cannot mutate an empty selected set: {current!r}")
+    if len(indices) >= universe_size:
+        return " ".join(str(i) for i in indices[:-1])
+    return " ".join(str((i + 1) % universe_size) for i in indices)
+
+
 def _benchmark_fixture() -> Path:
     """Return one real quick run, generating it into results/ when absent.
 
@@ -204,7 +220,15 @@ class FaultInjectionGateTests(unittest.TestCase):
         fields, rows = _read_rows(self.output / "raw_results.csv")
         for row in rows:
             if row["algorithm"] == "greedy" and row["status"] == "feasible":
-                row["selected"] = "0 3 6 8"
+                original = row["selected"]
+                row["selected"] = _different_selection(
+                    original, int(row["set_count"])
+                )
+                self.assertNotEqual(
+                    row["selected"],
+                    original,
+                    "the selection mutation changed nothing in the fixture",
+                )
                 break
         else:
             self.fail("no greedy row in the fixture")
@@ -221,7 +245,15 @@ class FaultInjectionGateTests(unittest.TestCase):
         fields, rows = _read_rows(self.output / "raw_results.csv")
         for row in rows:
             if row["algorithm"] == "brute_force":
-                row["selected"] = "3 5 8 12"
+                original = row["selected"]
+                row["selected"] = _different_selection(
+                    original, int(row["set_count"])
+                )
+                self.assertNotEqual(
+                    row["selected"],
+                    original,
+                    "the selection mutation changed nothing in the fixture",
+                )
                 break
         else:
             self.fail("no brute_force row in the fixture")
