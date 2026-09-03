@@ -110,6 +110,38 @@ def _display(value: object) -> str:
     return text[:96] + "..."
 
 
+def _canonical_json(value: object) -> str:
+    """Serialise a JSON value canonically for bit-exact comparison.
+
+    Python equality merges JSON types (2026 == 2026.0, True == 1); the
+    manifest contract is bit-exact, so two values must agree as serialised
+    JSON, including their types. sort_keys keeps map key order out of the
+    result, matching the "as a map" contract for algorithms.
+    """
+    return json.dumps(value, sort_keys=True, separators=(",", ":"))
+
+
+def _json_equal(left: object, right: object) -> bool:
+    """True when two JSON values are type- and value-identical."""
+    return _canonical_json(left) == _canonical_json(right)
+
+
+def _json_type_name(value: object) -> str:
+    """JSON-facing type label for a manifest value; 'null' for None.
+
+    The label keeps a mismatch report readable where str() of two values is
+    otherwise identical, as in 2026 (int) vs "2026" (str).
+    """
+    if value is None:
+        return "null"
+    return type(value).__name__
+
+
+def _typed(value: object) -> str:
+    """Display a value together with its type, for mismatch details."""
+    return f"{_display(value)} ({_json_type_name(value)})"
+
+
 def _load_records(path: Path) -> list[RunRecord]:
     """Read raw_results.csv into validated RunRecord instances."""
     if not path.is_file():
@@ -200,17 +232,44 @@ def _pair_rows(
     return paired, ambiguous
 
 
+def _first_json_diff(
+    left: object,
+    right: object,
+    path: str = "",
+) -> tuple[str, object, object] | None:
+    """Locate the first differing leaf inside two JSON values.
+
+    Returns the dotted path and the two leaf values, or None when the values
+    are equal. Lists are reported as a whole leaf: indexing into them would
+    make the report longer without making the mismatch clearer.
+    """
+    if _json_equal(left, right):
+        return None
+    if isinstance(left, dict) and isinstance(right, dict):
+        for name in sorted(set(left) | set(right)):
+            found = _first_json_diff(
+                left.get(name),
+                right.get(name),
+                f"{path}.{name}" if path else str(name),
+            )
+            if found is not None:
+                return found
+        return None
+    return path, left, right
+
+
 def _algorithm_map_diff(left: object, right: object) -> str:
     """Describe the first difference between two algorithm identity maps."""
     if not isinstance(left, dict) or not isinstance(right, dict):
-        return f"(baseline={_display(left)}, compare={_display(right)})"
-    for name in sorted(set(left) | set(right)):
-        if left.get(name) != right.get(name):
-            return (
-                f"({len(left)} baseline entries, {len(right)} compare entries; "
-                f"{_display(name)} differs)"
-            )
-    return "(algorithm entries differ)"
+        return f"(baseline={_typed(left)}, compare={_typed(right)})"
+    diff = _first_json_diff(left, right)
+    if diff is None:
+        return "(algorithm entries differ)"
+    path, left_value, right_value = diff
+    return (
+        f"({len(left)} baseline entries, {len(right)} compare entries; "
+        f"{path}: baseline={_typed(left_value)}, compare={_typed(right_value)})"
+    )
 
 def _row_is_timeout(row: RunRecord) -> bool:
     return row.status is SolutionStatus.TIMEOUT
@@ -226,17 +285,21 @@ def _manifest_checks(baseline: Path, other: Path) -> list[FieldCheck]:
         left = baseline_identities[field]
         right = other_identities[field]
         if field == "algorithms":
-            if left == right:
+            if _json_equal(left, right):
                 size = len(left) if isinstance(left, dict) else 0
                 detail = f"({size} algorithm entries)"
             else:
                 detail = _algorithm_map_diff(left, right)
         else:
-            detail = f"({_display(left)})" if left == right else (
-                f"(baseline={_display(left)}, compare={_display(right)})"
+            detail = f"({_display(left)})" if _json_equal(left, right) else (
+                f"(baseline={_typed(left)}, compare={_typed(right)})"
             )
         checks.append(
-            FieldCheck(name=f"manifest.{field}", consistent=left == right, detail=detail)
+            FieldCheck(
+                name=f"manifest.{field}",
+                consistent=_json_equal(left, right),
+                detail=detail,
+            )
         )
     return checks
 

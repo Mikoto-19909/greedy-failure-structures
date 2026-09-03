@@ -7,9 +7,10 @@ and require the script to notice.
 
 Each case therefore comes from the declaration, not from reading the compare
 implementation: a coverage digit change, a selected-sequence change, a row
-order reversal, an instance identity tamper, and the two declared exemptions
-(runtime variation for every row, and incumbent variation for a timeout row)
-must pass without a false positive.
+order reversal, an instance identity tamper, a manifest identity type change
+(bit-exact covers the serialised JSON type, not only the Python value), and
+the two declared exemptions (runtime variation for every row, and incumbent
+variation for a timeout row) must pass without a false positive.
 
 The fixture is a real quick run, generated once per class and copied per test,
 following the pattern of test_output_validation.py: a hand-built fixture would
@@ -328,6 +329,55 @@ class CompareMatrixOutputsTests(unittest.TestCase):
         )
         self.assertRejected(
             "manifest.seeds.minimum", "a manifest seed range tamper"
+        )
+
+    def test_manifest_seed_minimum_type_change_is_detected(self) -> None:
+        # bit-exact covers the serialised JSON type, not only the Python
+        # value: 2026 (int) and 2026.0 (float) compare equal under ==, so a
+        # cross-version serialisation regression would be reported as
+        # CONSISTENT by a value-only comparison.
+        manifest_path = self.variant / "manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest["seeds"]["minimum"] = float(manifest["seeds"]["minimum"])
+        manifest_path.write_text(
+            json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
+        )
+        result = self.assertRejected(
+            "manifest.seeds.minimum", "a manifest seed minimum type change"
+        )
+        self.assertIn("(int)", result.stdout)
+        self.assertIn("(float)", result.stdout)
+
+    def test_manifest_algorithm_version_type_change_is_detected(self) -> None:
+        # algorithms is compared bit-exact as a map, so a value that changes
+        # JSON type inside a nested entry is a disagreement.
+        manifest_path = self.variant / "manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        entry = manifest["algorithms"].get("greedy")
+        self.assertIsNotNone(entry, "fixture manifest has no greedy entry")
+        entry["version"] = float(entry["version"])
+        manifest_path.write_text(
+            json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
+        )
+        result = self.assertRejected(
+            "manifest.algorithms", "an algorithm version type change"
+        )
+        self.assertIn("greedy.version: baseline=1 (int)", result.stdout)
+        self.assertIn("compare=1.0 (float)", result.stdout)
+
+    def test_manifest_algorithm_enabled_bool_to_int_is_detected(self) -> None:
+        # Python treats True == 1, but bit-exact as a map does not: the
+        # enabled flag changing JSON type must be rejected.
+        manifest_path = self.variant / "manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        entry = manifest["algorithms"].get("greedy")
+        self.assertIsNotNone(entry, "fixture manifest has no greedy entry")
+        entry["enabled"] = 1
+        manifest_path.write_text(
+            json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
+        )
+        self.assertRejected(
+            "manifest.algorithms", "an algorithm enabled type change"
         )
 
     def test_status_difference_is_detected(self) -> None:
