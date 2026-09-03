@@ -10,7 +10,7 @@
 
 **受控实验框架。** 九种参数化实例族（均匀随机、高重叠、聚类、固定大小、长尾、重复密集、支配密集、混合聚类、对抗性）可对实例结构进行显式控制。基准测试流水线强制执行确定性种子、独立输出校验和配置哈希，确保每次运行均可从记录的输入完整重放。
 
-**工程治理。** CI 覆盖算法契约、生成器不变量、配置兼容性、内容边界检查和许可证校验。内容边界检查确保仓库只发布可运行代码、不发布定量结论——结果由使用者在本地生成，而非由源码断言。
+**工程治理。** CI 覆盖算法契约、生成器不变量、配置兼容性、内容边界检查和许可证校验。当前内容边界模式允许发布有证据支撑的研究结论，同时继续拒绝个人路径、凭据形式的字符串和失效的内部链接。结论与证据的映射由 reviewer 直接核对，不能从一次干净的 CI 运行中推断出来。
 
 ## 环境要求
 
@@ -131,11 +131,17 @@ python run_project.py dashboard
 - 运行时间相关观察可能随机器和可选求解器而变化。
 - 入门工作流属于功能检查，不构成性能声明。
 
+## 审查公开研究结论
+
+请先阅读面向外部的[研究分析](analysis/README.md)。每个 claim ID 与结果行、配置、
+manifest 和验证记录之间的权威映射位于
+[核心结论台账](experiments/core_rq/CLAIMS.md)。这两个文档当前均未发布定量研究结论。
+
 ## 范围
 
-这是一个以代码为中心的快照。它发布可运行代码、测试和配置，但**不发布任何定量研究结论**：不发布实验结果、不发布性能比较、不发布测量数据。这是一个有意设定的边界，而不是遗漏——具体规则见 [`CONTRIBUTING.md`](CONTRIBUTING.md)，本仓库建立之前的开发情况见 [`docs/history/PRE_PUBLIC_DEVELOPMENT_HISTORY.md`](docs/history/PRE_PUBLIC_DEVELOPMENT_HISTORY.md)。
+这是一个以代码为中心的仓库，同时允许发布少量经过验证的核心研究结论。完整 benchmark 输出继续保存在本地的 `results/` 下。公开结论所需的最小冻结证据放在 `experiments/core_rq/`，面向外部的研究叙述放在 `analysis/`；发布规则见 [`CONTRIBUTING.md`](CONTRIBUTING.md)。
 
-这里的边界针对的是本仓库“发布什么”。这一点值得明确，因为代码本身确实会计算数字。`demo` 会打印覆盖差距，基准测试也会把包含测量数据的 CSV 文件写入 `results/`。但它们都没有越过上述边界：这些结果是在你的机器上运行时，根据本仓库提交的输入现场生成的；它们既没有被提交到仓库，也没有被当作研究发现加以断言。这个边界真正排除的是“由仓库本身承载的结论”——例如 README 中的结果图、文档中的结果表，或被纳入版本控制的实验结果语料。任何此类内容都必须具备 [`CONTRIBUTING.md`](CONTRIBUTING.md) 所描述的冻结证据链，并且 CI 会对每一个被跟踪的文件执行该规则，而不是仅依赖约定。
+区分本地输出和公开结论很重要，因为代码本身会持续计算数字。`demo` 会打印覆盖差距，benchmark 也会把测量 CSV 写入 `results/`，但这些本地输出不会自动成为公开发现。被跟踪的定量陈述只有通过 claim ledger、冻结证据和已记录的独立验证后，才构成公开结论。CI 允许这类文字通过，但不会证明人工维护的证据映射正确。
 
 ## 项目结构
 
@@ -143,6 +149,8 @@ python run_project.py dashboard
 - `src/maxcover/dashboard.py` 和 `src/maxcover/dashboard_ui/`：本地 dashboard
   服务及浏览器前端
 - `configs/`：可复现的实验配置
+- [`experiments/core_rq/CLAIMS.md`](experiments/core_rq/CLAIMS.md)：公开结论、冻结证据与验证记录之间的权威映射
+- [`analysis/README.md`](analysis/README.md)：面向外部的研究分析入口
 - `tests/`：确定性的单元测试与契约测试
 - `run_project.py`：主要命令行入口
 - `project.ps1`：Windows 便捷包装脚本

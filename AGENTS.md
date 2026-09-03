@@ -39,29 +39,32 @@ and a documented rule with no enforcement is a rule that drifts.
 
 ## The content boundary
 
-This repository publishes runnable code and no quantitative research claims.
-`.github/scripts/check_content_boundary.py` enforces that over every tracked
-file, along with two other rules: no personal path or credential-shaped string,
-and every relative link resolving to a tracked path.
+This repository may publish a small number of validated core research claims.
+Full exploratory output stays untracked under `results/`; minimum frozen
+evidence belongs in `experiments/core_rq/`, and the external narrative belongs
+in `analysis/`.
 
-Three things about this check are load-bearing:
+Every quantitative research claim in tracked prose must cite a claim ID from
+`experiments/core_rq/CLAIMS.md`. That entry binds the statement to exact result
+rows or filters, an analysis figure, the configuration, the manifest, and an
+independent validator command recorded as PASS. Preserve generated evidence
+filenames and bytes. Do not create a parallel claim list elsewhere.
 
-- **A clean run is not evidence that the boundary holds.** It means the boundary
-  holds _or_ the checker is blind to what you added. Those are different, and the
-  second has happened repeatedly.
-- **It rejects some things it should not, and the list of exclusions is part of
-  the design.** If it flags a sentence that is legitimate, widen the exclusion
-  with a comment naming the real sentence that motivated it. Do not disable a
-  pattern, and do not reach for the fixture marker to silence a finding in
-  ordinary content.
-- **The fixture marker is not a general opt-out.** It exists so that this
-  checker's own tests can contain the strings it rejects. It applies per line and
-  is visible in review of that line. A directory-wide exemption was refused
-  because a genuine leak could then be parked in a test file.
+`.github/scripts/check_content_boundary.py` runs in `evidence_backed_claims`
+mode. It permits quantitative prose and does not verify the claim-to-evidence
+mapping; that check is a contributor and reviewer responsibility. It still
+rejects personal paths, credential-shaped strings, and broken relative links
+across tracked files. Do not describe a clean content-boundary run as proof that
+the evidence mapping is correct.
 
-If your change needs to quote a prohibited phrase as an example — describing a
-defect in the checker, say — describe the form instead of reproducing it.
-`CONTRIBUTING.md` explains this and names the two commits that predate the rule.
+The fixture marker remains a per-line test-fixture exemption, not a publication
+opt-out; it bypasses every content check on that line. Do not use it in ordinary
+content. If a legitimate tracked file trips a remaining check, make the narrowest
+motivated exclusion and preserve coverage for the rejected form.
+
+Quantitative research claims remain prohibited in commit messages. Historical
+records under `docs/history/` and `PUBLIC_SNAPSHOT_MANIFEST.json` are not live
+publication instructions and stay unchanged when the active policy moves.
 
 ## Determinism
 
@@ -98,7 +101,7 @@ Run the suite and the checks, and report what they actually said:
 
 ```console
 python -m unittest discover -s tests -v
-python .github/scripts/check_content_boundary.py --claim-mode no_quantitative_claims
+python .github/scripts/check_content_boundary.py --claim-mode evidence_backed_claims
 python .github/scripts/build_license_manifest.py --check
 python -m mypy
 ```

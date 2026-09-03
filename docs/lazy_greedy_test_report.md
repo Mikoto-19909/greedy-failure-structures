@@ -57,7 +57,7 @@ Run the repository gates before review:
 
 ```console
 python -m unittest discover -s tests -v
-python .github/scripts/check_content_boundary.py --claim-mode no_quantitative_claims
+python .github/scripts/check_content_boundary.py --claim-mode evidence_backed_claims
 python .github/scripts/build_license_manifest.py --check
 python -m mypy
 ```

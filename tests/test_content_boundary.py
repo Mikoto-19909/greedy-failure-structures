@@ -18,6 +18,7 @@ evidence only that these cases are covered.
 from __future__ import annotations
 
 import importlib.util
+import re
 import subprocess
 import sys
 import tempfile
@@ -262,7 +263,7 @@ class FixtureExemptionTests(unittest.TestCase):
 
 
 class QuantitativeClaimTests(unittest.TestCase):
-    """CONTRIBUTING says the single-claim-source rule is enforced, not requested.
+    """Exercise the strict no-quantitative-claims mode retained by the checker.
 
     Adversarial review found roughly sixteen English rephrasings, every Chinese
     formulation, table rows and statements split across lines all passing. The
@@ -373,12 +374,24 @@ class QuantitativeClaimTests(unittest.TestCase):
             checker.check_quantitative("src/x.py", source, "no_quantitative_claims")
         )
 
-    def test_a_wider_claim_mode_defers_to_its_own_workflow(self) -> None:
+    def test_evidence_mode_defers_claim_binding_to_review(self) -> None:
         self.assertFalse(
             checker.check_quantitative(
                 "notes.md", "The failure rate was 25%.", "evidence_backed_claims"
             )
         )
+
+
+class ActiveClaimModeTests(unittest.TestCase):
+    """The workflow selects exactly one active publication mode."""
+
+    def test_workflow_uses_evidence_backed_claims(self) -> None:
+        workflow = (REPO_ROOT / ".github/workflows/content-boundary.yml").read_text(
+            encoding="utf-8"
+        )
+        matrix = workflow.split("claim-mode:", 1)[1].split("steps:", 1)[0]
+        modes = re.findall(r"^\s*-\s*([a-z_]+)\s*$", matrix, re.MULTILINE)
+        self.assertEqual(modes, ["evidence_backed_claims"])
 
 
 class LinkResolutionTests(unittest.TestCase):

@@ -36,40 +36,36 @@ optimal is wrong regardless of the numbers it produces.
 
 **Randomized algorithms take an explicit seed; deterministic ones must not.**
 
-## Single claim source
+## Evidence-backed research claims
 
-This is the rule most likely to affect a contribution, and it is enforced, not
-merely requested.
+This repository may publish a small number of validated core research claims.
+Full exploratory output remains untracked under `results/`. The minimum frozen
+evidence for a public claim belongs in `experiments/core_rq/`, and the external
+research narrative belongs in `analysis/`.
 
-**This repository publishes no quantitative research claims.** It contains no
-experiment results, performance comparisons, failure rates, gap figures or
-runtime measurements, and it must stay that way. Do not add them to the README,
-to documentation, to release notes, or to commit messages.
+[`experiments/core_rq/CLAIMS.md`](experiments/core_rq/CLAIMS.md) is the single
+claim ledger. Every quantitative research claim in tracked prose must carry a
+claim ID that leads to the exact result rows or filters, analysis figure,
+configuration, manifest, and independent validator command recorded as PASS.
+The root README may point readers to a claim, but it must not become a second
+copy of the evidence table or analysis.
 
-"Publishes" is the operative word, because the code computes numbers by design.
-`demo` prints a coverage gap and a benchmark run writes measurement CSVs under
-`results/`. Both are generated on the machine that runs them, from inputs
-committed here, and neither is tracked. The rule governs claims this repository
-_carries_ — a figure in prose, a results table, a stored corpus of outcomes —
-not what its code produces when you execute it. If you are unsure which side a
-change falls on, the practical test is whether `git status` would show it.
+Run the complete experiment and validator against the gitignored output before
+copying the minimum evidence into the repository. Preserve generated evidence
+filenames and bytes. A generated manifest may contain an absolute configuration
+path; replace it with the repository-relative `config.json` in the complete
+local output and rerun the existing validator before publishing that manifest.
 
-If you have measurements you believe belong here, they cannot be added as prose.
-Any quantitative statement must derive from a single frozen evidence chain —
-typed CSV, then manifest and checksum, then an independent validator, then the
-statement — with every step reproducible by someone else. Without that chain
-closed, the statement does not go in.
+The content-boundary workflow runs in `evidence_backed_claims` mode. That mode
+permits quantitative prose; it does not prove that a claim matches its evidence.
+The contributor and reviewer must check the `CLAIMS.md` mapping. The same
+workflow continues to reject personal paths, credential-shaped strings, and
+broken internal links across tracked text.
 
-The rule is unconditional, which catches one honest case worth naming: quoting a
-prohibited phrase as an example. If you are describing a bug — a checker that
-failed to reject something, say — describe the form rather than reproducing it.
-Write "a metric stated with a value" instead of the phrase itself. Two commits
-predating this note quote such examples verbatim; they are known exceptions and
-were left unrewritten rather than having a pushed history amended.
-
-This is why the bundled starter workflow is described as a functional check
-rather than a benchmark: it verifies that the code runs, and it is not evidence
-about how well anything performs.
+Keep quantitative research claims out of commit messages and release notes,
+where the frozen evidence chain is not present. The existing commit-policy check
+enforces the commit-message part of this rule. The bundled starter workflow
+remains a functional check rather than evidence about algorithm performance.
 
 ## Before you open a pull request
 
