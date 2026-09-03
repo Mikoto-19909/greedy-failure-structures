@@ -5,8 +5,14 @@ seed between a treatment case and its matched control within a repetition
 reduce the spread of the treatment-minus-control difference relative to
 generating the two independently?
 
-The analysis reads only the canonical raw_results.csv artifacts produced by the
-benchmark runner. For every family-algorithm-metric cell it builds two
+The analysis reads the canonical raw_results.csv and instances.csv artifacts
+produced by the benchmark runner and verifies the digests the benchmark
+manifest records for them against the files actually read. The effective seed
+that drove generation -- the coupling seed when the runner injected one,
+otherwise the instance seed -- must be shared between a treatment and its
+matched control at every repetition in the paired run and must be independent
+in the unpaired run; when that does not hold the analysis refuses to compare.
+For every family-algorithm-metric cell it builds two
 difference distributions, one from the paired run and one from the unpaired
 run, each holding one difference per repetition:
 
@@ -20,8 +26,9 @@ below one means the paired scheme has the tighter difference spread.
 
 The convention for finding a matched control is a case-name suffix: the case
 named X plus the control suffix is the control of the case named X. Every pair
-must share a seed within each repetition in the paired run; the module
-verifies that property and raises when it does not hold.
+must share the effective seed within each repetition in the paired run and
+must not share one in the unpaired run; the module verifies both properties
+and raises when they do not hold.
 
 Run it as a module:
 
@@ -29,7 +36,8 @@ Run it as a module:
 
 Numeric results are written to the output directory (comparison.csv and
 differences.csv) with analysis_manifest.json recording their input and output
-digests. They are local evidence only.
+digests and the verified schema and effective-coupling constraints. They are
+local evidence only.
 """
 
 from __future__ import annotations
@@ -46,11 +54,23 @@ from pathlib import Path
 from statistics import correlation, fmean, stdev, variance
 from typing import ClassVar
 
+from ._instance_contracts import InstanceRecord
 from ._run_contracts import RunRecord
 
 
 METRICS = ("coverage", "optimality_gap")
 DEFAULT_CONTROL_SUFFIX = "_control"
+
+# The benchmark manifest schema version written by 'benchmark.py'.
+#
+# Declared here rather than imported because 'benchmark.py' writes the value
+# inline and exposes no constant for it; the same declaration lives in
+# .github/scripts/validate_benchmark_output.py and is asserted against a real
+# runner-written manifest by tests/test_output_validation.py. The pairing
+# analysis accepts no other version: it reads fields the manifest provides
+# only under this schema, so a future bump must fail here loudly rather than
+# be interpreted under the old shape.
+SUPPORTED_BENCHMARK_MANIFEST_SCHEMA_VERSION = 1
 
 
 class AnalysisError(ValueError):
@@ -233,6 +253,26 @@ def load_run_records(results_dir: Path) -> list[RunRecord]:
             records.append(RunRecord.from_csv_row(row))
     if not records:
         raise AnalysisError([f"empty raw_results.csv in {results_dir}"])
+    return records
+
+
+def load_instance_records(results_dir: Path) -> list[InstanceRecord]:
+    """Read and validate the canonical instances.csv artifact."""
+
+    path = results_dir / "instances.csv"
+    if not path.is_file():
+        raise AnalysisError([f"missing instances.csv in {results_dir}"])
+    records: list[InstanceRecord] = []
+    with path.open("r", encoding="utf-8", newline="") as handle:
+        for row in csv.DictReader(handle):
+            try:
+                records.append(InstanceRecord.from_csv_row(row))
+            except ValueError as error:
+                raise AnalysisError(
+                    [f"invalid instance record in {path}: {error}"]
+                ) from error
+    if not records:
+        raise AnalysisError([f"empty instances.csv in {results_dir}"])
     return records
 
 
@@ -444,10 +484,93 @@ def _analysis_cells(
     return cells
 
 
+def _effective_seed(record: InstanceRecord) -> int | None:
+    """The seed value that actually drove instance generation.
+
+    The runner passes the per-repetition seed as the coupling seed for the
+    families that support one, so a coupling seed has generation authority over
+    the instance seed; without one the instance seed itself is the effective
+    value. A record with neither cannot participate in a seeded comparison.
+    """
+
+    return record.coupling_seed if record.coupling_seed is not None else record.seed
+
+
+def _validate_effective_coupling(
+    instances: list[InstanceRecord],
+    *,
+    scheme: str,
+    treatment_case: str,
+    control_case: str,
+    repetition_count: int,
+) -> None:
+    """Verify that one treatment-control pair is coupled or independent.
+
+    The raw_results.csv seed columns are the pairing under the recorded run
+    identity; instances.csv records the seed that generation actually consumed,
+    which for coupling-capable families is the coupling seed rather than the
+    instance seed. The comparison is only valid when the two agree on the
+    effective value: shared in the paired scheme, independent in the unpaired
+    scheme.
+    """
+
+    by_key = {(record.case_id, record.repetition): record for record in instances}
+    issues: list[str] = []
+    for repetition in range(repetition_count):
+        treatment = by_key.get((treatment_case, repetition))
+        control = by_key.get((control_case, repetition))
+        if treatment is None or control is None:
+            if treatment is not None or control is not None:
+                issues.append(
+                    f"instances.csv records only one of {treatment_case!r} and"
+                    f" {control_case!r} at repetition {repetition}"
+                )
+            else:
+                issues.append(
+                    f"instances.csv records neither {treatment_case!r} nor"
+                    f" {control_case!r} at repetition {repetition}"
+                )
+            continue
+        effective_treatment = _effective_seed(treatment)
+        effective_control = _effective_seed(control)
+        if effective_treatment is None or effective_control is None:
+            lacking = [
+                case_name
+                for case_name, effective in (
+                    (treatment_case, effective_treatment),
+                    (control_case, effective_control),
+                )
+                if effective is None
+            ]
+            issues.append(
+                f"{scheme!r} instances for"
+                f" {', '.join(repr(name) for name in lacking)} carry neither a"
+                f" seed nor a coupling seed at repetition {repetition}"
+            )
+            continue
+        if scheme == "paired" and effective_treatment != effective_control:
+            issues.append(
+                f"paired scheme requires the same effective coupling seed for"
+                f" {treatment_case!r} and {control_case!r} at repetition"
+                f" {repetition}: {effective_treatment} versus"
+                f" {effective_control}"
+            )
+        if scheme == "unpaired" and effective_treatment == effective_control:
+            issues.append(
+                f"unpaired scheme requires independent effective seeds for"
+                f" {treatment_case!r} and {control_case!r} at repetition"
+                f" {repetition}: shared value {effective_treatment}"
+            )
+    if issues:
+        raise AnalysisError(issues)
+
+
 def analyze_pairing(
     paired_records: list[RunRecord],
     unpaired_records: list[RunRecord],
     *,
+    paired_instances: list[InstanceRecord],
+    unpaired_instances: list[InstanceRecord],
     control_suffix: str = DEFAULT_CONTROL_SUFFIX,
 ) -> tuple[list[ComparisonRow], list[dict[str, object]]]:
     """Compute comparison rows and flattened seed-level difference samples."""
@@ -460,6 +583,22 @@ def analyze_pairing(
     repetition_count = 1 + max(
         record.repetition for record in paired_records + unpaired_records
     )
+    pairs = sorted({(treatment, control) for _, treatment, control, _, _ in cells})
+    for treatment, control in pairs:
+        _validate_effective_coupling(
+            paired_instances,
+            scheme="paired",
+            treatment_case=treatment,
+            control_case=control,
+            repetition_count=repetition_count,
+        )
+        _validate_effective_coupling(
+            unpaired_instances,
+            scheme="unpaired",
+            treatment_case=treatment,
+            control_case=control,
+            repetition_count=repetition_count,
+        )
     comparison: list[ComparisonRow] = []
     samples: list[dict[str, object]] = []
     for family, treatment, control, algorithm_id, algorithm in cells:
@@ -628,11 +767,41 @@ def _git_state(root: Path | None = None) -> dict[str, object]:
     }
 
 
+def _manifest_output_sha256(
+    manifest: Mapping[str, object], filename: str, issues: list[str]
+) -> str | None:
+    """The checksum the benchmark manifest declares for one output file."""
+
+    outputs = manifest.get("outputs")
+    if not isinstance(outputs, dict):
+        issues.append("outputs must be an object")
+        return None
+    entry = outputs.get(filename)
+    if not isinstance(entry, dict):
+        issues.append(f"outputs.{filename} must be an object")
+        return None
+    digest = entry.get("sha256")
+    if not (
+        isinstance(digest, str)
+        and len(digest) == 64
+        and all(character in "0123456789abcdef" for character in digest)
+    ):
+        issues.append(
+            f"outputs.{filename}.sha256 must be a lowercase SHA-256 digest"
+        )
+        return None
+    return digest
+
+
 def _input_provenance(directory: Path) -> dict[str, object]:
     raw_results = directory / "raw_results.csv"
+    instances = directory / "instances.csv"
     manifest_path = directory / "manifest.json"
     provenance: dict[str, object] = {
-        "raw_results_sha256": _sha256_file(raw_results),
+        "raw_results_sha256": None,
+        "benchmark_raw_results_sha256": None,
+        "instances_sha256": None,
+        "benchmark_instances_sha256": None,
         "benchmark_manifest_sha256": None,
         "benchmark_schema_version": None,
         "config_hash": None,
@@ -640,6 +809,10 @@ def _input_provenance(directory: Path) -> dict[str, object]:
     }
     if not manifest_path.is_file():
         raise AnalysisError([f"benchmark manifest is missing: {manifest_path}"])
+    if not raw_results.is_file():
+        raise AnalysisError([f"missing raw_results.csv in {directory}"])
+    if not instances.is_file():
+        raise AnalysisError([f"missing instances.csv in {directory}"])
 
     try:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -665,6 +838,11 @@ def _input_provenance(directory: Path) -> dict[str, object]:
     issues: list[str] = []
     if not isinstance(schema_version, int) or isinstance(schema_version, bool):
         issues.append("schema_version must be an integer")
+    elif schema_version != SUPPORTED_BENCHMARK_MANIFEST_SCHEMA_VERSION:
+        issues.append(
+            "schema_version must be "
+            f"{SUPPORTED_BENCHMARK_MANIFEST_SCHEMA_VERSION}"
+        )
     if not (
         isinstance(config_hash, str)
         and len(config_hash) == 64
@@ -681,6 +859,23 @@ def _input_provenance(directory: Path) -> dict[str, object]:
         issues.append("git.commit must be null or a lowercase 40-character commit")
     if not isinstance(dirty, bool):
         issues.append("git.dirty must be a boolean")
+    declared_raw_results = _manifest_output_sha256(
+        manifest, "raw_results.csv", issues
+    )
+    declared_instances = _manifest_output_sha256(manifest, "instances.csv", issues)
+    actual_raw_results = _sha256_file(raw_results)
+    actual_instances = _sha256_file(instances)
+    if declared_raw_results is not None and declared_raw_results != actual_raw_results:
+        issues.append(
+            "raw_results.csv does not match the benchmark manifest checksum:"
+            f" manifest records {declared_raw_results}, file is"
+            f" {actual_raw_results}"
+        )
+    if declared_instances is not None and declared_instances != actual_instances:
+        issues.append(
+            "instances.csv does not match the benchmark manifest checksum:"
+            f" manifest records {declared_instances}, file is {actual_instances}"
+        )
     if issues:
         raise AnalysisError(
             [f"benchmark manifest {manifest_path}: {issue}" for issue in issues]
@@ -689,10 +884,16 @@ def _input_provenance(directory: Path) -> dict[str, object]:
     assert isinstance(schema_version, int)
     assert isinstance(config_hash, str)
     assert isinstance(benchmark_git, dict)
+    assert declared_raw_results is not None
+    assert declared_instances is not None
     provenance["benchmark_manifest_sha256"] = _sha256_file(manifest_path)
     provenance["benchmark_schema_version"] = schema_version
     provenance["config_hash"] = config_hash
     provenance["benchmark_git"] = dict(benchmark_git)
+    provenance["raw_results_sha256"] = actual_raw_results
+    provenance["benchmark_raw_results_sha256"] = declared_raw_results
+    provenance["instances_sha256"] = actual_instances
+    provenance["benchmark_instances_sha256"] = declared_instances
     return provenance
 
 
@@ -711,6 +912,13 @@ def _write_analysis_manifest(
             "difference": "treatment_value-control_value",
             "metrics": list(METRICS),
             "variance_ratio": "paired_sample_variance/unpaired_sample_variance",
+            "effective_coupling": (
+                "treatment and control instances share the effective seed in the"
+                " paired scheme and must differ in the unpaired scheme"
+            ),
+            "input_binding": (
+                "benchmark manifest output checksums must match the input files"
+            ),
         },
         "inputs": {name: dict(value) for name, value in inputs.items()},
         "outputs": {
@@ -782,14 +990,20 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    paired = load_run_records(args.paired_results)
-    unpaired = load_run_records(args.unpaired_results)
     input_provenance = {
         "paired": _input_provenance(args.paired_results),
         "unpaired": _input_provenance(args.unpaired_results),
     }
+    paired = load_run_records(args.paired_results)
+    unpaired = load_run_records(args.unpaired_results)
+    paired_instances = load_instance_records(args.paired_results)
+    unpaired_instances = load_instance_records(args.unpaired_results)
     comparison, samples = analyze_pairing(
-        paired, unpaired, control_suffix=args.control_suffix
+        paired,
+        unpaired,
+        paired_instances=paired_instances,
+        unpaired_instances=unpaired_instances,
+        control_suffix=args.control_suffix,
     )
     args.output.mkdir(parents=True, exist_ok=True)
     _write_csv(

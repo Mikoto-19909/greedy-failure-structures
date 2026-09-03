@@ -162,8 +162,13 @@ are strictly isolated from everything else.
 ## Variance-comparison analysis
 
 The seed-level variance comparison lives in src/maxcover/paired_seed_analysis.py
-and reads only the canonical raw_results.csv artifacts of the two runs.
-Run it from the repository root:
+and reads the canonical raw_results.csv and instances.csv artifacts of the two
+runs. It verifies the digests the benchmark manifest records for both files
+against the files actually read, accepts only the current manifest schema
+version, and checks the effective seed the instances record (the coupling seed
+when the runner injected one, otherwise the instance seed): shared between a
+treatment and its matched control at every repetition in the paired run, and
+independent in the unpaired run. Run it from the repository root:
 
 ~~~console
 PYTHONPATH=src python -m maxcover.paired_seed_analysis --paired-results results/pairing-v1/paired --unpaired-results results/pairing-v1/unpaired --output results/pairing-v1/analysis
@@ -177,6 +182,7 @@ difference per repetition, from the paired run and from the unpaired run, and
 compares the spread of the two difference distributions. The numeric results
 are written under results/, which is local evidence and is not tracked
 documentation. The analysis also writes `analysis_manifest.json` with the
-input raw-result and benchmark-manifest digests, the analysis source commit and
-dirty state, and the output CSV digests. This document records the method and
-nothing measured.
+input raw-result, instance and benchmark-manifest digests, the verified schema
+and effective-coupling constraints, the analysis source commit and dirty state,
+and the output CSV digests. This document records the method and nothing
+measured.
