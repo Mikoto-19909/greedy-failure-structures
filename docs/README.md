@@ -68,6 +68,9 @@ modules with mypy by default instead of spreading existing module exemptions.
   machine-readable migration identities
 - [`LICENSES/README.md`](../LICENSES/README.md): default-deny file-level license
   mapping
+- [`ci_routing_plan.zh-CN.md`](ci_routing_plan.zh-CN.md): proposed CI routing
+  for plan-only pull requests, including required checks, fallback behavior,
+  and implementation acceptance checks; not yet implemented
 
 Generated files under `results/` are local artifacts. They are inputs to local
 inspection and independent validation, not tracked documentation. Only the
