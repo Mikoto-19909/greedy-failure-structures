@@ -1974,6 +1974,181 @@ def _validate_quality_runtime_pareto_statistics(
         )
 
 
+def _validate_gap_density_association_statistics(
+    canonical_rows: list[RunRecord],
+    instances: list[InstanceRecord],
+    gap_density_association: list[GapDensityAssociationRecord],
+) -> None:
+    expected_gap_density_association = (
+        _gap_density_association_statistics(
+            canonical_rows,
+            _canonical_instance_records(instances),
+        )
+    )
+    if [record.to_csv_row() for record in gap_density_association] != [
+        record.to_csv_row()
+        for record in expected_gap_density_association
+    ]:
+        _fail(
+            "gap-density association statistics do not match canonical "
+            "instance and raw evidence"
+        )
+
+
+def _validate_gap_overlap_association_statistics(
+    canonical_rows: list[RunRecord],
+    instances: list[InstanceRecord],
+    gap_overlap_association: list[GapOverlapAssociationRecord],
+) -> None:
+    expected_gap_overlap_association = (
+        _gap_overlap_association_statistics(
+            canonical_rows,
+            _canonical_instance_records(instances),
+        )
+    )
+    if [record.to_csv_row() for record in gap_overlap_association] != [
+        record.to_csv_row()
+        for record in expected_gap_overlap_association
+    ]:
+        _fail(
+            "gap-overlap association statistics do not match canonical "
+            "instance and raw evidence"
+        )
+
+
+def _validate_gap_clustering_association_statistics(
+    canonical_rows: list[RunRecord],
+    instances: list[InstanceRecord],
+    gap_clustering_association: list[GapClusteringAssociationRecord],
+) -> None:
+    expected_gap_clustering_association = (
+        _gap_clustering_association_statistics(
+            canonical_rows,
+            _canonical_instance_records(instances),
+        )
+    )
+    if [record.to_csv_row() for record in gap_clustering_association] != [
+        record.to_csv_row()
+        for record in expected_gap_clustering_association
+    ]:
+        _fail(
+            "gap-clustering association statistics do not match canonical "
+            "instance and raw evidence"
+        )
+
+
+def _validate_runtime_set_count_association_statistics(
+    canonical_rows: list[RunRecord],
+    instances: list[InstanceRecord],
+    runtime_set_count_association: list[RuntimeSetCountAssociationRecord],
+) -> None:
+    expected_runtime_set_count_association = (
+        _runtime_set_count_association_statistics(
+            canonical_rows,
+            _canonical_instance_records(instances),
+        )
+    )
+    if [record.to_csv_row() for record in runtime_set_count_association] != [
+        record.to_csv_row()
+        for record in expected_runtime_set_count_association
+    ]:
+        _fail(
+            "runtime-set-count association statistics do not match canonical "
+            "instance and raw evidence"
+        )
+
+
+def _validate_runtime_k_association_statistics(
+    canonical_rows: list[RunRecord],
+    instances: list[InstanceRecord],
+    runtime_k_association: list[RuntimeKAssociationRecord],
+) -> None:
+    expected_runtime_k_association = _runtime_k_association_statistics(
+        canonical_rows,
+        _canonical_instance_records(instances),
+    )
+    if [record.to_csv_row() for record in runtime_k_association] != [
+        record.to_csv_row() for record in expected_runtime_k_association
+    ]:
+        _fail(
+            "runtime-k association statistics do not match canonical instance "
+            "and raw evidence"
+        )
+
+
+def _validate_search_nodes_dominated_ratio_association_statistics(
+    canonical_rows: list[RunRecord],
+    instances: list[InstanceRecord],
+    search_nodes_dominated_ratio_association: list[SearchNodesDominatedRatioAssociationRecord],
+) -> None:
+    expected_search_nodes_dominated_ratio_association = (
+        _search_nodes_dominated_ratio_association_statistics(
+            canonical_rows,
+            _canonical_instance_records(instances),
+        )
+    )
+    if [
+        record.to_csv_row()
+        for record in search_nodes_dominated_ratio_association
+    ] != [
+        record.to_csv_row()
+        for record in expected_search_nodes_dominated_ratio_association
+    ]:
+        _fail(
+            "search-nodes dominated-ratio association statistics do not match "
+            "canonical instance and raw evidence"
+        )
+
+
+def _validate_report_charts(
+    output: Path,
+    descriptive: list[DescriptiveStatisticsRecord],
+    gap_density_association: list[GapDensityAssociationRecord],
+    gap_overlap_association: list[GapOverlapAssociationRecord],
+    gap_clustering_association: list[GapClusteringAssociationRecord],
+    local_search_recovery: list[LocalSearchRecoveryRecord],
+    quality_runtime_pareto: list[QualityRuntimeParetoRecord],
+    runtime_set_count_association: list[RuntimeSetCountAssociationRecord],
+    runtime_k_association: list[RuntimeKAssociationRecord],
+    search_nodes_dominated_ratio_association: list[SearchNodesDominatedRatioAssociationRecord],
+    censored_runtime: list[CensoredRuntimeRecord],
+    reference_statuses: list[ReferenceStatusRecord],
+) -> None:
+    expected_charts = {
+        "gap_by_case.svg": _render_gap_by_case_chart(descriptive),
+        "gap_vs_structural_parameter.svg": (
+            _render_gap_structural_association_chart(
+                gap_density_association,
+                gap_overlap_association,
+                gap_clustering_association,
+            )
+        ),
+        "local_search_recovery.svg": _render_local_search_recovery_chart(
+            local_search_recovery
+        ),
+        "quality_runtime_pareto.svg": _render_quality_runtime_pareto_chart(
+            quality_runtime_pareto
+        ),
+        "runtime_scaling.svg": _render_runtime_scaling_chart(
+            runtime_set_count_association,
+            runtime_k_association,
+        ),
+        "node_scaling.svg": _render_node_scaling_chart(
+            search_nodes_dominated_ratio_association
+        ),
+        "timeout_by_case.svg": _render_timeout_by_case_chart(
+            censored_runtime
+        ),
+        "reference_coverage_by_case.svg": _render_reference_coverage_chart(
+            reference_statuses
+        ),
+    }
+    for filename, expected_chart in expected_charts.items():
+        actual_chart = (output / filename).read_text(encoding="utf-8")
+        if actual_chart != expected_chart:
+            _fail(f"{filename} does not match canonical typed records")
+
+
 def validate(config_path: Path, output: Path) -> None:
     config = load_config(config_path)
     plan = plan_benchmark(config)
@@ -2181,123 +2356,50 @@ def validate(config_path: Path, output: Path) -> None:
         canonical_rows,
         quality_runtime_pareto,
     )
-    expected_gap_density_association = (
-        _gap_density_association_statistics(
-            canonical_rows,
-            _canonical_instance_records(instances),
-        )
-    )
-    if [record.to_csv_row() for record in gap_density_association] != [
-        record.to_csv_row()
-        for record in expected_gap_density_association
-    ]:
-        _fail(
-            "gap-density association statistics do not match canonical "
-            "instance and raw evidence"
-        )
-    expected_gap_overlap_association = (
-        _gap_overlap_association_statistics(
-            canonical_rows,
-            _canonical_instance_records(instances),
-        )
-    )
-    if [record.to_csv_row() for record in gap_overlap_association] != [
-        record.to_csv_row()
-        for record in expected_gap_overlap_association
-    ]:
-        _fail(
-            "gap-overlap association statistics do not match canonical "
-            "instance and raw evidence"
-        )
-    expected_gap_clustering_association = (
-        _gap_clustering_association_statistics(
-            canonical_rows,
-            _canonical_instance_records(instances),
-        )
-    )
-    if [record.to_csv_row() for record in gap_clustering_association] != [
-        record.to_csv_row()
-        for record in expected_gap_clustering_association
-    ]:
-        _fail(
-            "gap-clustering association statistics do not match canonical "
-            "instance and raw evidence"
-        )
-    expected_runtime_set_count_association = (
-        _runtime_set_count_association_statistics(
-            canonical_rows,
-            _canonical_instance_records(instances),
-        )
-    )
-    if [record.to_csv_row() for record in runtime_set_count_association] != [
-        record.to_csv_row()
-        for record in expected_runtime_set_count_association
-    ]:
-        _fail(
-            "runtime-set-count association statistics do not match canonical "
-            "instance and raw evidence"
-        )
-    expected_runtime_k_association = _runtime_k_association_statistics(
+    _validate_gap_density_association_statistics(
         canonical_rows,
-        _canonical_instance_records(instances),
+        instances,
+        gap_density_association,
     )
-    if [record.to_csv_row() for record in runtime_k_association] != [
-        record.to_csv_row() for record in expected_runtime_k_association
-    ]:
-        _fail(
-            "runtime-k association statistics do not match canonical instance "
-            "and raw evidence"
-        )
-    expected_search_nodes_dominated_ratio_association = (
-        _search_nodes_dominated_ratio_association_statistics(
-            canonical_rows,
-            _canonical_instance_records(instances),
-        )
+    _validate_gap_overlap_association_statistics(
+        canonical_rows,
+        instances,
+        gap_overlap_association,
     )
-    if [
-        record.to_csv_row()
-        for record in search_nodes_dominated_ratio_association
-    ] != [
-        record.to_csv_row()
-        for record in expected_search_nodes_dominated_ratio_association
-    ]:
-        _fail(
-            "search-nodes dominated-ratio association statistics do not match "
-            "canonical instance and raw evidence"
-        )
-    expected_charts = {
-        "gap_by_case.svg": _render_gap_by_case_chart(descriptive),
-        "gap_vs_structural_parameter.svg": (
-            _render_gap_structural_association_chart(
-                gap_density_association,
-                gap_overlap_association,
-                gap_clustering_association,
-            )
-        ),
-        "local_search_recovery.svg": _render_local_search_recovery_chart(
-            local_search_recovery
-        ),
-        "quality_runtime_pareto.svg": _render_quality_runtime_pareto_chart(
-            quality_runtime_pareto
-        ),
-        "runtime_scaling.svg": _render_runtime_scaling_chart(
-            runtime_set_count_association,
-            runtime_k_association,
-        ),
-        "node_scaling.svg": _render_node_scaling_chart(
-            search_nodes_dominated_ratio_association
-        ),
-        "timeout_by_case.svg": _render_timeout_by_case_chart(
-            censored_runtime
-        ),
-        "reference_coverage_by_case.svg": _render_reference_coverage_chart(
-            reference_statuses
-        ),
-    }
-    for filename, expected_chart in expected_charts.items():
-        actual_chart = (output / filename).read_text(encoding="utf-8")
-        if actual_chart != expected_chart:
-            _fail(f"{filename} does not match canonical typed records")
+    _validate_gap_clustering_association_statistics(
+        canonical_rows,
+        instances,
+        gap_clustering_association,
+    )
+    _validate_runtime_set_count_association_statistics(
+        canonical_rows,
+        instances,
+        runtime_set_count_association,
+    )
+    _validate_runtime_k_association_statistics(
+        canonical_rows,
+        instances,
+        runtime_k_association,
+    )
+    _validate_search_nodes_dominated_ratio_association_statistics(
+        canonical_rows,
+        instances,
+        search_nodes_dominated_ratio_association,
+    )
+    _validate_report_charts(
+        output,
+        descriptive,
+        gap_density_association,
+        gap_overlap_association,
+        gap_clustering_association,
+        local_search_recovery,
+        quality_runtime_pareto,
+        runtime_set_count_association,
+        runtime_k_association,
+        search_nodes_dominated_ratio_association,
+        censored_runtime,
+        reference_statuses,
+    )
 
 
 def main() -> int:
