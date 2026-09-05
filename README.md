@@ -2,31 +2,29 @@
 
 **English** | [简体中文](README.zh-CN.md)
 
-This repository contains research-oriented Python code for deterministic
-experiments with the Maximum Coverage problem. It provides algorithm
-implementations, instance generators, configuration validation, benchmark
-execution, reporting, and replay utilities.
+This repository studies how Maximum Coverage instance structure relates to
+Greedy's optimality gap: the loss in coverage relative to an exact optimum.
+It provides Python algorithms, instance generators, and tools to run and
+inspect reproducible experiments.
 
-## Research highlights
+## Current research
 
-**Algorithm library.** Nine algorithms spanning greedy approximation, randomised
-heuristics, local search, and exact methods (brute-force, branch-and-bound,
-CP-SAT). Each is a standalone function with a common interface, making paired
-comparisons and drop-in substitution straightforward.
+The next checkpoint asks whether the shared-core `high_overlap` generator
+produces more Greedy failures than a `uniform` control matched on dimensions
+and expected set size. The planned comparison uses Greedy and an exhaustive
+reference at one fixed parameter setting. It does not isolate overlap from
+every other structural difference between the generators.
 
-**Controlled experiment framework.** Nine parameterised instance families
-(uniform random, high-overlap, clustered, fixed-size, long-tail,
-duplicate-heavy, dominated-heavy, mixed-cluster, adversarial) generate instances with
-explicit structural control. The benchmark pipeline enforces deterministic
-seeds, independent output validation, and configuration hashing so that every
-run is replayable from its recorded inputs.
+**Status: planned, awaiting implementation.** The
+[execution plan in PR #23](https://github.com/Mikoto-19909/greedy-failure-structures/pull/23)
+specifies the pilot and its prerequisites. The proposed pilot configuration
+(`configs/core_overlap_pilot.json`) and offline analysis script are not yet
+included in this checkout. Follow the plan before implementing or running the
+pilot; there is no ready-to-run pilot command here yet.
 
-**Engineering governance.** A CI suite covering algorithm contracts, generator
-invariants, configuration compatibility, content-boundary enforcement, and
-license verification. The active content-boundary mode permits evidence-backed
-research claims while continuing to reject personal paths, credential-shaped
-strings, and broken internal links. Claim-to-evidence mappings are checked in
-review rather than inferred from a clean CI run.
+The [research analysis](analysis/README.md) records the current research status.
+Published findings, when available, link to the
+[claim ledger](experiments/core_rq/CLAIMS.md) for their evidence.
 
 ## Requirements
 
@@ -48,79 +46,87 @@ python -m pip install -e ".[oracle]"
 
 ## Run
 
-Show a small deterministic example:
+Choose the workflow by purpose:
+
+| Purpose | Entry point |
+| --- | --- |
+| Current research | The [overlap pilot plan](https://github.com/Mikoto-19909/greedy-failure-structures/pull/23); its configuration and analysis script await implementation. |
+| Examples and compatibility checks | `demo`, `quick`, and the larger legacy `full.json` workflow below. |
+| Historical exploration and appendices | The [supplementary workflow index](docs/README.md#historical-exploration-and-appendices), including broader structural scans and additional algorithm comparisons. |
+
+### Examples and compatibility checks
+
+Show Greedy's choices on one fixed adversarial instance:
 
 ```console
 python run_project.py demo
 ```
 
-This builds one fixed instance defined in the source and prints what each
-algorithm returns on it, coverage gap included. Those numbers are computed on
-your machine from that hard-coded instance. They demonstrate that greedy can be
-trapped; they are not a measurement of any corpus, and nothing in this
-repository reports them as a result. See [Scope](#scope).
+The values are computed locally for that source-defined example. See
+[Scope](#scope) for the distinction between example output and published findings.
 
-Run the starter workflow:
+Run the small starter benchmark to check the installation and output workflow:
 
 ```console
 python run_project.py quick
 ```
 
-Validate a configuration without executing a benchmark:
+Omitting the CLI command also runs `quick`; the PowerShell wrapper defaults to
+the same action. The Dashboard initially prefers `quick.json` when there is no
+retained configuration selection. These defaults select an example workflow.
+
+Inspect the quick execution plan without running the algorithms:
 
 ```console
-python run_project.py benchmark --config configs/sweeps.json --dry-run
+python run_project.py benchmark --config configs/quick.json --dry-run
 ```
 
-The deterministic lazy-greedy variant has a paired functional workflow in
-[`configs/p3_lazy_greedy.json`](configs/p3_lazy_greedy.json). Its complete
-verification procedure is documented in
-[`docs/lazy_greedy_test_report.md`](docs/lazy_greedy_test_report.md); that
-report records compatibility checks only and is not a performance claim.
-
-Run a configured benchmark and write local outputs:
+Run the larger legacy workflow when checking compatibility or revisiting its
+mixture of instance families:
 
 ```console
 python run_project.py benchmark --config configs/full.json --output results/full
 ```
 
-Run the matched-control structural gap cartography workflow:
-
-```console
-python run_project.py cartography --config configs/structural_gap_cartography.json --design designs/structural_gap_cartography.json --output results/structural_gap_cartography --workers 4
-```
-
-This configuration covers the six structural stressors described in
-[`docs/failure_mechanisms.md`](docs/failure_mechanisms.md), matched uniform
-controls, multiple strength levels, the five requested heuristic algorithms,
-and an exact reference. It writes seed-level distributions, paired-control
-differences, precision diagnostics, and two SVG maps under `results/`; those
-locally generated measurements remain outside the tracked repository snapshot.
-
-Both commands above emit a `LegacyConfigWarning`: `configs/quick.json` and
+The name `full` describes that existing workflow, not the complete current
+research study. `configs/quick.json` and
 `configs/full.json` are schema v1, and the loader migrates them to schema 3 in
-memory on every run. The warning is expected. Those two files stay at v1
-deliberately — `config_hash` is computed over the normalized configuration, so
-rewriting them would change the hash and orphan the run identities already
-recorded against it, which `CONTRIBUTING.md` classes as a breaking change.
-`configs/sweeps.json` is schema 2; the `configs/p3_*` through `configs/p7_*`
-configurations are schema 3 and warn about nothing.
+memory. Their `LegacyConfigWarning` is expected. These files remain available
+for legacy compatibility and reproduction of the existing workflows.
 
-Generated files under `results/` are local artifacts and are not part of the
-repository snapshot.
-
-Verify a completed run without relying on its own checksum:
+Verify the completed quick run:
 
 ```console
 python .github/scripts/validate_benchmark_output.py --config configs/quick.json --output results/quick
 ```
 
-`manifest.json` carries a checksum, and verifying it proves the files were not
-altered after they were written. It cannot prove they were written correctly — a
-run that computed a statistic wrongly produces output whose checksum matches
-perfectly. This reads the artifacts back and recomputes what they claim from the
-configuration alone, exiting non-zero on any disagreement. CI runs it after every
-starter workflow.
+The validator checks supported artifact relationships and recorded checksums.
+A checksum match establishes agreement with the recorded digest; it does not
+establish that the original calculation was correct. Generated outputs remain
+local under `results/`.
+
+The [Lazy Greedy functional workflow](configs/p3_lazy_greedy.json) is also used
+by CI. Its procedure is in the
+[functional test report](docs/lazy_greedy_test_report.md).
+
+### Historical exploration and appendices
+
+Existing configurations remain available for their documented purposes.
+`configs/sweeps.json` is schema 2; the `configs/p3_*` through `configs/p7_*`
+configurations are schema 3. These version labels do not indicate which
+experiment to run next.
+
+For broader structural scans, see the
+[cartography command](docs/cli.md#cartography). The older
+[overlap parameter scan](configs/p6_overlap_scan.json) and the
+[full configuration collection](configs/) support further exploration.
+Neither is a substitute for the fixed pilot described above.
+
+Phase-prefixed configurations are not all historical: `p3_lazy_greedy.json`
+supports CI checks, `p7_controlled_stressors.json` supports generator audits,
+and the pairing configurations support paired-seed method checks. Use the
+[documentation index](docs/README.md) to find those procedures and the
+[CLI reference](docs/cli.md) for complete commands.
 
 ## Test
 

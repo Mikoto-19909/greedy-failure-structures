@@ -14,6 +14,34 @@ Install the optional CP-SAT oracle only when a configuration enables it:
 python -m pip install -e ".[oracle]"
 ```
 
+## Choose a workflow
+
+| Purpose | Configuration or starting point |
+| --- | --- |
+| Current research | The [fixed overlap pilot plan](https://github.com/Mikoto-19909/greedy-failure-structures/pull/23). It compares `high_overlap` with a dimension- and expected-size-matched `uniform` control using Greedy and an exhaustive reference. |
+| Examples and compatibility checks | `demo`, `quick`, and the larger legacy `configs/full.json` workflow. |
+| Historical exploration and appendices | Earlier exploratory configurations and broader scans such as `configs/structural_gap_cartography.json`, selected for their documented purpose. |
+
+The pilot's `configs/core_overlap_pilot.json` and offline analysis script are
+planned files, not available commands or configurations in this checkout.
+Read the plan's prerequisites before implementation. The commands below
+describe existing workflows; running one does not implement the pilot.
+
+Omitting the CLI command runs `quick`. The PowerShell wrapper also defaults to
+quick, and the Dashboard initially prefers `quick.json` without a retained
+selection. These remain example defaults. `full.json` is a larger legacy
+multi-family benchmark, not the complete current research study:
+
+```console
+python run_project.py benchmark --config configs/full.json --output results/full
+```
+
+The quick and full configurations retain schema v1 and emit an expected
+`LegacyConfigWarning`. Other older configurations can still support active
+checks: `p3_lazy_greedy.json` is used by CI, `p7_controlled_stressors.json` by
+generator audits, and the pairing configurations by paired-seed method checks.
+See the [workflow index](README.md) for those roles.
+
 ## Commands
 
 ### `quick`
@@ -83,6 +111,9 @@ plan. `--force` removes runner-owned artifacts in that result directory and
 reruns every planned identifier; unrelated files are left in place.
 
 ### `cartography`
+
+This is a broad supplementary scan across structures, strengths, and algorithms.
+Use the pilot plan above for the current single-point research checkpoint.
 
 Run the six documented stressor families at multiple strength levels against
 dimension-matched uniform controls:
@@ -173,6 +204,8 @@ Use `--host` and `--port` to change the loopback address or port. Non-loopback
 bindings are rejected. The dashboard reads `configs/`, writes under `results/`,
 and calls the same validation, benchmark, report, and replay functions as the
 CLI. It provides no accounts, remote queue, or hosted execution.
+Its initial quick selection is an example workflow; choose other existing
+configurations according to the purpose described above.
 
 ## Output validation
 
