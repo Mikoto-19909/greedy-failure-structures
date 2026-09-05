@@ -58,13 +58,15 @@ from ._statistics_contracts import (
     CONFIDENCE_INTERVAL_SCHEMA_VERSION,
     DESCRIPTIVE_STATISTICS_METRICS,
     DESCRIPTIVE_STATISTICS_SCHEMA_VERSION,
+    CensoredRuntimeRecord,
+    ConfidenceIntervalRecord,
+    DescriptiveStatisticsRecord,
+)
+from ._quality_contracts import (
     GREEDY_FAILURE_SCHEMA_VERSION,
     LOCAL_SEARCH_RECOVERY_SCHEMA_VERSION,
     LOCAL_SEARCH_REMAINING_GAP_SCHEMA_VERSION,
     QUALITY_RUNTIME_PARETO_SCHEMA_VERSION,
-    CensoredRuntimeRecord,
-    ConfidenceIntervalRecord,
-    DescriptiveStatisticsRecord,
     GreedyFailureRecord,
     LocalSearchRecoveryRecord,
     LocalSearchRemainingGapRecord,

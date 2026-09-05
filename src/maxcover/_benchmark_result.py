@@ -28,6 +28,8 @@ from ._statistics_contracts import (
     CensoredRuntimeRecord,
     ConfidenceIntervalRecord,
     DescriptiveStatisticsRecord,
+)
+from ._quality_contracts import (
     GreedyFailureRecord,
     LocalSearchRecoveryRecord,
     LocalSearchRemainingGapRecord,
