@@ -199,6 +199,21 @@ The temporary type check with only the benchmark override removed passes with
 no remaining diagnostics. The default configuration remains unchanged for this
 prerequisite, and the fixed old/new artifact comparison passes before relocation.
 
+After type commit `bc8ccb6`, statistical definitions and their two private
+TypedDicts move verbatim into `benchmark_statistics.py`; association functions
+and their existing runtime-k projection move into `benchmark_associations.py`.
+The dependency closure includes `_REFERENCE_BIAS_METRICS`, the local-search
+pair-analysis type and each existing variant-unit helper. Associations depend
+on statistics only for `_ten_decimal`; neither module imports the facade.
+
+All moved names remain explicit facade aliases. Certificate-bound validation
+and optimum normalization move together, while `_rows_for_instance()` retains
+its facade lookup of the certificate helper. Public functions, execution and
+replay remain unchanged. The post-move fixed artifact comparison, relevant
+reference/report/validator/lifecycle tests and default type check pass.
+The benchmark exemption is deliberately unchanged in the mechanical commit;
+its removal and accurate coverage documentation form the next separate commit.
+
 ## Purpose
 
 Refactor [`src/maxcover/benchmark.py`](../src/maxcover/benchmark.py) into a
