@@ -2,8 +2,8 @@
 
 Restored from the preserved research stash and reconciled with the main branch
 at `0dd9de338c07df312e268f916e630aceebb11f4a` on 2026-09-05. The research
-branch and the other stashed files remain separate. B0 and B1 are complete;
-B2 begins with a separate planning type prerequisite.
+branch and the other stashed files remain separate. B0 through B2 are complete;
+B3 begins with a separate artifact type prerequisite.
 
 [Preparation PR #27](https://github.com/Mikoto-19909/greedy-failure-structures/pull/27)
 restored this document, added its index entry, and reconciled the linked plans'
@@ -148,6 +148,23 @@ the move. Default mypy checks planning successfully without any new exemption;
 the configuration is unchanged. Relevant API, configuration, instance and
 lifecycle tests run locally, with the remaining coverage supplied by required
 PR CI under the same targeted-check authorization as B1.
+B2 passed independent reverse review and all required PR checks before merge.
+The independent pass also compared ordered random-generator call traces against
+the old implementation without changing the generated content.
+
+### B3 implementation
+
+B3 starts from `d787858655717eb6d269152a19a933ff5af775ba`, after B2.
+Its type prerequisite adds one precise cast to the existing seeded sort key,
+and completes the concrete record unions of `_write_csv()` and `_csv_text()`.
+The functions already handled those records; the annotations now cover their
+actual callers without a new protocol or changes to serialization.
+
+Removing only the cast, import and added union members reproduces the complete
+preparation-base AST. The temporary unexempted mypy run still fails on the
+existing B4 diagnostics, with all B3 diagnostics removed and no new errors.
+The fixed B0 old/new comparison passes before moving these functions: every
+deterministic artifact and stable Manifest field is unchanged.
 
 ## Purpose
 

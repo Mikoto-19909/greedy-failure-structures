@@ -16,6 +16,7 @@ from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
 from statistics import fmean, median, pstdev, stdev
+from typing import cast
 
 from .algorithms import ALGORITHMS
 from .benchmark_artifacts import (
@@ -3661,6 +3662,8 @@ def _csv_text(
         | Sequence[GapOverlapAssociationRecord]
         | Sequence[GapClusteringAssociationRecord]
         | Sequence[RuntimeSetCountAssociationRecord]
+        | Sequence[RuntimeKAssociationRecord]
+        | Sequence[SearchNodesDominatedRatioAssociationRecord]
     ),
     fields: tuple[str, ...],
 ) -> str:
@@ -3700,6 +3703,11 @@ def _write_csv(
         | Sequence[ConfidenceIntervalRecord]
         | Sequence[CensoredRuntimeRecord]
         | Sequence[GreedyFailureRecord]
+        | Sequence[LocalSearchRecoveryRecord]
+        | Sequence[LocalSearchRemainingGapRecord]
+        | Sequence[HeuristicExactRuntimeRatioRecord]
+        | Sequence[BranchAndBoundNodeReductionRecord]
+        | Sequence[QualityRuntimeParetoRecord]
         | Sequence[ReferenceStatusRecord]
         | Sequence[ReferenceCoverageRecord]
         | Sequence[ReferenceCensoringBiasRecord]
@@ -3708,6 +3716,8 @@ def _write_csv(
         | Sequence[GapOverlapAssociationRecord]
         | Sequence[GapClusteringAssociationRecord]
         | Sequence[RuntimeSetCountAssociationRecord]
+        | Sequence[RuntimeKAssociationRecord]
+        | Sequence[SearchNodesDominatedRatioAssociationRecord]
     ),
     fields: tuple[str, ...],
 ) -> None:
@@ -3801,7 +3811,7 @@ def _write_stochastic_summary(output_dir: Path, rows: Sequence[RunRecord]) -> in
     writer.writeheader()
     for key, group in sorted(groups.items()):
         case_id, identifier, algorithm_id, algorithm = key
-        ordered = sorted(group, key=lambda row: row.algorithm_seed)
+        ordered = sorted(group, key=lambda row: cast(int, row.algorithm_seed))
         coverages = [row.coverage for row in ordered]
         assert all(coverage is not None for coverage in coverages)
         values = [int(coverage) for coverage in coverages if coverage is not None]
