@@ -25,6 +25,9 @@ small number of validated core research claims. See
 
 ## Experiment guidance
 
+- [`core_overlap_checkpoint_plan.zh-CN.md`](core_overlap_checkpoint_plan.zh-CN.md):
+  planned single-point comparison of Greedy failures under high overlap and a
+  matched uniform control (Simplified Chinese; experiment not yet executed)
 - [`failure_mechanisms.md`](failure_mechanisms.md): structural stressors,
   direct greedy traps, and the configurations that exercise them
 - [`generator_isolation.md`](generator_isolation.md): target-metric monotonicity,
