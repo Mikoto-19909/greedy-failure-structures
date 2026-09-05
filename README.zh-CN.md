@@ -2,15 +2,23 @@
 
 [English](README.md) | **简体中文**
 
-本仓库包含面向研究的 Python 代码，用于对最大覆盖（Maximum Coverage）问题进行确定性实验。项目提供算法实现、实例生成器、配置校验、基准测试执行、报告以及重放工具。
+本仓库研究最大覆盖（Maximum Coverage）实例结构与贪心算法（Greedy）最优性差距的关系：
+贪心解的覆盖量比精确最优值少多少。项目提供 Python 算法、实例生成器，以及运行和
+检查可复现实验的工具。
 
-## 研究亮点
+## 当前研究
 
-**算法库。** 九种算法，覆盖贪心近似、随机启发式、局部搜索和精确方法（暴力搜索、分支定界、CP-SAT）。每个算法均为独立函数，接口统一，便于配对比较和即插即用。
+下一项研究是：在维度与期望集合大小匹配时，共核式 `high_overlap` 生成器是否比
+`uniform` 对照更容易让 Greedy 失手？计划在一个固定参数点比较 Greedy 与穷举参考。
+这项设计尚不能将重叠度与生成机制带来的其他结构差异完全分离。
 
-**受控实验框架。** 九种参数化实例族（均匀随机、高重叠、聚类、固定大小、长尾、重复密集、支配密集、混合聚类、对抗性）可对实例结构进行显式控制。基准测试流水线强制执行确定性种子、独立输出校验和配置哈希，确保每次运行均可从记录的输入完整重放。
+**状态：计划已制定，待实施。**
+[PR #23 中的执行计划](https://github.com/Mikoto-19909/greedy-failure-structures/pull/23)
+说明了实验设计和前置条件。计划中的 `configs/core_overlap_pilot.json` 与离线分析
+脚本尚未加入当前版本。实施或运行前先阅读该计划；目前还没有可直接运行的小型试验命令。
 
-**工程治理。** CI 覆盖算法契约、生成器不变量、配置兼容性、内容边界检查和许可证校验。当前内容边界模式允许发布有证据支撑的研究结论，同时继续拒绝个人路径、凭据形式的字符串和失效的内部链接。结论与证据的映射由 reviewer 直接核对，不能从一次干净的 CI 运行中推断出来。
+[研究分析入口](analysis/README.md) 记录当前进展。公开发现形成后，通过
+[核心结论台账](experiments/core_rq/CLAIMS.md) 查找对应证据。
 
 ## 环境要求
 
@@ -32,59 +40,76 @@ python -m pip install -e ".[oracle]"
 
 ## 运行
 
-显示一个小型确定性示例：
+按用途选择入口：
+
+| 用途 | 入口 |
+| --- | --- |
+| 当前研究 | [高重叠实验计划](https://github.com/Mikoto-19909/greedy-failure-structures/pull/23)；配置和分析脚本待实施。 |
+| 演示与兼容验证 | 下方的 `demo`、`quick` 与较大的旧版 `full.json` 工作流。 |
+| 历史探索与附录 | [补充工作流索引](docs/README.md#historical-exploration-and-appendices)，包括较大的结构扫描与附加算法比较。 |
+
+### 演示与兼容验证
+
+查看 Greedy 在一个固定对抗实例上的选择：
 
 ```console
 python run_project.py demo
 ```
 
-该命令会构造一个在源码中定义的固定实例，并打印各个算法在该实例上的返回结果，包括覆盖差距（coverage gap）。这些数字由你的机器根据这个硬编码实例现场计算得出。它们用于演示贪心算法可能陷入失败结构；它们不是对任何语料或实验集合的测量结果，本仓库也不会把它们作为研究结果发布。参见[范围](#范围)。
+这些值由本机根据源码中的固定示例计算得出。示例输出与公开研究发现的区别见[范围](#范围)。
 
-运行入门工作流：
+运行小型入门基准测试，检查安装和输出流程：
 
 ```console
 python run_project.py quick
 ```
 
-在不执行基准测试的情况下校验配置：
+CLI 省略命令时也运行 `quick`，PowerShell 包装脚本默认执行相同动作。
+仪表盘（Dashboard）没有保留的配置选择时，初始优先选择 `quick.json`。
+这些默认入口进入的是示例工作流。
+
+查看 quick 的执行计划，不运行算法：
 
 ```console
-python run_project.py benchmark --config configs/sweeps.json --dry-run
+python run_project.py benchmark --config configs/quick.json --dry-run
 ```
 
-确定性的 lazy-greedy 变体包含一个配对功能工作流，配置见
-[`configs/p3_lazy_greedy.json`](configs/p3_lazy_greedy.json)。完整验证流程见
-[`docs/lazy_greedy_test_report.md`](docs/lazy_greedy_test_report.md)；该报告只记录
-兼容性和功能检查，不构成性能结论。
-
-运行配置好的基准测试并写入本地输出：
+需要检查兼容性或重新查看多实例族的既有实验时，运行较大的旧版工作流：
 
 ```console
 python run_project.py benchmark --config configs/full.json --output results/full
 ```
 
-运行带匹配控制组的 structural gap cartography 工作流：
+`full` 指这套已有工作流，不代表当前研究的完整方案。
+`configs/quick.json` 和 `configs/full.json` 使用 schema v1，加载器在内存中迁移到
+schema 3；因此产生的 `LegacyConfigWarning` 是预期行为。
+这些文件继续用于旧版兼容和既有工作流复现。
 
-```console
-python run_project.py cartography --config configs/structural_gap_cartography.json --design designs/structural_gap_cartography.json --output results/structural_gap_cartography --workers 4
-```
-
-该配置覆盖 [`docs/failure_mechanisms.md`](docs/failure_mechanisms.md) 中的六类
-结构 stressor、匹配维度的均匀控制组、多个强度水平、五种指定启发式算法和一个精确
-参考算法。工作流会在 `results/` 下生成 seed 级分布、控制组配对差值、精度诊断和
-两张 SVG 图；这些本地测量结果仍不属于被跟踪的仓库快照。
-
-上面两个命令都会产生一个 `LegacyConfigWarning`：`configs/quick.json` 和 `configs/full.json` 使用 schema v1，加载器会在每次运行时于内存中将它们迁移到 schema 3。这个警告是预期行为。这两个文件会刻意保留在 v1，而不会直接重写——因为 `config_hash` 是基于规范化后的配置计算的，重写文件会改变该哈希，并使已经依据它记录的运行身份失去对应关系；`CONTRIBUTING.md` 将这种变化归类为破坏性变更。`configs/sweeps.json` 使用 schema 2；`configs/p3_*` 到 `configs/p7_*` 的配置使用 schema 3，因此不会产生警告。
-
-`results/` 下生成的文件都是本地产物，不属于仓库快照的一部分。
-
-在不依赖输出自身校验和的情况下验证已完成的运行：
+验证已经完成的 quick 运行：
 
 ```console
 python .github/scripts/validate_benchmark_output.py --config configs/quick.json --output results/quick
 ```
 
-`manifest.json` 带有校验和，验证该校验和可以证明文件在写出后没有被修改。但它无法证明文件最初就是正确生成的——如果一次运行错误地计算了某个统计量，其输出仍然可能拥有完全匹配的校验和。这个验证器会重新读取产物，并仅根据配置重新计算它们所声称的数据；只要出现任何不一致就以非零状态退出。CI 会在每次入门工作流完成后运行该验证器。
+验证器检查其支持的产物关系和已记录的校验和。校验和一致只说明文件与记录的哈希
+一致，不能证明最初的计算正确。生成的输出继续保存在本地 `results/`。
+
+[惰性贪心（Lazy Greedy）功能工作流](configs/p3_lazy_greedy.json) 也用于 CI 检查，
+具体步骤见[功能测试报告](docs/lazy_greedy_test_report.md)。
+
+### 历史探索与附录
+
+已有配置继续按各自用途使用。`configs/sweeps.json` 使用 schema 2；
+`configs/p3_*` 到 `configs/p7_*` 的配置使用 schema 3。
+版本标签不表示下一步应该运行哪项实验。
+
+较大的结构扫描见 [cartography（结构差距制图）命令](docs/cli.md#cartography)。
+旧版[重叠参数扫描](configs/p6_overlap_scan.json) 和[完整配置目录](configs/)
+可用于进一步探索，不能直接替代前述固定参数试验。
+
+带阶段前缀的配置并非全部属于历史：`p3_lazy_greedy.json` 用于 CI 检查，
+`p7_controlled_stressors.json` 用于生成器审计，配对配置用于随机种子配对方法检查。
+相应流程见[文档索引](docs/README.md)，完整命令见 [CLI 使用说明](docs/cli.md)。
 
 ## 测试
 
