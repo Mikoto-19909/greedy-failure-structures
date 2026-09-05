@@ -16,6 +16,7 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from maxcover import benchmark
 from maxcover import benchmark_artifacts, benchmark_manifest, benchmark_planning
+from maxcover import benchmark_associations, benchmark_statistics
 
 
 PICKLE_CHECK = r"""
@@ -118,6 +119,27 @@ class BenchmarkModuleTests(unittest.TestCase):
                                    "_validate_existing_instances", "_clean_runner_owned_artifacts",
                                    "_write_search_comparison", "_write_stochastic_summary", "_read_existing")),
             (benchmark_manifest, ("PROJECT_ROOT", "_git_state", "_write_manifest")),
+            (benchmark_statistics, (
+                "_validate_certificate_bound", "_normalize_optima", "_reference_status_records",
+                "_reference_coverage_statistics", "_REFERENCE_BIAS_METRICS",
+                "_reference_censoring_bias_statistics", "_reference_cutoff_sensitivity_statistics",
+                "_summarize", "_MetricDescription", "_linear_quantile", "_describe_values",
+                "_DescriptiveCommon", "_descriptive_statistics", "_beta_continued_fraction",
+                "_regularized_incomplete_beta", "_student_t_cdf", "_student_t_critical_95",
+                "_ten_decimal", "_ConfidenceIntervalCommon", "_confidence_interval_statistics",
+                "_censored_runtime_statistics", "_greedy_failure_statistics", "_LocalSearchPairAnalysis",
+                "_local_search_pair_analyses", "_local_search_recovery_statistics",
+                "_local_search_remaining_gap_statistics", "_runtime_ratio_variant_units",
+                "_heuristic_exact_runtime_ratio_statistics", "_bnb_variant_units",
+                "_bnb_node_reduction_statistics", "_pareto_variant_units", "_quality_runtime_pareto_statistics",
+                "_deterministic_variant_units", "_increment_heuristic_status",
+            )),
+            (benchmark_associations, (
+                "_gap_density_association_statistics", "_gap_overlap_association_statistics",
+                "_gap_clustering_association_statistics", "_runtime_set_count_association_statistics",
+                "_RuntimeKInstanceProjection", "_runtime_k_association_statistics",
+                "_search_nodes_dominated_ratio_association_statistics",
+            )),
         ):
             for name in names:
                 with self.subTest(name=name):

@@ -103,14 +103,12 @@ diff for whitespace errors before committing, then run the commit-policy check
 over the resulting commit range.
 
 Install the type checker with `pip install -e ".[typecheck]"`. The configured
-mypy check covers `src/maxcover`; the per-module `ignore_errors` overrides in
-[`pyproject.toml`](pyproject.toml) identify the legacy modules whose errors are
-excluded. A clean configured run does not establish that a change in an exempt
-module is free of type errors. Check an affected module with its override temporarily
-removed. New modules are checked by default; do not expand exemptions to hide
-problems introduced by a move. Keep necessary type fixes separate from a
-mechanical move, and remove an exemption in a separate pull request from a
-behavioral change.
+mypy check covers every module under `src/maxcover`, without module-wide error
+exemptions; [`pyproject.toml`](pyproject.toml) is the coverage source of truth.
+New modules are checked by default. Do not add broad exclusions to hide
+problems introduced by a move; any necessary suppression must be narrow and
+document its reason. Keep necessary type fixes separate from a mechanical move,
+and remove an exemption in a separate pull request from a behavioral change.
 
 If a tool is unavailable, report the missing check and use available CI coverage;
 do not substitute an earlier revision's result. Agents must also follow the

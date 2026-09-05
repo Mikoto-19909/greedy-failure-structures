@@ -2,8 +2,8 @@
 
 Restored from the preserved research stash and reconciled with the main branch
 at `0dd9de338c07df312e268f916e630aceebb11f4a` on 2026-09-05. The research
-branch and the other stashed files remain separate. B0 through B2 are complete;
-B3 begins with a separate artifact type prerequisite.
+branch and the other stashed files remain separate. B0 through B3 are complete;
+B4 begins with a separate statistics type prerequisite.
 
 [Preparation PR #27](https://github.com/Mikoto-19909/greedy-failure-structures/pull/27)
 restored this document, added its index entry, and reconciled the linked plans'
@@ -179,6 +179,52 @@ lifecycle tests, and the default type check. The artifacts module uses normal
 type coverage without new exemptions. Independent review replays old checkpoint,
 conditional-output and cleanup-boundary cases; required PR CI supplies the
 remaining coverage under the same local-check selection as the earlier batches.
+B3 passed independent reverse review and all required PR checks before merge.
+The independent replay preserved malformed and partial checkpoint behavior,
+conditional CSV bytes, and the boundary between runner-owned and unrelated files.
+
+### B4 implementation
+
+B4 is implemented in [PR #38](https://github.com/Mikoto-19909/greedy-failure-structures/pull/38).
+B4 starts from `bbaea2c1a52474d2d933b7744b0f233ebb95bcdb`, after B3.
+The prerequisite adds precise TypedDict annotations for the existing descriptive
+and confidence-interval keyword dictionaries, renames the first instance-loop
+binding in five association functions, and annotates the runtime-set-count
+helper's existing use of the runtime-k projection. Dictionary values, calls,
+formulas, lookup/rejection branches and projection behavior remain unchanged.
+
+Removing only those annotation changes and restoring the loop bindings
+reproduces the original module AST. The variable-use audit confirms that later
+instance reads rely on later assignments, not the first loop's leftover value.
+The temporary type check with only the benchmark override removed passes with
+no remaining diagnostics. The default configuration remains unchanged for this
+prerequisite, and the fixed old/new artifact comparison passes before relocation.
+
+After type commit `bc8ccb6`, statistical definitions and their two private
+TypedDicts move verbatim into `benchmark_statistics.py`; association functions
+and their existing runtime-k projection move into `benchmark_associations.py`.
+The dependency closure includes `_REFERENCE_BIAS_METRICS`, the local-search
+pair-analysis type and each existing variant-unit helper. Associations depend
+on statistics only for `_ten_decimal`; neither module imports the facade.
+
+All moved names remain explicit facade aliases. Certificate-bound validation
+and optimum normalization move together, while `_rows_for_instance()` retains
+its facade lookup of the certificate helper. Public functions, execution and
+replay remain unchanged. The post-move fixed artifact comparison, relevant
+reference/report/validator/lifecycle tests and default type check pass.
+The mechanical commit leaves the benchmark exemption unchanged. A separate
+configuration commit removes that last module-wide exemption after the full
+default type check passes. The shared contribution guide and bilingual entry
+points describe the resulting coverage without source-file counts. Behavioral
+type probes verify errors in the former legacy modules, the new statistics
+modules and a future module; a configuration guard rejects module exemptions
+or source exclusions.
+
+The old implementation also freezes direct statistics and association inputs,
+including empty samples, missing references, censoring, zero gaps, constant
+structure and identity conflicts. The moved implementation produces identical
+result bytes for every recorded successful or rejecting call. These function
+fixtures complement the complete B0 checkpoint and do not add research samples.
 
 ## Purpose
 

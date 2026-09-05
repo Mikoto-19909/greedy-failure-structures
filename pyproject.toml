@@ -40,15 +40,6 @@ show_error_codes = true
 warn_return_any = true
 warn_unused_ignores = true
 
-[[tool.mypy.overrides]]
-# Errors in these legacy modules are excluded from the configured result.
-# New modules use the normal check; keep type fixes separate from relocation.
-# CONTRIBUTING.md describes the coverage boundary and targeted diagnostics.
-module = [
-    "maxcover.benchmark",
-]
-ignore_errors = true
-
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]

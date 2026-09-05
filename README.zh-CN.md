@@ -66,7 +66,7 @@ python -m unittest discover -s tests -v
 ```
 
 [CONTRIBUTING.md](CONTRIBUTING.md#verification)集中维护完整检查命令和实际 mypy
-覆盖范围，包括当前豁免。Windows 用户也可使用 `./project.ps1 test`、
+覆盖范围。Windows 用户也可使用 `./project.ps1 test`、
 `./project.ps1 typecheck` 和 `./project.ps1 quick`。
 
 ## 范围
