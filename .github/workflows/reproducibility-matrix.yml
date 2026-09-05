@@ -31,8 +31,33 @@ env:
   PYTHONDONTWRITEBYTECODE: "1"
 
 jobs:
+  detect:
+    name: classify changes (reproducibility)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      profile: ${{ steps.classify.outputs.profile }}
+    steps:
+      - name: Check out complete history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Classify the complete pull request diff
+        id: classify
+        run: python .github/scripts/classify_ci_changes.py
+
   benchmark:
     name: benchmark (${{ matrix.os }}, Python ${{ matrix.python-version }})
+    needs: detect
+    if: >-
+      ${{ !cancelled() &&
+          (needs.detect.result != 'success' ||
+           needs.detect.outputs.profile != 'docs') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     strategy:
@@ -73,7 +98,12 @@ jobs:
 
   compare:
     name: compare cells against the baseline
-    needs: benchmark
+    needs: [detect, benchmark]
+    if: >-
+      ${{ !cancelled() &&
+          (needs.detect.result != 'success' ||
+           needs.detect.outputs.profile != 'docs') &&
+          needs.benchmark.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

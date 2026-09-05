@@ -23,8 +23,49 @@ env:
   PYTHONDONTWRITEBYTECODE: "1"
 
 jobs:
+  detect:
+    name: classify changes (tests)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      profile: ${{ steps.classify.outputs.profile }}
+    steps:
+      - name: Check out complete history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Classify the complete pull request diff
+        id: classify
+        run: python .github/scripts/classify_ci_changes.py
+
   unit-tests:
+    name: unit tests (ubuntu-latest, Python 3.12)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Run the test suite
+        run: python -m unittest discover -s tests -v
+
+  unit-tests-extra:
     name: unit tests (${{ matrix.os }}, Python ${{ matrix.python-version }})
+    needs: detect
+    if: >-
+      ${{ !cancelled() &&
+          (needs.detect.result != 'success' ||
+           needs.detect.outputs.profile != 'docs') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     strategy:
@@ -37,6 +78,9 @@ jobs:
           - "3.11"
           - "3.12"
           - "3.13"
+        exclude:
+          - os: ubuntu-latest
+            python-version: "3.12"
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -69,6 +113,11 @@ jobs:
 
   entry-points:
     name: entry points and bundled configurations
+    needs: detect
+    if: >-
+      ${{ !cancelled() &&
+          (needs.detect.result != 'success' ||
+           needs.detect.outputs.profile != 'docs') }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -93,6 +142,11 @@ jobs:
 
   starter-workflow:
     name: starter workflow (${{ matrix.os }})
+    needs: detect
+    if: >-
+      ${{ !cancelled() &&
+          (needs.detect.result != 'success' ||
+           needs.detect.outputs.profile != 'docs') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     strategy:
@@ -138,6 +192,11 @@ jobs:
 
   lazy-greedy-smoke:
     name: lazy greedy smoke (${{ matrix.os }})
+    needs: detect
+    if: >-
+      ${{ !cancelled() &&
+          (needs.detect.result != 'success' ||
+           needs.detect.outputs.profile != 'docs') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     strategy:
