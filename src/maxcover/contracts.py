@@ -85,12 +85,14 @@ from ._association_contracts import (
     GAP_CLUSTERING_ASSOCIATION_SCHEMA_VERSION,
     GAP_DENSITY_ASSOCIATION_SCHEMA_VERSION,
     GAP_OVERLAP_ASSOCIATION_SCHEMA_VERSION,
-    RUNTIME_K_ASSOCIATION_SCHEMA_VERSION,
-    RUNTIME_SET_COUNT_ASSOCIATION_SCHEMA_VERSION,
-    SEARCH_NODES_DOMINATED_RATIO_ASSOCIATION_SCHEMA_VERSION,
     GapClusteringAssociationRecord,
     GapDensityAssociationRecord,
     GapOverlapAssociationRecord,
+)
+from ._performance_association_contracts import (
+    RUNTIME_K_ASSOCIATION_SCHEMA_VERSION,
+    RUNTIME_SET_COUNT_ASSOCIATION_SCHEMA_VERSION,
+    SEARCH_NODES_DOMINATED_RATIO_ASSOCIATION_SCHEMA_VERSION,
     RuntimeKAssociationRecord,
     RuntimeSetCountAssociationRecord,
     SearchNodesDominatedRatioAssociationRecord,

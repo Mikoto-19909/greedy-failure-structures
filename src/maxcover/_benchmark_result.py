@@ -10,6 +10,8 @@ from ._association_contracts import (
     GapClusteringAssociationRecord,
     GapDensityAssociationRecord,
     GapOverlapAssociationRecord,
+)
+from ._performance_association_contracts import (
     RuntimeKAssociationRecord,
     RuntimeSetCountAssociationRecord,
     SearchNodesDominatedRatioAssociationRecord,
