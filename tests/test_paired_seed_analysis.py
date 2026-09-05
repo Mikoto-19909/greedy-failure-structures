@@ -381,6 +381,62 @@ class PairingInvarianceTest(unittest.TestCase):
 class EffectiveCouplingTest(unittest.TestCase):
     """The effective seed is the coupling seed when one was injected."""
 
+    def test_shared_coupling_accepts_distinct_instance_seeds(self) -> None:
+        for coupled_control in (False, True):
+            with self.subTest(coupled_control=coupled_control):
+                control_family = "long_tail" if coupled_control else "uniform"
+                paired = [
+                    _record(case="treatment", repetition=0, seed=11,
+                            family="long_tail", coverage=6),
+                    _record(case="treatment_control", repetition=0, seed=7,
+                            family=control_family, coverage=5),
+                ]
+                unpaired = [
+                    _record(case="treatment", repetition=0, seed=2000,
+                            family="long_tail", coverage=6),
+                    _record(case="treatment_control", repetition=0, seed=3000,
+                            family=control_family, coverage=5),
+                ]
+                paired_instances = [
+                    _coupled_instance(
+                        case="treatment", repetition=0, seed=11,
+                        coupling_pair_id='seed_group="pair"|repetition=0',
+                        coupling_seed=7,
+                    ),
+                    _coupled_instance(
+                        case="treatment_control", repetition=0, seed=7,
+                        coupling_pair_id='seed_group="pair"|repetition=0',
+                        coupling_seed=7,
+                    ) if coupled_control else _instance_record(
+                        case="treatment_control", repetition=0, seed=7,
+                        family="uniform",
+                    ),
+                ]
+                unpaired_instances = [
+                    _coupled_instance(
+                        case=row.case_id, repetition=0, seed=row.seed,
+                        coupling_pair_id=f'case="{row.case_id}"|repetition=0',
+                        coupling_seed=row.seed,
+                    ) if row.family == "long_tail" else _instance_record(
+                        case=row.case_id, repetition=0,
+                        seed=row.seed, family=row.family,
+                    )
+                    for row in unpaired
+                ]
+                rows, samples = analyze_pairing(
+                    paired, unpaired, paired_instances=paired_instances,
+                    unpaired_instances=unpaired_instances,
+                )
+                coverage = next(row for row in rows if row.metric == "coverage")
+                self.assertEqual(coverage.paired.n, 1)
+                self.assertEqual(coverage.paired.mean, 1.0)
+                self.assertEqual(coverage.paired_seed_shared_count, 0)
+                sample = next(row for row in samples
+                              if row["scheme"] == "paired" and row["metric"] == "coverage")
+                self.assertEqual(sample["treatment_seed"], 11)
+                self.assertEqual(sample["control_seed"], 7)
+                self.assertFalse(sample["seeds_equal"])
+
     def test_paired_scheme_rejects_unequal_effective_coupling_seed(self) -> None:
         paired = [
             _record(case="treatment", repetition=0, seed=7, coverage=6),

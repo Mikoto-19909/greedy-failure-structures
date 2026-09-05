@@ -318,9 +318,12 @@ def _build_series(
     algorithm: str,
     metric: str,
     expected_repetitions: int,
-    require_seed_sharing: bool,
 ) -> DifferenceSeries:
-    """Build one difference per repetition for one analysis cell."""
+    """Build differences after analyze_pairing validates effective coupling.
+
+    Raw instance seeds remain diagnostic metadata; they need not match when
+    a shared coupling seed drove generation.
+    """
 
     units = _unit_rows(records)
     repetitions: list[int] = []
@@ -353,17 +356,6 @@ def _build_series(
                 [
                     f"case {treatment_case!r} and its control differ in dimensions"
                     f" at repetition {repetition}: {treatment_dims} versus {control_dims}"
-                ]
-            )
-        seeds_equal = (
-            treatment_row.seed is not None and treatment_row.seed == control_row.seed
-        )
-        if require_seed_sharing and not seeds_equal:
-            raise AnalysisError(
-                [
-                    f"paired scheme requires a shared seed for {treatment_case!r}"
-                    f" and {control_case!r} at repetition {repetition} but the seeds"
-                    f" differ ({treatment_row.seed} versus {control_row.seed})"
                 ]
             )
         treatment_value = _record_metric_value(treatment_row, metric)
@@ -613,7 +605,6 @@ def analyze_pairing(
                 algorithm=algorithm,
                 metric=metric,
                 expected_repetitions=repetition_count,
-                require_seed_sharing=True,
             )
             unpaired = _build_series(
                 unpaired_records,
@@ -625,7 +616,6 @@ def analyze_pairing(
                 algorithm=algorithm,
                 metric=metric,
                 expected_repetitions=repetition_count,
-                require_seed_sharing=False,
             )
             comparison.append(
                 ComparisonRow(

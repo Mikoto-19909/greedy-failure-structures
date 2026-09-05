@@ -25,6 +25,9 @@ small number of validated core research claims. See
 
 ## Experiment guidance
 
+- [`core_overlap_checkpoint_plan.zh-CN.md`](core_overlap_checkpoint_plan.zh-CN.md):
+  planned single-point comparison of Greedy failures under high overlap and a
+  matched uniform control (Simplified Chinese; experiment not yet executed)
 - [`failure_mechanisms.md`](failure_mechanisms.md): structural stressors,
   direct greedy traps, and the configurations that exercise them
 - [`generator_isolation.md`](generator_isolation.md): target-metric monotonicity,
@@ -39,12 +42,18 @@ small number of validated core research claims. See
 
 ## Project policy and history
 
+- [`documentation_simplification_plan.zh-CN.md`](documentation_simplification_plan.zh-CN.md):
+  Simplified Chinese plan for documentation corrections and cleanup, including
+  related comments, tests, and completion criteria
 - [`PRE_PUBLIC_DEVELOPMENT_HISTORY.md`](history/PRE_PUBLIC_DEVELOPMENT_HISTORY.md):
   pre-public milestones and the code-first boundary
 - [`CANONICAL_MIGRATION_RECEIPT.json`](history/CANONICAL_MIGRATION_RECEIPT.json):
   machine-readable migration identities
 - [`LICENSES/README.md`](../LICENSES/README.md): default-deny file-level license
   mapping
+- [`ci_routing_plan.zh-CN.md`](ci_routing_plan.zh-CN.md): proposed CI routing
+  for plan-only pull requests, including required checks, fallback behavior,
+  and implementation acceptance checks; not yet implemented
 
 Generated files under `results/` are local artifacts. They are inputs to local
 inspection and independent validation, not tracked documentation. Only the

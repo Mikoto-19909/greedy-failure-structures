@@ -168,7 +168,11 @@ against the files actually read, accepts only the current manifest schema
 version, and checks the effective seed the instances record (the coupling seed
 when the runner injected one, otherwise the instance seed): shared between a
 treatment and its matched control at every repetition in the paired run, and
-independent in the unpaired run. Run it from the repository root:
+independent in the unpaired run. A paired run may therefore have distinct raw
+instance seeds when the effective seeds agree. The existing `treatment_seed`,
+`control_seed`, `seeds_equal`, and seed-shared count fields continue to describe
+the raw seeds in raw_results.csv; they are diagnostics, not the coupling
+acceptance condition. Run it from the repository root:
 
 ~~~console
 PYTHONPATH=src python -m maxcover.paired_seed_analysis --paired-results results/pairing-v1/paired --unpaired-results results/pairing-v1/unpaired --output results/pairing-v1/analysis
