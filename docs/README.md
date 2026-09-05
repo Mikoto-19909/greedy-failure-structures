@@ -72,6 +72,23 @@ configurations by paired-seed checks.
 Keep these configurations for their existing purposes. Their names and schema
 versions do not make them the recommended next research experiment.
 
+## Implementation plans
+
+These plans are archived proposals, not completed refactors. Start with reporting
+and output validation; generator and record splits can wait for a maintenance need.
+Acceptance focuses on behavior and public compatibility. Remove unnecessary
+source-count claims and their tests as documentation is simplified, and check new
+modules with mypy by default instead of spreading existing module exemptions.
+
+- [`reporting_split_plan.zh-CN.md`](reporting_split_plan.zh-CN.md): report module
+  boundaries, compatibility imports, and fixed-input Markdown/SVG comparisons
+- [`output_validation_split_plan.zh-CN.md`](output_validation_split_plan.zh-CN.md):
+  validator function extraction with preserved rejection behavior and required prechecks
+- [`generators_split_plan.zh-CN.md`](generators_split_plan.zh-CN.md): generator
+  family modules with stable random draws, ordered instances, and coupling
+- [`contracts_split_plan.zh-CN.md`](contracts_split_plan.zh-CN.md): statistical
+  record groups with preserved CSV, public exports, and pickle compatibility
+
 ## Project policy and history
 
 - [`documentation_simplification_plan.zh-CN.md`](documentation_simplification_plan.zh-CN.md):
