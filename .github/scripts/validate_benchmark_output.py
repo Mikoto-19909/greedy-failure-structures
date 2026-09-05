@@ -36,6 +36,7 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from maxcover.algorithms import ALGORITHMS  # noqa: E402
 from maxcover.benchmark import (  # noqa: E402
+    BenchmarkPlan,
     _bnb_node_reduction_statistics,
     _canonical_instance_records,
     _canonical_run_records,
@@ -62,7 +63,7 @@ from maxcover.benchmark import (  # noqa: E402
     _tasks_for_config,
     plan_benchmark,
 )
-from maxcover.config import load_config  # noqa: E402
+from maxcover.config import ExperimentConfig, load_config  # noqa: E402
 from maxcover.contracts import (  # noqa: E402
     AUTOMATIC_CONCLUSION_CONTRACT_SCHEMA_VERSION,
     AUTOMATIC_CONCLUSION_MINIMUM_SAMPLE_COUNT,
@@ -1649,6 +1650,172 @@ def _validate_search_nodes_dominated_ratio_contract(
         )
 
 
+def _validate_record_consistency(
+    config: ExperimentConfig,
+    plan: BenchmarkPlan,
+    expected_hash: str,
+    instances: list[InstanceRecord],
+    rows: list[RunRecord],
+    summaries: list[SummaryRecord],
+) -> None:
+    if len(rows) != plan.algorithm_run_count:
+        _fail("raw result count does not match the execution plan")
+    if len(instances) != plan.instance_count:
+        _fail("instance record count does not match the execution plan")
+    _validate_run_identity(config, expected_hash, rows)
+    instance_keys = {
+        (record.case_id, record.repetition, record.instance_id)
+        for record in instances
+    }
+    if len(instance_keys) != len(instances):
+        _fail("instances.csv contains duplicate composite instance keys")
+    if {record.config_hash for record in instances} != {expected_hash}:
+        _fail("instance records contain an unexpected configuration hash")
+    if len({row.run_id for row in rows}) != len(rows):
+        _fail("raw results contain duplicate run_id values")
+    if {row.config_hash for row in rows} != {expected_hash}:
+        _fail("raw results contain an unexpected configuration hash")
+    if {row.case_id for row in rows} != set(plan.case_ids):
+        _fail("raw result case IDs do not match the execution plan")
+    if any(
+        (row.case_id, row.repetition, row.instance_id) not in instance_keys
+        for row in rows
+    ):
+        _fail("a raw result does not link to exactly one instance record")
+
+    bad_statuses = {
+        row.status.value
+        for row in rows
+        if row.status in {SolutionStatus.ERROR, SolutionStatus.TIMEOUT}
+    }
+    if bad_statuses:
+        _fail(f"starter benchmark produced non-accepted statuses: {sorted(bad_statuses)}")
+    if any(row.coverage is None for row in rows):
+        _fail("starter benchmark contains a result without a feasible coverage value")
+
+    instance_ids = {row.instance_id for row in rows}
+    referenced_ids = {row.instance_id for row in rows if row.optimum is not None}
+    if referenced_ids != instance_ids:
+        _fail("not every starter instance has an exact optimum reference")
+    raw_groups = Counter(
+        (row.case, row.family, row.algorithm_id, row.algorithm) for row in rows
+    )
+    summary_groups = {
+        (summary.case, summary.family, summary.algorithm_id, summary.algorithm): summary.runs
+        for summary in summaries
+    }
+    if summary_groups != dict(raw_groups):
+        _fail("summary groups or run counts do not match the raw results")
+
+
+def _validate_canonical_records(
+    config: ExperimentConfig,
+    rows: list[RunRecord],
+    instances: list[InstanceRecord],
+) -> tuple[list[RunRecord], list[InstanceRecord]]:
+    canonical_rows = _canonical_run_records(
+        _normalize_optima(rows, instances)
+    )
+    canonical_instances = _canonical_instance_records(instances)
+    _validate_lazy_greedy_rows(config, canonical_rows)
+    if [row.to_csv_row() for row in rows] != [
+        row.to_csv_row() for row in canonical_rows
+    ]:
+        _fail(
+            "raw results do not match normalized exact references and "
+            "canonical precision"
+        )
+    return canonical_rows, canonical_instances
+
+
+def _validate_descriptive_statistics(
+    canonical_rows: list[RunRecord],
+    descriptive: list[DescriptiveStatisticsRecord],
+) -> list[DescriptiveStatisticsRecord]:
+    expected_descriptive = _descriptive_statistics(canonical_rows)
+    if [record.to_csv_row() for record in descriptive] != [
+        record.to_csv_row() for record in expected_descriptive
+    ]:
+        _fail("descriptive statistics do not match canonical raw results")
+    return expected_descriptive
+
+
+def _validate_confidence_interval_statistics(
+    expected_descriptive: list[DescriptiveStatisticsRecord],
+    confidence_intervals: list[ConfidenceIntervalRecord],
+) -> list[ConfidenceIntervalRecord]:
+    expected_confidence_intervals = _confidence_interval_statistics(
+        expected_descriptive
+    )
+    if [record.to_csv_row() for record in confidence_intervals] != [
+        record.to_csv_row() for record in expected_confidence_intervals
+    ]:
+        _fail(
+            "confidence intervals do not match canonical descriptive "
+            "statistics recomputed from raw results"
+        )
+    return expected_confidence_intervals
+
+
+def _validate_censored_runtime_statistics(
+    canonical_rows: list[RunRecord],
+    censored_runtime: list[CensoredRuntimeRecord],
+) -> list[CensoredRuntimeRecord]:
+    expected_censored_runtime = _censored_runtime_statistics(canonical_rows)
+    if [record.to_csv_row() for record in censored_runtime] != [
+        record.to_csv_row() for record in expected_censored_runtime
+    ]:
+        _fail(
+            "censored-runtime statistics do not match canonical raw results"
+        )
+    return expected_censored_runtime
+
+
+def _validate_reference_statistics(
+    config: ExperimentConfig,
+    canonical_rows: list[RunRecord],
+    canonical_instances: list[InstanceRecord],
+    reference_statuses: list[ReferenceStatusRecord],
+    reference_coverage: list[ReferenceCoverageRecord],
+    reference_censoring_bias: list[ReferenceCensoringBiasRecord],
+    reference_cutoff_sensitivity: list[ReferenceCutoffSensitivityRecord],
+) -> None:
+    expected_reference_statuses = _reference_status_records(
+        config,
+        canonical_rows,
+        canonical_instances,
+    )
+    if [record.to_csv_row() for record in reference_statuses] != [
+        record.to_csv_row() for record in expected_reference_statuses
+    ]:
+        _fail("reference statuses do not match canonical instances and raw results")
+    expected_reference_coverage = _reference_coverage_statistics(
+        expected_reference_statuses
+    )
+    if [record.to_csv_row() for record in reference_coverage] != [
+        record.to_csv_row() for record in expected_reference_coverage
+    ]:
+        _fail("reference coverage does not use all generated instances")
+    expected_reference_censoring_bias = _reference_censoring_bias_statistics(
+        expected_reference_statuses,
+        canonical_instances,
+    )
+    if [record.to_csv_row() for record in reference_censoring_bias] != [
+        record.to_csv_row() for record in expected_reference_censoring_bias
+    ]:
+        _fail("reference censoring-bias comparisons do not match canonical evidence")
+    expected_reference_cutoff_sensitivity = (
+        _reference_cutoff_sensitivity_statistics(
+            config,
+            expected_reference_statuses,
+        )
+    )
+    if [record.to_csv_row() for record in reference_cutoff_sensitivity] != [
+        record.to_csv_row() for record in expected_reference_cutoff_sensitivity
+    ]:
+        _fail("reference cutoff sensitivity does not match exact-solver statuses")
+
+
 def validate(config_path: Path, output: Path) -> None:
     config = load_config(config_path)
     plan = plan_benchmark(config)
@@ -1785,122 +1952,40 @@ def validate(config_path: Path, output: Path) -> None:
         SearchNodesDominatedRatioAssociationRecord,
         allow_empty=True,
     )
-    if len(rows) != plan.algorithm_run_count:
-        _fail("raw result count does not match the execution plan")
-    if len(instances) != plan.instance_count:
-        _fail("instance record count does not match the execution plan")
-    _validate_run_identity(config, expected_hash, rows)
-    instance_keys = {
-        (record.case_id, record.repetition, record.instance_id)
-        for record in instances
-    }
-    if len(instance_keys) != len(instances):
-        _fail("instances.csv contains duplicate composite instance keys")
-    if {record.config_hash for record in instances} != {expected_hash}:
-        _fail("instance records contain an unexpected configuration hash")
-    if len({row.run_id for row in rows}) != len(rows):
-        _fail("raw results contain duplicate run_id values")
-    if {row.config_hash for row in rows} != {expected_hash}:
-        _fail("raw results contain an unexpected configuration hash")
-    if {row.case_id for row in rows} != set(plan.case_ids):
-        _fail("raw result case IDs do not match the execution plan")
-    if any(
-        (row.case_id, row.repetition, row.instance_id) not in instance_keys
-        for row in rows
-    ):
-        _fail("a raw result does not link to exactly one instance record")
-
-    bad_statuses = {
-        row.status.value
-        for row in rows
-        if row.status in {SolutionStatus.ERROR, SolutionStatus.TIMEOUT}
-    }
-    if bad_statuses:
-        _fail(f"starter benchmark produced non-accepted statuses: {sorted(bad_statuses)}")
-    if any(row.coverage is None for row in rows):
-        _fail("starter benchmark contains a result without a feasible coverage value")
-
-    instance_ids = {row.instance_id for row in rows}
-    referenced_ids = {row.instance_id for row in rows if row.optimum is not None}
-    if referenced_ids != instance_ids:
-        _fail("not every starter instance has an exact optimum reference")
-    raw_groups = Counter(
-        (row.case, row.family, row.algorithm_id, row.algorithm) for row in rows
+    _validate_record_consistency(
+        config,
+        plan,
+        expected_hash,
+        instances,
+        rows,
+        summaries,
     )
-    summary_groups = {
-        (summary.case, summary.family, summary.algorithm_id, summary.algorithm): summary.runs
-        for summary in summaries
-    }
-    if summary_groups != dict(raw_groups):
-        _fail("summary groups or run counts do not match the raw results")
-    canonical_rows = _canonical_run_records(
-        _normalize_optima(rows, instances)
+    canonical_rows, canonical_instances = _validate_canonical_records(
+        config,
+        rows,
+        instances,
     )
-    canonical_instances = _canonical_instance_records(instances)
-    _validate_lazy_greedy_rows(config, canonical_rows)
-    if [row.to_csv_row() for row in rows] != [
-        row.to_csv_row() for row in canonical_rows
-    ]:
-        _fail(
-            "raw results do not match normalized exact references and "
-            "canonical precision"
-        )
-    expected_descriptive = _descriptive_statistics(canonical_rows)
-    if [record.to_csv_row() for record in descriptive] != [
-        record.to_csv_row() for record in expected_descriptive
-    ]:
-        _fail("descriptive statistics do not match canonical raw results")
-    expected_confidence_intervals = _confidence_interval_statistics(
-        expected_descriptive
+    expected_descriptive = _validate_descriptive_statistics(
+        canonical_rows,
+        descriptive,
     )
-    if [record.to_csv_row() for record in confidence_intervals] != [
-        record.to_csv_row() for record in expected_confidence_intervals
-    ]:
-        _fail(
-            "confidence intervals do not match canonical descriptive "
-            "statistics recomputed from raw results"
-        )
-    expected_censored_runtime = _censored_runtime_statistics(canonical_rows)
-    if [record.to_csv_row() for record in censored_runtime] != [
-        record.to_csv_row() for record in expected_censored_runtime
-    ]:
-        _fail(
-            "censored-runtime statistics do not match canonical raw results"
-        )
-    expected_reference_statuses = _reference_status_records(
+    expected_confidence_intervals = _validate_confidence_interval_statistics(
+        expected_descriptive,
+        confidence_intervals,
+    )
+    expected_censored_runtime = _validate_censored_runtime_statistics(
+        canonical_rows,
+        censored_runtime,
+    )
+    _validate_reference_statistics(
         config,
         canonical_rows,
         canonical_instances,
+        reference_statuses,
+        reference_coverage,
+        reference_censoring_bias,
+        reference_cutoff_sensitivity,
     )
-    if [record.to_csv_row() for record in reference_statuses] != [
-        record.to_csv_row() for record in expected_reference_statuses
-    ]:
-        _fail("reference statuses do not match canonical instances and raw results")
-    expected_reference_coverage = _reference_coverage_statistics(
-        expected_reference_statuses
-    )
-    if [record.to_csv_row() for record in reference_coverage] != [
-        record.to_csv_row() for record in expected_reference_coverage
-    ]:
-        _fail("reference coverage does not use all generated instances")
-    expected_reference_censoring_bias = _reference_censoring_bias_statistics(
-        expected_reference_statuses,
-        canonical_instances,
-    )
-    if [record.to_csv_row() for record in reference_censoring_bias] != [
-        record.to_csv_row() for record in expected_reference_censoring_bias
-    ]:
-        _fail("reference censoring-bias comparisons do not match canonical evidence")
-    expected_reference_cutoff_sensitivity = (
-        _reference_cutoff_sensitivity_statistics(
-            config,
-            expected_reference_statuses,
-        )
-    )
-    if [record.to_csv_row() for record in reference_cutoff_sensitivity] != [
-        record.to_csv_row() for record in expected_reference_cutoff_sensitivity
-    ]:
-        _fail("reference cutoff sensitivity does not match exact-solver statuses")
     expected_local_search_recovery = _local_search_recovery_statistics(
         canonical_rows
     )
