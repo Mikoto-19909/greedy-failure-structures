@@ -154,6 +154,7 @@ the old implementation without changing the generated content.
 
 ### B3 implementation
 
+B3 is implemented in [PR #37](https://github.com/Mikoto-19909/greedy-failure-structures/pull/37).
 B3 starts from `d787858655717eb6d269152a19a933ff5af775ba`, after B2.
 Its type prerequisite adds one precise cast to the existing seeded sort key,
 and completes the concrete record unions of `_write_csv()` and `_csv_text()`.
