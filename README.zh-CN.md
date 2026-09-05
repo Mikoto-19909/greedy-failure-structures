@@ -12,10 +12,11 @@
 `uniform` 对照更容易让 Greedy 失手？计划在一个固定参数点比较 Greedy 与穷举参考。
 这项设计尚不能将重叠度与生成机制带来的其他结构差异完全分离。
 
-**状态：计划已制定，待实施。**
-[PR #23 中的执行计划](https://github.com/Mikoto-19909/greedy-failure-structures/pull/23)
-说明了实验设计和前置条件。计划中的 `configs/core_overlap_pilot.json` 与离线分析
-脚本尚未加入当前版本。实施或运行前先阅读该计划；目前还没有可直接运行的小型试验命令。
+**状态：实现已准备，正式实验待运行。**
+[固定配置](configs/core_overlap_pilot.json) 与
+[离线分析脚本](analysis/core_overlap_pilot.py) 已按
+[执行计划](docs/core_overlap_checkpoint_plan.zh-CN.md) 实现。
+准备代码提交后，按[试验命令](docs/cli.md#core-overlap-pilot)在干净的固定版本上正式运行。
 
 [研究分析入口](analysis/README.md) 记录当前进展。公开发现形成后，通过
 [核心结论台账](experiments/core_rq/CLAIMS.md) 查找对应证据。
@@ -44,7 +45,7 @@ python -m pip install -e ".[oracle]"
 
 | 用途 | 入口 |
 | --- | --- |
-| 当前研究 | [高重叠实验计划](https://github.com/Mikoto-19909/greedy-failure-structures/pull/23)；配置和分析脚本待实施。 |
+| 当前研究 | [固定高重叠试验](docs/cli.md#core-overlap-pilot)；实现已准备，正式实验待运行。 |
 | 演示与兼容验证 | 下方的 `demo`、`quick` 与较大的旧版 `full.json` 工作流。 |
 | 历史探索与附录 | [补充工作流索引](docs/README.md#historical-exploration-and-appendices)，包括较大的结构扫描与附加算法比较。 |
 

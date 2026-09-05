@@ -15,12 +15,12 @@ and expected set size. The planned comparison uses Greedy and an exhaustive
 reference at one fixed parameter setting. It does not isolate overlap from
 every other structural difference between the generators.
 
-**Status: planned, awaiting implementation.** The
-[execution plan in PR #23](https://github.com/Mikoto-19909/greedy-failure-structures/pull/23)
-specifies the pilot and its prerequisites. The proposed pilot configuration
-(`configs/core_overlap_pilot.json`) and offline analysis script are not yet
-included in this checkout. Follow the plan before implementing or running the
-pilot; there is no ready-to-run pilot command here yet.
+**Status: implementation prepared; formal experiment pending.** The
+[fixed configuration](configs/core_overlap_pilot.json) and
+[offline analysis](analysis/core_overlap_pilot.py) implement the
+[execution plan](docs/core_overlap_checkpoint_plan.zh-CN.md). Use the
+[pilot commands](docs/cli.md#core-overlap-pilot) after committing the preparation;
+the formal run must use a clean fixed source revision.
 
 The [research analysis](analysis/README.md) records the current research status.
 Published findings, when available, link to the
@@ -50,7 +50,7 @@ Choose the workflow by purpose:
 
 | Purpose | Entry point |
 | --- | --- |
-| Current research | The [overlap pilot plan](https://github.com/Mikoto-19909/greedy-failure-structures/pull/23); its configuration and analysis script await implementation. |
+| Current research | The [fixed overlap pilot](docs/cli.md#core-overlap-pilot); implementation is prepared and the formal experiment is pending. |
 | Examples and compatibility checks | `demo`, `quick`, and the larger legacy `full.json` workflow below. |
 | Historical exploration and appendices | The [supplementary workflow index](docs/README.md#historical-exploration-and-appendices), including broader structural scans and additional algorithm comparisons. |
 

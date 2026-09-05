@@ -2,9 +2,13 @@
 
 记录日期：2026-09-05。
 
-状态：计划已确定，实验尚未执行。本文中的样本数、参数和阈值都是预定设计，
-不是测量结果。本次存档新增这份计划、文档索引入口，并更新许可证清单。
-下面列出的实验配置、分析脚本和结果文件属于后续实施内容。
+状态：配置与离线分析已实现，正式实验尚未执行。本文中的样本数、参数和阈值都是
+预定设计，不是测量结果。实验准备包含固定配置、输入校验、配对统计、Matplotlib
+图和合成输入测试；正式运行与证据冻结作为后续独立批次。
+
+本轮实施起点为 `5ae4e8574dc0c50349e754d9462480168d132de2`，包含已合并的
+PR #21 配对修复，以及 [准备 PR #27](https://github.com/Mikoto-19909/greedy-failure-structures/pull/27)
+统一后的计划。第 2 节保留最初核对时的历史状态；正式运行另记实际完整提交 SHA。
 
 ## 1. 本次要回答的问题
 
@@ -53,8 +57,8 @@ PR #21 加固的是 `paired_seed_analysis.py` 的输入检查：读取实例记�
 
 ## 3. 固定配置
 
-后续实施时新增 `configs/core_overlap_pilot.json`，保留已有配置及其身份。
-采用下面完整内容；开始查看算法结果前提交配置和分析脚本。
+[`configs/core_overlap_pilot.json`](../configs/core_overlap_pilot.json) 采用下面完整内容，
+保留已有配置及其身份；开始查看算法结果前提交配置和分析脚本。
 
 ```json
 {
@@ -67,7 +71,7 @@ PR #21 加固的是 `paired_seed_analysis.py` 的输入检查：读取实例记�
     {
       "id": "exact_reference",
       "name": "brute_force",
-      "options": { "max_set_count": 16 }
+      "options": { "max_set_count": 16, "time_limit_seconds": null }
     }
   ],
   "cases": [
@@ -98,6 +102,10 @@ PR #21 加固的是 `paired_seed_analysis.py` 的输入检查：读取实例记�
 预期执行计划是 30 个种子对、60 个实例、120 条算法运行记录。
 每个实例穷举全部 `C(16, 4) = 1820` 个四集合组合；不设置穷举超时。
 `max_set_count` 是 runner 的执行上限选项，不是直接传给 `brute_force()` 的参数。
+
+实施时发现原示例省略 `time_limit_seconds` 会继承执行配置的默认超时，
+与本节“不设置穷举超时”冲突。因此在查看任何正式算法结果前显式设置为 `null`，
+并重新固定配置哈希；实例参数、样本数和种子批次不变。
 
 两组理论期望集合大小约为 `24 × 0.8 + 24 × 0.05 = 20.4`，
 uniform 的密度据此取 `20.4 / 48 = 0.425`。
@@ -244,7 +252,7 @@ else:
 2. 新建单一职责的实验分支，加入第 3 节配置和第 5 节规定的离线脚本。
 3. 实现脚本接口：
    `python analysis/core_overlap_pilot.py --config PATH --results DIR --output DIR`。
-   该接口是待实现要求，不是当前仓库已有命令。
+   该接口已由 [`analysis/core_overlap_pilot.py`](../analysis/core_overlap_pilot.py) 实现。
    脚本沿用 `run_project.py` 的源码导入方式，将自身所在目录的上一级下的
    `src/` 加入模块搜索路径，确保未安装项目包时也能直接执行。
    绘图环境可用 `python -m pip install matplotlib` 准备，并在运行记录中保存版本。

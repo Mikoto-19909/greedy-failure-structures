@@ -4,6 +4,10 @@ Restored from the preserved research stash and reconciled with the main branch
 at `0dd9de338c07df312e268f916e630aceebb11f4a` on 2026-09-05. The research
 branch and the other stashed files remain separate. Implementation is pending.
 
+[Preparation PR #27](https://github.com/Mikoto-19909/greedy-failure-structures/pull/27)
+restored this document, added its index entry, and reconciled the linked plans'
+order, compatibility, and type-coverage policies. B0 and extraction remain pending.
+
 The [implementation order](README.md#implementation-plans) completes the fixed
 core experiment and documentation cleanup first. PR 0 (B0) then freezes the
 compatibility baseline before any production-code split. Reporting follows B0;

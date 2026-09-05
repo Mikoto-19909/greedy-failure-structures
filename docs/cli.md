@@ -22,10 +22,10 @@ python -m pip install -e ".[oracle]"
 | Examples and compatibility checks | `demo`, `quick`, and the larger legacy `configs/full.json` workflow. |
 | Historical exploration and appendices | Earlier exploratory configurations and broader scans such as `configs/structural_gap_cartography.json`, selected for their documented purpose. |
 
-The pilot's `configs/core_overlap_pilot.json` and offline analysis script are
-planned files, not available commands or configurations in this checkout.
-Read the plan's prerequisites before implementation. The commands below
-describe existing workflows; running one does not implement the pilot.
+The [pilot configuration](../configs/core_overlap_pilot.json) and
+[offline analysis script](../analysis/core_overlap_pilot.py) are implemented.
+The formal experiment is pending. Read the plan's prerequisites and use the
+[dedicated commands](#core-overlap-pilot) on a clean fixed commit.
 
 Omitting the CLI command runs `quick`. The PowerShell wrapper also defaults to
 quick, and the Dashboard initially prefers `quick.json` without a retained
@@ -41,6 +41,28 @@ The quick and full configurations retain schema v1 and emit an expected
 checks: `p3_lazy_greedy.json` is used by CI, `p7_controlled_stressors.json` by
 generator audits, and the pairing configurations by paired-seed method checks.
 See the [workflow index](README.md) for those roles.
+
+## Core overlap pilot
+
+Commit the configuration and analysis preparation before running the formal
+experiment. Start from a clean fixed revision and a new output directory; keep
+the prescribed seed batch even if the result is inconclusive or reversed.
+Matplotlib is an optional offline plotting dependency:
+
+```console
+python -m pip install matplotlib
+python run_project.py benchmark --config configs/core_overlap_pilot.json --dry-run
+python run_project.py benchmark --config configs/core_overlap_pilot.json --output results/core_overlap_pilot_v1 --workers 1
+python .github/scripts/validate_benchmark_output.py --config configs/core_overlap_pilot.json --output results/core_overlap_pilot_v1
+python analysis/core_overlap_pilot.py --config configs/core_overlap_pilot.json --results results/core_overlap_pilot_v1 --output results/core_overlap_pilot_v1/analysis
+```
+
+The analysis also invokes the complete-output validator before its own input
+checks. It writes `paired_instances.csv`, `report.md`, `failure_rate.svg`, and
+`validation.md`. Its table, statistics, and Matplotlib figure need separate
+review before publishing evidence; the benchmark validator does not cover them.
+The full design and acceptance rules remain in the
+[checkpoint plan](core_overlap_checkpoint_plan.zh-CN.md).
 
 ## Commands
 
