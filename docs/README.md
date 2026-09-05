@@ -40,7 +40,8 @@ small number of validated core research claims. See
 ## Project policy and history
 
 - [`documentation_simplification_plan.zh-CN.md`](documentation_simplification_plan.zh-CN.md):
-  Simplified Chinese plan for documentation cleanup, with scope and completion criteria
+  Simplified Chinese plan for documentation corrections and cleanup, including
+  related comments, tests, and completion criteria
 - [`PRE_PUBLIC_DEVELOPMENT_HISTORY.md`](history/PRE_PUBLIC_DEVELOPMENT_HISTORY.md):
   pre-public milestones and the code-first boundary
 - [`CANONICAL_MIGRATION_RECEIPT.json`](history/CANONICAL_MIGRATION_RECEIPT.json):
