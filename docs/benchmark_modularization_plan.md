@@ -185,6 +185,7 @@ conditional CSV bytes, and the boundary between runner-owned and unrelated files
 
 ### B4 implementation
 
+B4 is implemented in [PR #38](https://github.com/Mikoto-19909/greedy-failure-structures/pull/38).
 B4 starts from `bbaea2c1a52474d2d933b7744b0f233ebb95bcdb`, after B3.
 The prerequisite adds precise TypedDict annotations for the existing descriptive
 and confidence-interval keyword dictionaries, renames the first instance-loop
