@@ -1,0 +1,32 @@
+{
+  "baseline_commit": "c40658d4cbc16b45fb640b1d97c03688baee16b7",
+  "mypy_version": "mypy 2.3.0 (compiled: yes)",
+  "exit_code": 1,
+  "status": "unexempted diagnostic snapshot; not a passing type check",
+  "source_sha256": {
+    "pyproject.toml": "3cd4a1393098532e08905d533b09012099772002cb573e437c9169e78099dc62",
+    "src/maxcover/benchmark.py": "97bfbf2da3e11bc4b8757752ef21ec3def448a0e7568e0ec3748c894d7041b40",
+    "src/maxcover/reporting.py": "2e34b15f4c494b63cd2d4093d08ac951f129c7f5c00635d59c440df7ee8c6127"
+  },
+  "command": "python -m mypy --config-file tests/fixtures/benchmark_compatibility/typecheck_unexempted.toml --cache-dir results/_benchmark_b0/.mypy_cache --no-incremental",
+  "configuration_change": "remove only ignore_errors from the benchmark/reporting override; all other parsed TOML values unchanged",
+  "by_planned_owner": {
+    "_report_markdown": 296,
+    "_report_charts": 43,
+    "benchmark_statistics": 12,
+    "benchmark_associations": 6,
+    "benchmark_artifacts": 2,
+    "benchmark_planning": 10,
+    "benchmark facade": 7
+  },
+  "by_error_code": {
+    "arg-type": 36,
+    "assignment": 38,
+    "attr-defined": 290,
+    "index": 1,
+    "return-value": 1,
+    "call-overload": 10
+  },
+  "diagnostics_sha256": "8589e0cdc165c6c9fb743443623d1706e374da462dfb1d4db9a7aa17f769be06",
+  "configuration_sha256": "c77d0994ad17c261cd7b22b578145456ccf66fe93575a8e61cb2bb9714089c10"
+}

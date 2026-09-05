@@ -1,0 +1,24 @@
+{
+  "schema_version": 3,
+  "name": "Benchmark compatibility checkpoint",
+  "base_seed": 9401,
+  "repetitions": 3,
+  "algorithms": [
+    {"name": "greedy"},
+    {"name": "lazy_greedy"},
+    {"name": "local_search"},
+    {"name": "brute_force", "options": {"time_limit_seconds": null, "max_set_count": 16}},
+    {"id": "bnb_baseline", "name": "branch_and_bound", "options": {"time_limit_seconds": null}},
+    {"id": "bnb_enhanced", "name": "branch_and_bound_enhanced", "options": {"time_limit_seconds": null}},
+    {"name": "randomized_greedy", "algorithm_seeds": [3, 5], "options": {"rcl_size": 2}},
+    {"name": "multi_start_local_search", "algorithm_seeds": [3, 5], "options": {"time_limit_seconds": null, "restart_count": 2, "max_iterations_per_restart": 100}}
+  ],
+  "cases": [
+    {"name": "uniform_grid", "family": "uniform", "sweep": {"universe_size": [12, 18], "set_count": [6, 8], "k": [2, 3], "density": [0.2, 1.0]}},
+    {"name": "overlap_grid", "family": "high_overlap", "universe_size": 18, "set_count": 8, "k": 2, "core_probability": 0.8, "peripheral_probability": 0.1, "sweep": {"core_fraction": [0.25, 0.75]}},
+    {"name": "dominated_grid", "family": "dominated_heavy", "anchor_count": 3, "anchor_size": 4, "k": 2, "sweep": {"child_count": [0, 1]}},
+    {"name": "cluster_grid", "family": "mixed_cluster", "universe_size": 16, "set_count": 8, "k": 2, "clusters": 2, "set_size": 4, "sweep": {"bridge_fraction": [0.0, 0.5]}},
+    {"name": "tail_grid", "family": "long_tail", "universe_size": 18, "set_count": 8, "k": 2, "set_size": 4, "sweep": {"gamma": [0.0, 1.0]}},
+    {"name": "certified_trap", "family": "adversarial", "construction_version": 2, "block_size": 4, "trap_count": 3, "distractor_count": 2}
+  ]
+}
