@@ -211,6 +211,34 @@ class OutputValidatorTests(unittest.TestCase):
         path.write_text(json.dumps(manifest), encoding="utf-8")
         self.assertRejected("invalid schema and untrusted output inventory")
 
+    def test_output_inventory_is_checked_with_a_valid_schema(self) -> None:
+        path = self.output / "manifest.json"
+        original = path.read_bytes()
+        for mutation in ("non_object", "missing_declaration"):
+            with self.subTest(mutation=mutation):
+                manifest = json.loads(original)
+                if mutation == "non_object":
+                    manifest["outputs"] = []
+                else:
+                    del manifest["outputs"]["raw_results.csv"]
+                    self.assertTrue((self.output / "raw_results.csv").is_file())
+                path.write_text(json.dumps(manifest), encoding="utf-8")
+                result = run_validator(self.output)
+                self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+                self.assertIn("CI artifact validation failed:", result.stderr)
+                self.assertIn("outputs", result.stderr)
+                if mutation == "missing_declaration":
+                    self.assertIn("raw_results.csv", result.stderr)
+
+    def test_runtime_chart_tampering_is_rejected_after_checksum_refresh(self) -> None:
+        chart = self.output / "runtime_scaling.svg"
+        chart.write_text(chart.read_text(encoding="utf-8") + "\n<!-- tampered -->\n", encoding="utf-8")
+        self.refreshManifestEntry(chart.name)
+        result = run_validator(self.output)
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("CI artifact validation failed:", result.stderr)
+        self.assertIn("runtime_scaling.svg", result.stderr)
+
     def test_headline_and_chart_tampering_is_rejected_after_checksum_refresh(self) -> None:
         report = self.output / "results_summary.md"
         text = report.read_text(encoding="utf-8")
