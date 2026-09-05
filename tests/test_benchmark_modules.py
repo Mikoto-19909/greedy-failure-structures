@@ -108,7 +108,10 @@ class BenchmarkModuleTests(unittest.TestCase):
 
     def test_facade_aliases_and_git_root_remain_correct(self) -> None:
         for module, names in (
-            (benchmark_planning, ("_PlannedInstance", "_RunTask")),
+            (benchmark_planning, ("_PlannedInstance", "_RunTask", "_STRUCTURAL_COUPLING_INTENSITY",
+                                  "_case_seed", "_coupling_pair_id", "_coupling_seed",
+                                  "_fixed_size_control_pairs", "_instance_record", "_instances_for_config",
+                                  "_resolved_case_parameters", "_structural_coupling_pair_id", "_tasks_for_config")),
             (benchmark_artifacts, ("REPORT_FILENAMES", "RUNNER_OWNED_FILENAMES",
                                    "SEARCH_COMPARISON_FIELDS", "STOCHASTIC_SUMMARY_FIELDS", "_runner_owned_paths")),
             (benchmark_manifest, ("PROJECT_ROOT", "_git_state", "_write_manifest")),

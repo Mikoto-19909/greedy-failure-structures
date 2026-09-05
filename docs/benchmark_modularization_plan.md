@@ -2,8 +2,8 @@
 
 Restored from the preserved research stash and reconciled with the main branch
 at `0dd9de338c07df312e268f916e630aceebb11f4a` on 2026-09-05. The research
-branch and the other stashed files remain separate. B0 is complete; B1 begins
-after the reporting split.
+branch and the other stashed files remain separate. B0 and B1 are complete;
+B2 begins with a separate planning type prerequisite.
 
 [Preparation PR #27](https://github.com/Mikoto-19909/greedy-failure-structures/pull/27)
 restored this document, added its index entry, and reconciled the linked plans'
@@ -16,41 +16,6 @@ core experiment and documentation cleanup first. PR 0 (B0) then freezes the
 compatibility baseline before any production-code split. Reporting follows B0;
 benchmark PRs 1–4 (B1–B4) follow reporting; output validation follows benchmark.
 PR 5 (B5) remains conditional on the resulting runner's clarity.
-
-### B1 implementation
-
-B1 is implemented in [PR #35](https://github.com/Mikoto-19909/greedy-failure-structures/pull/35).
-B1 starts from `62bbc13cfd04af017774af78f6f8ec545578b2b2`, after reporting
-[PR #34](https://github.com/Mikoto-19909/greedy-failure-structures/pull/34).
-It moves the two planning/task types, artifact inventories and path enumeration,
-and the existing Manifest implementation into the three planned modules.
-The audit also identified `PROJECT_ROOT`, used only by `_git_state()`; it moves
-with that function and retains the original root calculation in the same directory.
-Every moved name is explicitly imported back into the facade. No task execution,
-replay, public plan definition or runner lifecycle is moved in B1.
-
-The pre-extraction benchmark source at the B1 base matches the B0 unexempted
-type snapshot, and no recorded diagnostic falls inside these moved definitions. Later planning,
-artifact and statistics diagnostics stay in their respective batches. The new
-modules use the default type-check coverage without additional exemptions.
-
-Before moving the private task types, the genuine pinned B0 source generated
-[old planning/task pickles](../tests/fixtures/benchmark_planning/README.md).
-They include ordinary and coupled instances, a seeded task with nondefault
-options, complete instance content and shared object references. Candidate
-tests load the unchanged bytes in a fresh interpreter and compare the old
-fields, defaults, options and identities. Public `BenchmarkPlan` keeps its
-original module/pickle identity under the separate B0 assertions.
-
-[Module tests](../tests/test_benchmark_modules.py) also check explicit facade
-aliases, the root used by Git metadata collection and forbidden reverse imports.
-The existing B0 artifact comparison and lifecycle tests remain the acceptance
-gates. Under the user's targeted-local-check authorization, repeated full local
-unit/content/license/type checks are omitted; relevant checks run for the move,
-the license manifest is regenerated, and final required CI remains enabled.
-The moved source passed the old/new artifact comparison, relevant API, pickle
-and lifecycle tests, and its first default mypy check. Mechanical source/AST
-comparisons confirm that moved and retained definitions are unchanged.
 
 B0 implementation starts from `c40658d4cbc16b45fb640b1d97c03688baee16b7`,
 after the fixed pilot and documentation PR #31. No production code had moved
@@ -112,6 +77,77 @@ PR checks passed. The committed comparison matched every deterministic output
 and stable Manifest field, and both validators passed. A missing parallel
 dispatch lookup assertion was added and rechecked against an isolated alias
 mutation. Production source was unchanged in this batch.
+
+### B1 implementation
+
+B1 is implemented in [PR #35](https://github.com/Mikoto-19909/greedy-failure-structures/pull/35).
+B1 starts from `62bbc13cfd04af017774af78f6f8ec545578b2b2`, after reporting
+[PR #34](https://github.com/Mikoto-19909/greedy-failure-structures/pull/34).
+It moves the two planning/task types, artifact inventories and path enumeration,
+and the existing Manifest implementation into the three planned modules.
+The audit also identified `PROJECT_ROOT`, used only by `_git_state()`; it moves
+with that function and retains the original root calculation in the same directory.
+Every moved name is explicitly imported back into the facade. No task execution,
+replay, public plan definition or runner lifecycle is moved in B1.
+
+The pre-extraction benchmark source at the B1 base matches the B0 unexempted
+type snapshot, and no recorded diagnostic falls inside these moved definitions. Later planning,
+artifact and statistics diagnostics stay in their respective batches. The new
+modules use the default type-check coverage without additional exemptions.
+
+Before moving the private task types, the genuine pinned B0 source generated
+[old planning/task pickles](../tests/fixtures/benchmark_planning/README.md).
+They include ordinary and coupled instances, a seeded task with nondefault
+options, complete instance content and shared object references. Candidate
+tests load the unchanged bytes in a fresh interpreter and compare the old
+fields, defaults, options and identities. Public `BenchmarkPlan` keeps its
+original module/pickle identity under the separate B0 assertions.
+
+[Module tests](../tests/test_benchmark_modules.py) also check explicit facade
+aliases, the root used by Git metadata collection and forbidden reverse imports.
+The existing B0 artifact comparison and lifecycle tests remain the acceptance
+gates. Under the user's targeted-local-check authorization, repeated full local
+unit/content/license/type checks are omitted; relevant checks run for the move,
+the license manifest is regenerated, and final required CI remains enabled.
+The moved source passed the old/new artifact comparison, relevant API, pickle
+and lifecycle tests, and its first default mypy check. Mechanical source/AST
+comparisons confirm that moved and retained definitions are unchanged.
+B1 passed independent reverse review and all required PR checks before merge;
+the review also confirmed that its old pickle fixtures can be reproduced from
+the pinned source without running algorithms.
+
+### B2 implementation
+
+B2 is implemented in [PR #36](https://github.com/Mikoto-19909/greedy-failure-structures/pull/36).
+B2 starts from `0a306f024275c901d95a565f033b98b6c422d513`, after B1.
+The type prerequisite adds ten narrow `cast(int, ...)` annotations inside
+existing `int(...)` calls while the planning functions still live in the facade.
+Erasing those wrappers and the new import reproduces the original module AST.
+No conversion, branch, lookup, default or rejection behavior is changed.
+
+The temporary unexempted mypy check removes only the benchmark override. It
+still fails on the existing B3/B4 diagnostics, with all planning diagnostics
+removed and no new errors; this does not establish that the remaining facade
+is fully typed. The ten annotations are committed before mechanical relocation.
+
+Before editing, the fixed B0 source generated complete planning snapshots for
+the B0 configuration and the fixed core-overlap configuration. The comparison
+includes all normalized configuration fields, complete ordered instance masks
+and metadata, coupling, instance-record CSV fields and ordered run tasks with
+options, seeds and identities. It preserves container types and mapping order.
+The type prerequisite matches those old JSON bytes, with no algorithm execution
+and no modification to the original configurations or frozen research evidence.
+
+After type commit `5362597`, the nine planning functions and
+`_STRUCTURAL_COUPLING_INTENSITY` move verbatim into `benchmark_planning.py`.
+The facade explicitly re-exports both task types, the constant and every moved
+helper. Existing private consumers keep their imports; public planning and
+runner calls remain in the facade, with no new cross-module patch mechanism.
+The complete planning comparison and B0 artifact comparison both pass after
+the move. Default mypy checks planning successfully without any new exemption;
+the configuration is unchanged. Relevant API, configuration, instance and
+lifecycle tests run locally, with the remaining coverage supplied by required
+PR CI under the same targeted-check authorization as B1.
 
 ## Purpose
 
