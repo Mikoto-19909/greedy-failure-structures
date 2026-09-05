@@ -1,0 +1,89 @@
+{
+  "baseline_commit": "c40658d4cbc16b45fb640b1d97c03688baee16b7",
+  "configuration": {
+    "bytes": 1728,
+    "fixture_relative_path": "tests/fixtures/benchmark_compatibility/config.json",
+    "normalized_config_hash": "4e12d140af46c2902deacada3ad93d436a01a53a921ca3f66735dc6d70c8c19a",
+    "sha256": "de7bd6a55b3c738ced06e05f04d8c266a3ba2c0c9721cc2598283d2df2a7d3ca"
+  },
+  "files": {
+    "expected.json": {
+      "bytes": 6968,
+      "sha256": "2db7a200100cc0f8c9e1a1cf22562c43144928536323b75e772b5c9ee593378d"
+    },
+    "planning_tasks_protocol4.pickle": {
+      "bytes": 1117,
+      "sha256": "68707fc8c1665cfb51ce22f419de3540d60149c77eeb906827b1da729328e78e"
+    },
+    "planning_tasks_protocol5.pickle": {
+      "bytes": 1117,
+      "sha256": "a6380dec08220336974b641bce881baa83d7566890a63dc81e42e6f0c51b6b9d"
+    }
+  },
+  "generation": {
+    "algorithm_executions": 0,
+    "coupled_available": true,
+    "planned_instances": 75,
+    "planned_tasks": 750,
+    "python_version": "3.12.3",
+    "selected_labels": [
+      "ordinary",
+      "coupled"
+    ],
+    "selection": "first uncoupled instance with first unseeded task; first coupled instance with first seeded task when available"
+  },
+  "generator": {
+    "filename": "generate.py",
+    "sha256": "08a6da615b91c54378c82533aaa504f4b7e737cefa8d1ad554a9808c90c3fc47"
+  },
+  "observed_module_paths_relative_to_source": {
+    "maxcover": "src/maxcover/__init__.py",
+    "maxcover._association_contracts": "src/maxcover/_association_contracts.py",
+    "maxcover._benchmark_result": "src/maxcover/_benchmark_result.py",
+    "maxcover._contract_csv": "src/maxcover/_contract_csv.py",
+    "maxcover._instance_contracts": "src/maxcover/_instance_contracts.py",
+    "maxcover._reference_contracts": "src/maxcover/_reference_contracts.py",
+    "maxcover._registry_contracts": "src/maxcover/_registry_contracts.py",
+    "maxcover._run_contracts": "src/maxcover/_run_contracts.py",
+    "maxcover._statistics_contracts": "src/maxcover/_statistics_contracts.py",
+    "maxcover.algorithms": "src/maxcover/algorithms.py",
+    "maxcover.benchmark": "src/maxcover/benchmark.py",
+    "maxcover.certificates": "src/maxcover/certificates.py",
+    "maxcover.config": "src/maxcover/config.py",
+    "maxcover.contracts": "src/maxcover/contracts.py",
+    "maxcover.generators": "src/maxcover/generators.py",
+    "maxcover.model": "src/maxcover/model.py",
+    "maxcover.reporting": "src/maxcover/reporting.py",
+    "maxcover.reproducibility": "src/maxcover/reproducibility.py",
+    "maxcover.structure": "src/maxcover/structure.py"
+  },
+  "schema_version": 1,
+  "source_sha256": {
+    "pyproject.toml": "3cd4a1393098532e08905d533b09012099772002cb573e437c9169e78099dc62",
+    "src/maxcover/__init__.py": "2eb80100e5eaa82a42cc6c120024a5f5942787295a1139d6d1e91e2b003ab4d1",
+    "src/maxcover/_association_contracts.py": "b9fbfec8bdea8600a9c204f26e285643cdf2ab3ccf3c58824928de293882261d",
+    "src/maxcover/_benchmark_result.py": "67739e676b31370c6537d4ce1f0958d7ab6b82216b74962e85bbc9062caae0c9",
+    "src/maxcover/_contract_csv.py": "3c4c57c1211ad35920c544276827796c6148361757a98d1ccb92ea9f73ae9491",
+    "src/maxcover/_instance_contracts.py": "8a4c4ac04e0d538762b165b0a00fcb0885854431813854be582fb329b7f80856",
+    "src/maxcover/_reference_contracts.py": "f763d4cc1bde18362b5d818ae990b3cac356e81579e1fbbc7df0d4364ece4200",
+    "src/maxcover/_registry_contracts.py": "a37fe03fc786cd73e7d42fdad5aef7ba35b8bc12c7fac61b22f1f01299b86bd1",
+    "src/maxcover/_run_contracts.py": "7650064aa7adeddf7738f1639ac97ee5d03edb44ef2b12484247e22d9364e000",
+    "src/maxcover/_statistics_contracts.py": "c7172d196aaea1324ae5370d4e0de600a5f32a8dc27347347f0ef3566b8a5434",
+    "src/maxcover/algorithms.py": "b0d6b3d47fab1a8d27fddac498d5a4dd6c4598a1f450c70ee7ab4ceff76bd628",
+    "src/maxcover/benchmark.py": "97bfbf2da3e11bc4b8757752ef21ec3def448a0e7568e0ec3748c894d7041b40",
+    "src/maxcover/cartography.py": "dc825f41fac1d2271dd65a1ce016a744508ee74fad3f04f63c97933612388529",
+    "src/maxcover/certificates.py": "2758e2c85f2a5290fac0b09582b2402e25ba2937c1ca1ad92ed997d9b0adfeba",
+    "src/maxcover/cli.py": "4da2c15dc57706d4140e179b081b5422d40477863a27cd21e1f73dd74c46f708",
+    "src/maxcover/config.py": "09f44f772c0038b8af759c888fdbe92571a1c0788a3686597d29b7c61f8dc748",
+    "src/maxcover/contracts.py": "45e12bcb28c03f1d94077af9396fb360947cd2133a1879cfe9b60a91a76c3bcc",
+    "src/maxcover/dashboard.py": "b3821b580a740c732060ece991bbc8b5b470b2c2208aeeb2979ecf9be6da8287",
+    "src/maxcover/generators.py": "377d6725c0a3f585315365b20e9fea6b0af48b1750f2a52a80581c9e8e7b9fa0",
+    "src/maxcover/model.py": "7c4eae80be2ba764a221f382cd7c71ab5f904200778f36d5d8e1c8983bbaf16f",
+    "src/maxcover/paired_seed_analysis.py": "65e2e13fe6571aac7d9d11bd3f9a9a16c2b048901cde0c021d5701b1215c1d71",
+    "src/maxcover/reporting.py": "2e34b15f4c494b63cd2d4093d08ac951f129c7f5c00635d59c440df7ee8c6127",
+    "src/maxcover/reproducibility.py": "688a4a9f953287a4f948f794974c43b2c48798df344adffd94a565f94698563c",
+    "src/maxcover/stressor_audit.py": "4190c87b6838e63f541141454e7a083f83ec0aacc7b332086ce8fde3cf9fddc3",
+    "src/maxcover/structure.py": "4930c67d29374fcb602add38ac20c8e135c5634c67d75af373cd1fe100c232b8"
+  },
+  "source_verification": "every archived maxcover Python file and pyproject.toml equals the pinned Git bytes"
+}

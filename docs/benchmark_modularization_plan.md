@@ -2,8 +2,8 @@
 
 Restored from the preserved research stash and reconciled with the main branch
 at `0dd9de338c07df312e268f916e630aceebb11f4a` on 2026-09-05. The research
-branch and the other stashed files remain separate. B0 is complete; production
-extraction is pending.
+branch and the other stashed files remain separate. B0 is complete; B1 begins
+after the reporting split.
 
 [Preparation PR #27](https://github.com/Mikoto-19909/greedy-failure-structures/pull/27)
 restored this document, added its index entry, and reconciled the linked plans'
@@ -16,6 +16,41 @@ core experiment and documentation cleanup first. PR 0 (B0) then freezes the
 compatibility baseline before any production-code split. Reporting follows B0;
 benchmark PRs 1–4 (B1–B4) follow reporting; output validation follows benchmark.
 PR 5 (B5) remains conditional on the resulting runner's clarity.
+
+### B1 implementation
+
+B1 is implemented in [PR #35](https://github.com/Mikoto-19909/greedy-failure-structures/pull/35).
+B1 starts from `62bbc13cfd04af017774af78f6f8ec545578b2b2`, after reporting
+[PR #34](https://github.com/Mikoto-19909/greedy-failure-structures/pull/34).
+It moves the two planning/task types, artifact inventories and path enumeration,
+and the existing Manifest implementation into the three planned modules.
+The audit also identified `PROJECT_ROOT`, used only by `_git_state()`; it moves
+with that function and retains the original root calculation in the same directory.
+Every moved name is explicitly imported back into the facade. No task execution,
+replay, public plan definition or runner lifecycle is moved in B1.
+
+The pre-extraction benchmark source at the B1 base matches the B0 unexempted
+type snapshot, and no recorded diagnostic falls inside these moved definitions. Later planning,
+artifact and statistics diagnostics stay in their respective batches. The new
+modules use the default type-check coverage without additional exemptions.
+
+Before moving the private task types, the genuine pinned B0 source generated
+[old planning/task pickles](../tests/fixtures/benchmark_planning/README.md).
+They include ordinary and coupled instances, a seeded task with nondefault
+options, complete instance content and shared object references. Candidate
+tests load the unchanged bytes in a fresh interpreter and compare the old
+fields, defaults, options and identities. Public `BenchmarkPlan` keeps its
+original module/pickle identity under the separate B0 assertions.
+
+[Module tests](../tests/test_benchmark_modules.py) also check explicit facade
+aliases, the root used by Git metadata collection and forbidden reverse imports.
+The existing B0 artifact comparison and lifecycle tests remain the acceptance
+gates. Under the user's targeted-local-check authorization, repeated full local
+unit/content/license/type checks are omitted; relevant checks run for the move,
+the license manifest is regenerated, and final required CI remains enabled.
+The moved source passed the old/new artifact comparison, relevant API, pickle
+and lifecycle tests, and its first default mypy check. Mechanical source/AST
+comparisons confirm that moved and retained definitions are unchanged.
 
 B0 implementation starts from `c40658d4cbc16b45fb640b1d97c03688baee16b7`,
 after the fixed pilot and documentation PR #31. No production code had moved
@@ -320,6 +355,7 @@ Do not move `_write_replay_artifact()` in this pass.
 Own:
 
 ```text
+PROJECT_ROOT
 _git_state()
 _write_manifest()
 Manifest-specific environment metadata collection
@@ -478,6 +514,7 @@ SEARCH_COMPARISON_FIELDS
 STOCHASTIC_SUMMARY_FIELDS
 _runner_owned_paths()
 
+PROJECT_ROOT
 _git_state()
 _write_manifest()
 ```

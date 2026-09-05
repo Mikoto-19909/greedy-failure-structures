@@ -1,0 +1,265 @@
+{
+  "cases": {
+    "coupled": {
+      "baseline_types": {
+        "options": "maxcover.contracts.AlgorithmRunOptions",
+        "planned": "maxcover.benchmark._PlannedInstance",
+        "task": "maxcover.benchmark._RunTask"
+      },
+      "instance": {
+        "computed_instance_id": "6df27967c83679875e6d8e6e71dd57fcd13eb78bc7ba05da367f36cb90acbb1e",
+        "instance_payload": {
+          "encoding": "bitsets",
+          "family": "dominated_heavy",
+          "k": 2,
+          "parameters": {
+            "anchor_count": 3,
+            "anchor_size": 4,
+            "child_count": 0,
+            "coupling_seed": 5704079217998130958
+          },
+          "schema_version": 1,
+          "seed": 189401,
+          "sets": [
+            "0xf",
+            "0xf0",
+            "0xf00"
+          ],
+          "universe_size": 12
+        },
+        "ordered_masks": [
+          15,
+          240,
+          3840
+        ]
+      },
+      "options": {
+        "algorithm_seed": 3,
+        "max_set_count": null,
+        "time_limit_seconds": null,
+        "values": {
+          "rcl_size": 2
+        }
+      },
+      "planned": {
+        "case_id": "dominated_grid__child_count=0",
+        "coupling_pair_id": "dominated_heavy|scan=\"dominated_grid\"|parameters={\"anchor_count\":3,\"anchor_size\":4,\"k\":2}|repetition=0",
+        "coupling_seed": 5704079217998130958,
+        "instance_id": "6df27967c83679875e6d8e6e71dd57fcd13eb78bc7ba05da367f36cb90acbb1e",
+        "repetition": 0
+      },
+      "shared_instance_object": true,
+      "task": {
+        "algorithm": "randomized_greedy",
+        "algorithm_id": "randomized_greedy",
+        "algorithm_seed": 3,
+        "case_id": "dominated_grid__child_count=0",
+        "config_hash": "4e12d140af46c2902deacada3ad93d436a01a53a921ca3f66735dc6d70c8c19a",
+        "instance_id": "6df27967c83679875e6d8e6e71dd57fcd13eb78bc7ba05da367f36cb90acbb1e",
+        "option_values": {
+          "algorithm_seed": 3,
+          "rcl_size": 2
+        },
+        "repetition": 0,
+        "run_id": "0e8b7044122911a49621571d5e3c8bec8310f1b8ef00a15d4f6b81bbea97b641"
+      }
+    },
+    "ordinary": {
+      "baseline_types": {
+        "options": "maxcover.contracts.AlgorithmRunOptions",
+        "planned": "maxcover.benchmark._PlannedInstance",
+        "task": "maxcover.benchmark._RunTask"
+      },
+      "instance": {
+        "computed_instance_id": "9deb5df465cd0239bf41e134b5fa825e32fb6acd6e8750cea6766753edd37c8e",
+        "instance_payload": {
+          "encoding": "bitsets",
+          "family": "uniform",
+          "k": 2,
+          "parameters": {
+            "density": 0.2
+          },
+          "schema_version": 1,
+          "seed": 9401,
+          "sets": [
+            "0x428",
+            "0x40",
+            "0x14",
+            "0x101",
+            "0xc11",
+            "0x100"
+          ],
+          "universe_size": 12
+        },
+        "ordered_masks": [
+          1064,
+          64,
+          20,
+          257,
+          3089,
+          256
+        ]
+      },
+      "options": {
+        "algorithm_seed": null,
+        "max_set_count": null,
+        "time_limit_seconds": null,
+        "values": {}
+      },
+      "planned": {
+        "case_id": "uniform_grid__density=0.2__k=2__set_count=6__universe_size=12",
+        "coupling_pair_id": null,
+        "coupling_seed": null,
+        "instance_id": "9deb5df465cd0239bf41e134b5fa825e32fb6acd6e8750cea6766753edd37c8e",
+        "repetition": 0
+      },
+      "shared_instance_object": true,
+      "task": {
+        "algorithm": "greedy",
+        "algorithm_id": "greedy",
+        "algorithm_seed": null,
+        "case_id": "uniform_grid__density=0.2__k=2__set_count=6__universe_size=12",
+        "config_hash": "4e12d140af46c2902deacada3ad93d436a01a53a921ca3f66735dc6d70c8c19a",
+        "instance_id": "9deb5df465cd0239bf41e134b5fa825e32fb6acd6e8750cea6766753edd37c8e",
+        "option_values": {},
+        "repetition": 0,
+        "run_id": "27f102f04d0f7db82202ac87031f01172570f8bed15ef74a75f18a6324eb1e5d"
+      }
+    }
+  },
+  "class_shapes": {
+    "_PlannedInstance": {
+      "baseline_module": "maxcover.benchmark",
+      "defaults": {
+        "case_id": {
+          "kind": "missing"
+        },
+        "coupling_pair_id": {
+          "kind": "value",
+          "value": null
+        },
+        "coupling_seed": {
+          "kind": "value",
+          "value": null
+        },
+        "instance": {
+          "kind": "missing"
+        },
+        "instance_id": {
+          "kind": "missing"
+        },
+        "repetition": {
+          "kind": "missing"
+        }
+      },
+      "fields": [
+        "case_id",
+        "repetition",
+        "instance",
+        "instance_id",
+        "coupling_pair_id",
+        "coupling_seed"
+      ],
+      "frozen": true,
+      "match_args": [
+        "case_id",
+        "repetition",
+        "instance",
+        "instance_id",
+        "coupling_pair_id",
+        "coupling_seed"
+      ],
+      "qualname": "_PlannedInstance",
+      "slots": [
+        "case_id",
+        "repetition",
+        "instance",
+        "instance_id",
+        "coupling_pair_id",
+        "coupling_seed"
+      ]
+    },
+    "_RunTask": {
+      "baseline_module": "maxcover.benchmark",
+      "defaults": {
+        "algorithm": {
+          "kind": "missing"
+        },
+        "algorithm_id": {
+          "kind": "missing"
+        },
+        "algorithm_seed": {
+          "kind": "missing"
+        },
+        "case_id": {
+          "kind": "missing"
+        },
+        "config_hash": {
+          "kind": "missing"
+        },
+        "instance": {
+          "kind": "missing"
+        },
+        "instance_id": {
+          "kind": "missing"
+        },
+        "option_values": {
+          "kind": "missing"
+        },
+        "options": {
+          "kind": "missing"
+        },
+        "repetition": {
+          "kind": "missing"
+        },
+        "run_id": {
+          "kind": "missing"
+        }
+      },
+      "fields": [
+        "case_id",
+        "repetition",
+        "instance",
+        "algorithm_id",
+        "algorithm_seed",
+        "algorithm",
+        "options",
+        "option_values",
+        "config_hash",
+        "instance_id",
+        "run_id"
+      ],
+      "frozen": true,
+      "match_args": [
+        "case_id",
+        "repetition",
+        "instance",
+        "algorithm_id",
+        "algorithm_seed",
+        "algorithm",
+        "options",
+        "option_values",
+        "config_hash",
+        "instance_id",
+        "run_id"
+      ],
+      "qualname": "_RunTask",
+      "slots": [
+        "case_id",
+        "repetition",
+        "instance",
+        "algorithm_id",
+        "algorithm_seed",
+        "algorithm",
+        "options",
+        "option_values",
+        "config_hash",
+        "instance_id",
+        "run_id"
+      ]
+    }
+  },
+  "config_hash": "4e12d140af46c2902deacada3ad93d436a01a53a921ca3f66735dc6d70c8c19a",
+  "pickle_container": "dict[label, tuple[_PlannedInstance, _RunTask]]",
+  "schema_version": 1
+}
