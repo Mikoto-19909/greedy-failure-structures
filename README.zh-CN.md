@@ -160,7 +160,8 @@ python run_project.py dashboard
 
 请先阅读面向外部的[研究分析](analysis/README.md)。每个 claim ID 与结果行、配置、
 manifest 和验证记录之间的权威映射位于
-[核心结论台账](experiments/core_rq/CLAIMS.md)。这两个文档当前均未发布定量研究结论。
+[核心结论台账](experiments/core_rq/CLAIMS.md)。已完成试验的结果记录在
+[C1](experiments/core_rq/CLAIMS.md#c1)。
 
 ## 范围
 

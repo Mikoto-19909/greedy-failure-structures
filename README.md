@@ -187,8 +187,8 @@ surface and its dynamic run, result, and replay states.
 Start with the external [research analysis](analysis/README.md). The
 authoritative mapping from each claim ID to its result rows, configuration,
 manifest, and validation record is the
-[core claim ledger](experiments/core_rq/CLAIMS.md). Neither document currently
-publishes a quantitative research claim.
+[core claim ledger](experiments/core_rq/CLAIMS.md). The completed pilot is
+recorded as [C1](experiments/core_rq/CLAIMS.md#c1).
 
 ## Scope
 
