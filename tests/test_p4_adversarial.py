@@ -12,6 +12,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
+from maxcover._generators_adversarial import _potential_distractor_rankings
 from maxcover.algorithms import (
     ALGORITHMS,
     branch_and_bound,
@@ -28,7 +29,6 @@ from maxcover.certificates import (
 from maxcover.config import ConfigurationError, load_config, parse_config
 from maxcover.contracts import AlgorithmRunOptions
 from maxcover.generators import (
-    _potential_distractor_rankings,
     adversarial_greedy_trap,
 )
 from maxcover.model import MaximumCoverageInstance, Solution, SolutionStatus
