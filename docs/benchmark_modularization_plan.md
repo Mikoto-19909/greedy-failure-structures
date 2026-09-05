@@ -211,8 +211,19 @@ and optimum normalization move together, while `_rows_for_instance()` retains
 its facade lookup of the certificate helper. Public functions, execution and
 replay remain unchanged. The post-move fixed artifact comparison, relevant
 reference/report/validator/lifecycle tests and default type check pass.
-The benchmark exemption is deliberately unchanged in the mechanical commit;
-its removal and accurate coverage documentation form the next separate commit.
+The mechanical commit leaves the benchmark exemption unchanged. A separate
+configuration commit removes that last module-wide exemption after the full
+default type check passes. The shared contribution guide and bilingual entry
+points describe the resulting coverage without source-file counts. Behavioral
+type probes verify errors in the former legacy modules, the new statistics
+modules and a future module; a configuration guard rejects module exemptions
+or source exclusions.
+
+The old implementation also freezes direct statistics and association inputs,
+including empty samples, missing references, censoring, zero gaps, constant
+structure and identity conflicts. The moved implementation produces identical
+result bytes for every recorded successful or rejecting call. These function
+fixtures complement the complete B0 checkpoint and do not add research samples.
 
 ## Purpose
 

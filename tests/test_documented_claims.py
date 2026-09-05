@@ -495,11 +495,10 @@ class TypeCheckClaimTests(unittest.TestCase):
             package = Path(directory) / "maxcover"
             package.mkdir()
             (package / "__init__.py").write_text("", encoding="utf-8")
-            probe = package / "_mypy_new_module_probe.py"
-            files = [probe]
-            for module in self._exempt_modules():
-                self.assertIn(module, {"maxcover.benchmark", "maxcover.reporting"})
-                files.append(package / (module.split(".")[-1] + ".py"))
+            files = [package / filename for filename in (
+                "_mypy_new_module_probe.py", "benchmark.py", "reporting.py",
+                "benchmark_statistics.py", "benchmark_associations.py",
+            )]
             for path in files:
                 path.write_text('value: int = "not an integer"\n', encoding="utf-8")
             result = subprocess.run(
@@ -510,18 +509,16 @@ class TypeCheckClaimTests(unittest.TestCase):
             self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
             errors = [line for line in result.stdout.splitlines() if ": error:" in line]
             self.assertTrue(errors, result.stdout + result.stderr)
-            self.assertTrue(all(probe.name in line for line in errors), errors)
+            for path in files:
+                with self.subTest(module=path.name):
+                    self.assertTrue(any(path.name + ":" in line for line in errors), errors)
 
-    def test_typecheck_targets_source_without_spreading_legacy_exemptions(self) -> None:
+    def test_typecheck_covers_source_without_module_exemptions(self) -> None:
         config = tomllib.loads(_read("pyproject.toml"))["tool"]["mypy"]
         self.assertIn("src/maxcover", config["files"])
         self.assertFalse(config.get("ignore_errors", False))
-        # These are the pre-split legacy exceptions. Newly extracted modules
-        # must not acquire a whole-module exception or a package wildcard.
-        for module in self._exempt_modules():
-            with self.subTest(module=module):
-                self.assertIn(module, {"maxcover.benchmark", "maxcover.reporting"})
-                self.assertTrue((SOURCE_ROOT / (module.replace(".", "/") + ".py")).is_file())
+        self.assertFalse(config.get("exclude"))
+        self.assertEqual(self._exempt_modules(), [])
 
 
 class ScopeClaimTests(unittest.TestCase):

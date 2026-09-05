@@ -77,7 +77,7 @@ python -m unittest discover -s tests -v
 ```
 
 [CONTRIBUTING.md](CONTRIBUTING.md#verification) maintains the complete verification
-commands and actual mypy coverage, including the configured exemptions.
+commands and actual mypy coverage.
 Windows users can also use `./project.ps1 test`, `./project.ps1 typecheck` and
 `./project.ps1 quick`.
 
