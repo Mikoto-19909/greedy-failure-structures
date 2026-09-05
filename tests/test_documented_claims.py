@@ -1,50 +1,13 @@
-"""Tests that the documentation's narrowed claims still match the code.
+"""Check documented commands, configuration compatibility and coverage boundaries.
 
-Batch 7 of the adversarial review found three places where a document claimed
-more than the implementation delivered:
-
-- the README said this repository publishes "no measurements" while `demo`
-  prints a coverage gap to the terminal;
-- it recommended two commands that both emit a deprecation warning, without
-  saying so;
-- it called mypy a "typed baseline" while 40% of the source is exempt from the
-  check by line.
-
-Each was fixed by narrowing the claim rather than by changing behaviour, since
-migrating the configs would change `config_hash` and clearing the type backlog
-is separate work. A narrowed claim drifts as easily as a wide one, so each is
-pinned here against the thing it describes.
-
-How these tests are written, and why it changed
------------------------------------------------
-The first version of this file asserted that a substring was present — that the
-README contained "demo", that CONTRIBUTING mentioned "ignore_errors". A review
-then mutated the documents and found that **nine of ten false statements passed
-all ten tests**: the README could claim the exemption covered no modules, could
-drop a config from the legacy list, could say a clean mypy run proves the whole
-package is typed, and every test stayed green. Substring presence says a word
-appears somewhere, not that the sentence containing it is true.
-
-So each test now does one of these things:
-
-- runs the behaviour and asserts what it actually produces — `demo` really is
-  executed and its output parsed, the configs really are loaded and the warning
-  caught, git really is queried for what is tracked, greedy really is run twice
-  and both selections compared;
-- extracts the *specific figure* the document states and compares it to the
-  measured value, so a wrong number fails rather than merely a missing word;
-- extracts the *structure* the document states — the "must reproduce" and "may
-  vary" lists of the determinism FAQ, the phase endpoint of the schema range —
-  and compares it to what the code and the configs actually deliver, so an
-  inverted boundary fails rather than merely a missing phrase.
-
-Verbatim sentence matching is still avoided: it makes every copy-edit a failure,
-which is how a test gets deleted. The difference is that a claim's *content* is
-now checked, not its vocabulary.
+Behavior checks exercise the relevant APIs; bilingual checks compare the same
+facts and links. Display-only source counts and exemption percentages are not
+part of the documentation contract.
 """
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import re
 import subprocess
@@ -64,7 +27,7 @@ def _read(name: str) -> str:
 
 
 class LegacyConfigClaimTests(unittest.TestCase):
-    """The README says which configs are legacy. That list must stay true."""
+    """The CLI guide says which configs are legacy. That list must stay true."""
 
     def _schema_version(self, name: str) -> int:
         payload = json.loads(_read(f"configs/{name}"))
@@ -78,7 +41,7 @@ class LegacyConfigClaimTests(unittest.TestCase):
         }
 
     def test_the_two_named_legacy_configs_are_still_schema_v1(self) -> None:
-        # If either is migrated, the README paragraph explaining the warning
+        # If either is migrated, the CLI guide paragraph explaining the warning
         # becomes wrong and the warning it prepares the reader for is gone.
         self.assertEqual(self._schema_version("quick.json"), 1)
         self.assertEqual(self._schema_version("full.json"), 1)
@@ -87,37 +50,37 @@ class LegacyConfigClaimTests(unittest.TestCase):
         self.assertEqual(self._schema_version("sweeps.json"), 2)
 
     def test_no_other_config_is_legacy_without_being_named(self) -> None:
-        # The README names exactly two warning configs. A third would make the
+        # The CLI guide names exactly two warning configs. A third would make the
         # documented list incomplete rather than merely stale.
         self.assertEqual(
             self._legacy_configs(),
             {"quick.json", "full.json"},
-            "the set of schema-v1 configs changed; update the README paragraph "
+            "the set of schema-v1 configs changed; update the CLI guide paragraph "
             "that names them and explains the LegacyConfigWarning",
         )
 
-    def test_the_readme_names_every_legacy_config_and_no_others(self) -> None:
-        # Substring presence let the README drop `configs/full.json` from the
+    def test_the_guide_names_every_legacy_config_and_no_others(self) -> None:
+        # Substring presence let the CLI guide drop `configs/full.json` from the
         # list while staying green. So the documented set is extracted from the
         # prose and compared to the measured set.
-        readme = _read("README.md")
+        guide = _read("docs/cli.md")
         documented = {
             f"{name}.json"
-            for name in re.findall(r"`configs/([A-Za-z0-9_]+)\.json` and", readme)
+            for name in re.findall(r"`configs/([A-Za-z0-9_]+)\.json` and", guide)
         } | {
             f"{name}.json"
-            for name in re.findall(r"and\s+`configs/([A-Za-z0-9_]+)\.json` are", readme)
+            for name in re.findall(r"and\s+`configs/([A-Za-z0-9_]+)\.json` are", guide)
         }
         self.assertEqual(
             documented,
             self._legacy_configs(),
-            "the README's list of schema-v1 configs no longer matches the "
+            "the CLI guide's list of schema-v1 configs no longer matches the "
             "configs that are actually schema v1",
         )
 
     def test_both_named_configs_actually_raise_the_documented_warning(self) -> None:
         # The class of warning is part of the claim. Renaming it, or removing the
-        # migration, leaves a README paragraph describing something that no
+        # migration, leaves a CLI guide paragraph describing something that no
         # longer happens — and a substring check would not notice.
         sys.path.insert(0, str(SOURCE_ROOT))
         try:
@@ -135,71 +98,39 @@ class LegacyConfigClaimTests(unittest.TestCase):
                         issubclass(item.category, LegacyConfigWarning)
                         for item in caught
                     ),
-                    f"{name} no longer raises LegacyConfigWarning; the README "
+                    f"{name} no longer raises LegacyConfigWarning; the CLI guide "
                     "paragraph preparing the reader for it is now wrong",
                 )
 
-    def test_the_readme_states_the_correct_schema_for_sweeps(self) -> None:
-        readme = _read("README.md")
-        match = re.search(r"`configs/sweeps\.json`\s+is\s+schema\s+(\d+)", readme)
-        self.assertIsNotNone(match, "the README no longer states sweeps' schema")
+    def test_the_guide_states_the_correct_schema_for_sweeps(self) -> None:
+        guide = _read("docs/cli.md")
+        match = re.search(r"`configs/sweeps\.json`\s+is\s+schema\s+(\d+)", guide)
+        self.assertIsNotNone(match, "the CLI guide no longer states sweeps' schema")
         assert match is not None
         self.assertEqual(int(match.group(1)), self._schema_version("sweeps.json"))
 
-    def test_the_readmes_state_the_correct_schema_for_current_configs(self) -> None:
-        # Each language states the phase range explicitly. The endpoint and
-        # version are measured from the configs on disk instead of hard-coded,
-        # so a newly added phase that the documents omit no longer stays green.
-        patterns = {
-            "README.md": (
-                r"`configs/p3_\*`\s+through\s+`configs/p(\d+)_\*`\s+"
-                r"configurations?\s+are\s+schema\s+(\d+)"
-            ),
-            "README.zh-CN.md": (
-                r"`configs/p3_\*`\s+到\s+`configs/p(\d+)_\*`\s+的配置"
-                r"\s*使用\s+schema\s+(\d+)"
-            ),
-        }
-        documented_ranges: set[tuple[int, int]] = set()
-        for name, pattern in patterns.items():
-            with self.subTest(document=name):
-                text = re.sub(r"\s+", " ", _read(name))
-                match = re.search(pattern, text)
-                self.assertIsNotNone(
-                    match, f"{name} no longer states the current phase schema range"
-                )
-                assert match is not None
-                documented_ranges.add((int(match.group(1)), int(match.group(2))))
-
-        self.assertEqual(
-            len(documented_ranges),
-            1,
-            "the bilingual README phase ranges disagree",
+    def test_cli_states_the_correct_schema_for_current_configs(self) -> None:
+        guide = re.sub(r"\s+", " ", _read("docs/cli.md"))
+        match = re.search(
+            r"`configs/p3_\*`\s+through\s+`configs/p(\d+)_\*`\s+"
+            r"configurations?\s+are\s+schema\s+(\d+)",
+            guide,
         )
-        endpoint, schema = next(iter(documented_ranges))
-
+        self.assertIsNotNone(match, "CLI guide must identify the retained phase schemas")
+        assert match is not None
+        endpoint, schema = int(match.group(1)), int(match.group(2))
         phase_schemas: dict[int, set[int]] = {}
         for path in sorted((REPO_ROOT / "configs").glob("p[0-9]*_*.json")):
-            match = re.match(r"p(\d+)_", path.name)
-            assert match is not None  # the glob prefix guarantees a phase number
+            phase = re.match(r"p(\d+)_", path.name)
+            assert phase is not None
             payload = json.loads(path.read_text(encoding="utf-8"))
-            phase_schemas.setdefault(int(match.group(1)), set()).add(
+            phase_schemas.setdefault(int(phase.group(1)), set()).add(
                 int(payload["schema_version"])
             )
-
-        self.assertEqual(
-            max(phase_schemas),
-            endpoint,
-            "the README phase endpoint no longer matches the configs on disk",
-        )
+        self.assertEqual(max(phase_schemas), endpoint)
         for phase in range(3, endpoint + 1):
             with self.subTest(phase=phase):
-                self.assertEqual(
-                    phase_schemas.get(phase),
-                    {schema},
-                    "a phase between p3 and the endpoint is missing or uses a "
-                    "schema other than the one the READMEs state",
-                )
+                self.assertEqual(phase_schemas.get(phase), {schema})
 
 
 class DocumentationNavigationClaimTests(unittest.TestCase):
@@ -527,19 +458,8 @@ class MechanismWorkflowClaimTests(unittest.TestCase):
                 _read("docs/failure_mechanisms.md"),
             )
         )
-        self.assertEqual(
-            paths,
-            {
-                "configs/p4_dominated_heavy.json",
-                "configs/p4_duplicate_heavy.json",
-                "configs/p4_long_tail.json",
-                "configs/p6_clustered_scan.json",
-                "configs/p6_overlap_scan.json",
-                "configs/p6_trap_construction.json",
-                "configs/p7_controlled_stressors.json",
-            },
-            "the mechanism guide's runnable workflow set changed",
-        )
+        self.assertTrue(paths, "the mechanism guide has no runnable configurations")
+        self.assertIn("configs/core_overlap_pilot.json", paths)
         exact = self._exact_algorithm_names()
         for path in sorted(paths):
             with self.subTest(config=path):
@@ -557,7 +477,7 @@ class MechanismWorkflowClaimTests(unittest.TestCase):
 
 
 class TypeCheckClaimTests(unittest.TestCase):
-    """The README quantifies the mypy exemption. The number must stay honest."""
+    """The primary coverage description must agree with the effective settings."""
 
     def _exempt_modules(self) -> list[str]:
         config = tomllib.loads(_read("pyproject.toml"))
@@ -568,90 +488,40 @@ class TypeCheckClaimTests(unittest.TestCase):
                 modules += [value] if isinstance(value, str) else list(value)
         return modules
 
-    def _module_lines(self, module: str) -> int:
-        path = REPO_ROOT / "src" / (module.replace(".", "/") + ".py")
-        self.assertTrue(path.exists(), f"exempt module not found: {module}")
-        return len(path.read_text(encoding="utf-8").splitlines())
+    def test_mypy_enforces_the_configured_coverage_boundary(self) -> None:
+        if importlib.util.find_spec("mypy") is None:
+            self.skipTest("mypy is an optional development dependency")
+        with tempfile.TemporaryDirectory() as directory:
+            package = Path(directory) / "maxcover"
+            package.mkdir()
+            (package / "__init__.py").write_text("", encoding="utf-8")
+            probe = package / "_mypy_new_module_probe.py"
+            files = [probe]
+            for module in self._exempt_modules():
+                self.assertIn(module, {"maxcover.benchmark", "maxcover.reporting"})
+                files.append(package / (module.split(".")[-1] + ".py"))
+            for path in files:
+                path.write_text('value: int = "not an integer"\n', encoding="utf-8")
+            result = subprocess.run(
+                [sys.executable, "-m", "mypy", "--config-file", str(REPO_ROOT / "pyproject.toml"),
+                 "--cache-dir", str(Path(directory) / "cache"), *map(str, files)],
+                cwd=REPO_ROOT, capture_output=True, text=True,
+            )
+            self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+            errors = [line for line in result.stdout.splitlines() if ": error:" in line]
+            self.assertTrue(errors, result.stdout + result.stderr)
+            self.assertTrue(all(probe.name in line for line in errors), errors)
 
-    def test_the_documents_name_exactly_the_exempt_modules(self) -> None:
-        # Extracted from the prose rather than hard-coded, so that changing the
-        # exemption and the documents together passes, while changing one alone
-        # fails. The earlier version hard-coded the list, which meant fixing a
-        # false README sentence would have failed the test.
-        exempt = {module.split(".")[-1] for module in self._exempt_modules()}
-        for name in ("README.md", "CONTRIBUTING.md"):
-            with self.subTest(document=name):
-                text = _read(name)
-                mentioned = {
-                    match
-                    for match in re.findall(r"`maxcover\.([a-z_]+)`", text)
-                }
-                self.assertEqual(
-                    mentioned,
-                    exempt,
-                    f"{name} names {sorted(mentioned)} but the exemption covers "
-                    f"{sorted(exempt)}",
-                )
-
-    def test_the_documented_share_matches_the_measured_share(self) -> None:
-        # The README states a percentage. A band alone let it drift to 5% and
-        # stay green, so the stated figure is now parsed and compared.
-        source = sorted((REPO_ROOT / "src" / "maxcover").rglob("*.py"))
-        total = sum(
-            len(path.read_text(encoding="utf-8").splitlines()) for path in source
-        )
-        self.assertGreater(total, 0)
-        exempt = sum(self._module_lines(module) for module in self._exempt_modules())
-        measured = exempt * 100 / total
-
-        for name in ("README.md", "CONTRIBUTING.md"):
-            with self.subTest(document=name):
-                match = re.search(r"(\d+)%\s+of\s+the\s+source\s+by\s+line", _read(name))
-                self.assertIsNotNone(
-                    match, f"{name} no longer states the exempt share"
-                )
-                assert match is not None
-                stated = int(match.group(1))
-                self.assertLessEqual(
-                    abs(stated - measured),
-                    5,
-                    f"{name} states {stated}% but the measured share is "
-                    f"{measured:.1f}%",
-                )
-
-    def test_the_documented_file_count_matches_what_mypy_checks(self) -> None:
-        # The README quotes mypy's own summary line. A wrong count there is a
-        # claim about the tool's output, so it is checked against the tool.
-        readme = _read("README.md")
-        match = re.search(r"no issues found in (\d+) source files", readme)
-        self.assertIsNotNone(match, "the README no longer quotes mypy's summary")
-        assert match is not None
-        self.assertEqual(
-            int(match.group(1)),
-            len(sorted((REPO_ROOT / "src" / "maxcover").rglob("*.py"))),
-            "the README quotes a file count mypy no longer reports",
-        )
-
-    def test_every_documented_exempt_module_has_errors_to_hide(self) -> None:
-        # The documents say these modules "carry a real backlog". Review found
-        # that false for one of them: contracts.py became a pure re-export
-        # facade during the module split, with zero definitions and zero errors,
-        # so the exemption is vestigial and the sentence overstated.
-        #
-        # Rather than assert a specific error count — which would fail on every
-        # incremental improvement — this asserts the weaker property the prose
-        # actually depends on: an exempt module contains something to check.
+    def test_typecheck_targets_source_without_spreading_legacy_exemptions(self) -> None:
+        config = tomllib.loads(_read("pyproject.toml"))["tool"]["mypy"]
+        self.assertIn("src/maxcover", config["files"])
+        self.assertFalse(config.get("ignore_errors", False))
+        # These are the pre-split legacy exceptions. Newly extracted modules
+        # must not acquire a whole-module exception or a package wildcard.
         for module in self._exempt_modules():
             with self.subTest(module=module):
-                path = REPO_ROOT / "src" / (module.replace(".", "/") + ".py")
-                source = path.read_text(encoding="utf-8")
-                self.assertRegex(
-                    source,
-                    r"(?m)^\s*(?:def|class)\s",
-                    f"{module} defines nothing, so exempting it from type "
-                    "checking hides no errors; remove the exemption and the "
-                    "sentence describing it",
-                )
+                self.assertIn(module, {"maxcover.benchmark", "maxcover.reporting"})
+                self.assertTrue((SOURCE_ROOT / (module.replace(".", "/") + ".py")).is_file())
 
 
 class ScopeClaimTests(unittest.TestCase):

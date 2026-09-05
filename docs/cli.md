@@ -37,11 +37,19 @@ multi-family benchmark, not the complete current research study:
 python run_project.py benchmark --config configs/full.json --output results/full
 ```
 
-The quick and full configurations retain schema v1 and emit an expected
-`LegacyConfigWarning`. Other older configurations can still support active
-checks: `p3_lazy_greedy.json` is used by CI, `p7_controlled_stressors.json` by
+Older configurations can still support active checks:
+`p3_lazy_greedy.json` is used by CI, `p7_controlled_stressors.json` by
 generator audits, and the pairing configurations by paired-seed method checks.
 See the [workflow index](README.md) for those roles.
+
+## Configuration compatibility
+
+`configs/quick.json` and `configs/full.json` are schema v1. The loader migrates
+them to schema 3 in memory and emits `LegacyConfigWarning`; the files retain
+their existing identities. `configs/sweeps.json` is schema 2, and the
+`configs/p3_*` through `configs/p7_*` configurations are schema 3. These version
+labels describe compatibility, not the purpose or completeness of a study.
+Use the workflow index to choose a configuration by its actual role.
 
 ## Core overlap pilot
 

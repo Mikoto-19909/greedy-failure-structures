@@ -14,6 +14,10 @@ PR #21 配对修复，以及 [准备 PR #27](https://github.com/Mikoto-19909/gre
 `results/core_overlap_pilot_v2/`；验证器和独立统计复算均通过。
 预定样本已经完成并停止，未追加种子或混入其他分支结果。
 
+[结果 PR #30](https://github.com/Mikoto-19909/greedy-failure-structures/pull/30)
+交付了 C1、最小冻结证据、研究报告、图和验证记录。完整输出与独立复算均通过；
+生成证据在 Git 索引中也保持原字节，全部 PR 检查通过后合并。
+
 ## 1. 本次要回答的问题
 
 在元素数、候选集合数、选择预算和理论期望集合大小匹配时，共核式高重叠

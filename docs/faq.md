@@ -1,139 +1,134 @@
 # Frequently Asked Questions
 
+The core experiment compares Greedy with an exhaustive reference on
+`high_overlap` and matched `uniform` instances. The completed
+[pilot analysis](../analysis/overlap_pilot_v1.md) is the starting point for its
+results and interpretation.
+
 <!-- faq:id=problem-definition -->
 
 ## What is Maximum Coverage?
 
-Given a finite universe of elements, a collection of candidate sets, and a
-selection budget `k`, Maximum Coverage asks for at most `k` sets whose union
-covers as many elements as possible. In this repository, `universe_size`,
-`set_count`, and `k` describe the instance, while coverage is the number of
-distinct elements in the selected union.
+Given a finite universe, candidate sets, and a budget `k`, choose at most `k`
+sets whose union covers as many elements as possible. Here, `universe_size`,
+`set_count`, and `k` describe an instance; coverage counts the distinct elements
+in the selected union.
 
 <!-- faq:id=why-study -->
 
-## Why study Maximum Coverage?
+## What does this project study?
 
-Maximum Coverage is a monotone submodular optimisation problem with a familiar
-greedy baseline. The project asks how controlled structural changes relate to
-the gaps observed between Greedy and an exact reference on the same instance.
-The question is about instance structure and algorithm behaviour, not about
-replacing the classical theoretical guarantee.
+Maximum Coverage has a familiar Greedy baseline. The project examines how
+instance structure relates to the gap between Greedy and the optimum on the
+same instance. The current [fixed configuration](../configs/core_overlap_pilot.json)
+compares a shared-core generating mechanism with a uniform control matched in
+dimensions and theoretical expected set size.
 
 <!-- faq:id=theoretical-bound -->
 
 ## Why not just use the theoretical bound?
 
-The classical Greedy guarantee describes a worst-case relationship between the
-Greedy value and the optimum for a broad class of objectives. It does not
-identify which instance structures are associated with larger or smaller gaps
-in a particular experiment. A theoretical guarantee and an empirical
-structural analysis answer different questions.
+The classical Greedy guarantee describes a worst-case relationship between
+Greedy's value and the optimum. It does not identify which structures produce
+larger gaps in a particular experiment. Empirical comparisons describe the
+sampled instances and generating mechanisms; they do not replace that guarantee.
 
 <!-- faq:id=algorithm-roles -->
 
-## Why so many algorithms?
+## Which algorithms matter for the current experiment?
 
-Each algorithm has a distinct role:
+**Greedy** is the object of study. It selects the largest marginal gain and
+breaks ties by the lower set index. **Brute Force** supplies the exhaustive
+reference for the pilot's small instances, with no time limit configured.
+Comparing their integer coverage values identifies a Greedy failure; the
+relative gap measures its size.
 
-- **Greedy** is the primary baseline and object of study.
-- **Lazy Greedy** is a deterministic implementation that is intended to reduce
-  marginal-gain evaluations while preserving the Greedy selection sequence
-  under the repository's tie-breaking rule. This is not a general runtime
-  claim.
-- **Randomised Greedy** and **Multi-start Local Search** provide explicitly
-  seeded stochastic alternatives for testing whether different early choices
-  or additional starts change the result.
-- **Local Search** tests whether neighbourhood improvements can recover from a
-  poor one-pass choice.
-- **Brute Force**, **Branch-and-Bound**, and **CP-SAT** are exact methods used
-  as reference candidates. A run supplies a ground-truth reference only when
-  it finishes with an `optimal` status; a timeout may have an incumbent but
-  does not prove optimality. CP-SAT additionally requires the optional
-  OR-Tools dependency.
+Other workflows use **Lazy Greedy** to reduce marginal-gain evaluations while
+preserving the selection rule, **Local Search** to test neighbourhood recovery,
+and explicitly seeded **Randomised Greedy** or **Multi-start Local Search** to
+explore alternative choices. **Branch-and-Bound** and optional **CP-SAT** provide
+other exact-reference candidates. CP-SAT requires OR-Tools; it is not needed for
+the core pilot. Lazy evaluation alone is not a general runtime guarantee.
 
 <!-- faq:id=reference-status -->
 
 ## What counts as a valid exact reference?
 
-Only an exact run that closes its bound and returns `optimal` can provide the
-reference optimum used by optimum-relative metrics. A `feasible` result is a
-completed incumbent without a proof of optimality. A `timeout` means the
-configured limit was reached, and an `error` means that no valid result was
-produced. See [`output_schema.md`](output_schema.md) for the artifact-level
-status rules.
+The pilot requires a completed exhaustive run with `status=optimal` and a
+selected-set coverage value consistent with the instance. Other workflows may
+also use an independently validated construction certificate.
+
+`feasible` records an incumbent without an optimality proof. It does not by
+itself say that execution completed: inspect `algorithm_metadata.termination`
+for the stopping reason. `timeout` records a reached time limit; `error`
+records no valid algorithm result. Neither supplies a reference optimum.
+The field contracts are in [`output_schema.md`](output_schema.md).
 
 <!-- faq:id=instance-families -->
 
 ## Which instance families are included?
 
-The generator registry includes `uniform`, `high_overlap`, `clustered`,
-`fixed_size`, `long_tail`, `duplicate_heavy`, `dominated_heavy`,
-`mixed_cluster`, and `adversarial`. They exercise different structural
-stressors. Duplicate-heavy and dominated-heavy cases also test preprocessing
-and exact-search behaviour; no family guarantees a Greedy failure on every
-generated instance. See [`failure_mechanisms.md`](failure_mechanisms.md) for
-the runnable family workflows.
+The core comparison uses `high_overlap` and `uniform`. Supplementary workflows
+vary clusters, set size, coverage concentration, duplicates, dominance, and
+adversarial traps. The `controlled_*` families provide separate structural
+scans with explicit dimension and incidence controls.
 
-The registry also includes `controlled_high_overlap`, `controlled_clustered`,
-`controlled_duplicate`, `controlled_dominated`, and
-`controlled_adversarial`. These new names preserve every legacy generator
-identity while providing fixed-dimension, fixed-incidence stressor scans.
+An intended stressor does not establish a Greedy failure: inspect the actual
+instance and its reference. Known adversarial constructions have their own
+parameter conditions. See [`failure_mechanisms.md`](failure_mechanisms.md) for
+mechanisms and commands, and [`generator_isolation.md`](generator_isolation.md)
+for what each controlled scan holds fixed.
 
 <!-- faq:id=synthetic-families -->
 
-## Why parameterised instance families instead of real-world data?
+## Why parameterised families instead of real-world data?
 
-Real-world data can vary along many dimensions at once, which makes it
-difficult to isolate the contribution of any one structural property.
-Controlled synthetic families vary selected parameters and, where configured,
-hold a common random stream fixed. This helps test candidate mechanisms and
-estimate descriptive associations; it does not by itself establish causality
-or real-world generalisation.
+Parameterised families make selected changes explicit. They help test candidate
+mechanisms and estimate descriptive associations; this does not by itself establish
+causality or real-world generalisation. Matching expected set size still leaves
+other structural properties free to move.
+
+Where configured, cases share an effective seed. Equal seed values do not
+guarantee draw-by-draw alignment across generators or a reduction in variance;
+the consumption rules are described in [`paired_seed_audit.md`](paired_seed_audit.md).
 
 <!-- faq:id=no-results -->
 
-## Where are frozen experiment results published?
+## Where are the completed results?
 
-This repository is a code-first reproducible experiment engine. It publishes
-the algorithms, generators, configurations, validators, and reporting logic,
-while full benchmark outputs are generated locally under `results/`. Minimum
-frozen evidence for a public claim belongs in `experiments/core_rq/`; its
-authoritative mapping is the
-[`CLAIMS.md` ledger](../experiments/core_rq/CLAIMS.md). The external narrative
-belongs in [`analysis/`](../analysis/README.md). The claim ledger currently
-contains no quantitative research claim.
+The high-overlap pilot did not provide sufficient paired evidence of a
+difference in Greedy failure rates. This does not establish equivalence or an
+effect of overlap alone. [C1](../experiments/core_rq/CLAIMS.md#c1) connects that
+statement to the frozen evidence; the
+[pilot analysis](../analysis/overlap_pilot_v1.md) explains the comparison and
+its limits. The [research index](../analysis/README.md) lists published work.
 
 <!-- faq:id=content-boundary -->
 
-## Why is the content boundary enforced?
+## How are published claims checked?
 
-The repository may publish a small number of validated core research claims.
-The boundary keeps full exploratory output local, places minimum frozen evidence
-in one public directory, and requires each quantitative research claim to lead
-back to its claim-ledger entry. CI permits quantitative prose but does not verify
-the human-maintained evidence mapping.
+Each claim links to its evidence through the claim ledger. The publication and
+review requirements are maintained in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
 
 <!-- faq:id=determinism -->
 
 ## What does determinism mean here?
 
-With the same normalized configuration, algorithm version, and explicit seed,
-completed runs reproduce the instance identities, selected set indices,
-coverage values, and canonical row ordering. Wall-clock runtime, timestamps,
-and environment metadata may vary by machine. A run stopped by its wall-clock
-limit reports the incumbent it had reached when the limit fired; because
-progress is checked against the wall clock, that incumbent and its coverage can
-differ across machines and are exempt from this guarantee. Randomised
-algorithms therefore require an explicit algorithm seed, while deterministic
-algorithms reject one.
+With the same normalized configuration, generator and algorithm versions, and
+explicit seeds, completed runs reproduce the instance identities, selected set
+indices, coverage values, and canonical row ordering. Wall-clock runtime,
+timestamps, and environment metadata may vary by machine. A run stopped by its
+wall-clock limit reports the incumbent it had reached when the limit fired;
+that incumbent and its coverage can differ across machines and are exempt from
+this guarantee. Randomised algorithms require an explicit algorithm seed;
+deterministic algorithms reject one.
 
 <!-- faq:id=reproduction -->
 
 ## How do I reproduce a workflow?
 
-Start with [`cli.md`](cli.md) for configuration validation, benchmark
-execution, resume, summarization, replay, and independent output validation.
-Use [`output_schema.md`](output_schema.md) to interpret the generated CSV,
-report, replay, and manifest artifacts. The README and
-[`CONTRIBUTING.md`](../CONTRIBUTING.md) define the current publication scope.
+Use the [core-pilot commands](cli.md#core-overlap-pilot) to regenerate complete
+output and run the validator and offline analysis. The general
+[`CLI reference`](cli.md) covers configuration checks, benchmark execution,
+resume, summarize, and replay; [`output_schema.md`](output_schema.md) explains
+the resulting artifacts and validation scope.

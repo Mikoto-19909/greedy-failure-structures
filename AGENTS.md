@@ -1,170 +1,60 @@
-# AGENTS.md
+# Agent guidance
 
-Guidance for AI coding agents working in this repository. A human contributor
-should read [`CONTRIBUTING.md`](CONTRIBUTING.md) first; this file adds the
-constraints that exist because an agent fails differently from a person.
+Follow [`CONTRIBUTING.md`](CONTRIBUTING.md) for the shared development,
+correctness, evidence, verification, authorship and licensing requirements.
+Those rules and the additional requirements below apply whether or not CI can
+enforce them.
 
-Everything here is enforced by CI where enforcement is possible. Where it is
-not, it is a rule you are expected to follow rather than a suggestion.
+## Establish the current state
 
-## Development home
-
-This is the public canonical development repository. Current software work,
-issues, pull requests, CI and releases belong here. Work on a branch, open a
-pull request, wait for the configured required checks, and merge through that
-pull request; direct pushes to the default branch are rejected.
-
-`PUBLIC_SNAPSHOT_MANIFEST.json` and `docs/history/` preserve the one-time
-migration provenance. They are historical records, not instructions to import
-from, publish from or synchronize with another repository. Do not add a second
-development path or a recurring cross-repository publication workflow.
-
-## Git Workflow Conventions
-
-- PRs must follow **single-responsibility** — never cherry-pick unrelated governance or config commits into a feature PR.
-- After merging PRs, always clean up: delete merged branches and verify no stale branches remain.
-- When formatting hooks fail (dirty worktree), stash or fix the formatted files before retrying the push — do not try to bypass hooks.
-- Standard branch workflow: feature branch → PR → CI pass → merge → branch cleanup.
-
-## Authorship
-
-Do not attribute a commit to an AI assistant. No `Co-Authored-By` trailer naming
-a model, no "generated with" line, and no model name in the author or committer
-identity. Authorship stays with the person who submitted the work.
-
-This is checked by `.github/scripts/check_commits.py`, which reads trailers,
-identity fields and generation lines over a commit range. The check exists
-because the rule was stated in prose for some time before anything verified it,
-and a documented rule with no enforcement is a rule that drifts.
-
-## The content boundary
-
-This repository may publish a small number of validated core research claims.
-Full exploratory output stays untracked under `results/`; minimum frozen
-evidence belongs in `experiments/core_rq/`, and the external narrative belongs
-in `analysis/`.
-
-Every quantitative research claim in tracked prose must cite a claim ID from
-`experiments/core_rq/CLAIMS.md`. That entry binds the statement to exact result
-rows or filters, an analysis figure, the configuration, the manifest, and an
-independent validator command recorded as PASS. Preserve generated evidence
-filenames and bytes. Do not create a parallel claim list elsewhere.
-
-`.github/scripts/check_content_boundary.py` runs in `evidence_backed_claims`
-mode. It permits quantitative prose and does not verify the claim-to-evidence
-mapping; that check is a contributor and reviewer responsibility. It still
-rejects personal paths, credential-shaped strings, and broken relative links
-across tracked files. Do not describe a clean content-boundary run as proof that
-the evidence mapping is correct.
-
-The fixture marker remains a per-line test-fixture exemption, not a publication
-opt-out; it bypasses every content check on that line. Do not use it in ordinary
-content. If a legitimate tracked file trips a remaining check, make the narrowest
-motivated exclusion and preserve coverage for the rejected form.
-
-Quantitative research claims remain prohibited in commit messages. Historical
-records under `docs/history/` and `PUBLIC_SNAPSHOT_MANIFEST.json` are not live
-publication instructions and stay unchanged when the active policy moves.
-
-## Determinism
-
-Stable identities, fixed tie-breaking and reproducible ordering are contracts.
-A change that makes identical inputs produce different identities or a different
-result ordering is a breaking change even when the new behaviour looks
-equivalent. Configuration hashes are computed over the normalized configuration,
-so reformatting a config file is not a cosmetic change.
-
-Randomized algorithms take an explicit seed; deterministic ones must not. A
-solver that ran out of time yields an incumbent, never a reference optimum.
-
-## Orientation
-
-Before deciding what "the recent changes" are, enumerate the work:
+Before deciding what the recent changes are, inspect all branches and
+worktrees:
 
 ```console
 git branch -a
 git worktree list
 ```
 
-Development here has run on several branches and in a separate worktree at the
-same time. A review that reads only the checked-out branch can be a complete,
-confident review of the wrong commits, and nothing in the diff will say so. Two
-commands settle it.
+Identify the relevant work before choosing a diff or applying a plan. Verify
+environment claims with the tool's version command; do not rewrite documentation
+to match an unverified statement from a prior session.
 
-`LICENSE_MANIFEST.json` is a single-line JSON document, so a diff of it prints
-the whole file twice and `head` cannot trim one line. Read it with `--stat` and
-compare the specific fields that matter.
+`LICENSE_MANIFEST.json` is single-line JSON. Use diff statistics and compare the
+relevant parsed fields instead of printing the whole file. Follow the
+index-first regeneration order in CONTRIBUTING.
 
-## Verification before you claim something works
+On Windows, reading and rewriting a file can change its line endings. Restore
+an otherwise unchanged file with Git rather than rewriting its original text;
+preserve existing user changes when identifying what can be restored.
 
-Run the suite and the checks, and report what they actually said:
+## Independent review
 
-```console
-python -m unittest discover -s tests -v
-python .github/scripts/check_content_boundary.py --claim-mode evidence_backed_claims
-python .github/scripts/build_license_manifest.py --check
-python -m mypy
-```
+Obtain an independent review before merging either of these changes:
 
-Two ordering facts will otherwise waste your time. `build_license_manifest.py`
-reads the git _index_, so stage your changes first, then regenerate, then stage
-the manifest. And reading a file and writing it back through a script can change
-its line endings on a Windows checkout, which makes an unchanged file look
-modified — restore such a file with git rather than by rewriting the original
-text.
+- A fix for review findings.
+- A change that pairs a documented rule with code that enforces it.
 
-A clean mypy run is narrower than it looks; `CONTRIBUTING.md` says which modules
-are exempt and what that means for a change landing in one of them.
+Use reverse verification: for each normative statement, construct an input
+that the statement says must be rejected, run it, and report whether the rule
+was enforced. Derive the cases from the declaration, not from the enforcing
+implementation. Your own assessment or tests do not replace the independent
+pass.
 
-A statement about the environment is not an environment fact. A plan or a
-handover note saying a tool is missing is a claim from another session, and
-editing a document to agree with it is a change you will have to make twice if
-the claim is stale. Run the version command first; it costs one call.
+Assertions must check the fact behind a sentence: run the behavior, or compare
+the stated value with a measurement. A wording check alone cannot establish a
+documented rule.
 
-## Reviewing your own work
+## Execution and scope
 
-This is the section most specific to agents, and it exists because of a
-measured pattern rather than a principle.
+Work toward the agreed task and its acceptance conditions. Keep changes focused,
+record adjacent issues without expanding the task, and stop adding work once
+the requested acceptance conditions are met. Follow existing authorization when
+resolving routine implementation choices; discuss larger changes as required
+by CONTRIBUTING when they are outside the agreed scope.
 
-Defects in this repository have concentrated almost entirely in one class:
-**the documented rule and the code meant to enforce it disagree.** Not logic
-errors — specification-versus-implementation gaps. On more than one occasion a
-comment contradicted the code directly beneath it. On more than one occasion a
-fix for a review finding introduced a fresh instance of the same class it was
-fixing, because the fix was designed from the same mental model as the defect.
-
-Two consequences follow, and neither is a judgement call:
-
-1. **After fixing review findings, get an independent pass before merging.** Your
-   own assessment that a fix is correct is not sufficient evidence, and the
-   fix-introduces-the-same-defect pattern is exactly what an independent reader
-   catches and you do not.
-
-2. **Any change that pairs a documented rule with enforcing code needs that pass
-   too.** This is where the gaps concentrate.
-
-Conduct such a review by **reverse verification**: take each normative statement
-in the document, construct an input the statement says must be rejected, _run
-it_, and report whether the rule was actually enforced. Deriving test cases by
-reading the implementation and asking what the code does is the failure mode
-that let these through — the cases have to come from the declaration.
-
-Two related traps:
-
-- **Tests you designed yourself cannot probe your own blind spots.** Every case
-  you invent falls inside the model that produced the code. A suite passing tells
-  you the cases it contains are covered, nothing more.
-- **A test that asserts a word appears in a document does not test the
-  document's claim.** Prose containing the right vocabulary can still state the
-  opposite of the truth. Assert the fact the sentence depends on: run the
-  behaviour, or extract the stated figure and compare it to a measured one.
-
-## Scope discipline
-
-Larger changes — a new algorithm, a new instance family, a new output schema —
-need discussion before implementation. They interact with the reproducibility
-contracts, and a change that looks local can invalidate stored run identities.
-
-Keep a change focused. Do not reformat unrelated code, and do not remove a type
-exemption in the same commit as a behavioural change; the two cannot be reviewed
-apart.
+Before claiming a change works, complete the applicable verification in
+CONTRIBUTING. Report exactly what was run, including failures, skips and omitted
+local checks. Apply explicit task-specific test selection without disabling
+required CI or claiming broader verification than the evidence supports. Keep
+type fixes, mechanical moves and exemption removal separate as CONTRIBUTING
+requires.

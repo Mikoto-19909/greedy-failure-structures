@@ -74,8 +74,9 @@ already stops normalization with an error.
 
 ## Paired algorithm analyses
 
-The runner writes these typed files when their required variants and valid
-instance-equal pairs are available:
+The runner writes these typed files for each completed benchmark. Rows require
+the corresponding variants and eligible instance-level observations or pairs;
+files remain header-only when no rows apply:
 
 - `greedy_failure_statistics.csv`: Greedy outcomes paired with valid optimal
   references
@@ -89,9 +90,10 @@ instance-equal pairs are available:
 - `quality_runtime_pareto_statistics.csv`: eligible quality/runtime frontier
   classification
 
-`search_comparison.csv` is a compatibility comparison for paired search
-variants. `stochastic_summary.csv` summarizes explicitly seeded stochastic
-algorithm runs.
+`search_comparison.csv` is written only when `bnb_baseline` and `bnb_enhanced`
+runs share an instance. `stochastic_summary.csv` is written only when an
+explicitly seeded algorithm run has a feasible coverage value. These
+compatibility outputs are conditional, unlike the typed files listed above.
 
 ## Structural gap cartography artifacts
 
@@ -162,8 +164,9 @@ it does not mean the metric equals zero.
 
 - `optimal` means an exact method closed its bound and may supply a reference
   optimum.
-- `feasible` means a completed incumbent is available but is not a proved
-  optimum.
+- `feasible` means an incumbent is available without an optimality proof.
+  Check `algorithm_metadata.termination` separately: this status can accompany
+  a time or iteration limit and does not establish completed execution.
 - `timeout` means work stopped at its configured limit; an incumbent or bound
   may be present, but the timeout run itself does not prove an optimum. The
   normalized row may still carry a reference optimum from an independently
@@ -195,14 +198,39 @@ Git state, Python and operating-system metadata, optional OR-Tools version,
 algorithm versions and options, seeds, execution counts, analysis contracts,
 and checksums for runner-owned artifacts.
 
-A matching checksum proves that an artifact has not changed since the manifest
-was written. It does not prove that the original computation was correct. Use
-the independent validator to read the canonical artifacts back and recompute
-their declared relationships:
+A matching checksum establishes agreement between the current file and the
+recorded digest. The check can still pass if both are changed together; it does
+not establish the file's history or the correctness of its calculation.
+
+For a completed starter workflow, run:
 
 ```console
 python .github/scripts/validate_benchmark_output.py --config configs/quick.json --output results/quick
 ```
 
-Generated output remains local under `results/` and is not part of the
-repository's published snapshot.
+The validator checks Manifest declarations and file digests, the configuration
+and execution-plan identities, record consistency, and supported typed
+statistics recomputed from `raw_results.csv` and `instances.csv`. It checks
+`summary.csv` groups and run counts, the first `Headline checks` report section,
+and the charts listed in its `expected_charts` mapping. The remaining report
+text and the legacy `gap_by_family.svg` and `runtime_by_algorithm.svg` charts
+are covered by file checksums, not content recomputation.
+
+The validator shares statistics and rendering helpers with the producer. It
+does not independently reimplement every calculation or replay every algorithm.
+Selection and work-count replay covers a supported Lazy Greedy variant and a
+paired Greedy variant when present. It rejects timeout and error statuses and
+requires a reference optimum for every instance; it
+is not a general acceptance check for all legal timeout or missing-reference
+outputs. The [fault-injection matrix](fault_injection_matrix.md) records the
+tested limits.
+
+The dedicated [core overlap analysis](../analysis/core_overlap_pilot.py) checks
+each pilot run's selected sets against its generated instance and declared
+coverage. Its additional checks and analysis artifacts are separate from the
+benchmark validator's scope.
+
+Full exploratory output stays local under `results/`. A published claim's
+minimum frozen evidence belongs in `experiments/core_rq/`, with its binding in
+[`CLAIMS.md`](../experiments/core_rq/CLAIMS.md), following
+[CONTRIBUTING.md](../CONTRIBUTING.md).
