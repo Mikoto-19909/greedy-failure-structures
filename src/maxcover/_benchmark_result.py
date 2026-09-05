@@ -10,6 +10,8 @@ from ._association_contracts import (
     GapClusteringAssociationRecord,
     GapDensityAssociationRecord,
     GapOverlapAssociationRecord,
+)
+from ._performance_association_contracts import (
     RuntimeKAssociationRecord,
     RuntimeSetCountAssociationRecord,
     SearchNodesDominatedRatioAssociationRecord,
@@ -23,15 +25,19 @@ from ._reference_contracts import (
 )
 from ._run_contracts import RunRecord, SummaryRecord
 from ._statistics_contracts import (
-    BranchAndBoundNodeReductionRecord,
     CensoredRuntimeRecord,
     ConfidenceIntervalRecord,
     DescriptiveStatisticsRecord,
+)
+from ._quality_contracts import (
     GreedyFailureRecord,
-    HeuristicExactRuntimeRatioRecord,
     LocalSearchRecoveryRecord,
     LocalSearchRemainingGapRecord,
     QualityRuntimeParetoRecord,
+)
+from ._performance_contracts import (
+    BranchAndBoundNodeReductionRecord,
+    HeuristicExactRuntimeRatioRecord,
 )
 
 if TYPE_CHECKING:

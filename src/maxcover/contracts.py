@@ -54,25 +54,29 @@ from ._run_contracts import (
 from ._statistics_contracts import (
     AUTOMATIC_CONCLUSION_CONTRACT_SCHEMA_VERSION,
     AUTOMATIC_CONCLUSION_MINIMUM_SAMPLE_COUNT,
-    BNB_NODE_REDUCTION_SCHEMA_VERSION,
     CENSORED_RUNTIME_SCHEMA_VERSION,
     CONFIDENCE_INTERVAL_SCHEMA_VERSION,
     DESCRIPTIVE_STATISTICS_METRICS,
     DESCRIPTIVE_STATISTICS_SCHEMA_VERSION,
-    GREEDY_FAILURE_SCHEMA_VERSION,
-    HEURISTIC_EXACT_RUNTIME_RATIO_SCHEMA_VERSION,
-    LOCAL_SEARCH_RECOVERY_SCHEMA_VERSION,
-    LOCAL_SEARCH_REMAINING_GAP_SCHEMA_VERSION,
-    QUALITY_RUNTIME_PARETO_SCHEMA_VERSION,
-    BranchAndBoundNodeReductionRecord,
     CensoredRuntimeRecord,
     ConfidenceIntervalRecord,
     DescriptiveStatisticsRecord,
+)
+from ._quality_contracts import (
+    GREEDY_FAILURE_SCHEMA_VERSION,
+    LOCAL_SEARCH_RECOVERY_SCHEMA_VERSION,
+    LOCAL_SEARCH_REMAINING_GAP_SCHEMA_VERSION,
+    QUALITY_RUNTIME_PARETO_SCHEMA_VERSION,
     GreedyFailureRecord,
-    HeuristicExactRuntimeRatioRecord,
     LocalSearchRecoveryRecord,
     LocalSearchRemainingGapRecord,
     QualityRuntimeParetoRecord,
+)
+from ._performance_contracts import (
+    BNB_NODE_REDUCTION_SCHEMA_VERSION,
+    HEURISTIC_EXACT_RUNTIME_RATIO_SCHEMA_VERSION,
+    BranchAndBoundNodeReductionRecord,
+    HeuristicExactRuntimeRatioRecord,
 )
 from .model import (
     MaximumCoverageInstance,
@@ -85,12 +89,14 @@ from ._association_contracts import (
     GAP_CLUSTERING_ASSOCIATION_SCHEMA_VERSION,
     GAP_DENSITY_ASSOCIATION_SCHEMA_VERSION,
     GAP_OVERLAP_ASSOCIATION_SCHEMA_VERSION,
-    RUNTIME_K_ASSOCIATION_SCHEMA_VERSION,
-    RUNTIME_SET_COUNT_ASSOCIATION_SCHEMA_VERSION,
-    SEARCH_NODES_DOMINATED_RATIO_ASSOCIATION_SCHEMA_VERSION,
     GapClusteringAssociationRecord,
     GapDensityAssociationRecord,
     GapOverlapAssociationRecord,
+)
+from ._performance_association_contracts import (
+    RUNTIME_K_ASSOCIATION_SCHEMA_VERSION,
+    RUNTIME_SET_COUNT_ASSOCIATION_SCHEMA_VERSION,
+    SEARCH_NODES_DOMINATED_RATIO_ASSOCIATION_SCHEMA_VERSION,
     RuntimeKAssociationRecord,
     RuntimeSetCountAssociationRecord,
     SearchNodesDominatedRatioAssociationRecord,
