@@ -8,17 +8,16 @@
 
 ## 当前研究
 
-下一项研究是：在维度与期望集合大小匹配时，共核式 `high_overlap` 生成器是否比
-`uniform` 对照更容易让 Greedy 失手？计划在一个固定参数点比较 Greedy 与穷举参考。
+核心研究问题是：在维度与期望集合大小匹配时，共核式 `high_overlap` 生成器是否比
+`uniform` 对照更容易让 Greedy 失手？固定试验在一个参数点比较 Greedy 与穷举参考。
 这项设计尚不能将重叠度与生成机制带来的其他结构差异完全分离。
 
-**状态：实现已准备，正式实验待运行。**
-[固定配置](configs/core_overlap_pilot.json) 与
-[离线分析脚本](analysis/core_overlap_pilot.py) 已按
-[执行计划](docs/core_overlap_checkpoint_plan.zh-CN.md) 实现。
-准备代码提交后，按[试验命令](docs/cli.md#core-overlap-pilot)在干净的固定版本上正式运行。
+**状态：固定试验已完成。** [研究报告](analysis/overlap_pilot_v1.md) 记录了本轮
+未获得足够失效率差异证据的结果，并说明适用范围与结构诊断。
+冻结证据和验证记录见 [C1](experiments/core_rq/CLAIMS.md#c1)，
+重跑方式见[试验命令](docs/cli.md#core-overlap-pilot)。
 
-[研究分析入口](analysis/README.md) 记录当前进展。公开发现形成后，通过
+[研究分析入口](analysis/README.md) 记录当前进展。通过
 [核心结论台账](experiments/core_rq/CLAIMS.md) 查找对应证据。
 
 ## 环境要求
@@ -45,7 +44,7 @@ python -m pip install -e ".[oracle]"
 
 | 用途 | 入口 |
 | --- | --- |
-| 当前研究 | [固定高重叠试验](docs/cli.md#core-overlap-pilot)；实现已准备，正式实验待运行。 |
+| 当前研究 | [固定高重叠试验](docs/cli.md#core-overlap-pilot)及其[已发布结果](analysis/overlap_pilot_v1.md)。 |
 | 演示与兼容验证 | 下方的 `demo`、`quick` 与较大的旧版 `full.json` 工作流。 |
 | 历史探索与附录 | [补充工作流索引](docs/README.md#historical-exploration-and-appendices)，包括较大的结构扫描与附加算法比较。 |
 

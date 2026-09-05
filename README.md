@@ -9,21 +9,20 @@ inspect reproducible experiments.
 
 ## Current research
 
-The next checkpoint asks whether the shared-core `high_overlap` generator
+The core checkpoint asks whether the shared-core `high_overlap` generator
 produces more Greedy failures than a `uniform` control matched on dimensions
-and expected set size. The planned comparison uses Greedy and an exhaustive
+and expected set size. The fixed comparison uses Greedy and an exhaustive
 reference at one fixed parameter setting. It does not isolate overlap from
 every other structural difference between the generators.
 
-**Status: implementation prepared; formal experiment pending.** The
-[fixed configuration](configs/core_overlap_pilot.json) and
-[offline analysis](analysis/core_overlap_pilot.py) implement the
-[execution plan](docs/core_overlap_checkpoint_plan.zh-CN.md). Use the
-[pilot commands](docs/cli.md#core-overlap-pilot) after committing the preparation;
-the formal run must use a clean fixed source revision.
+**Status: fixed pilot completed.** The [research report](analysis/overlap_pilot_v1.md)
+records insufficient paired evidence of a failure-rate difference in this fixed
+setting, with its scope and structural diagnostics. See
+[C1](experiments/core_rq/CLAIMS.md#c1) for frozen evidence and validation.
+Use the [pilot commands](docs/cli.md#core-overlap-pilot) to reproduce the run.
 
 The [research analysis](analysis/README.md) records the current research status.
-Published findings, when available, link to the
+Published findings link to the
 [claim ledger](experiments/core_rq/CLAIMS.md) for their evidence.
 
 ## Requirements
@@ -50,7 +49,7 @@ Choose the workflow by purpose:
 
 | Purpose | Entry point |
 | --- | --- |
-| Current research | The [fixed overlap pilot](docs/cli.md#core-overlap-pilot); implementation is prepared and the formal experiment is pending. |
+| Current research | The [fixed overlap pilot](docs/cli.md#core-overlap-pilot) and its [published result](analysis/overlap_pilot_v1.md). |
 | Examples and compatibility checks | `demo`, `quick`, and the larger legacy `full.json` workflow below. |
 | Historical exploration and appendices | The [supplementary workflow index](docs/README.md#historical-exploration-and-appendices), including broader structural scans and additional algorithm comparisons. |
 
