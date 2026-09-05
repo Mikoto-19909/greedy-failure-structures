@@ -14,6 +14,7 @@ from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
 from statistics import fmean, median, stdev
+from typing import TypedDict
 
 from .algorithms import ALGORITHMS
 from .benchmark_artifacts import (
@@ -720,6 +721,23 @@ def _describe_values(values: Sequence[float]) -> _MetricDescription:
     )
 
 
+class _DescriptiveCommon(TypedDict):
+    config_hash: str
+    case_id: str
+    family: str
+    algorithm_id: str
+    algorithm: str
+    repetition_unit: str
+    instance_count: int
+    run_count: int
+    timeout_count: int
+    timeout_rate: float
+    error_count: int
+    error_rate: float
+    valid_exact_reference_count: int
+    exact_reference_rate: float
+
+
 def _descriptive_statistics(
     rows: Sequence[RunRecord],
 ) -> list[DescriptiveStatisticsRecord]:
@@ -814,7 +832,7 @@ def _descriptive_statistics(
             row.status is SolutionStatus.TIMEOUT for row in group
         )
         error_count = sum(row.status is SolutionStatus.ERROR for row in group)
-        common = {
+        common: _DescriptiveCommon = {
             "config_hash": config_identifier,
             "case_id": case_id,
             "family": family,
@@ -990,6 +1008,26 @@ def _ten_decimal(value: float) -> float:
     return float(f"{value:.10f}")
 
 
+class _ConfidenceIntervalCommon(TypedDict):
+    config_hash: str
+    case_id: str
+    family: str
+    algorithm_id: str
+    algorithm: str
+    metric: str
+    estimand: str
+    confidence_level: float
+    method: str
+    repetition_unit: str
+    instance_count: int
+    sample_count: int
+    run_count: int
+    timeout_count: int
+    error_count: int
+    valid_exact_reference_count: int
+    degrees_of_freedom: int
+
+
 def _confidence_interval_statistics(
     statistics: Sequence[DescriptiveStatisticsRecord],
 ) -> list[ConfidenceIntervalRecord]:
@@ -1004,7 +1042,7 @@ def _confidence_interval_statistics(
             }
         )
         sample_count = canonical.sample_count
-        common = {
+        common: _ConfidenceIntervalCommon = {
             "config_hash": canonical.config_hash,
             "case_id": canonical.case_id,
             "family": canonical.family,
@@ -2241,18 +2279,18 @@ def _gap_density_association_statistics(
     instance_by_unit: dict[
         tuple[str, str, int, str], InstanceRecord
     ] = {}
-    for instance in instances:
+    for supplied_instance in instances:
         unit = (
-            instance.config_hash,
-            instance.case_id,
-            instance.repetition,
-            instance.instance_id,
+            supplied_instance.config_hash,
+            supplied_instance.case_id,
+            supplied_instance.repetition,
+            supplied_instance.instance_id,
         )
         if unit in instance_by_unit:
             raise ValueError(
                 "gap-density association requires unique instance records"
             )
-        instance_by_unit[unit] = instance
+        instance_by_unit[unit] = supplied_instance
 
     groups: dict[
         tuple[str, str, str, str], list[RunRecord]
@@ -2492,18 +2530,18 @@ def _gap_overlap_association_statistics(
     instance_by_unit: dict[
         tuple[str, str, int, str], InstanceRecord
     ] = {}
-    for instance in instances:
+    for supplied_instance in instances:
         unit = (
-            instance.config_hash,
-            instance.case_id,
-            instance.repetition,
-            instance.instance_id,
+            supplied_instance.config_hash,
+            supplied_instance.case_id,
+            supplied_instance.repetition,
+            supplied_instance.instance_id,
         )
         if unit in instance_by_unit:
             raise ValueError(
                 "gap-overlap association requires unique instance records"
             )
-        instance_by_unit[unit] = instance
+        instance_by_unit[unit] = supplied_instance
 
     groups: dict[
         tuple[str, str, str, str], list[RunRecord]
@@ -2749,18 +2787,18 @@ def _gap_clustering_association_statistics(
     instance_by_unit: dict[
         tuple[str, str, int, str], InstanceRecord
     ] = {}
-    for instance in instances:
+    for supplied_instance in instances:
         unit = (
-            instance.config_hash,
-            instance.case_id,
-            instance.repetition,
-            instance.instance_id,
+            supplied_instance.config_hash,
+            supplied_instance.case_id,
+            supplied_instance.repetition,
+            supplied_instance.instance_id,
         )
         if unit in instance_by_unit:
             raise ValueError(
                 "gap-clustering association requires unique instance records"
             )
-        instance_by_unit[unit] = instance
+        instance_by_unit[unit] = supplied_instance
 
     groups: dict[
         tuple[str, str, str, str], list[RunRecord]
@@ -3126,25 +3164,25 @@ def _increment_heuristic_status(
 
 def _runtime_set_count_association_statistics(
     rows: Sequence[RunRecord],
-    instances: Sequence[InstanceRecord],
+    instances: Sequence[InstanceRecord | _RuntimeKInstanceProjection],
 ) -> list[RuntimeSetCountAssociationRecord]:
     """Associate complete instance runtimes with set count by family."""
 
     instance_by_unit: dict[
-        tuple[str, str, int, str], InstanceRecord
+        tuple[str, str, int, str], InstanceRecord | _RuntimeKInstanceProjection
     ] = {}
-    for instance in instances:
+    for supplied_instance in instances:
         unit = (
-            instance.config_hash,
-            instance.case_id,
-            instance.repetition,
-            instance.instance_id,
+            supplied_instance.config_hash,
+            supplied_instance.case_id,
+            supplied_instance.repetition,
+            supplied_instance.instance_id,
         )
         if unit in instance_by_unit:
             raise ValueError(
                 "runtime-set-count association requires unique instances"
             )
-        instance_by_unit[unit] = instance
+        instance_by_unit[unit] = supplied_instance
 
     groups: dict[
         tuple[str, str, str, str], list[RunRecord]
@@ -3440,19 +3478,19 @@ def _search_nodes_dominated_ratio_association_statistics(
     instance_by_unit: dict[
         tuple[str, str, int, str], InstanceRecord
     ] = {}
-    for instance in instances:
+    for supplied_instance in instances:
         unit = (
-            instance.config_hash,
-            instance.case_id,
-            instance.repetition,
-            instance.instance_id,
+            supplied_instance.config_hash,
+            supplied_instance.case_id,
+            supplied_instance.repetition,
+            supplied_instance.instance_id,
         )
         if unit in instance_by_unit:
             raise ValueError(
                 "search-nodes dominated-ratio association requires unique "
                 "instances"
             )
-        instance_by_unit[unit] = instance
+        instance_by_unit[unit] = supplied_instance
 
     groups: dict[tuple[str, str, str, str], list[RunRecord]] = defaultdict(list)
     for row in rows:

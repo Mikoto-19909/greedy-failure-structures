@@ -2,8 +2,8 @@
 
 Restored from the preserved research stash and reconciled with the main branch
 at `0dd9de338c07df312e268f916e630aceebb11f4a` on 2026-09-05. The research
-branch and the other stashed files remain separate. B0 through B2 are complete;
-B3 begins with a separate artifact type prerequisite.
+branch and the other stashed files remain separate. B0 through B3 are complete;
+B4 begins with a separate statistics type prerequisite.
 
 [Preparation PR #27](https://github.com/Mikoto-19909/greedy-failure-structures/pull/27)
 restored this document, added its index entry, and reconciled the linked plans'
@@ -179,6 +179,25 @@ lifecycle tests, and the default type check. The artifacts module uses normal
 type coverage without new exemptions. Independent review replays old checkpoint,
 conditional-output and cleanup-boundary cases; required PR CI supplies the
 remaining coverage under the same local-check selection as the earlier batches.
+B3 passed independent reverse review and all required PR checks before merge.
+The independent replay preserved malformed and partial checkpoint behavior,
+conditional CSV bytes, and the boundary between runner-owned and unrelated files.
+
+### B4 implementation
+
+B4 starts from `bbaea2c1a52474d2d933b7744b0f233ebb95bcdb`, after B3.
+The prerequisite adds precise TypedDict annotations for the existing descriptive
+and confidence-interval keyword dictionaries, renames the first instance-loop
+binding in five association functions, and annotates the runtime-set-count
+helper's existing use of the runtime-k projection. Dictionary values, calls,
+formulas, lookup/rejection branches and projection behavior remain unchanged.
+
+Removing only those annotation changes and restoring the loop bindings
+reproduces the original module AST. The variable-use audit confirms that later
+instance reads rely on later assignments, not the first loop's leftover value.
+The temporary type check with only the benchmark override removed passes with
+no remaining diagnostics. The default configuration remains unchanged for this
+prerequisite, and the fixed old/new artifact comparison passes before relocation.
 
 ## Purpose
 
