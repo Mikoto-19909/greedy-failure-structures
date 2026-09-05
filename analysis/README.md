@@ -13,9 +13,11 @@ differences can remain after matching.
 ## Current status
 
 The [execution plan in PR #23](https://github.com/Mikoto-19909/greedy-failure-structures/pull/23)
-records the design, prerequisites, and analysis procedure. Its proposed
-`configs/core_overlap_pilot.json` and offline analysis script await
-implementation. No result is inferred from the runnable quick/full examples
+records the design, prerequisites, and analysis procedure. The
+[fixed configuration](../configs/core_overlap_pilot.json) and
+[offline analysis](core_overlap_pilot.py) are prepared; the formal experiment
+has not run. Use the [pilot commands](../docs/cli.md#core-overlap-pilot) on a
+clean fixed commit. No result is inferred from the runnable quick/full examples
 or the broader cartography workflow.
 
 For installation and example commands, see the [project README](../README.md).

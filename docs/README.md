@@ -8,9 +8,11 @@ examples, method checks, and broader exploratory workflows.
 The next checkpoint compares Greedy failures under `high_overlap` and a
 dimension- and expected-size-matched `uniform` control. The
 [execution plan in PR #23](https://github.com/Mikoto-19909/greedy-failure-structures/pull/23)
-specifies the fixed pilot and its prerequisites. Its proposed
-`configs/core_overlap_pilot.json` and offline analysis script await
-implementation; they are not yet runnable from this checkout.
+specifies the fixed pilot and its prerequisites. The
+[configuration](../configs/core_overlap_pilot.json) and
+[offline analysis](../analysis/core_overlap_pilot.py) are prepared. The formal
+experiment is pending; use the [pilot commands](cli.md#core-overlap-pilot)
+on a clean fixed source revision.
 
 Start with [`analysis/README.md`](../analysis/README.md) for research status.
 The quick/full and broader workflows below serve other purposes.
