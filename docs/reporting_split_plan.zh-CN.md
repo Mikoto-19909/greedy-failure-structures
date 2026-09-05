@@ -120,8 +120,9 @@ rg -n 'maxcover.reporting|from \.reporting|reporting\.' src tests .github
 算法结果、确定性、CSV 字段、公开接口和错误拒绝测试保持。
 生成报告的固定输入输出比较保护的是产物行为，不用于冻结开发文档的章节布局。
 
-现有 `maxcover.benchmark` 和 `maxcover.reporting` 设置整模块 `ignore_errors = true`，
-mypy 通过不能说明它们没有类型错误。新模块默认进入检查，先实际检查迁移后的代码。
+原基线对 `maxcover.benchmark` 和 `maxcover.reporting` 设置整模块 `ignore_errors = true`。
+类型准备已通过独立提交移除 reporting 豁免，默认检查覆盖该模块；benchmark 仍保留
+其原有例外。新模块默认进入检查，先实际检查迁移后的代码。
 必要的遗留类型修复单独提交；暂时无法解决的问题只采用有具体原因的最小抑制，
 不批量复制整模块豁免，不扩大到新包，也不把清理全仓类型错误作为拆分前置条件。
 准确说明覆盖边界，并指向 [pyproject.toml](../pyproject.toml) 查看现行例外；
