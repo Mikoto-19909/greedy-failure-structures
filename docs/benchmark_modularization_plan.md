@@ -166,6 +166,19 @@ existing B4 diagnostics, with all B3 diagnostics removed and no new errors.
 The fixed B0 old/new comparison passes before moving these functions: every
 deterministic artifact and stable Manifest field is unchanged.
 
+After type commit `7f26ded`, nine CSV/checkpoint, validation, cleanup and
+comparison-writing functions move verbatim into the existing artifacts module.
+The facade explicitly re-exports all artifact names. Its replay writer,
+`_CompletedRun`, execution and lifecycle remain in place, including their shared
+`atomic_write_text` import. The comparison writers keep their original ratio
+calculations, aggregation units, missing-value handling and CSV formatting.
+
+The moved code passes the fixed old/new artifact comparison, relevant API and
+lifecycle tests, and the default type check. The artifacts module uses normal
+type coverage without new exemptions. Independent review replays old checkpoint,
+conditional-output and cleanup-boundary cases; required PR CI supplies the
+remaining coverage under the same local-check selection as the earlier batches.
+
 ## Purpose
 
 Refactor [`src/maxcover/benchmark.py`](../src/maxcover/benchmark.py) into a
