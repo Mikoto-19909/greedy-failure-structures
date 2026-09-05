@@ -17,6 +17,7 @@ from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
 from statistics import fmean, median, pstdev, stdev
+from typing import cast
 
 from .algorithms import ALGORITHMS
 from .benchmark_artifacts import (
@@ -3983,10 +3984,10 @@ def _fixed_size_control_pairs(
         parameters = case.parameters
         if case.family == "fixed_size" and parameters.get("unique_sets") is False:
             key = (
-                int(parameters["universe_size"]),
-                int(parameters["set_count"]),
-                int(parameters["k"]),
-                int(parameters["set_size"]),
+                int(cast(int, parameters["universe_size"])),
+                int(cast(int, parameters["set_count"])),
+                int(cast(int, parameters["k"])),
+                int(cast(int, parameters["set_size"])),
             )
             fixed_cases.setdefault(key, []).append(case)
         elif (
@@ -3994,10 +3995,10 @@ def _fixed_size_control_pairs(
             and parameters.get("paired_set_size") is not None
         ):
             key = (
-                int(parameters["universe_size"]),
-                int(parameters["set_count"]),
-                int(parameters["k"]),
-                int(parameters["paired_set_size"]),
+                int(cast(int, parameters["universe_size"])),
+                int(cast(int, parameters["set_count"])),
+                int(cast(int, parameters["k"])),
+                int(cast(int, parameters["paired_set_size"])),
             )
             uniform_cases.setdefault(key, []).append(case)
 
@@ -4058,8 +4059,8 @@ def _instances_for_config(config: ExperimentConfig) -> list[_PlannedInstance]:
                 case.family == "adversarial"
                 and case.parameters.get("construction_version", 1) == 2
             ):
-                block_size = int(case.parameters["block_size"])
-                distractor_count = int(case.parameters.get("distractor_count", 4))
+                block_size = int(cast(int, case.parameters["block_size"]))
+                distractor_count = int(cast(int, case.parameters.get("distractor_count", 4)))
                 pair_id = _coupling_pair_id(
                     block_size=block_size,
                     distractor_count=distractor_count,

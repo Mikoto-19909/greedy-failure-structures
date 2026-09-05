@@ -2,8 +2,8 @@
 
 Restored from the preserved research stash and reconciled with the main branch
 at `0dd9de338c07df312e268f916e630aceebb11f4a` on 2026-09-05. The research
-branch and the other stashed files remain separate. B0 is complete; B1 begins
-after the reporting split.
+branch and the other stashed files remain separate. B0 and B1 are complete;
+B2 begins with a separate planning type prerequisite.
 
 [Preparation PR #27](https://github.com/Mikoto-19909/greedy-failure-structures/pull/27)
 restored this document, added its index entry, and reconciled the linked plans'
@@ -51,6 +51,30 @@ the license manifest is regenerated, and final required CI remains enabled.
 The moved source passed the old/new artifact comparison, relevant API, pickle
 and lifecycle tests, and its first default mypy check. Mechanical source/AST
 comparisons confirm that moved and retained definitions are unchanged.
+B1 passed independent reverse review and all required PR checks before merge;
+the review also confirmed that its old pickle fixtures can be reproduced from
+the pinned source without running algorithms.
+
+### B2 implementation
+
+B2 starts from `0a306f024275c901d95a565f033b98b6c422d513`, after B1.
+The type prerequisite adds ten narrow `cast(int, ...)` annotations inside
+existing `int(...)` calls while the planning functions still live in the facade.
+Erasing those wrappers and the new import reproduces the original module AST.
+No conversion, branch, lookup, default or rejection behavior is changed.
+
+The temporary unexempted mypy check removes only the benchmark override. It
+still fails on the existing B3/B4 diagnostics, with all planning diagnostics
+removed and no new errors; this does not establish that the remaining facade
+is fully typed. The ten annotations are committed before mechanical relocation.
+
+Before editing, the fixed B0 source generated complete planning snapshots for
+the B0 configuration and the fixed core-overlap configuration. The comparison
+includes all normalized configuration fields, complete ordered instance masks
+and metadata, coupling, instance-record CSV fields and ordered run tasks with
+options, seeds and identities. It preserves container types and mapping order.
+The type prerequisite matches those old JSON bytes, with no algorithm execution
+and no modification to the original configurations or frozen research evidence.
 
 B0 implementation starts from `c40658d4cbc16b45fb640b1d97c03688baee16b7`,
 after the fixed pilot and documentation PR #31. No production code had moved
