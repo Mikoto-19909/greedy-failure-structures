@@ -118,6 +118,7 @@ the pinned source without running algorithms.
 
 ### B2 implementation
 
+B2 is implemented in [PR #36](https://github.com/Mikoto-19909/greedy-failure-structures/pull/36).
 B2 starts from `0a306f024275c901d95a565f033b98b6c422d513`, after B1.
 The type prerequisite adds ten narrow `cast(int, ...)` annotations inside
 existing `int(...)` calls while the planning functions still live in the facade.
