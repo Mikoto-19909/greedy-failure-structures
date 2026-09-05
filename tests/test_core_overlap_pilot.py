@@ -1,4 +1,4 @@
-"""Check the preregistered overlap analysis with synthetic records only."""
+"""Check the pilot with simulated runs and independent synthetic arithmetic."""
 
 from __future__ import annotations
 
@@ -44,9 +44,13 @@ METRICS = (
 
 
 def _synthetic_inputs() -> tuple[list[dict[str, str]], list[dict[str, str]]]:
-    """Build canonical records without generating or solving any instance."""
+    """Use actual feasible selections, with reference status simulated for loading.
+
+    No solver is run and no optimality claim is established by this fixture.
+    """
     seed_payload = b'{"base_seed":7401,"seed_group":"core_overlap_pilot"}'
     first_seed = int.from_bytes(hashlib.sha256(seed_payload).digest()[:8], "big")
+    cases = {case.case_id: case for case in load_config(CONFIG).cases}
     instances: list[dict[str, str]] = []
     runs: list[dict[str, str]] = []
     for case, family, parameters, jaccard, gini in (
@@ -58,6 +62,9 @@ def _synthetic_inputs() -> tuple[list[dict[str, str]], list[dict[str, str]]]:
         ("overlap_control", "uniform", {"density": 0.425}, 0.3, 0.1),
     ):
         for repetition in range(30):
+            generated = cases[case].generate(first_seed + repetition)
+            selected = (0, 1, 2, 3)
+            coverage = generated.coverage(selected)
             identifier = hashlib.sha256(f"synthetic:{case}:{repetition}".encode()).hexdigest()
             record = InstanceRecord(
                 config_hash=CONFIG_HASH, case_id=case, repetition=repetition,
@@ -87,9 +94,10 @@ def _synthetic_inputs() -> tuple[list[dict[str, str]], list[dict[str, str]]]:
                     universe_size=48, set_count=16, k=4, parameters=record.parameters,
                     algorithm_id=algorithm_id, algorithm=algorithm,
                     algorithm_options=json.dumps(options), status=status,
-                    coverage=40, best_bound=40 if status is SolutionStatus.OPTIMAL else None,
-                    optimum=40, optimality_gap=0.0, runtime_seconds=0.01,
-                    nodes_or_iterations=0, selected=(0, 1, 2, 3),
+                    coverage=coverage,
+                    best_bound=coverage if status is SolutionStatus.OPTIMAL else None,
+                    optimum=coverage, optimality_gap=0.0, runtime_seconds=0.01,
+                    nodes_or_iterations=0, selected=selected,
                 )
                 runs.append({key: str(value) for key, value in run.to_csv_row().items()})
     return instances, runs
@@ -373,17 +381,55 @@ class PilotInputTest(unittest.TestCase):
                 self.instances, self.runs = _synthetic_inputs()
                 if mutation == "zero":
                     for row in self.runs[:2]:
-                        row.update(coverage="0", optimum="0", optimality_gap="")
+                        row.update(coverage="0", selected="", optimum="0", optimality_gap="")
                     self.runs[1]["best_bound"] = "0"
                 else:
                     index = 0 if "greedy" in mutation else 1
-                    self.runs[index]["optimum"] = "" if mutation.startswith("missing") else "41"
+                    self.runs[index]["optimum"] = (
+                        "" if mutation.startswith("missing")
+                        else str(int(self.runs[index]["coverage"]) + 1)
+                    )
                     self.runs[index]["optimality_gap"] = ""
                 self.assert_rejected()
 
     def test_greedy_cannot_exceed_the_reference(self) -> None:
-        self.runs[0].update(coverage="41", optimality_gap="")
+        case = load_config(CONFIG).cases[0]
+        generated = case.generate(int(self.instances[0]["seed"]))
+        reference_coverage = generated.coverage((0,))
+        self.assertLess(reference_coverage, int(self.runs[0]["coverage"]))
+        self.runs[1].update(selected="0", coverage=str(reference_coverage),
+                            best_bound=str(reference_coverage), optimum=str(reference_coverage))
+        self.runs[0].update(optimum=str(reference_coverage), optimality_gap="")
         self.assert_rejected()
+
+    def test_selected_coverage_mismatch_is_rejected_for_both_algorithms(self) -> None:
+        for index in (0, 1):
+            for selected in ("", "0"):
+                with self.subTest(algorithm=index, selected=selected):
+                    self.instances, self.runs = _synthetic_inputs()
+                    self.write()
+                    self.assertEqual(len(pilot.load_inputs(CONFIG, self.directory).rows), 30)
+                    # Change only legal selection indices and refresh the declared hash.
+                    self.runs[index]["selected"] = selected
+                    self.write()
+                    with self.assertRaisesRegex(ValueError, "(?i)coverage|selected|selection"):
+                        pilot.load_inputs(CONFIG, self.directory)
+
+    def test_cli_creates_no_output_when_selection_disagrees_with_coverage(self) -> None:
+        for index in (0, 1):
+            with self.subTest(algorithm=index):
+                self.instances, self.runs = _synthetic_inputs()
+                self.runs[index]["selected"] = ""
+                self.write()
+                output = self.directory.parent / f"rejected-selection-{index}"
+                errors = io.StringIO()
+                with patch.object(pilot, "validate_complete_output", return_value="synthetic PASS"):
+                    with redirect_stderr(errors):
+                        code = pilot.main(["--config", str(CONFIG), "--results",
+                                           str(self.directory), "--output", str(output)])
+                self.assertNotEqual(code, 0)
+                self.assertRegex(errors.getvalue(), "(?i)coverage|selected|selection")
+                self.assertFalse(output.exists())
 
     def test_greedy_must_be_completed_not_just_have_an_incumbent(self) -> None:
         for status, termination in (
@@ -447,11 +493,17 @@ class PilotInputTest(unittest.TestCase):
         self.assertFalse(output.exists())
 
     def test_feasible_status_is_not_a_failure_and_gap_is_recomputed(self) -> None:
-        self.runs[0].update(coverage="30", optimality_gap="")
+        case = load_config(CONFIG).cases[0]
+        generated = case.generate(int(self.instances[0]["seed"]))
+        greedy_coverage = generated.coverage((0,))
+        reference_coverage = int(self.runs[1]["coverage"])
+        self.assertLess(greedy_coverage, reference_coverage)
+        self.runs[0].update(selected="0", coverage=str(greedy_coverage), optimality_gap="")
         self.write()
         rows = pilot.load_inputs(CONFIG, self.directory).rows
         self.assertEqual(rows[0]["treatment_failure"], 1)
-        self.assertEqual(rows[0]["treatment_gap"], 0.25)
+        self.assertAlmostEqual(rows[0]["treatment_gap"],
+                               (reference_coverage - greedy_coverage) / reference_coverage)
         self.assertEqual(rows[1]["treatment_failure"], 0)
         self.assertEqual(rows[1]["treatment_gap"], 0.0)
 
