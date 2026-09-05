@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import html
 import math
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from pathlib import Path
+from typing import cast
 
 from .algorithms import ALGORITHMS
 from .config import ExperimentConfig
@@ -204,8 +205,8 @@ def _headline_lines(
             eligible_gaps.append((row, interval))
 
     case_instances: dict[str, list[InstanceRecord]] = {}
-    for record in instances:
-        case_instances.setdefault(record.case_id, []).append(record)
+    for instance_record in instances:
+        case_instances.setdefault(instance_record.case_id, []).append(instance_record)
 
     def is_classified_adversarial(row: DescriptiveStatisticsRecord) -> bool:
         records = case_instances.get(row.case_id, ())
@@ -296,8 +297,11 @@ def _headline_lines(
     exact_timeouts = sum(row.timeout_count for row in exact_groups)
     exact_runs = sum(row.run_count for row in exact_groups)
 
+    # Preserve the existing producer/parser round trip: to_csv_row keeps
+    # native numeric scalars in numeric fields, while from_csv_row advertises
+    # a string-only reader interface. Cast only each record's own output.
     canonical_recovery = [
-        LocalSearchRecoveryRecord.from_csv_row(record.to_csv_row())
+        LocalSearchRecoveryRecord.from_csv_row(cast(Mapping[str, str], record.to_csv_row()))
         for record in local_search_recovery_statistics
     ]
     eligible_recovery = [
@@ -346,27 +350,27 @@ def _headline_lines(
         if record.metric == "runtime_seconds"
     }
     canonical_censored = [
-        CensoredRuntimeRecord.from_csv_row(record.to_csv_row())
+        CensoredRuntimeRecord.from_csv_row(cast(Mapping[str, str], record.to_csv_row()))
         for record in censored_runtime_statistics
         if record.algorithm_id in exact_algorithm_ids
     ]
     exact_runtime_candidates: list[
         tuple[CensoredRuntimeRecord, DescriptiveStatisticsRecord | None]
     ] = []
-    for record in canonical_censored:
+    for censored_record in canonical_censored:
         runtime = runtime_by_group.get(
             (
-                record.config_hash,
-                record.case_id,
-                record.family,
-                record.algorithm_id,
-                record.algorithm,
+                censored_record.config_hash,
+                censored_record.case_id,
+                censored_record.family,
+                censored_record.algorithm_id,
+                censored_record.algorithm,
             )
         )
-        if record.right_censored_instance_count > 0 or (
+        if censored_record.right_censored_instance_count > 0 or (
             runtime is not None and runtime.mean is not None
         ):
-            exact_runtime_candidates.append((record, runtime))
+            exact_runtime_candidates.append((censored_record, runtime))
 
     if exact_runtime_candidates:
         hardest_censored, hardest_runtime = max(
@@ -573,11 +577,11 @@ def _render_horizontal_chart(
     for tick in range(6):
         fraction = tick / 5
         x = left + plot_width * fraction
-        value = axis_maximum * fraction
+        tick_value = axis_maximum * fraction
         parts.extend(
             [
                 f'<line x1="{x:.2f}" y1="{top - 10}" x2="{x:.2f}" y2="{top + row_height * len(rows)}" stroke="#e5e7eb"/>',
-                f'<text x="{x:.2f}" y="{top - 18}" text-anchor="middle" font-family="Arial" font-size="11">{value:{value_format}}</text>',
+                f'<text x="{x:.2f}" y="{top - 18}" text-anchor="middle" font-family="Arial" font-size="11">{tick_value:{value_format}}</text>',
             ]
         )
 
@@ -615,7 +619,7 @@ def _render_gap_by_case_chart(
     statistics: Sequence[DescriptiveStatisticsRecord],
 ) -> str:
     canonical_statistics = [
-        DescriptiveStatisticsRecord.from_csv_row(record.to_csv_row())
+        DescriptiveStatisticsRecord.from_csv_row(cast(Mapping[str, str], record.to_csv_row()))
         for record in statistics
     ]
     rows: list[ChartRow] = []
@@ -654,23 +658,29 @@ def _association_chart_rows(
     clustering: Sequence[GapClusteringAssociationRecord],
 ) -> list[ChartRow]:
     canonical_density = [
-        GapDensityAssociationRecord.from_csv_row(record.to_csv_row())
+        GapDensityAssociationRecord.from_csv_row(cast(Mapping[str, str], record.to_csv_row()))
         for record in density
     ]
     canonical_overlap = [
-        GapOverlapAssociationRecord.from_csv_row(record.to_csv_row())
+        GapOverlapAssociationRecord.from_csv_row(cast(Mapping[str, str], record.to_csv_row()))
         for record in overlap
     ]
     canonical_clustering = [
-        GapClusteringAssociationRecord.from_csv_row(record.to_csv_row())
+        GapClusteringAssociationRecord.from_csv_row(cast(Mapping[str, str], record.to_csv_row()))
         for record in clustering
     ]
     rows: list[ChartRow] = []
-    for predictor, records in (
+    association_groups: tuple[
+        tuple[str, Sequence[
+            GapDensityAssociationRecord | GapOverlapAssociationRecord
+            | GapClusteringAssociationRecord
+        ]], ...
+    ] = (
         ("density", canonical_density),
         ("overlap", canonical_overlap),
         ("clustering", canonical_clustering),
-    ):
+    )
+    for predictor, records in association_groups:
         for record in sorted(
             records,
             key=lambda row: (row.family, row.algorithm_id, row.algorithm),
@@ -750,12 +760,12 @@ def _render_gap_structural_association_chart(
         return "\n".join(parts)
 
     for tick in range(5):
-        value = -1.0 + tick * 0.5
-        x = left + (value + 1.0) * plot_width / 2
+        tick_value = -1.0 + tick * 0.5
+        x = left + (tick_value + 1.0) * plot_width / 2
         parts.extend(
             [
-                f'<line x1="{x:.2f}" y1="{top - 10}" x2="{x:.2f}" y2="{top + row_height * len(rows)}" stroke="{("#9ca3af" if value == 0 else "#e5e7eb")}"/>',
-                f'<text x="{x:.2f}" y="{top - 18}" text-anchor="middle" font-family="Arial" font-size="11">{value:.1f}</text>',
+                f'<line x1="{x:.2f}" y1="{top - 10}" x2="{x:.2f}" y2="{top + row_height * len(rows)}" stroke="{("#9ca3af" if tick_value == 0 else "#e5e7eb")}"/>',
+                f'<text x="{x:.2f}" y="{top - 18}" text-anchor="middle" font-family="Arial" font-size="11">{tick_value:.1f}</text>',
             ]
         )
     for index, (label, value, color, detail) in enumerate(rows):
@@ -839,12 +849,12 @@ def _render_signed_coefficient_chart(
             f'<text x="{left}" y="{facet_top + 22}" font-family="Arial" font-size="15" font-weight="bold">{html.escape(facet_name)}; {html.escape(axis_label)}</text>'
         )
         for tick in range(5):
-            value = -maximum + tick * maximum / 2
+            tick_value = -maximum + tick * maximum / 2
             x = left + tick * plot_width / 4
             parts.extend(
                 [
                     f'<line x1="{x:.2f}" y1="{plot_top - 10}" x2="{x:.2f}" y2="{plot_top + row_height * row_count}" stroke="{("#9ca3af" if tick == 2 else "#e5e7eb")}"/>',
-                    f'<text x="{x:.2f}" y="{plot_top - 18}" text-anchor="middle" font-family="Arial" font-size="10">{value:.6g}</text>',
+                    f'<text x="{x:.2f}" y="{plot_top - 18}" text-anchor="middle" font-family="Arial" font-size="10">{tick_value:.6g}</text>',
                 ]
             )
         if not rows:
@@ -888,15 +898,15 @@ def _render_runtime_scaling_chart(
     """Render completed-runtime OLS slopes from the two typed associations."""
 
     canonical_set_count = [
-        RuntimeSetCountAssociationRecord.from_csv_row(record.to_csv_row())
+        RuntimeSetCountAssociationRecord.from_csv_row(cast(Mapping[str, str], record.to_csv_row()))
         for record in set_count_records
     ]
     canonical_k = [
-        RuntimeKAssociationRecord.from_csv_row(record.to_csv_row())
+        RuntimeKAssociationRecord.from_csv_row(cast(Mapping[str, str], record.to_csv_row()))
         for record in k_records
     ]
 
-    def rows_for(records: Sequence[object], slope_name: str) -> list[ChartRow]:
+    def rows_for(records: Sequence[RuntimeSetCountAssociationRecord | RuntimeKAssociationRecord], slope_name: str) -> list[ChartRow]:
         rows: list[ChartRow] = []
         for record in sorted(
             records,
@@ -922,7 +932,7 @@ def _render_runtime_scaling_chart(
             rows.append(
                 (
                     f"{_family_label(record.family)} / {_algorithm_label(record.algorithm_id)}",
-                    getattr(record, slope_name),
+                    cast(float | None, getattr(record, slope_name)),
                     COLORS.get(record.algorithm, "#2563eb"),
                     detail,
                 )
@@ -960,7 +970,7 @@ def _render_node_scaling_chart(
     """Render complete BnB search-node slopes versus dominated-set ratio."""
 
     canonical_records = [
-        SearchNodesDominatedRatioAssociationRecord.from_csv_row(record.to_csv_row())
+        SearchNodesDominatedRatioAssociationRecord.from_csv_row(cast(Mapping[str, str], record.to_csv_row()))
         for record in records
     ]
     rows: list[ChartRow] = []
@@ -1014,7 +1024,7 @@ def _render_timeout_by_case_chart(
     """Render right-censoring rates without treating censor times as runtimes."""
 
     canonical_records = [
-        CensoredRuntimeRecord.from_csv_row(record.to_csv_row())
+        CensoredRuntimeRecord.from_csv_row(cast(Mapping[str, str], record.to_csv_row()))
         for record in records
     ]
     rows: list[ChartRow] = []
@@ -1137,7 +1147,7 @@ def _render_local_search_recovery_chart(
     records: Sequence[LocalSearchRecoveryRecord],
 ) -> str:
     canonical_records = [
-        LocalSearchRecoveryRecord.from_csv_row(record.to_csv_row())
+        LocalSearchRecoveryRecord.from_csv_row(cast(Mapping[str, str], record.to_csv_row()))
         for record in records
     ]
     rows: list[ChartRow] = []
@@ -1198,7 +1208,7 @@ def _render_quality_runtime_pareto_chart(
     display_subtitle = "来源：质量与耗时权衡统计；按共同实例种子对照；耗时随机器变化"
     grouped: dict[tuple[str, str], list[QualityRuntimeParetoRecord]] = {}
     canonical_records = [
-        QualityRuntimeParetoRecord.from_csv_row(record.to_csv_row())
+        QualityRuntimeParetoRecord.from_csv_row(cast(Mapping[str, str], record.to_csv_row()))
         for record in records
     ]
     for record in sorted(
@@ -1404,8 +1414,8 @@ def _write_markdown(
         grouped_statistics.setdefault(
             (row.case_id, row.family, row.algorithm_id, row.algorithm), {}
         )[row.metric] = row
-    for key, metric_rows in sorted(grouped_statistics.items()):
-        case_id, family, algorithm_id, _algorithm = key
+    for aggregate_key, metric_rows in sorted(grouped_statistics.items()):
+        case_id, family, algorithm_id, _algorithm = aggregate_key
         coverage = metric_rows["coverage"]
         gap = metric_rows["optimality_gap"]
         runtime = metric_rows["runtime_seconds"]
@@ -1447,16 +1457,16 @@ def _write_markdown(
     coverage_groups: dict[
         tuple[str, str, str], dict[str, ReferenceCoverageRecord]
     ] = {}
-    for record in reference_coverage_statistics:
+    for coverage_record in reference_coverage_statistics:
         coverage_groups.setdefault(
-            (record.config_hash, record.family, record.parameters), {}
-        )[record.status] = record
+            (coverage_record.config_hash, coverage_record.family, coverage_record.parameters), {}
+        )[coverage_record.status] = coverage_record
     small_cross_validation_counts: dict[tuple[str, str], int] = {}
-    for record in reference_statuses:
-        key = (record.family, record.parameters)
-        small_cross_validation_counts[key] = (
-            small_cross_validation_counts.get(key, 0)
-            + int(record.small_instance_cross_validated)
+    for status_record in reference_statuses:
+        cross_validation_key = (status_record.family, status_record.parameters)
+        small_cross_validation_counts[cross_validation_key] = (
+            small_cross_validation_counts.get(cross_validation_key, 0)
+            + int(status_record.small_instance_cross_validated)
         )
     if not coverage_groups:
         lines.append(
@@ -1506,17 +1516,17 @@ def _write_markdown(
             "| n/a | n/a | no slice contains both retained and excluded "
             "observations | 0 / n/a | 0 / n/a | n/a | missing_group |"
         )
-    for record in estimable_bias:
-        assert record.retained_mean is not None
-        assert record.excluded_mean is not None
-        assert record.excluded_minus_retained is not None
-        safe_parameters = record.parameters.replace("|", "\\|")
+    for bias_record in estimable_bias:
+        assert bias_record.retained_mean is not None
+        assert bias_record.excluded_mean is not None
+        assert bias_record.excluded_minus_retained is not None
+        safe_parameters = bias_record.parameters.replace("|", "\\|")
         lines.append(
-            f"| {record.family} | `{safe_parameters}` | {record.metric} | "
-            f"{record.retained_observation_count} / {record.retained_mean:.10f} | "
-            f"{record.excluded_observation_count} / {record.excluded_mean:.10f} | "
-            f"{record.excluded_minus_retained:.10f} | "
-            f"{record.comparison_status} |"
+            f"| {bias_record.family} | `{safe_parameters}` | {bias_record.metric} | "
+            f"{bias_record.retained_observation_count} / {bias_record.retained_mean:.10f} | "
+            f"{bias_record.excluded_observation_count} / {bias_record.excluded_mean:.10f} | "
+            f"{bias_record.excluded_minus_retained:.10f} | "
+            f"{bias_record.comparison_status} |"
         )
     lines.extend(
         [
@@ -1537,21 +1547,21 @@ def _write_markdown(
             "| n/a | n/a | no configured exact variant | n/a | n/a | "
             "0/0/0/0/0 | n/a | n/a |"
         )
-    for record in reference_cutoff_sensitivity_statistics:
+    for cutoff_record in reference_cutoff_sensitivity_statistics:
         time_cutoff = (
             "none"
-            if record.time_limit_seconds is None
-            else f"{record.time_limit_seconds:.10f}"
+            if cutoff_record.time_limit_seconds is None
+            else f"{cutoff_record.time_limit_seconds:.10f}"
         )
-        set_cutoff = "none" if record.max_set_count is None else str(record.max_set_count)
-        safe_parameters = record.parameters.replace("|", "\\|")
+        set_cutoff = "none" if cutoff_record.max_set_count is None else str(cutoff_record.max_set_count)
+        safe_parameters = cutoff_record.parameters.replace("|", "\\|")
         lines.append(
-            f"| {record.family} | `{safe_parameters}` | {record.algorithm_id} | "
+            f"| {cutoff_record.family} | `{safe_parameters}` | {cutoff_record.algorithm_id} | "
             f"{time_cutoff} | {set_cutoff} | "
-            f"{record.optimal_count}/{record.feasible_count}/"
-            f"{record.timeout_count}/{record.error_count}/{record.not_run_count} | "
-            f"{100 * record.solver_reference_coverage:.2f}% | "
-            f"{100 * record.effective_reference_coverage:.2f}% |"
+            f"{cutoff_record.optimal_count}/{cutoff_record.feasible_count}/"
+            f"{cutoff_record.timeout_count}/{cutoff_record.error_count}/{cutoff_record.not_run_count} | "
+            f"{100 * cutoff_record.solver_reference_coverage:.2f}% | "
+            f"{100 * cutoff_record.effective_reference_coverage:.2f}% |"
         )
     lines.extend(
         [
@@ -1575,19 +1585,19 @@ def _write_markdown(
             "| n/a | n/a | no metric groups | n/a | 0 | n/a | n/a | 0 | "
             "no_samples | 0/0 |"
         )
-    for record in confidence_interval_statistics:
-        mean = "n/a" if record.mean is None else f"{record.mean:.10f}"
+    for interval_record in confidence_interval_statistics:
+        mean = "n/a" if interval_record.mean is None else f"{interval_record.mean:.10f}"
         interval = (
             "n/a"
-            if record.lower_bound is None or record.upper_bound is None
-            else f"[{record.lower_bound:.10f}, {record.upper_bound:.10f}]"
+            if interval_record.lower_bound is None or interval_record.upper_bound is None
+            else f"[{interval_record.lower_bound:.10f}, {interval_record.upper_bound:.10f}]"
         )
         lines.append(
-            f"| {record.case_id} | {record.family} | "
-            f"{record.algorithm_id} | {record.metric} | "
-            f"{record.sample_count} | {mean} | {interval} | "
-            f"{record.degrees_of_freedom} | {record.interval_status} | "
-            f"{record.timeout_count}/{record.error_count} |"
+            f"| {interval_record.case_id} | {interval_record.family} | "
+            f"{interval_record.algorithm_id} | {interval_record.metric} | "
+            f"{interval_record.sample_count} | {mean} | {interval} | "
+            f"{interval_record.degrees_of_freedom} | {interval_record.interval_status} | "
+            f"{interval_record.timeout_count}/{interval_record.error_count} |"
         )
     lines.extend(
         [
@@ -1612,13 +1622,13 @@ def _write_markdown(
             f"{AUTOMATIC_CONCLUSION_MINIMUM_SAMPLE_COUNT} | no_samples | "
             "withheld_insufficient_samples |"
         )
-    for record in confidence_interval_statistics:
+    for interval_record in confidence_interval_statistics:
         lines.append(
-            f"| {record.case_id} | {record.family} | {record.algorithm_id} | "
-            f"{record.metric} | {record.sample_count} | "
+            f"| {interval_record.case_id} | {interval_record.family} | {interval_record.algorithm_id} | "
+            f"{interval_record.metric} | {interval_record.sample_count} | "
             f"{AUTOMATIC_CONCLUSION_MINIMUM_SAMPLE_COUNT} | "
-            f"{record.interval_status} | "
-            f"{_automatic_conclusion_status(record)} |"
+            f"{interval_record.interval_status} | "
+            f"{_automatic_conclusion_status(interval_record)} |"
         )
     lines.extend(
         [
@@ -1645,33 +1655,33 @@ def _write_markdown(
             "| n/a | n/a | no executed variants | 0 | 0 | 0 | 0 | 0 | "
             "n/a | n/a | n/a | 0 | 0 | no_runtime_observations |"
         )
-    for record in censored_runtime_statistics:
-        if record.mean_censor_time_seconds is None:
+    for censored_record in censored_runtime_statistics:
+        if censored_record.mean_censor_time_seconds is None:
             center = "n/a"
             time_range = "n/a"
         else:
-            assert record.median_censor_time_seconds is not None
-            assert record.minimum_censor_time_seconds is not None
-            assert record.maximum_censor_time_seconds is not None
+            assert censored_record.median_censor_time_seconds is not None
+            assert censored_record.minimum_censor_time_seconds is not None
+            assert censored_record.maximum_censor_time_seconds is not None
             center = (
-                f"{record.mean_censor_time_seconds:.10f} / "
-                f"{record.median_censor_time_seconds:.10f}"
+                f"{censored_record.mean_censor_time_seconds:.10f} / "
+                f"{censored_record.median_censor_time_seconds:.10f}"
             )
             time_range = (
-                f"{record.minimum_censor_time_seconds:.10f}–"
-                f"{record.maximum_censor_time_seconds:.10f}"
+                f"{censored_record.minimum_censor_time_seconds:.10f}–"
+                f"{censored_record.maximum_censor_time_seconds:.10f}"
             )
         lines.append(
-            f"| {record.case_id} | {record.family} | "
-            f"{record.algorithm_id} | {record.instance_count} | "
-            f"{record.run_count} | {record.completed_run_count} | "
-            f"{record.right_censored_run_count} | "
-            f"{record.right_censored_instance_count} | "
-            f"{100 * record.censoring_rate:.2f}% | {center} | "
+            f"| {censored_record.case_id} | {censored_record.family} | "
+            f"{censored_record.algorithm_id} | {censored_record.instance_count} | "
+            f"{censored_record.run_count} | {censored_record.completed_run_count} | "
+            f"{censored_record.right_censored_run_count} | "
+            f"{censored_record.right_censored_instance_count} | "
+            f"{100 * censored_record.censoring_rate:.2f}% | {center} | "
             f"{time_range} | "
-            f"{record.fully_right_censored_instance_count} | "
-            f"{record.error_affected_instance_count} | "
-            f"{record.censoring_status} |"
+            f"{censored_record.fully_right_censored_instance_count} | "
+            f"{censored_record.error_affected_instance_count} | "
+            f"{censored_record.censoring_status} |"
         )
     lines.extend(
         [
@@ -1692,20 +1702,20 @@ def _write_markdown(
             "| n/a | n/a | no classical Greedy configured | 0 | 0 | 0 | "
             "0/0 | 0 | n/a | 0 | 0 | 0 |"
         )
-    for record in greedy_failure_statistics:
+    for failure_record in greedy_failure_statistics:
         failure_rate = (
             "n/a"
-            if record.failure_rate is None
-            else f"{100 * record.failure_rate:.2f}%"
+            if failure_record.failure_rate is None
+            else f"{100 * failure_record.failure_rate:.2f}%"
         )
         lines.append(
-            f"| {record.case_id} | {record.family} | {record.algorithm_id} | "
-            f"{record.instance_count} | {record.completed_count} | "
-            f"{record.eligible_pair_count} | "
-            f"{record.failure_count}/{record.eligible_pair_count} | "
-            f"{record.optimal_tie_count} | {failure_rate} | "
-            f"{record.timeout_count} | {record.error_count} | "
-            f"{record.no_exact_reference_count} |"
+            f"| {failure_record.case_id} | {failure_record.family} | {failure_record.algorithm_id} | "
+            f"{failure_record.instance_count} | {failure_record.completed_count} | "
+            f"{failure_record.eligible_pair_count} | "
+            f"{failure_record.failure_count}/{failure_record.eligible_pair_count} | "
+            f"{failure_record.optimal_tie_count} | {failure_rate} | "
+            f"{failure_record.timeout_count} | {failure_record.error_count} | "
+            f"{failure_record.no_exact_reference_count} |"
         )
     lines.extend(
         [
@@ -1734,19 +1744,19 @@ def _write_markdown(
     )
     if not gap_statistics:
         lines.append("| n/a | n/a | no algorithm variants | 0/0 | 0/0 | n/a | n/a | 0 | 0 |")
-    for record in gap_statistics:
+    for gap_record in gap_statistics:
         mean_gap = (
-            "n/a" if record.mean is None else f"{100 * record.mean:.2f}%"
+            "n/a" if gap_record.mean is None else f"{100 * gap_record.mean:.2f}%"
         )
         max_gap = (
-            "n/a" if record.maximum is None else f"{100 * record.maximum:.2f}%"
+            "n/a" if gap_record.maximum is None else f"{100 * gap_record.maximum:.2f}%"
         )
         lines.append(
-            f"| {record.case_id} | {record.family} | {record.algorithm_id} | "
-            f"{record.sample_count}/{record.instance_count} | "
-            f"{record.valid_exact_reference_count}/{record.instance_count} | "
-            f"{mean_gap} | {max_gap} | {record.timeout_count} | "
-            f"{record.error_count} |"
+            f"| {gap_record.case_id} | {gap_record.family} | {gap_record.algorithm_id} | "
+            f"{gap_record.sample_count}/{gap_record.instance_count} | "
+            f"{gap_record.valid_exact_reference_count}/{gap_record.instance_count} | "
+            f"{mean_gap} | {max_gap} | {gap_record.timeout_count} | "
+            f"{gap_record.error_count} |"
         )
     lines.extend(
         [
@@ -1770,22 +1780,22 @@ def _write_markdown(
             "| n/a | n/a | n/a | no paired classical Greedy and Local Search "
             "variants configured | 0 | 0 | n/a | 0/0 | 0/0 | 0/0 |"
         )
-    for record in local_search_recovery_statistics:
+    for recovery_record in local_search_recovery_statistics:
         recovery_rate = (
             "n/a"
-            if record.mean_gap_recovery_rate is None
-            else f"{100 * record.mean_gap_recovery_rate:.2f}%"
+            if recovery_record.mean_gap_recovery_rate is None
+            else f"{100 * recovery_record.mean_gap_recovery_rate:.2f}%"
         )
         lines.append(
-            f"| {record.case_id} | {record.family} | "
-            f"{record.greedy_algorithm_id} | "
-            f"{record.local_search_algorithm_id} | "
-            f"{record.greedy_failure_count} | {record.eligible_pair_count} | "
+            f"| {recovery_record.case_id} | {recovery_record.family} | "
+            f"{recovery_record.greedy_algorithm_id} | "
+            f"{recovery_record.local_search_algorithm_id} | "
+            f"{recovery_record.greedy_failure_count} | {recovery_record.eligible_pair_count} | "
             f"{recovery_rate} | "
-            f"{record.full_recovery_count}/{record.eligible_pair_count} | "
-            f"{record.greedy_timeout_count}/{record.greedy_error_count} | "
-            f"{record.local_search_timeout_count}/"
-            f"{record.local_search_error_count} |"
+            f"{recovery_record.full_recovery_count}/{recovery_record.eligible_pair_count} | "
+            f"{recovery_record.greedy_timeout_count}/{recovery_record.greedy_error_count} | "
+            f"{recovery_record.local_search_timeout_count}/"
+            f"{recovery_record.local_search_error_count} |"
         )
     lines.extend(
         [
@@ -1808,24 +1818,24 @@ def _write_markdown(
             "| n/a | n/a | n/a | no paired classical Greedy and Local Search "
             "variants configured | 0 | n/a | n/a | 0/0 |"
         )
-    for record in local_search_remaining_gap_statistics:
+    for remaining_gap_record in local_search_remaining_gap_statistics:
         mean_gap = (
             "n/a"
-            if record.mean_remaining_relative_gap is None
-            else f"{100 * record.mean_remaining_relative_gap:.2f}%"
+            if remaining_gap_record.mean_remaining_relative_gap is None
+            else f"{100 * remaining_gap_record.mean_remaining_relative_gap:.2f}%"
         )
         maximum_gap = (
             "n/a"
-            if record.maximum_remaining_relative_gap is None
-            else f"{100 * record.maximum_remaining_relative_gap:.2f}%"
+            if remaining_gap_record.maximum_remaining_relative_gap is None
+            else f"{100 * remaining_gap_record.maximum_remaining_relative_gap:.2f}%"
         )
         lines.append(
-            f"| {record.case_id} | {record.family} | "
-            f"{record.greedy_algorithm_id} | "
-            f"{record.local_search_algorithm_id} | "
-            f"{record.eligible_pair_count} | {mean_gap} | {maximum_gap} | "
-            f"{record.zero_remaining_gap_count}/"
-            f"{record.eligible_pair_count} |"
+            f"| {remaining_gap_record.case_id} | {remaining_gap_record.family} | "
+            f"{remaining_gap_record.greedy_algorithm_id} | "
+            f"{remaining_gap_record.local_search_algorithm_id} | "
+            f"{remaining_gap_record.eligible_pair_count} | {mean_gap} | {maximum_gap} | "
+            f"{remaining_gap_record.zero_remaining_gap_count}/"
+            f"{remaining_gap_record.eligible_pair_count} |"
         )
     lines.extend(
         [
@@ -1849,26 +1859,26 @@ def _write_markdown(
             "| n/a | n/a | no heuristic/exact variant pair configured | n/a | "
             "0 | n/a | n/a | n/a | n/a | 0/0 | 0/0 | 0 |"
         )
-    for record in heuristic_exact_runtime_ratio_statistics:
-        values = (
-            record.mean_runtime_ratio,
-            record.median_runtime_ratio,
-            record.minimum_runtime_ratio,
-            record.maximum_runtime_ratio,
+    for runtime_ratio_record in heuristic_exact_runtime_ratio_statistics:
+        values: tuple[float | None, ...] = (
+            runtime_ratio_record.mean_runtime_ratio,
+            runtime_ratio_record.median_runtime_ratio,
+            runtime_ratio_record.minimum_runtime_ratio,
+            runtime_ratio_record.maximum_runtime_ratio,
         )
         formatted = [
             "n/a" if value is None else f"{value:.4f}x"
             for value in values
         ]
         lines.append(
-            f"| {record.case_id} | {record.family} | "
-            f"{record.heuristic_algorithm_id} | {record.exact_algorithm_id} | "
-            f"{record.eligible_pair_count}/{record.instance_count} | "
+            f"| {runtime_ratio_record.case_id} | {runtime_ratio_record.family} | "
+            f"{runtime_ratio_record.heuristic_algorithm_id} | {runtime_ratio_record.exact_algorithm_id} | "
+            f"{runtime_ratio_record.eligible_pair_count}/{runtime_ratio_record.instance_count} | "
             f"{formatted[0]} | {formatted[1]} | {formatted[2]} | "
-            f"{formatted[3]} | {record.heuristic_timeout_count}/"
-            f"{record.heuristic_error_count} | {record.exact_timeout_count}/"
-            f"{record.exact_error_count} | "
-            f"{record.zero_exact_runtime_count} |"
+            f"{formatted[3]} | {runtime_ratio_record.heuristic_timeout_count}/"
+            f"{runtime_ratio_record.heuristic_error_count} | {runtime_ratio_record.exact_timeout_count}/"
+            f"{runtime_ratio_record.exact_error_count} | "
+            f"{runtime_ratio_record.zero_exact_runtime_count} |"
         )
     lines.extend(
         [
@@ -1895,32 +1905,32 @@ def _write_markdown(
             "| n/a | n/a | no baseline/enhanced BnB variant pair configured | "
             "n/a | 0 | n/a | n/a | n/a | n/a | n/a | 0/0 | 0/0 | 0/0 | 0 |"
         )
-    for record in bnb_node_reduction_statistics:
+    for node_reduction_record in bnb_node_reduction_statistics:
         values = (
-            record.mean_node_reduction,
-            record.median_node_reduction,
-            record.minimum_node_reduction,
-            record.maximum_node_reduction,
-            record.aggregate_node_reduction,
+            node_reduction_record.mean_node_reduction,
+            node_reduction_record.median_node_reduction,
+            node_reduction_record.minimum_node_reduction,
+            node_reduction_record.maximum_node_reduction,
+            node_reduction_record.aggregate_node_reduction,
         )
         formatted = [
             "n/a" if value is None else f"{100 * value:.2f}%"
             for value in values
         ]
         lines.append(
-            f"| {record.case_id} | {record.family} | "
-            f"{record.baseline_algorithm_id} | "
-            f"{record.enhanced_algorithm_id} | "
-            f"{record.eligible_pair_count}/{record.instance_count} | "
+            f"| {node_reduction_record.case_id} | {node_reduction_record.family} | "
+            f"{node_reduction_record.baseline_algorithm_id} | "
+            f"{node_reduction_record.enhanced_algorithm_id} | "
+            f"{node_reduction_record.eligible_pair_count}/{node_reduction_record.instance_count} | "
             f"{formatted[0]} | {formatted[1]} | {formatted[2]} | "
             f"{formatted[3]} | {formatted[4]} | "
-            f"{record.total_baseline_nodes}/"
-            f"{record.total_enhanced_nodes} | "
-            f"{record.baseline_timeout_count}/"
-            f"{record.baseline_error_count} | "
-            f"{record.enhanced_timeout_count}/"
-            f"{record.enhanced_error_count} | "
-            f"{record.zero_baseline_nodes_count} |"
+            f"{node_reduction_record.total_baseline_nodes}/"
+            f"{node_reduction_record.total_enhanced_nodes} | "
+            f"{node_reduction_record.baseline_timeout_count}/"
+            f"{node_reduction_record.baseline_error_count} | "
+            f"{node_reduction_record.enhanced_timeout_count}/"
+            f"{node_reduction_record.enhanced_error_count} | "
+            f"{node_reduction_record.zero_baseline_nodes_count} |"
         )
     lines.extend(
         [
@@ -1947,31 +1957,31 @@ def _write_markdown(
             "| n/a | n/a | no algorithm variant executed | 0 | n/a | n/a | "
             "not_evaluable | n/a | 0/0 | 0/0/0 |"
         )
-    for record in quality_runtime_pareto_statistics:
-        gap = (
+    for pareto_record in quality_runtime_pareto_statistics:
+        pareto_gap_text = (
             "n/a"
-            if record.mean_relative_gap is None
-            else f"{100 * record.mean_relative_gap:.4f}%"
+            if pareto_record.mean_relative_gap is None
+            else f"{100 * pareto_record.mean_relative_gap:.4f}%"
         )
-        runtime = (
+        pareto_runtime_text = (
             "n/a"
-            if record.mean_runtime_seconds is None
-            else f"{record.mean_runtime_seconds:.6f}"
+            if pareto_record.mean_runtime_seconds is None
+            else f"{pareto_record.mean_runtime_seconds:.6f}"
         )
         dominators = (
-            ", ".join(record.dominated_by_algorithm_ids)
-            if record.dominated_by_algorithm_ids
+            ", ".join(pareto_record.dominated_by_algorithm_ids)
+            if pareto_record.dominated_by_algorithm_ids
             else "n/a"
         )
         lines.append(
-            f"| {record.case_id} | {record.family} | "
-            f"{record.algorithm_id} | "
-            f"{record.eligible_instance_count}/{record.instance_count} | "
-            f"{gap} | {runtime} | {record.pareto_status} | {dominators} | "
-            f"{record.timeout_count}/{record.error_count} | "
-            f"{record.valid_exact_reference_count}/"
-            f"{record.zero_optimum_count}/"
-            f"{record.no_exact_reference_count} |"
+            f"| {pareto_record.case_id} | {pareto_record.family} | "
+            f"{pareto_record.algorithm_id} | "
+            f"{pareto_record.eligible_instance_count}/{pareto_record.instance_count} | "
+            f"{pareto_gap_text} | {pareto_runtime_text} | {pareto_record.pareto_status} | {dominators} | "
+            f"{pareto_record.timeout_count}/{pareto_record.error_count} | "
+            f"{pareto_record.valid_exact_reference_count}/"
+            f"{pareto_record.zero_optimum_count}/"
+            f"{pareto_record.no_exact_reference_count} |"
         )
     lines.extend(
         [
@@ -2003,33 +2013,33 @@ def _write_markdown(
             "n/a | n/a | n/a | n/a | n/a | n/a | no_samples | 0/0 | "
             "0/0/0/0 |"
         )
-    for record in gap_density_association_statistics:
+    for density_record in gap_density_association_statistics:
         values = (
-            record.mean_actual_density,
-            record.mean_relative_gap,
-            record.density_sample_standard_deviation,
-            record.gap_sample_standard_deviation,
-            record.pearson_correlation,
-            record.ols_slope,
-            record.ols_intercept,
+            density_record.mean_actual_density,
+            density_record.mean_relative_gap,
+            density_record.density_sample_standard_deviation,
+            density_record.gap_sample_standard_deviation,
+            density_record.pearson_correlation,
+            density_record.ols_slope,
+            density_record.ols_intercept,
         )
         formatted = [
             "n/a" if value is None else f"{value:.10f}"
             for value in values
         ]
         lines.append(
-            f"| {record.family} | {', '.join(record.case_ids)} | "
-            f"{record.algorithm_id} | "
-            f"{record.eligible_instance_count}/{record.instance_count} | "
-            f"{record.distinct_density_count} | {formatted[0]} | "
+            f"| {density_record.family} | {', '.join(density_record.case_ids)} | "
+            f"{density_record.algorithm_id} | "
+            f"{density_record.eligible_instance_count}/{density_record.instance_count} | "
+            f"{density_record.distinct_density_count} | {formatted[0]} | "
             f"{formatted[1]} | {formatted[2]} | {formatted[3]} | "
             f"{formatted[4]} | {formatted[5]} | {formatted[6]} | "
-            f"{record.association_status} | "
-            f"{record.timeout_count}/{record.error_count} | "
-            f"{record.valid_exact_reference_count}/"
-            f"{record.zero_optimum_count}/"
-            f"{record.no_exact_reference_count}/"
-            f"{record.unusable_result_count} |"
+            f"{density_record.association_status} | "
+            f"{density_record.timeout_count}/{density_record.error_count} | "
+            f"{density_record.valid_exact_reference_count}/"
+            f"{density_record.zero_optimum_count}/"
+            f"{density_record.no_exact_reference_count}/"
+            f"{density_record.unusable_result_count} |"
         )
     lines.extend(
         [
@@ -2064,34 +2074,34 @@ def _write_markdown(
             "n/a | n/a | n/a | n/a | n/a | n/a | no_samples | 0/0 | "
             "0/0/0/0/0 |"
         )
-    for record in gap_overlap_association_statistics:
+    for overlap_record in gap_overlap_association_statistics:
         values = (
-            record.mean_pairwise_overlap_jaccard,
-            record.mean_relative_gap,
-            record.overlap_sample_standard_deviation,
-            record.gap_sample_standard_deviation,
-            record.pearson_correlation,
-            record.ols_slope,
-            record.ols_intercept,
+            overlap_record.mean_pairwise_overlap_jaccard,
+            overlap_record.mean_relative_gap,
+            overlap_record.overlap_sample_standard_deviation,
+            overlap_record.gap_sample_standard_deviation,
+            overlap_record.pearson_correlation,
+            overlap_record.ols_slope,
+            overlap_record.ols_intercept,
         )
         formatted = [
             "n/a" if value is None else f"{value:.10f}"
             for value in values
         ]
         lines.append(
-            f"| {record.family} | {', '.join(record.case_ids)} | "
-            f"{record.algorithm_id} | "
-            f"{record.eligible_instance_count}/{record.instance_count} | "
-            f"{record.distinct_overlap_count} | {formatted[0]} | "
+            f"| {overlap_record.family} | {', '.join(overlap_record.case_ids)} | "
+            f"{overlap_record.algorithm_id} | "
+            f"{overlap_record.eligible_instance_count}/{overlap_record.instance_count} | "
+            f"{overlap_record.distinct_overlap_count} | {formatted[0]} | "
             f"{formatted[1]} | {formatted[2]} | {formatted[3]} | "
             f"{formatted[4]} | {formatted[5]} | {formatted[6]} | "
-            f"{record.association_status} | "
-            f"{record.timeout_count}/{record.error_count} | "
-            f"{record.valid_exact_reference_count}/"
-            f"{record.zero_optimum_count}/"
-            f"{record.no_exact_reference_count}/"
-            f"{record.unusable_result_count}/"
-            f"{record.missing_overlap_predictor_count} |"
+            f"{overlap_record.association_status} | "
+            f"{overlap_record.timeout_count}/{overlap_record.error_count} | "
+            f"{overlap_record.valid_exact_reference_count}/"
+            f"{overlap_record.zero_optimum_count}/"
+            f"{overlap_record.no_exact_reference_count}/"
+            f"{overlap_record.unusable_result_count}/"
+            f"{overlap_record.missing_overlap_predictor_count} |"
         )
     lines.extend(
         [
@@ -2128,35 +2138,35 @@ def _write_markdown(
             "n/a | n/a | n/a | n/a | n/a | n/a | no_complete_blocks | "
             "0/0 | 0/0/0/0/0 |"
         )
-    for record in gap_clustering_association_statistics:
+    for clustering_record in gap_clustering_association_statistics:
         values = (
-            record.mean_realized_bridge_fraction,
-            record.mean_level_relative_gap,
-            record.bridge_fraction_sample_standard_deviation,
-            record.gap_level_mean_sample_standard_deviation,
-            record.pearson_correlation,
-            record.ols_slope,
-            record.ols_intercept,
+            clustering_record.mean_realized_bridge_fraction,
+            clustering_record.mean_level_relative_gap,
+            clustering_record.bridge_fraction_sample_standard_deviation,
+            clustering_record.gap_level_mean_sample_standard_deviation,
+            clustering_record.pearson_correlation,
+            clustering_record.ols_slope,
+            clustering_record.ols_intercept,
         )
         formatted = [
             "n/a" if value is None else f"{value:.10f}"
             for value in values
         ]
         lines.append(
-            f"| {record.algorithm_id} | "
-            f"{record.case_count}/{record.distinct_clustering_level_count} | "
-            f"{record.eligible_block_count}/"
-            f"{record.independent_block_count} | "
-            f"{record.eligible_instance_count}/{record.instance_count} | "
+            f"| {clustering_record.algorithm_id} | "
+            f"{clustering_record.case_count}/{clustering_record.distinct_clustering_level_count} | "
+            f"{clustering_record.eligible_block_count}/"
+            f"{clustering_record.independent_block_count} | "
+            f"{clustering_record.eligible_instance_count}/{clustering_record.instance_count} | "
             f"{formatted[0]} | {formatted[1]} | {formatted[2]} | "
             f"{formatted[3]} | {formatted[4]} | {formatted[5]} | "
-            f"{formatted[6]} | {record.association_status} | "
-            f"{record.timeout_count}/{record.error_count} | "
-            f"{record.valid_exact_reference_count}/"
-            f"{record.zero_optimum_count}/"
-            f"{record.no_exact_reference_count}/"
-            f"{record.unusable_result_count}/"
-            f"{record.usable_gap_instance_count} |"
+            f"{formatted[6]} | {clustering_record.association_status} | "
+            f"{clustering_record.timeout_count}/{clustering_record.error_count} | "
+            f"{clustering_record.valid_exact_reference_count}/"
+            f"{clustering_record.zero_optimum_count}/"
+            f"{clustering_record.no_exact_reference_count}/"
+            f"{clustering_record.unusable_result_count}/"
+            f"{clustering_record.usable_gap_instance_count} |"
         )
     lines.extend(
         [
@@ -2191,31 +2201,31 @@ def _write_markdown(
             "| n/a | n/a | no algorithm variant executed | 0/0 | 0 | n/a | "
             "n/a | n/a | n/a | n/a | n/a | n/a | no_samples | 0/0/0 | 0 |"
         )
-    for record in runtime_set_count_association_statistics:
+    for runtime_set_count_record in runtime_set_count_association_statistics:
         values = (
-            record.mean_set_count,
-            record.mean_runtime_seconds,
-            record.set_count_sample_standard_deviation,
-            record.runtime_sample_standard_deviation_seconds,
-            record.pearson_correlation,
-            record.ols_slope_seconds_per_set,
-            record.ols_intercept_seconds,
+            runtime_set_count_record.mean_set_count,
+            runtime_set_count_record.mean_runtime_seconds,
+            runtime_set_count_record.set_count_sample_standard_deviation,
+            runtime_set_count_record.runtime_sample_standard_deviation_seconds,
+            runtime_set_count_record.pearson_correlation,
+            runtime_set_count_record.ols_slope_seconds_per_set,
+            runtime_set_count_record.ols_intercept_seconds,
         )
         formatted = [
             "n/a" if value is None else f"{value:.10f}"
             for value in values
         ]
         lines.append(
-            f"| {record.family} | {', '.join(record.case_ids)} | "
-            f"{record.algorithm_id} | "
-            f"{record.eligible_instance_count}/{record.instance_count} | "
-            f"{record.distinct_set_count} | {formatted[0]} | "
+            f"| {runtime_set_count_record.family} | {', '.join(runtime_set_count_record.case_ids)} | "
+            f"{runtime_set_count_record.algorithm_id} | "
+            f"{runtime_set_count_record.eligible_instance_count}/{runtime_set_count_record.instance_count} | "
+            f"{runtime_set_count_record.distinct_set_count} | {formatted[0]} | "
             f"{formatted[1]} | {formatted[2]} | {formatted[3]} | "
             f"{formatted[4]} | {formatted[5]} | {formatted[6]} | "
-            f"{record.association_status} | "
-            f"{record.completed_run_count}/{record.timeout_count}/"
-            f"{record.error_count} | "
-            f"{record.incomplete_runtime_instance_count} |"
+            f"{runtime_set_count_record.association_status} | "
+            f"{runtime_set_count_record.completed_run_count}/{runtime_set_count_record.timeout_count}/"
+            f"{runtime_set_count_record.error_count} | "
+            f"{runtime_set_count_record.incomplete_runtime_instance_count} |"
         )
     lines.extend(
         [
@@ -2251,31 +2261,31 @@ def _write_markdown(
             "| n/a | n/a | no algorithm variant executed | 0/0 | 0 | n/a | "
             "n/a | n/a | n/a | n/a | n/a | n/a | no_samples | 0/0/0 | 0 |"
         )
-    for record in runtime_k_association_statistics:
+    for runtime_k_record in runtime_k_association_statistics:
         values = (
-            record.mean_k,
-            record.mean_runtime_seconds,
-            record.k_sample_standard_deviation,
-            record.runtime_sample_standard_deviation_seconds,
-            record.pearson_correlation,
-            record.ols_slope_seconds_per_budget_unit,
-            record.ols_intercept_seconds,
+            runtime_k_record.mean_k,
+            runtime_k_record.mean_runtime_seconds,
+            runtime_k_record.k_sample_standard_deviation,
+            runtime_k_record.runtime_sample_standard_deviation_seconds,
+            runtime_k_record.pearson_correlation,
+            runtime_k_record.ols_slope_seconds_per_budget_unit,
+            runtime_k_record.ols_intercept_seconds,
         )
         formatted = [
             "n/a" if value is None else f"{value:.10f}"
             for value in values
         ]
         lines.append(
-            f"| {record.family} | {', '.join(record.case_ids)} | "
-            f"{record.algorithm_id} | "
-            f"{record.eligible_instance_count}/{record.instance_count} | "
-            f"{record.distinct_k_count} | {formatted[0]} | "
+            f"| {runtime_k_record.family} | {', '.join(runtime_k_record.case_ids)} | "
+            f"{runtime_k_record.algorithm_id} | "
+            f"{runtime_k_record.eligible_instance_count}/{runtime_k_record.instance_count} | "
+            f"{runtime_k_record.distinct_k_count} | {formatted[0]} | "
             f"{formatted[1]} | {formatted[2]} | {formatted[3]} | "
             f"{formatted[4]} | {formatted[5]} | {formatted[6]} | "
-            f"{record.association_status} | "
-            f"{record.completed_run_count}/{record.timeout_count}/"
-            f"{record.error_count} | "
-            f"{record.incomplete_runtime_instance_count} |"
+            f"{runtime_k_record.association_status} | "
+            f"{runtime_k_record.completed_run_count}/{runtime_k_record.timeout_count}/"
+            f"{runtime_k_record.error_count} | "
+            f"{runtime_k_record.incomplete_runtime_instance_count} |"
         )
     lines.extend(
         [
@@ -2309,30 +2319,30 @@ def _write_markdown(
             "| n/a | n/a | no BnB variant executed | 0/0 | 0 | n/a | n/a | "
             "n/a | n/a | n/a | n/a | n/a | no_samples | 0/0/0 |"
         )
-    for record in search_nodes_dominated_ratio_association_statistics:
+    for node_association_record in search_nodes_dominated_ratio_association_statistics:
         values = (
-            record.mean_dominated_set_ratio,
-            record.mean_search_nodes,
-            record.dominated_ratio_sample_standard_deviation,
-            record.search_nodes_sample_standard_deviation,
-            record.pearson_correlation,
-            record.ols_slope_nodes_per_ratio_unit,
-            record.ols_intercept_nodes,
+            node_association_record.mean_dominated_set_ratio,
+            node_association_record.mean_search_nodes,
+            node_association_record.dominated_ratio_sample_standard_deviation,
+            node_association_record.search_nodes_sample_standard_deviation,
+            node_association_record.pearson_correlation,
+            node_association_record.ols_slope_nodes_per_ratio_unit,
+            node_association_record.ols_intercept_nodes,
         )
         formatted = [
             "n/a" if value is None else f"{value:.10f}"
             for value in values
         ]
         lines.append(
-            f"| {record.family} | {', '.join(record.case_ids)} | "
-            f"{record.algorithm_id} | "
-            f"{record.eligible_instance_count}/{record.instance_count} | "
-            f"{record.distinct_dominated_ratio_count} | {formatted[0]} | "
+            f"| {node_association_record.family} | {', '.join(node_association_record.case_ids)} | "
+            f"{node_association_record.algorithm_id} | "
+            f"{node_association_record.eligible_instance_count}/{node_association_record.instance_count} | "
+            f"{node_association_record.distinct_dominated_ratio_count} | {formatted[0]} | "
             f"{formatted[1]} | {formatted[2]} | {formatted[3]} | "
             f"{formatted[4]} | {formatted[5]} | {formatted[6]} | "
-            f"{record.association_status} | "
-            f"{record.optimal_run_count}/{record.timeout_count}/"
-            f"{record.error_count} |"
+            f"{node_association_record.association_status} | "
+            f"{node_association_record.optimal_run_count}/{node_association_record.timeout_count}/"
+            f"{node_association_record.error_count} |"
         )
     lines.extend(
         [

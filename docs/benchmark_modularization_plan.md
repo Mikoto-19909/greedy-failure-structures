@@ -2,11 +2,14 @@
 
 Restored from the preserved research stash and reconciled with the main branch
 at `0dd9de338c07df312e268f916e630aceebb11f4a` on 2026-09-05. The research
-branch and the other stashed files remain separate. Implementation is pending.
+branch and the other stashed files remain separate. B0 is complete; production
+extraction is pending.
 
 [Preparation PR #27](https://github.com/Mikoto-19909/greedy-failure-structures/pull/27)
 restored this document, added its index entry, and reconciled the linked plans'
-order, compatibility, and type-coverage policies. B0 and extraction remain pending.
+order, compatibility, and type-coverage policies.
+[B0 PR #32](https://github.com/Mikoto-19909/greedy-failure-structures/pull/32)
+delivered the compatibility baseline before production extraction.
 
 The [implementation order](README.md#implementation-plans) completes the fixed
 core experiment and documentation cleanup first. PR 0 (B0) then freezes the
@@ -19,7 +22,7 @@ after the fixed pilot and documentation PR #31. No production code had moved
 at that checkpoint.
 The repository-wide audit includes the offline `analysis/` consumers as well as
 `src/`, tests and validation scripts. B0's executable compatibility and artifact
-parity gates are being established against this implementation.
+parity gates are established against this implementation.
 
 ### B0 implementation and verification
 
@@ -69,8 +72,11 @@ blocks. The normal configured mypy gate remains in force, and new modules do
 not inherit the monolithic exemptions. Full diagnostics and the exact temporary
 configuration are preserved with the fixture; no production type fixes are in B0.
 
-B0 implementation is under verification; record its delivery PR here after
-the independent review and repository checks have completed.
+B0 was delivered in PR #32 after independent reverse review and all required
+PR checks passed. The committed comparison matched every deterministic output
+and stable Manifest field, and both validators passed. A missing parallel
+dispatch lookup assertion was added and rechecked against an isolated alias
+mutation. Production source was unchanged in this batch.
 
 ## Purpose
 

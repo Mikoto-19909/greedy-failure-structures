@@ -7,7 +7,19 @@
 本轮先完成固定核心实验、文档收尾和 benchmark B0，再开始报告拆分；
 具体顺序见 [实施计划索引](README.md#implementation-plans)。B0 不替代本计划的报告专用输入基线。
 实验离线分析使用 Matplotlib；本次报告搬迁保持现有图表实现和字节。
+
+## 实施进展
+
+核心实验和文档收尾已经交付，B0 通过
+[PR #32](https://github.com/Mikoto-19909/greedy-failure-structures/pull/32) 固定了
+旧实现、checkpoint 与字节比较工具。未豁免检查暴露了报告模块中局部变量复用、
+异构记录集合和 CSV 往返注解边界的类型问题。先在独立类型准备批次处理这些问题，
+保持函数边界、公开签名和输出内容，然后再进行下面的机械搬迁与章节提取。
 贡献和检查要求沿用 [CONTRIBUTING](../CONTRIBUTING.md) 与 [AGENTS](../AGENTS.md)。
+
+类型准备已修正各记录循环的局部变量复用、异构序列注解和既有 CSV 往返的注解边界。
+未移动函数、提取章节或修改数学及格式文本；取消 reporting 豁免的独立配置检查通过，
+B0 的旧版／新版比较也通过。类型代码与移除豁免使用独立提交，完成审查后再开始搬迁。
 
 ## 目标与边界
 
@@ -108,8 +120,9 @@ rg -n 'maxcover.reporting|from \.reporting|reporting\.' src tests .github
 算法结果、确定性、CSV 字段、公开接口和错误拒绝测试保持。
 生成报告的固定输入输出比较保护的是产物行为，不用于冻结开发文档的章节布局。
 
-现有 `maxcover.benchmark` 和 `maxcover.reporting` 设置整模块 `ignore_errors = true`，
-mypy 通过不能说明它们没有类型错误。新模块默认进入检查，先实际检查迁移后的代码。
+原基线对 `maxcover.benchmark` 和 `maxcover.reporting` 设置整模块 `ignore_errors = true`。
+类型准备已通过独立提交移除 reporting 豁免，默认检查覆盖该模块；benchmark 仍保留
+其原有例外。新模块默认进入检查，先实际检查迁移后的代码。
 必要的遗留类型修复单独提交；暂时无法解决的问题只采用有具体原因的最小抑制，
 不批量复制整模块豁免，不扩大到新包，也不把清理全仓类型错误作为拆分前置条件。
 准确说明覆盖边界，并指向 [pyproject.toml](../pyproject.toml) 查看现行例外；
