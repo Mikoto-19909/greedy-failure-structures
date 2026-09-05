@@ -1,6 +1,6 @@
 # 统计与关联记录拆分计划
 
-记录日期：2026-09-05。状态：待实施，优先级后置。
+记录日期：2026-09-05。状态：待实施，已纳入本轮完整交付。
 
 本计划以主分支 `ddf6a8a` 的实现为参照。实施前重新核对入口和调用关系。
 贡献和检查要求沿用 [CONTRIBUTING](../CONTRIBUTING.md) 与 [AGENTS](../AGENTS.md)。
@@ -10,7 +10,9 @@
 将 [_statistics_contracts.py](../src/maxcover/_statistics_contracts.py) 和
 [_association_contracts.py](../src/maxcover/_association_contracts.py) 按记录用途分组，
 使基础统计、解质量、运行性能和结构关联的定义各有明确位置。
-记录类本身已经有边界，本计划只在实际需要维护这些类型时启动。
+本轮在生成器拆分后、CI 分流前实施，遵循
+[统一实施顺序](README.md#implementation-plans)。实验与 benchmark B0 均在源码拆分前完成；
+本项仍需另存待迁移记录的旧版 CSV 和 pickle，不能用同版本往返替代旧版加载验证。
 
 公开入口仍为 [maxcover.contracts](../src/maxcover/contracts.py) 及当前包根导出。
 字段、字段顺序、默认值、`CSV_FIELDS`、schema 常量、CSV 解析、异常、不可变性、
