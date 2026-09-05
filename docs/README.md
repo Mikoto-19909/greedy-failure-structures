@@ -74,12 +74,26 @@ versions do not make them the recommended next research experiment.
 
 ## Implementation plans
 
-These plans are archived proposals, not completed refactors. Start with reporting
-and output validation; generator and record splits can wait for a maintenance need.
+These plans describe authorized work; their implementation is still pending.
+The delivery order is implementation preparation, the fixed core experiment,
+documentation cleanup, benchmark compatibility baseline (B0), reporting,
+benchmark extraction (B1–B4, then optional B5), output validation, generators,
+record types, and CI routing. Complete the experiment on a clean fixed commit
+before restructuring source. B0 precedes every production-code split so later
+changes can be compared against the same old implementation and checkpoint.
 Acceptance focuses on behavior and public compatibility. Remove unnecessary
 source-count claims and their tests as documentation is simplified, and check new
 modules with mypy by default instead of spreading existing module exemptions.
 
+Each batch uses a single-responsibility branch and commits, targeted verification,
+the full repository checks, any required independent review, and a PR that passes
+its checks before merge and branch cleanup. Record actual scope and implementation
+PRs in the applicable original plan. Generator and record splits are included in
+this delivery; only benchmark B5 and the documented demo-script cleanup remain
+conditional.
+
+- [`benchmark_modularization_plan.md`](benchmark_modularization_plan.md): B0
+  compatibility baseline and staged runner extraction, including old/new artifact parity
 - [`reporting_split_plan.zh-CN.md`](reporting_split_plan.zh-CN.md): report module
   boundaries, compatibility imports, and fixed-input Markdown/SVG comparisons
 - [`output_validation_split_plan.zh-CN.md`](output_validation_split_plan.zh-CN.md):

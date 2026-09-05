@@ -1,0 +1,732 @@
+# `benchmark.py` Internal Modularization Plan
+
+Restored from the preserved research stash and reconciled with the main branch
+at `0dd9de338c07df312e268f916e630aceebb11f4a` on 2026-09-05. The research
+branch and the other stashed files remain separate. Implementation is pending.
+
+The [implementation order](README.md#implementation-plans) completes the fixed
+core experiment and documentation cleanup first. PR 0 (B0) then freezes the
+compatibility baseline before any production-code split. Reporting follows B0;
+benchmark PRs 1–4 (B1–B4) follow reporting; output validation follows benchmark.
+PR 5 (B5) remains conditional on the resulting runner's clarity.
+
+## Purpose
+
+Refactor [`src/maxcover/benchmark.py`](../src/maxcover/benchmark.py) into a
+compatibility facade and a small set of responsibility-focused internal
+modules.
+
+This is an internal modularization. It must not change the public API,
+configuration format, record schemas, statistical definitions, artifact
+contracts, run identities, checkpoint behavior, or multiprocessing behavior.
+
+The implementation rule is:
+
+```text
+Freeze compatibility first.
+Move code without redesigning it.
+Simplify orchestration only after the moves are proven equivalent.
+```
+
+The implementation base commit must be recorded when work starts. Before each
+pull request, repeat the repository-wide dependency audit after incorporating
+any relevant concurrent work.
+
+## Compatibility boundary
+
+### Public Python API
+
+The following imports must continue to work from `maxcover.benchmark`:
+
+```python
+from maxcover.benchmark import BenchmarkPlan
+from maxcover.benchmark import plan_benchmark
+from maxcover.benchmark import replay_instance_file
+from maxcover.benchmark import run_benchmark
+from maxcover.benchmark import summarize_benchmark
+```
+
+The same objects must remain available from the package root. The existing
+`maxcover.__all__` order and package-root object identities remain unchanged.
+
+For each public callable, preserve:
+
+- name;
+- parameter names and order;
+- positional and keyword-only boundaries;
+- defaults;
+- return type;
+- established exception behavior.
+
+In the first modularization pass, keep `BenchmarkPlan` defined in
+`benchmark.py`. Moving the definition would change `BenchmarkPlan.__module__`,
+its qualified name, and its pickle identity even if the old import path were
+re-exported. Keep the public `plan_benchmark()` implementation in the facade as
+well; it is small enough to delegate directly to extracted planning helpers.
+
+### Configuration, records, and research semantics
+
+Do not change:
+
+- `ExperimentConfig`, `CaseConfig`, or `AlgorithmRunOptions`;
+- `BenchmarkResult`, `InstanceRecord`, `RunRecord`, or statistics record types;
+- configuration, CSV, record, or Manifest schema versions;
+- `config_hash`, `instance_id`, or `run_id` construction;
+- algorithm eligibility, seed expansion, coupling, or canonical ordering;
+- statistical formulas, eligibility rules, aggregation units, censoring rules,
+  missing-value rules, or numeric formatting.
+
+### Artifacts
+
+Preserve all existing runner-owned artifacts, including their filenames,
+field order, row order, text, and bytes wherever the contract is deterministic.
+Preserve every Manifest contract section and every output checksum derived from
+those artifacts.
+
+### Runner lifecycle
+
+Preserve:
+
+- single-worker execution;
+- multiprocessing with the `spawn` context;
+- interruption checkpoints;
+- resume and `--force` behavior;
+- `checkpoint_interval` behavior;
+- expected configuration hash checks;
+- optimum normalization;
+- failure replay artifacts;
+- canonical CSV round trips;
+- report generation;
+- rebuilding through `summarize_benchmark()` without executing algorithms.
+
+## Target ownership
+
+### `benchmark.py`
+
+Keep the public facade and runner lifecycle here:
+
+```text
+BenchmarkPlan
+plan_benchmark()
+run_benchmark()
+summarize_benchmark()
+replay_instance_file()
+
+_CompletedRun
+_execute_task()
+_record_for_completed()
+_rows_for_instance()
+_run_algorithms()
+_write_replay_artifact()
+```
+
+Keep `_rows_for_instance()` and `_run_algorithms()` in the facade so that the
+existing focused test seam and patch lookup continue to work. Keep
+`_write_replay_artifact()` with `_CompletedRun` during this pass; moving only
+the writer would require a new module to import the facade or would force an
+unrelated runner-lifecycle redesign.
+
+The facade explicitly re-exports every compatibility symbol identified in the
+dependency audit. Do not use wildcard imports.
+
+### `benchmark_planning.py`
+
+Own configuration expansion, instance materialization, provenance validation,
+and run-task construction:
+
+```text
+_PlannedInstance
+_RunTask
+
+_case_seed()
+_coupling_pair_id()
+_coupling_seed()
+
+_STRUCTURAL_COUPLING_INTENSITY
+_resolved_case_parameters()
+_structural_coupling_pair_id()
+_fixed_size_control_pairs()
+
+_instances_for_config()
+_instance_record()
+_tasks_for_config()
+```
+
+The ownership description deliberately includes materialization and provenance
+validation. `_instance_record()` computes structure metrics, checks certificate
+and coupling facts, and constructs the canonical `InstanceRecord`; it is not
+pure experiment planning.
+
+### `benchmark_statistics.py`
+
+Own optimum validation, canonical summaries, and statistical analyses:
+
+```text
+_validate_certificate_bound()
+_normalize_optima()
+_summarize()
+
+_MetricDescription
+_linear_quantile()
+_describe_values()
+_beta_continued_fraction()
+_regularized_incomplete_beta()
+_student_t_cdf()
+_student_t_critical_95()
+_ten_decimal()
+
+_descriptive_statistics()
+_confidence_interval_statistics()
+_censored_runtime_statistics()
+_greedy_failure_statistics()
+_local_search_pair_analyses()
+_local_search_recovery_statistics()
+_local_search_remaining_gap_statistics()
+_heuristic_exact_runtime_ratio_statistics()
+_bnb_node_reduction_statistics()
+_quality_runtime_pareto_statistics()
+
+_reference_status_records()
+_reference_coverage_statistics()
+_reference_censoring_bias_statistics()
+_reference_cutoff_sensitivity_statistics()
+
+_deterministic_variant_units()
+_increment_heuristic_status()
+```
+
+Move `_validate_certificate_bound()` and `_normalize_optima()` together. The
+latter calls the former, so separating them would require an internal module to
+import `benchmark.py`.
+
+### `benchmark_associations.py`
+
+Own the structural association analyses:
+
+```text
+_gap_density_association_statistics()
+_gap_overlap_association_statistics()
+_gap_clustering_association_statistics()
+_runtime_set_count_association_statistics()
+_runtime_k_association_statistics()
+_search_nodes_dominated_ratio_association_statistics()
+```
+
+This module may depend on `benchmark_statistics.py` for existing statistical
+helpers. It must not import `benchmark.py`.
+
+### `benchmark_artifacts.py`
+
+Own canonical artifact I/O, checkpoint handling, runner-owned output inventory,
+and compatibility-derived artifact builders:
+
+```text
+REPORT_FILENAMES
+RUNNER_OWNED_FILENAMES
+SEARCH_COMPARISON_FIELDS
+STOCHASTIC_SUMMARY_FIELDS
+
+_csv_text()
+_write_csv()
+_canonical_run_records()
+_canonical_instance_records()
+_validate_existing_instances()
+_runner_owned_paths()
+_clean_runner_owned_artifacts()
+_read_existing()
+_write_search_comparison()
+_write_stochastic_summary()
+```
+
+`_write_search_comparison()` and `_write_stochastic_summary()` are not pure
+serialization. They calculate ratios and aggregate statistics while producing
+compatibility artifacts. Keep their current calculations intact and include
+their complete output bytes in the parity gate. Separating calculation from
+serialization is outside this refactor.
+
+Do not move `_write_replay_artifact()` in this pass.
+
+### `benchmark_manifest.py`
+
+Own:
+
+```text
+_git_state()
+_write_manifest()
+Manifest-specific environment metadata collection
+```
+
+Keep the existing `_write_manifest()` arguments. Do not introduce a
+`ManifestContext` or a new context abstraction during mechanical extraction.
+
+The Manifest module may import `_RunTask` from `benchmark_planning.py` and the
+runner-owned output inventory from `benchmark_artifacts.py`.
+
+## Allowed dependency graph
+
+```text
+benchmark.py
+├── benchmark_planning.py
+├── benchmark_statistics.py
+├── benchmark_associations.py
+├── benchmark_artifacts.py
+└── benchmark_manifest.py
+
+benchmark_associations.py
+└── benchmark_statistics.py
+
+benchmark_manifest.py
+├── benchmark_artifacts.py
+└── benchmark_planning.py
+```
+
+No new internal module may import `benchmark.py`. Add a lightweight test that
+parses the new modules' imports and rejects either a relative or absolute import
+of the facade.
+
+## Compatibility ledger
+
+Before moving production code, freeze an exact list of existing consumers.
+Audit production modules, tests, and `.github/scripts`, not tests alone.
+
+The recorded benchmark imports and patch seams remain available throughout this
+round, including during later validator cleanup. This does not freeze the private
+layout of reporting, generator, or record modules: migrate their actual private
+callers with those modules while preserving public APIs, class identity, CSV,
+and pickle compatibility.
+
+The ledger must cover at least the following groups.
+
+### Permanent public API
+
+```text
+BenchmarkPlan
+plan_benchmark
+run_benchmark
+summarize_benchmark
+replay_instance_file
+```
+
+### Directly imported constants and test seams
+
+```text
+REPORT_FILENAMES
+RUNNER_OWNED_FILENAMES
+_instances_for_config
+_instance_record
+_tasks_for_config
+_rows_for_instance
+_execute_task
+_run_algorithms
+_linear_quantile
+_student_t_critical_95
+```
+
+### Validator analysis imports
+
+Freeze every helper imported by
+[`validate_benchmark_output.py`](../.github/scripts/validate_benchmark_output.py),
+including canonical record conversion, optimum normalization, reference
+statistics, comparison statistics, and structural associations.
+
+Implement compatibility through explicit facade imports, for example:
+
+```python
+from .benchmark_statistics import (
+    _descriptive_statistics,
+    _normalize_optima,
+)
+```
+
+Do not create an API registry.
+
+Compatibility aliases preserve imports. Patch propagation is guaranteed only
+for the patch seams recorded in the ledger. In particular, `run_benchmark()`
+must continue to look up `_execute_task` through the facade global, and
+`_rows_for_instance()` must continue to look up `_run_algorithms` there. Do not
+replace these calls with module-qualified lookups that bypass existing patches.
+
+## Pull request sequence
+
+Each pull request must be independently reviewable and must pass its own
+acceptance gates before the next extraction starts.
+
+### PR 0: Freeze compatibility and parity
+
+Suggested title:
+
+```text
+test: freeze benchmark modularization compatibility baseline
+```
+
+Do not move production code. Add or record:
+
+- the implementation base commit;
+- public signatures;
+- package-root exports and object identities;
+- `BenchmarkPlan.__module__`;
+- the exact facade compatibility ledger;
+- existing patch seams;
+- a base-versus-head artifact parity procedure;
+- a targeted type-check baseline for code destined for new modules.
+
+At minimum, freeze these properties:
+
+```python
+BenchmarkPlan.__module__ == "maxcover.benchmark"
+maxcover.BenchmarkPlan is maxcover.benchmark.BenchmarkPlan
+```
+
+Use `inspect.signature()` to freeze each public callable explicitly. Prefer
+assertions over an opaque signature snapshot.
+
+### PR 1: Extract Manifest foundations
+
+Suggested title:
+
+```text
+refactor: extract benchmark manifest dependencies
+```
+
+Move together:
+
+```text
+_PlannedInstance
+_RunTask
+
+REPORT_FILENAMES
+RUNNER_OWNED_FILENAMES
+SEARCH_COMPARISON_FIELDS
+STOCHASTIC_SUMMARY_FIELDS
+_runner_owned_paths()
+
+_git_state()
+_write_manifest()
+```
+
+This is the minimum non-circular boundary. `_write_manifest()` consumes
+`_RunTask` and the runner-owned output inventory, so a Manifest-only move is not
+self-contained.
+
+Keep `BenchmarkPlan`, `plan_benchmark()`, `_CompletedRun`,
+`_write_replay_artifact()`, `_rows_for_instance()`, and `_run_algorithms()` in
+the facade. Re-export all moved names explicitly.
+
+Acceptance gates:
+
+- Manifest contract sections are unchanged;
+- output inventory and output hashes are unchanged;
+- dashboard and test imports of filename constants still work;
+- multiprocessing spawn still works after moving `_RunTask`;
+- no new internal module imports the facade.
+
+### PR 2: Extract planning and instance materialization
+
+Suggested title:
+
+```text
+refactor: extract benchmark planning and instance materialization
+```
+
+Move seed and coupling helpers, fixed-size control pairing, instance expansion,
+instance record construction, and task expansion.
+
+Keep `BenchmarkPlan` and the public `plan_benchmark()` implementation in
+`benchmark.py`. Let the public function call the re-exported planning helpers.
+
+Acceptance gates:
+
+- instance identities are unchanged;
+- run identities are unchanged;
+- task and instance ordering are unchanged;
+- coupling fields are unchanged;
+- single-worker and spawn executions agree on stable fields;
+- all production, validator, and test imports continue to resolve.
+
+### PR 3: Extract artifact and checkpoint I/O
+
+Suggested title:
+
+```text
+refactor: extract benchmark artifact and checkpoint IO
+```
+
+Move CSV serialization, canonical record round trips, checkpoint reads,
+existing-instance validation, runner-owned cleanup, and the two
+compatibility-derived artifact writers.
+
+Keep `_write_replay_artifact()` in the facade.
+
+Acceptance gates:
+
+- interruption checkpoints remain valid;
+- resume skips exactly the existing run identities;
+- force removes only runner-owned files;
+- summarize rebuilds without executing an algorithm;
+- all deterministic derived artifacts are byte-identical;
+- search comparison and stochastic summary artifacts are byte-identical.
+
+### PR 4: Extract statistics and associations
+
+Suggested title:
+
+```text
+refactor: extract benchmark statistical analyses
+```
+
+Move certificate-bound validation, optimum normalization, canonical/reference
+statistics, algorithm comparisons, and structural associations. This pull
+request has one responsibility: relocate the analysis computation layer
+without changing any mathematical definition.
+
+Explicitly prohibit:
+
+- new estimator classes or statistical frameworks;
+- abstraction of repeated Pearson, OLS, mean, or standard-deviation code;
+- schema or record changes;
+- aggregation-unit changes;
+- censoring or missing-value changes;
+- metric renaming;
+- numerical cleanup.
+
+Acceptance gates:
+
+- the independent benchmark output validator passes;
+- all statistics CSV files are byte-identical;
+- all deterministic reports and charts are byte-identical;
+- validator imports through `maxcover.benchmark` still resolve;
+- no internal analysis module imports the facade.
+
+### PR 5: Optionally simplify orchestration
+
+Suggested title:
+
+```text
+refactor: simplify benchmark orchestration
+```
+
+Decide whether this pull request is needed only after the extraction pull
+requests are complete. It may introduce a few small helpers such as:
+
+```text
+_write_core_statistics()
+_write_association_statistics()
+_build_result()
+```
+
+Each helper must correspond to one existing continuous runner phase and retain
+the existing call order and facade patch lookups. Do not introduce dependency
+injection, a service container, a generic pipeline, or a new runtime API.
+
+Cancel this pull request if the extracted runner is already clear enough.
+
+## Base-versus-head artifact parity
+
+The existing summarize test proves same-version idempotence. It does not prove
+that a refactored implementation matches the pre-refactor implementation.
+
+PR 0 must establish this comparison:
+
+```text
+pin baseline commit
+create baseline and head checkouts
+use one shared absolute configuration path
+generate one canonical checkpoint with baseline code
+copy the same raw_results.csv and instances.csv to both result directories
+summarize once with baseline code and once with head code
+compare the resulting artifacts
+```
+
+Compare these artifacts byte for byte:
+
+```text
+summary.csv
+all statistics CSV files
+search_comparison.csv
+stochastic_summary.csv
+all deterministic Markdown reports
+all deterministic SVG charts
+```
+
+Also compare `raw_results.csv`, `instances.csv`, and canonical row order.
+
+Do not compare `manifest.json` as one opaque byte string. The following values
+may vary between checkouts or executions:
+
+```text
+git
+timing.started_at
+timing.ended_at
+timing.duration_seconds
+environment
+```
+
+The following must remain identical:
+
+```text
+schema_version
+experiment
+configuration.config_hash
+configuration.path (the shared configuration path used by both versions)
+seeds
+algorithms
+execution.planned_instances
+execution.planned_runs
+all contract sections
+the output filename set
+each output byte count
+each output sha256
+```
+
+The existing cross-environment comparison script remains useful for run
+identity checks, but it does not replace this complete derived-artifact parity
+gate.
+
+## Type-check strategy
+
+`maxcover.benchmark` currently has a mypy error exemption. Newly extracted
+modules will enter the normal strict check unless separately exempted.
+
+Do not automatically add the new modules to `ignore_errors`.
+
+For each extraction:
+
+1. move the smallest coherent block;
+2. run mypy immediately;
+3. make only necessary type corrections in a separate commit from the mechanical move;
+4. do not alter runtime logic to satisfy the type checker;
+5. if the type-only work becomes too large to review with the move, stop and
+   create a separate prerequisite type-only pull request.
+
+Follow the later PR #24 policy: remove source-file counts, exemption percentages,
+and assertions serving only those display numbers during documentation cleanup.
+Keep accurate type-coverage descriptions linked to `pyproject.toml` and tests of
+the actual coverage boundary. Splitting an internal module must not require a
+new round of display-number updates.
+
+Do not describe a clean mypy run as covering a module that remains exempt.
+
+## Verification required for every pull request
+
+### API and imports
+
+- public signatures;
+- package-root exports and identities;
+- `BenchmarkPlan` identity;
+- facade compatibility ledger;
+- validator imports;
+- production imports;
+- recorded patch seams;
+- absence of reverse imports from new modules to the facade.
+
+### Runner behavior
+
+- single-worker execution;
+- multi-worker spawn execution;
+- interruption checkpoint and resume;
+- force cleanup;
+- expected configuration hash rejection;
+- failure replay;
+- summarize without algorithm execution.
+
+### Reproducibility and artifacts
+
+- stable instance and run identities;
+- canonical ordering;
+- single/parallel agreement on stable fields;
+- fixed-checkpoint base/head parity;
+- Manifest stable-field and output-hash parity;
+- independent output validation.
+
+### Repository gates
+
+Run the repository-prescribed checks:
+
+```console
+python -m unittest discover -s tests -v
+python .github/scripts/check_content_boundary.py --claim-mode evidence_backed_claims
+python .github/scripts/build_license_manifest.py --check
+python -m mypy
+```
+
+Run the independent benchmark output validator against the fixed comparison
+output as an additional gate.
+
+When tracked files change, follow the repository's index-backed license
+Manifest order:
+
+```text
+stage intended files
+regenerate LICENSE_MANIFEST.json
+stage LICENSE_MANIFEST.json
+run the Manifest check
+```
+
+## Stop conditions
+
+Stop the current pull request before advancing if any of these occurs:
+
+- a new internal module imports `benchmark.py`;
+- a public signature or package-root identity changes;
+- `BenchmarkPlan` type identity changes;
+- a recorded patch seam stops intercepting the runner;
+- a configuration, instance, or run identity changes;
+- a CSV field, row order, or deterministic byte changes;
+- a statistical result, report, or chart changes;
+- a Manifest contract or stable output hash changes;
+- resume, force, checkpoint, spawn, or replay behavior changes;
+- the independent validator cannot import or recompute an artifact;
+- resolving a type error would require a runtime behavior change.
+
+Do not make an unexpected difference acceptable merely by updating its test.
+Any intentional behavior or contract change is separate work and requires its
+own proposal.
+
+## Out of scope
+
+Do not include any of the following:
+
+- algorithm or generator registry changes;
+- configuration or contract schema changes;
+- statistical or research-claim changes;
+- new generic statistics abstractions;
+- a `ManifestContext` or similar context object;
+- dependency injection or service containers;
+- a private API registry;
+- unrelated naming or formatting cleanup;
+- retirement of existing private facade seams;
+- replay lifecycle redesign;
+- type-backlog cleanup beyond the moved code;
+- deduplication of association calculations.
+
+## Definition of done
+
+- `benchmark.py` remains the stable public facade.
+- `BenchmarkPlan` remains defined by `maxcover.benchmark`.
+- planning and instance materialization have an internal owner.
+- statistical analysis has an internal owner.
+- structural associations have an internal owner.
+- artifact and checkpoint I/O have an internal owner.
+- Manifest generation has an internal owner.
+- no new internal module imports the facade.
+- all public signatures and package-root exports are unchanged.
+- validator, production, and test compatibility imports remain valid.
+- recorded patch seams retain their behavior.
+- configuration, record, and artifact schemas are unchanged.
+- configuration, instance, and run identities are unchanged.
+- deterministic artifacts pass base-versus-head byte comparison.
+- Manifest stable fields and output hashes match.
+- single-worker, spawn, interruption, resume, force, and replay paths pass.
+- summarize continues to rebuild without algorithm execution.
+- the full test suite, independent validator, content boundary, license
+  Manifest, and mypy checks pass.
+- the optional orchestration pull request is either completed or explicitly
+  cancelled after review.
+
+The final implementation rule is:
+
+```text
+PR 0 freezes the contract.
+The extraction PRs move code without redesigning it.
+The final orchestration PR exists only if the resulting facade still needs it.
+```

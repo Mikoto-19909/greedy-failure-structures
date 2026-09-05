@@ -15,7 +15,8 @@
 
 整理不新增验证规则、不修补现有盲点、不改变 schema、容差、记录顺序或缺失值处理。
 发现独立缺陷时记录输入与现象，作为另一个修复处理。
-报告拆分可先完成；benchmark 拆分若同时进行，应先确定其兼容入口再调整导入。
+本轮在报告和 benchmark 拆分完成、导入边界稳定后实施；总顺序见
+[实施计划索引](README.md#implementation-plans)。所有源码拆分之前先完成 benchmark B0。
 
 ## 函数边界
 
@@ -93,7 +94,9 @@ rg -n 'maxcover.benchmark|maxcover.reporting|validate_benchmark_output|spec_from
 
 若报告拆分已实施，沿用迁移后的实际导入。若本次需要更换私有导入位置，
 同步修改调用方并运行整个验证器测试集，不为旧位置建立永久兼容要求。
-benchmark 的私有统计入口同理处理；公开接口保持兼容，内部布局允许调整。
+benchmark 的私有统计导入及测试替换入口按
+[B0 兼容清单](benchmark_modularization_plan.md#compatibility-ledger) 在本轮保留，
+不能套用报告私有路径的迁移规则。公开接口始终保持兼容。
 
 本验证器复用了生产统计和绘图函数。整理后仍只能说明已有检查范围，
 不能声称重新独立实现了统计或求解器验证。

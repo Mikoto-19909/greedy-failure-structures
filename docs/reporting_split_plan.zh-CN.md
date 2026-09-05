@@ -4,6 +4,9 @@
 
 本计划以主分支 `ddf6a8a` 的实现为参照。文档存档不表示源码已经拆分。
 实施前重新核对主分支和 benchmark 拆分的进度，以实际代码确定迁移位置。
+本轮先完成固定核心实验、文档收尾和 benchmark B0，再开始报告拆分；
+具体顺序见 [实施计划索引](README.md#implementation-plans)。B0 不替代本计划的报告专用输入基线。
+实验离线分析使用 Matplotlib；本次报告搬迁保持现有图表实现和字节。
 贡献和检查要求沿用 [CONTRIBUTING](../CONTRIBUTING.md) 与 [AGENTS](../AGENTS.md)。
 
 ## 目标与边界
@@ -87,6 +90,9 @@ rg -n 'maxcover.reporting|from \.reporting|reporting\.' src tests .github
 若 benchmark 已经拆分，只修改实际调用所在模块，避免恢复旧布局。
 
 ### 4. 收紧文档测试，明确类型覆盖
+
+本轮将下面的文档精简及已有测试调整前移到文档收尾批次。
+报告拆分时核对前置工作已完成，只补充迁移实际影响的连带调整。
 
 随文档精简删除中英文 README、CONTRIBUTING 中不再需要展示的源码文件数、
 豁免代码行数占比和带固定文件数的 mypy 成功输出，并同步删除
