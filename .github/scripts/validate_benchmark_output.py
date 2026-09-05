@@ -1816,6 +1816,164 @@ def _validate_reference_statistics(
         _fail("reference cutoff sensitivity does not match exact-solver statuses")
 
 
+def _validate_local_search_recovery_statistics(
+    canonical_rows: list[RunRecord],
+    local_search_recovery: list[LocalSearchRecoveryRecord],
+) -> list[LocalSearchRecoveryRecord]:
+    expected_local_search_recovery = _local_search_recovery_statistics(
+        canonical_rows
+    )
+    if [record.to_csv_row() for record in local_search_recovery] != [
+        record.to_csv_row() for record in expected_local_search_recovery
+    ]:
+        _fail(
+            "Local Search recovery statistics do not match canonical raw results"
+        )
+    return expected_local_search_recovery
+
+
+def _validate_report_headlines(
+    output: Path,
+    config: ExperimentConfig,
+    expected_descriptive: list[DescriptiveStatisticsRecord],
+    instances: list[InstanceRecord],
+    expected_confidence_intervals: list[ConfidenceIntervalRecord],
+    expected_local_search_recovery: list[LocalSearchRecoveryRecord],
+    expected_censored_runtime: list[CensoredRuntimeRecord],
+) -> None:
+    report = (output / "results_summary.md").read_text(encoding="utf-8")
+    actual_headlines = _markdown_section(
+        report,
+        "## Headline checks",
+        "## P5.1 descriptive aggregate",
+    )
+    expected_headlines = _headline_lines(
+        config,
+        expected_descriptive,
+        instances,
+        expected_confidence_intervals,
+        expected_local_search_recovery,
+        expected_censored_runtime,
+    )
+    if actual_headlines != expected_headlines:
+        _fail(
+            "automatic conclusion headlines do not match the canonical "
+            "small-sample eligibility gate or P6 automatic-fact contract"
+        )
+
+
+def _validate_gap_group_coverage(
+    canonical_rows: list[RunRecord],
+    descriptive: list[DescriptiveStatisticsRecord],
+) -> None:
+    expected_gap_groups = {
+        (
+            row.config_hash,
+            row.case_id,
+            row.family,
+            row.algorithm_id,
+            row.algorithm,
+        )
+        for row in canonical_rows
+    }
+    actual_gap_groups = [
+        (
+            row.config_hash,
+            row.case_id,
+            row.family,
+            row.algorithm_id,
+            row.algorithm,
+        )
+        for row in descriptive
+        if row.metric == "optimality_gap"
+    ]
+    if (
+        len(actual_gap_groups) != len(expected_gap_groups)
+        or set(actual_gap_groups) != expected_gap_groups
+    ):
+        _fail(
+            "descriptive statistics must contain exactly one optimality-gap "
+            "row per algorithm variant and case"
+        )
+
+
+def _validate_greedy_failure_statistics(
+    canonical_rows: list[RunRecord],
+    greedy_failure: list[GreedyFailureRecord],
+) -> None:
+    expected_greedy_failure = _greedy_failure_statistics(canonical_rows)
+    if [record.to_csv_row() for record in greedy_failure] != [
+        record.to_csv_row() for record in expected_greedy_failure
+    ]:
+        _fail("Greedy failure statistics do not match canonical raw results")
+
+
+def _validate_local_search_remaining_gap_statistics(
+    canonical_rows: list[RunRecord],
+    local_search_remaining_gap: list[LocalSearchRemainingGapRecord],
+) -> None:
+    expected_local_search_remaining_gap = (
+        _local_search_remaining_gap_statistics(canonical_rows)
+    )
+    if [record.to_csv_row() for record in local_search_remaining_gap] != [
+        record.to_csv_row()
+        for record in expected_local_search_remaining_gap
+    ]:
+        _fail(
+            "Local Search remaining-gap statistics do not match canonical raw "
+            "results"
+        )
+
+
+def _validate_heuristic_exact_runtime_ratio_statistics(
+    canonical_rows: list[RunRecord],
+    heuristic_exact_runtime_ratio: list[HeuristicExactRuntimeRatioRecord],
+) -> None:
+    expected_heuristic_exact_runtime_ratio = (
+        _heuristic_exact_runtime_ratio_statistics(canonical_rows)
+    )
+    if [record.to_csv_row() for record in heuristic_exact_runtime_ratio] != [
+        record.to_csv_row()
+        for record in expected_heuristic_exact_runtime_ratio
+    ]:
+        _fail(
+            "heuristic/exact runtime-ratio statistics do not match canonical "
+            "raw results"
+        )
+
+
+def _validate_bnb_node_reduction_statistics(
+    canonical_rows: list[RunRecord],
+    bnb_node_reduction: list[BranchAndBoundNodeReductionRecord],
+) -> None:
+    expected_bnb_node_reduction = _bnb_node_reduction_statistics(
+        canonical_rows
+    )
+    if [record.to_csv_row() for record in bnb_node_reduction] != [
+        record.to_csv_row() for record in expected_bnb_node_reduction
+    ]:
+        _fail(
+            "Branch-and-Bound node-reduction statistics do not match "
+            "canonical raw results"
+        )
+
+
+def _validate_quality_runtime_pareto_statistics(
+    canonical_rows: list[RunRecord],
+    quality_runtime_pareto: list[QualityRuntimeParetoRecord],
+) -> None:
+    expected_quality_runtime_pareto = _quality_runtime_pareto_statistics(
+        canonical_rows
+    )
+    if [record.to_csv_row() for record in quality_runtime_pareto] != [
+        record.to_csv_row() for record in expected_quality_runtime_pareto
+    ]:
+        _fail(
+            "quality-runtime Pareto statistics do not match canonical raw "
+            "results"
+        )
+
+
 def validate(config_path: Path, output: Path) -> None:
     config = load_config(config_path)
     plan = plan_benchmark(config)
@@ -1986,22 +2144,12 @@ def validate(config_path: Path, output: Path) -> None:
         reference_censoring_bias,
         reference_cutoff_sensitivity,
     )
-    expected_local_search_recovery = _local_search_recovery_statistics(
-        canonical_rows
+    expected_local_search_recovery = _validate_local_search_recovery_statistics(
+        canonical_rows,
+        local_search_recovery,
     )
-    if [record.to_csv_row() for record in local_search_recovery] != [
-        record.to_csv_row() for record in expected_local_search_recovery
-    ]:
-        _fail(
-            "Local Search recovery statistics do not match canonical raw results"
-        )
-    report = (output / "results_summary.md").read_text(encoding="utf-8")
-    actual_headlines = _markdown_section(
-        report,
-        "## Headline checks",
-        "## P5.1 descriptive aggregate",
-    )
-    expected_headlines = _headline_lines(
+    _validate_report_headlines(
+        output,
         config,
         expected_descriptive,
         instances,
@@ -2009,87 +2157,30 @@ def validate(config_path: Path, output: Path) -> None:
         expected_local_search_recovery,
         expected_censored_runtime,
     )
-    if actual_headlines != expected_headlines:
-        _fail(
-            "automatic conclusion headlines do not match the canonical "
-            "small-sample eligibility gate or P6 automatic-fact contract"
-        )
-    expected_gap_groups = {
-        (
-            row.config_hash,
-            row.case_id,
-            row.family,
-            row.algorithm_id,
-            row.algorithm,
-        )
-        for row in canonical_rows
-    }
-    actual_gap_groups = [
-        (
-            row.config_hash,
-            row.case_id,
-            row.family,
-            row.algorithm_id,
-            row.algorithm,
-        )
-        for row in descriptive
-        if row.metric == "optimality_gap"
-    ]
-    if (
-        len(actual_gap_groups) != len(expected_gap_groups)
-        or set(actual_gap_groups) != expected_gap_groups
-    ):
-        _fail(
-            "descriptive statistics must contain exactly one optimality-gap "
-            "row per algorithm variant and case"
-        )
-    expected_greedy_failure = _greedy_failure_statistics(canonical_rows)
-    if [record.to_csv_row() for record in greedy_failure] != [
-        record.to_csv_row() for record in expected_greedy_failure
-    ]:
-        _fail("Greedy failure statistics do not match canonical raw results")
-    expected_local_search_remaining_gap = (
-        _local_search_remaining_gap_statistics(canonical_rows)
+    _validate_gap_group_coverage(
+        canonical_rows,
+        descriptive,
     )
-    if [record.to_csv_row() for record in local_search_remaining_gap] != [
-        record.to_csv_row()
-        for record in expected_local_search_remaining_gap
-    ]:
-        _fail(
-            "Local Search remaining-gap statistics do not match canonical raw "
-            "results"
-        )
-    expected_heuristic_exact_runtime_ratio = (
-        _heuristic_exact_runtime_ratio_statistics(canonical_rows)
+    _validate_greedy_failure_statistics(
+        canonical_rows,
+        greedy_failure,
     )
-    if [record.to_csv_row() for record in heuristic_exact_runtime_ratio] != [
-        record.to_csv_row()
-        for record in expected_heuristic_exact_runtime_ratio
-    ]:
-        _fail(
-            "heuristic/exact runtime-ratio statistics do not match canonical "
-            "raw results"
-        )
-    expected_bnb_node_reduction = _bnb_node_reduction_statistics(
-        canonical_rows
+    _validate_local_search_remaining_gap_statistics(
+        canonical_rows,
+        local_search_remaining_gap,
     )
-    if [record.to_csv_row() for record in bnb_node_reduction] != [
-        record.to_csv_row() for record in expected_bnb_node_reduction
-    ]:
-        _fail(
-            "Branch-and-Bound node-reduction statistics do not match "
-            "canonical raw results"
-        )
-    expected_quality_runtime_pareto = _quality_runtime_pareto_statistics(
-        canonical_rows
+    _validate_heuristic_exact_runtime_ratio_statistics(
+        canonical_rows,
+        heuristic_exact_runtime_ratio,
     )
-    if [record.to_csv_row() for record in quality_runtime_pareto] != [
-        record.to_csv_row() for record in expected_quality_runtime_pareto
-    ]:
-        _fail(
-            "quality-runtime Pareto statistics do not match canonical raw "
-            "results"
-        )
+    _validate_bnb_node_reduction_statistics(
+        canonical_rows,
+        bnb_node_reduction,
+    )
+    _validate_quality_runtime_pareto_statistics(
+        canonical_rows,
+        quality_runtime_pareto,
+    )
     expected_gap_density_association = (
         _gap_density_association_statistics(
             canonical_rows,
