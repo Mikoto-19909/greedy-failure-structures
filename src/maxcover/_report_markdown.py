@@ -309,80 +309,10 @@ def _headline_lines(
     return lines
 
 
-def _write_markdown(
-    path: Path,
-    config_path: Path,
-    config: ExperimentConfig,
-    rows: Sequence[RunRecord],
+def _descriptive_section(
     statistics: Sequence[DescriptiveStatisticsRecord],
-    instances: Sequence[InstanceRecord],
-    greedy_failure_statistics: Sequence[GreedyFailureRecord],
-    local_search_recovery_statistics: Sequence[LocalSearchRecoveryRecord],
-    local_search_remaining_gap_statistics: Sequence[
-        LocalSearchRemainingGapRecord
-    ],
-    heuristic_exact_runtime_ratio_statistics: Sequence[
-        HeuristicExactRuntimeRatioRecord
-    ],
-    bnb_node_reduction_statistics: Sequence[
-        BranchAndBoundNodeReductionRecord
-    ],
-    quality_runtime_pareto_statistics: Sequence[
-        QualityRuntimeParetoRecord
-    ],
-    gap_density_association_statistics: Sequence[
-        GapDensityAssociationRecord
-    ],
-    gap_overlap_association_statistics: Sequence[
-        GapOverlapAssociationRecord
-    ],
-    gap_clustering_association_statistics: Sequence[
-        GapClusteringAssociationRecord
-    ],
-    runtime_set_count_association_statistics: Sequence[
-        RuntimeSetCountAssociationRecord
-    ],
-    runtime_k_association_statistics: Sequence[RuntimeKAssociationRecord],
-    search_nodes_dominated_ratio_association_statistics: Sequence[
-        SearchNodesDominatedRatioAssociationRecord
-    ],
-    confidence_interval_statistics: Sequence[
-        ConfidenceIntervalRecord
-    ],
-    censored_runtime_statistics: Sequence[CensoredRuntimeRecord],
-    reference_statuses: Sequence[ReferenceStatusRecord],
-    reference_coverage_statistics: Sequence[ReferenceCoverageRecord],
-    reference_censoring_bias_statistics: Sequence[
-        ReferenceCensoringBiasRecord
-    ],
-    reference_cutoff_sensitivity_statistics: Sequence[
-        ReferenceCutoffSensitivityRecord
-    ],
-) -> None:
-    lines = [
-        f"# Results: {config.name}",
-        "",
-        "## Reproducibility",
-        "",
-        f'- Configuration: `{config_path.resolve().as_posix()}`',
-        f"- Base seed: `{config.base_seed}`",
-        f"- Repetitions per case: `{config.repetitions}`",
-        f'- Raw algorithm runs: `{len(rows)}`',
-        "- Runtime environment: Python standard library only",
-        "",
-        "## Headline checks",
-        "",
-    ]
-    lines.extend(
-        _headline_lines(
-            config,
-            statistics,
-            instances,
-            confidence_interval_statistics,
-            local_search_recovery_statistics,
-            censored_runtime_statistics,
-        )
-    )
+) -> list[str]:
+    lines: list[str] = []
     lines.extend(
         [
             "",
@@ -426,6 +356,16 @@ def _write_markdown(
             f"{100 * coverage.timeout_rate:.2f}% | "
             f"{coverage.valid_exact_reference_count}/{coverage.instance_count} |"
         )
+    return lines
+
+
+def _reference_section(
+    reference_statuses: Sequence[ReferenceStatusRecord],
+    reference_coverage_statistics: Sequence[ReferenceCoverageRecord],
+    reference_censoring_bias_statistics: Sequence[ReferenceCensoringBiasRecord],
+    reference_cutoff_sensitivity_statistics: Sequence[ReferenceCutoffSensitivityRecord],
+) -> list[str]:
+    lines: list[str] = []
     lines.extend(
         [
             "",
@@ -552,6 +492,13 @@ def _write_markdown(
             f"{100 * cutoff_record.solver_reference_coverage:.2f}% | "
             f"{100 * cutoff_record.effective_reference_coverage:.2f}% |"
         )
+    return lines
+
+
+def _confidence_interval_section(
+    confidence_interval_statistics: Sequence[ConfidenceIntervalRecord],
+) -> list[str]:
+    lines: list[str] = []
     lines.extend(
         [
             "",
@@ -588,6 +535,13 @@ def _write_markdown(
             f"{interval_record.degrees_of_freedom} | {interval_record.interval_status} | "
             f"{interval_record.timeout_count}/{interval_record.error_count} |"
         )
+    return lines
+
+
+def _automatic_conclusion_section(
+    confidence_interval_statistics: Sequence[ConfidenceIntervalRecord],
+) -> list[str]:
+    lines: list[str] = []
     lines.extend(
         [
             "",
@@ -619,6 +573,13 @@ def _write_markdown(
             f"{interval_record.interval_status} | "
             f"{_automatic_conclusion_status(interval_record)} |"
         )
+    return lines
+
+
+def _censored_runtime_section(
+    censored_runtime_statistics: Sequence[CensoredRuntimeRecord],
+) -> list[str]:
+    lines: list[str] = []
     lines.extend(
         [
             "",
@@ -672,6 +633,13 @@ def _write_markdown(
             f"{censored_record.error_affected_instance_count} | "
             f"{censored_record.censoring_status} |"
         )
+    return lines
+
+
+def _greedy_failure_section(
+    greedy_failure_statistics: Sequence[GreedyFailureRecord],
+) -> list[str]:
+    lines: list[str] = []
     lines.extend(
         [
             "",
@@ -706,6 +674,13 @@ def _write_markdown(
             f"{failure_record.timeout_count} | {failure_record.error_count} | "
             f"{failure_record.no_exact_reference_count} |"
         )
+    return lines
+
+
+def _relative_gap_section(
+    statistics: Sequence[DescriptiveStatisticsRecord],
+) -> list[str]:
+    lines: list[str] = []
     lines.extend(
         [
             "",
@@ -747,6 +722,13 @@ def _write_markdown(
             f"{mean_gap} | {max_gap} | {gap_record.timeout_count} | "
             f"{gap_record.error_count} |"
         )
+    return lines
+
+
+def _local_search_recovery_section(
+    local_search_recovery_statistics: Sequence[LocalSearchRecoveryRecord],
+) -> list[str]:
+    lines: list[str] = []
     lines.extend(
         [
             "",
@@ -786,6 +768,13 @@ def _write_markdown(
             f"{recovery_record.local_search_timeout_count}/"
             f"{recovery_record.local_search_error_count} |"
         )
+    return lines
+
+
+def _local_search_remaining_gap_section(
+    local_search_remaining_gap_statistics: Sequence[LocalSearchRemainingGapRecord],
+) -> list[str]:
+    lines: list[str] = []
     lines.extend(
         [
             "",
@@ -826,6 +815,13 @@ def _write_markdown(
             f"{remaining_gap_record.zero_remaining_gap_count}/"
             f"{remaining_gap_record.eligible_pair_count} |"
         )
+    return lines
+
+
+def _runtime_ratio_section(
+    heuristic_exact_runtime_ratio_statistics: Sequence[HeuristicExactRuntimeRatioRecord],
+) -> list[str]:
+    lines: list[str] = []
     lines.extend(
         [
             "",
@@ -869,6 +865,13 @@ def _write_markdown(
             f"{runtime_ratio_record.exact_error_count} | "
             f"{runtime_ratio_record.zero_exact_runtime_count} |"
         )
+    return lines
+
+
+def _node_reduction_section(
+    bnb_node_reduction_statistics: Sequence[BranchAndBoundNodeReductionRecord],
+) -> list[str]:
+    lines: list[str] = []
     lines.extend(
         [
             "",
@@ -921,6 +924,13 @@ def _write_markdown(
             f"{node_reduction_record.enhanced_error_count} | "
             f"{node_reduction_record.zero_baseline_nodes_count} |"
         )
+    return lines
+
+
+def _quality_runtime_pareto_section(
+    quality_runtime_pareto_statistics: Sequence[QualityRuntimeParetoRecord],
+) -> list[str]:
+    lines: list[str] = []
     lines.extend(
         [
             "",
@@ -972,6 +982,13 @@ def _write_markdown(
             f"{pareto_record.zero_optimum_count}/"
             f"{pareto_record.no_exact_reference_count} |"
         )
+    return lines
+
+
+def _gap_density_association_section(
+    gap_density_association_statistics: Sequence[GapDensityAssociationRecord],
+) -> list[str]:
+    lines: list[str] = []
     lines.extend(
         [
             "",
@@ -1030,6 +1047,13 @@ def _write_markdown(
             f"{density_record.no_exact_reference_count}/"
             f"{density_record.unusable_result_count} |"
         )
+    return lines
+
+
+def _gap_overlap_association_section(
+    gap_overlap_association_statistics: Sequence[GapOverlapAssociationRecord],
+) -> list[str]:
+    lines: list[str] = []
     lines.extend(
         [
             "",
@@ -1092,6 +1116,13 @@ def _write_markdown(
             f"{overlap_record.unusable_result_count}/"
             f"{overlap_record.missing_overlap_predictor_count} |"
         )
+    return lines
+
+
+def _gap_clustering_association_section(
+    gap_clustering_association_statistics: Sequence[GapClusteringAssociationRecord],
+) -> list[str]:
+    lines: list[str] = []
     lines.extend(
         [
             "",
@@ -1157,6 +1188,13 @@ def _write_markdown(
             f"{clustering_record.unusable_result_count}/"
             f"{clustering_record.usable_gap_instance_count} |"
         )
+    return lines
+
+
+def _runtime_set_count_association_section(
+    runtime_set_count_association_statistics: Sequence[RuntimeSetCountAssociationRecord],
+) -> list[str]:
+    lines: list[str] = []
     lines.extend(
         [
             "",
@@ -1216,6 +1254,13 @@ def _write_markdown(
             f"{runtime_set_count_record.error_count} | "
             f"{runtime_set_count_record.incomplete_runtime_instance_count} |"
         )
+    return lines
+
+
+def _runtime_k_association_section(
+    runtime_k_association_statistics: Sequence[RuntimeKAssociationRecord],
+) -> list[str]:
+    lines: list[str] = []
     lines.extend(
         [
             "",
@@ -1276,6 +1321,13 @@ def _write_markdown(
             f"{runtime_k_record.error_count} | "
             f"{runtime_k_record.incomplete_runtime_instance_count} |"
         )
+    return lines
+
+
+def _search_nodes_association_section(
+    search_nodes_dominated_ratio_association_statistics: Sequence[SearchNodesDominatedRatioAssociationRecord],
+) -> list[str]:
+    lines: list[str] = []
     lines.extend(
         [
             "",
@@ -1333,6 +1385,124 @@ def _write_markdown(
             f"{node_association_record.optimal_run_count}/{node_association_record.timeout_count}/"
             f"{node_association_record.error_count} |"
         )
+    return lines
+
+
+def _write_markdown(
+    path: Path,
+    config_path: Path,
+    config: ExperimentConfig,
+    rows: Sequence[RunRecord],
+    statistics: Sequence[DescriptiveStatisticsRecord],
+    instances: Sequence[InstanceRecord],
+    greedy_failure_statistics: Sequence[GreedyFailureRecord],
+    local_search_recovery_statistics: Sequence[LocalSearchRecoveryRecord],
+    local_search_remaining_gap_statistics: Sequence[
+        LocalSearchRemainingGapRecord
+    ],
+    heuristic_exact_runtime_ratio_statistics: Sequence[
+        HeuristicExactRuntimeRatioRecord
+    ],
+    bnb_node_reduction_statistics: Sequence[
+        BranchAndBoundNodeReductionRecord
+    ],
+    quality_runtime_pareto_statistics: Sequence[
+        QualityRuntimeParetoRecord
+    ],
+    gap_density_association_statistics: Sequence[
+        GapDensityAssociationRecord
+    ],
+    gap_overlap_association_statistics: Sequence[
+        GapOverlapAssociationRecord
+    ],
+    gap_clustering_association_statistics: Sequence[
+        GapClusteringAssociationRecord
+    ],
+    runtime_set_count_association_statistics: Sequence[
+        RuntimeSetCountAssociationRecord
+    ],
+    runtime_k_association_statistics: Sequence[RuntimeKAssociationRecord],
+    search_nodes_dominated_ratio_association_statistics: Sequence[
+        SearchNodesDominatedRatioAssociationRecord
+    ],
+    confidence_interval_statistics: Sequence[
+        ConfidenceIntervalRecord
+    ],
+    censored_runtime_statistics: Sequence[CensoredRuntimeRecord],
+    reference_statuses: Sequence[ReferenceStatusRecord],
+    reference_coverage_statistics: Sequence[ReferenceCoverageRecord],
+    reference_censoring_bias_statistics: Sequence[
+        ReferenceCensoringBiasRecord
+    ],
+    reference_cutoff_sensitivity_statistics: Sequence[
+        ReferenceCutoffSensitivityRecord
+    ],
+) -> None:
+    lines = [
+        f"# Results: {config.name}",
+        "",
+        "## Reproducibility",
+        "",
+        f'- Configuration: `{config_path.resolve().as_posix()}`',
+        f"- Base seed: `{config.base_seed}`",
+        f"- Repetitions per case: `{config.repetitions}`",
+        f'- Raw algorithm runs: `{len(rows)}`',
+        "- Runtime environment: Python standard library only",
+        "",
+        "## Headline checks",
+        "",
+    ]
+    lines.extend(
+        _headline_lines(
+            config,
+            statistics,
+            instances,
+            confidence_interval_statistics,
+            local_search_recovery_statistics,
+            censored_runtime_statistics,
+        )
+    )
+    lines.extend(_descriptive_section(statistics))
+    lines.extend(
+        _reference_section(
+            reference_statuses,
+            reference_coverage_statistics,
+            reference_censoring_bias_statistics,
+            reference_cutoff_sensitivity_statistics,
+        )
+    )
+    lines.extend(_confidence_interval_section(confidence_interval_statistics))
+    lines.extend(_automatic_conclusion_section(confidence_interval_statistics))
+    lines.extend(_censored_runtime_section(censored_runtime_statistics))
+    lines.extend(_greedy_failure_section(greedy_failure_statistics))
+    lines.extend(_relative_gap_section(statistics))
+    lines.extend(_local_search_recovery_section(local_search_recovery_statistics))
+    lines.extend(
+        _local_search_remaining_gap_section(
+            local_search_remaining_gap_statistics,
+        )
+    )
+    lines.extend(_runtime_ratio_section(heuristic_exact_runtime_ratio_statistics))
+    lines.extend(_node_reduction_section(bnb_node_reduction_statistics))
+    lines.extend(_quality_runtime_pareto_section(quality_runtime_pareto_statistics))
+    lines.extend(_gap_density_association_section(gap_density_association_statistics))
+    lines.extend(_gap_overlap_association_section(gap_overlap_association_statistics))
+    lines.extend(
+        _gap_clustering_association_section(
+            gap_clustering_association_statistics,
+        )
+    )
+    lines.extend(
+        _runtime_set_count_association_section(
+            runtime_set_count_association_statistics,
+        )
+    )
+    lines.extend(_runtime_k_association_section(runtime_k_association_statistics))
+    lines.extend(
+        _search_nodes_association_section(
+            search_nodes_dominated_ratio_association_statistics,
+        )
+    )
     lines.extend(
         [
             "",
