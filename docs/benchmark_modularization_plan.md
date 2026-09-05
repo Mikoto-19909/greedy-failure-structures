@@ -2,8 +2,8 @@
 
 Restored from the preserved research stash and reconciled with the main branch
 at `0dd9de338c07df312e268f916e630aceebb11f4a` on 2026-09-05. The research
-branch and the other stashed files remain separate. B0 through B3 are complete;
-B4 begins with a separate statistics type prerequisite.
+branch and the other stashed files remain separate. B0 through B4 are complete;
+the optional B5 is cancelled after reviewing the completed runner.
 
 [Preparation PR #27](https://github.com/Mikoto-19909/greedy-failure-structures/pull/27)
 restored this document, added its index entry, and reconciled the linked plans'
@@ -225,6 +225,18 @@ including empty samples, missing references, censoring, zero gaps, constant
 structure and identity conflicts. The moved implementation produces identical
 result bytes for every recorded successful or rejecting call. These function
 fixtures complement the complete B0 checkpoint and do not add research samples.
+B4 passed independent reverse review and all required PR checks before merge.
+
+### B5 assessment: cancelled
+
+After B4 merged at `2a3fd189baf13743ce94837823db7719a67bb9a4`, the completed
+runner was assessed against the optional B5 criteria. Its configuration/resume,
+execution/checkpoint, statistics writing, report publication and Manifest stages
+are explicit, and summarize reuses that same runner. Further writer grouping
+would require broad result interfaces; extracting the single execution loop
+would add shared-state parameters without removing duplicated control flow.
+The current small helper boundaries are sufficient, so B5 is cancelled for this
+round. The existing exception, checkpoint and publication order stays intact.
 
 ## Purpose
 

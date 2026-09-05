@@ -36,6 +36,7 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from maxcover.algorithms import ALGORITHMS  # noqa: E402
 from maxcover.benchmark import (  # noqa: E402
+    BenchmarkPlan,
     _bnb_node_reduction_statistics,
     _canonical_instance_records,
     _canonical_run_records,
@@ -62,7 +63,7 @@ from maxcover.benchmark import (  # noqa: E402
     _tasks_for_config,
     plan_benchmark,
 )
-from maxcover.config import load_config  # noqa: E402
+from maxcover.config import ExperimentConfig, load_config  # noqa: E402
 from maxcover.contracts import (  # noqa: E402
     AUTOMATIC_CONCLUSION_CONTRACT_SCHEMA_VERSION,
     AUTOMATIC_CONCLUSION_MINIMUM_SAMPLE_COUNT,
@@ -549,29 +550,9 @@ def _validate_manifest(output: Path, manifest: dict[str, object]) -> None:
             _fail(f"SHA-256 mismatch for {filename}")
 
 
-def validate(config_path: Path, output: Path) -> None:
-    config = load_config(config_path)
-    plan = plan_benchmark(config)
-    manifest_path = output / "manifest.json"
-    if not manifest_path.is_file():
-        _fail("manifest.json does not exist")
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    if not isinstance(manifest, dict):
-        _fail("manifest root must be an object")
-    _validate_manifest(output, manifest)
-
-    configuration = manifest.get("configuration")
-    execution = manifest.get("execution")
-    if not isinstance(configuration, dict) or not isinstance(execution, dict):
-        _fail("manifest configuration and execution sections must be objects")
-    expected_hash = config_hash(config)
-    if configuration.get("config_hash") != expected_hash:
-        _fail("manifest configuration hash does not match the input config")
-    _validate_manifest_algorithm_identity(config, manifest)
-    if execution.get("planned_runs") != plan.algorithm_run_count:
-        _fail("manifest planned run count does not match the execution plan")
-    if execution.get("planned_instances") != plan.instance_count:
-        _fail("manifest planned instance count does not match the execution plan")
+def _validate_analysis_contract(
+    manifest: dict[str, object],
+) -> None:
     analysis_contract = manifest.get("analysis_contract")
     expected_analysis_contract = {
         "schema_version": 1,
@@ -585,6 +566,11 @@ def validate(config_path: Path, output: Path) -> None:
     }
     if analysis_contract != expected_analysis_contract:
         _fail("manifest analysis contract is missing or inconsistent")
+
+
+def _validate_p6_chart_contract(
+    manifest: dict[str, object],
+) -> None:
     expected_p6_chart_contract = {
         "schema_version": 1,
         "availability": "always",
@@ -630,6 +616,11 @@ def validate(config_path: Path, output: Path) -> None:
     }
     if manifest.get("p6_chart_contract") != expected_p6_chart_contract:
         _fail("manifest P6 chart contract is missing or inconsistent")
+
+
+def _validate_reference_coverage_contract(
+    manifest: dict[str, object],
+) -> None:
     expected_reference_coverage_contract = {
         "schema_version": 1,
         "status_artifact": "reference_status.csv",
@@ -668,6 +659,11 @@ def validate(config_path: Path, output: Path) -> None:
     }
     if manifest.get("reference_coverage_contract") != expected_reference_coverage_contract:
         _fail("manifest reference-coverage contract is missing or inconsistent")
+
+
+def _validate_confidence_interval_contract(
+    manifest: dict[str, object],
+) -> None:
     confidence_interval_contract = manifest.get(
         "confidence_interval_contract"
     )
@@ -717,6 +713,11 @@ def validate(config_path: Path, output: Path) -> None:
         _fail(
             "manifest confidence-interval contract is missing or inconsistent"
         )
+
+
+def _validate_automatic_conclusion_contract(
+    manifest: dict[str, object],
+) -> None:
     automatic_conclusion_contract = manifest.get(
         "automatic_conclusion_contract"
     )
@@ -751,6 +752,11 @@ def validate(config_path: Path, output: Path) -> None:
         _fail(
             "manifest automatic-conclusion contract is missing or inconsistent"
         )
+
+
+def _validate_p6_automatic_fact_contract(
+    manifest: dict[str, object],
+) -> None:
     p6_automatic_fact_contract = manifest.get("p6_automatic_fact_contract")
     expected_p6_automatic_fact_contract = {
         "schema_version": 1,
@@ -787,6 +793,11 @@ def validate(config_path: Path, output: Path) -> None:
     }
     if p6_automatic_fact_contract != expected_p6_automatic_fact_contract:
         _fail("manifest P6 automatic-fact contract is missing or inconsistent")
+
+
+def _validate_censored_runtime_contract(
+    manifest: dict[str, object],
+) -> None:
     censored_runtime_contract = manifest.get("censored_runtime_contract")
     expected_censored_runtime_contract = {
         "schema_version": 1,
@@ -829,6 +840,11 @@ def validate(config_path: Path, output: Path) -> None:
         _fail(
             "manifest censored-runtime contract is missing or inconsistent"
         )
+
+
+def _validate_optimality_gap_contract(
+    manifest: dict[str, object],
+) -> None:
     optimality_gap_contract = manifest.get("optimality_gap_contract")
     expected_optimality_gap_contract = {
         "schema_version": 1,
@@ -868,6 +884,11 @@ def validate(config_path: Path, output: Path) -> None:
     }
     if optimality_gap_contract != expected_optimality_gap_contract:
         _fail("manifest optimality-gap contract is missing or inconsistent")
+
+
+def _validate_greedy_failure_contract(
+    manifest: dict[str, object],
+) -> None:
     greedy_failure_contract = manifest.get("greedy_failure_contract")
     expected_greedy_failure_contract = {
         "schema_version": 1,
@@ -891,6 +912,11 @@ def validate(config_path: Path, output: Path) -> None:
     }
     if greedy_failure_contract != expected_greedy_failure_contract:
         _fail("manifest Greedy failure contract is missing or inconsistent")
+
+
+def _validate_local_search_recovery_contract(
+    manifest: dict[str, object],
+) -> None:
     local_search_recovery_contract = manifest.get(
         "local_search_recovery_contract"
     )
@@ -934,6 +960,11 @@ def validate(config_path: Path, output: Path) -> None:
     }
     if local_search_recovery_contract != expected_local_search_recovery_contract:
         _fail("manifest Local Search recovery contract is missing or inconsistent")
+
+
+def _validate_local_search_remaining_gap_contract(
+    manifest: dict[str, object],
+) -> None:
     local_search_remaining_gap_contract = manifest.get(
         "local_search_remaining_gap_contract"
     )
@@ -986,6 +1017,11 @@ def validate(config_path: Path, output: Path) -> None:
             "manifest Local Search remaining-gap contract is missing or "
             "inconsistent"
         )
+
+
+def _validate_heuristic_exact_runtime_ratio_contract(
+    manifest: dict[str, object],
+) -> None:
     heuristic_exact_runtime_ratio_contract = manifest.get(
         "heuristic_exact_runtime_ratio_contract"
     )
@@ -1030,6 +1066,11 @@ def validate(config_path: Path, output: Path) -> None:
             "manifest heuristic/exact runtime-ratio contract is missing or "
             "inconsistent"
         )
+
+
+def _validate_bnb_node_reduction_contract(
+    manifest: dict[str, object],
+) -> None:
     bnb_node_reduction_contract = manifest.get(
         "bnb_node_reduction_contract"
     )
@@ -1074,6 +1115,11 @@ def validate(config_path: Path, output: Path) -> None:
             "manifest Branch-and-Bound node-reduction contract is missing or "
             "inconsistent"
         )
+
+
+def _validate_quality_runtime_pareto_contract(
+    manifest: dict[str, object],
+) -> None:
     quality_runtime_pareto_contract = manifest.get(
         "quality_runtime_pareto_contract"
     )
@@ -1126,6 +1172,11 @@ def validate(config_path: Path, output: Path) -> None:
         _fail(
             "manifest quality-runtime Pareto contract is missing or inconsistent"
         )
+
+
+def _validate_gap_density_association_contract(
+    manifest: dict[str, object],
+) -> None:
     gap_density_association_contract = manifest.get(
         "gap_density_association_contract"
     )
@@ -1195,6 +1246,11 @@ def validate(config_path: Path, output: Path) -> None:
             "manifest gap-density association contract is missing or "
             "inconsistent"
         )
+
+
+def _validate_gap_overlap_association_contract(
+    manifest: dict[str, object],
+) -> None:
     gap_overlap_association_contract = manifest.get(
         "gap_overlap_association_contract"
     )
@@ -1269,6 +1325,11 @@ def validate(config_path: Path, output: Path) -> None:
             "manifest gap-overlap association contract is missing or "
             "inconsistent"
         )
+
+
+def _validate_gap_clustering_association_contract(
+    manifest: dict[str, object],
+) -> None:
     gap_clustering_association_contract = manifest.get(
         "gap_clustering_association_contract"
     )
@@ -1353,6 +1414,11 @@ def validate(config_path: Path, output: Path) -> None:
             "manifest gap-clustering association contract is missing or "
             "inconsistent"
         )
+
+
+def _validate_runtime_set_count_association_contract(
+    manifest: dict[str, object],
+) -> None:
     runtime_set_count_association_contract = manifest.get(
         "runtime_set_count_association_contract"
     )
@@ -1428,6 +1494,11 @@ def validate(config_path: Path, output: Path) -> None:
             "manifest runtime-set-count association contract is missing or "
             "inconsistent"
         )
+
+
+def _validate_runtime_k_association_contract(
+    manifest: dict[str, object],
+) -> None:
     runtime_k_association_contract = manifest.get(
         "runtime_k_association_contract"
     )
@@ -1499,6 +1570,11 @@ def validate(config_path: Path, output: Path) -> None:
         _fail(
             "manifest runtime-k association contract is missing or inconsistent"
         )
+
+
+def _validate_search_nodes_dominated_ratio_contract(
+    manifest: dict[str, object],
+) -> None:
     search_nodes_dominated_ratio_contract = manifest.get(
         "search_nodes_dominated_ratio_association_contract"
     )
@@ -1572,6 +1648,550 @@ def validate(config_path: Path, output: Path) -> None:
             "manifest search-nodes dominated-ratio association contract is "
             "missing or inconsistent"
         )
+
+
+def _validate_record_consistency(
+    config: ExperimentConfig,
+    plan: BenchmarkPlan,
+    expected_hash: str,
+    instances: list[InstanceRecord],
+    rows: list[RunRecord],
+    summaries: list[SummaryRecord],
+) -> None:
+    if len(rows) != plan.algorithm_run_count:
+        _fail("raw result count does not match the execution plan")
+    if len(instances) != plan.instance_count:
+        _fail("instance record count does not match the execution plan")
+    _validate_run_identity(config, expected_hash, rows)
+    instance_keys = {
+        (record.case_id, record.repetition, record.instance_id)
+        for record in instances
+    }
+    if len(instance_keys) != len(instances):
+        _fail("instances.csv contains duplicate composite instance keys")
+    if {record.config_hash for record in instances} != {expected_hash}:
+        _fail("instance records contain an unexpected configuration hash")
+    if len({row.run_id for row in rows}) != len(rows):
+        _fail("raw results contain duplicate run_id values")
+    if {row.config_hash for row in rows} != {expected_hash}:
+        _fail("raw results contain an unexpected configuration hash")
+    if {row.case_id for row in rows} != set(plan.case_ids):
+        _fail("raw result case IDs do not match the execution plan")
+    if any(
+        (row.case_id, row.repetition, row.instance_id) not in instance_keys
+        for row in rows
+    ):
+        _fail("a raw result does not link to exactly one instance record")
+
+    bad_statuses = {
+        row.status.value
+        for row in rows
+        if row.status in {SolutionStatus.ERROR, SolutionStatus.TIMEOUT}
+    }
+    if bad_statuses:
+        _fail(f"starter benchmark produced non-accepted statuses: {sorted(bad_statuses)}")
+    if any(row.coverage is None for row in rows):
+        _fail("starter benchmark contains a result without a feasible coverage value")
+
+    instance_ids = {row.instance_id for row in rows}
+    referenced_ids = {row.instance_id for row in rows if row.optimum is not None}
+    if referenced_ids != instance_ids:
+        _fail("not every starter instance has an exact optimum reference")
+    raw_groups = Counter(
+        (row.case, row.family, row.algorithm_id, row.algorithm) for row in rows
+    )
+    summary_groups = {
+        (summary.case, summary.family, summary.algorithm_id, summary.algorithm): summary.runs
+        for summary in summaries
+    }
+    if summary_groups != dict(raw_groups):
+        _fail("summary groups or run counts do not match the raw results")
+
+
+def _validate_canonical_records(
+    config: ExperimentConfig,
+    rows: list[RunRecord],
+    instances: list[InstanceRecord],
+) -> tuple[list[RunRecord], list[InstanceRecord]]:
+    canonical_rows = _canonical_run_records(
+        _normalize_optima(rows, instances)
+    )
+    canonical_instances = _canonical_instance_records(instances)
+    _validate_lazy_greedy_rows(config, canonical_rows)
+    if [row.to_csv_row() for row in rows] != [
+        row.to_csv_row() for row in canonical_rows
+    ]:
+        _fail(
+            "raw results do not match normalized exact references and "
+            "canonical precision"
+        )
+    return canonical_rows, canonical_instances
+
+
+def _validate_descriptive_statistics(
+    canonical_rows: list[RunRecord],
+    descriptive: list[DescriptiveStatisticsRecord],
+) -> list[DescriptiveStatisticsRecord]:
+    expected_descriptive = _descriptive_statistics(canonical_rows)
+    if [record.to_csv_row() for record in descriptive] != [
+        record.to_csv_row() for record in expected_descriptive
+    ]:
+        _fail("descriptive statistics do not match canonical raw results")
+    return expected_descriptive
+
+
+def _validate_confidence_interval_statistics(
+    expected_descriptive: list[DescriptiveStatisticsRecord],
+    confidence_intervals: list[ConfidenceIntervalRecord],
+) -> list[ConfidenceIntervalRecord]:
+    expected_confidence_intervals = _confidence_interval_statistics(
+        expected_descriptive
+    )
+    if [record.to_csv_row() for record in confidence_intervals] != [
+        record.to_csv_row() for record in expected_confidence_intervals
+    ]:
+        _fail(
+            "confidence intervals do not match canonical descriptive "
+            "statistics recomputed from raw results"
+        )
+    return expected_confidence_intervals
+
+
+def _validate_censored_runtime_statistics(
+    canonical_rows: list[RunRecord],
+    censored_runtime: list[CensoredRuntimeRecord],
+) -> list[CensoredRuntimeRecord]:
+    expected_censored_runtime = _censored_runtime_statistics(canonical_rows)
+    if [record.to_csv_row() for record in censored_runtime] != [
+        record.to_csv_row() for record in expected_censored_runtime
+    ]:
+        _fail(
+            "censored-runtime statistics do not match canonical raw results"
+        )
+    return expected_censored_runtime
+
+
+def _validate_reference_statistics(
+    config: ExperimentConfig,
+    canonical_rows: list[RunRecord],
+    canonical_instances: list[InstanceRecord],
+    reference_statuses: list[ReferenceStatusRecord],
+    reference_coverage: list[ReferenceCoverageRecord],
+    reference_censoring_bias: list[ReferenceCensoringBiasRecord],
+    reference_cutoff_sensitivity: list[ReferenceCutoffSensitivityRecord],
+) -> None:
+    expected_reference_statuses = _reference_status_records(
+        config,
+        canonical_rows,
+        canonical_instances,
+    )
+    if [record.to_csv_row() for record in reference_statuses] != [
+        record.to_csv_row() for record in expected_reference_statuses
+    ]:
+        _fail("reference statuses do not match canonical instances and raw results")
+    expected_reference_coverage = _reference_coverage_statistics(
+        expected_reference_statuses
+    )
+    if [record.to_csv_row() for record in reference_coverage] != [
+        record.to_csv_row() for record in expected_reference_coverage
+    ]:
+        _fail("reference coverage does not use all generated instances")
+    expected_reference_censoring_bias = _reference_censoring_bias_statistics(
+        expected_reference_statuses,
+        canonical_instances,
+    )
+    if [record.to_csv_row() for record in reference_censoring_bias] != [
+        record.to_csv_row() for record in expected_reference_censoring_bias
+    ]:
+        _fail("reference censoring-bias comparisons do not match canonical evidence")
+    expected_reference_cutoff_sensitivity = (
+        _reference_cutoff_sensitivity_statistics(
+            config,
+            expected_reference_statuses,
+        )
+    )
+    if [record.to_csv_row() for record in reference_cutoff_sensitivity] != [
+        record.to_csv_row() for record in expected_reference_cutoff_sensitivity
+    ]:
+        _fail("reference cutoff sensitivity does not match exact-solver statuses")
+
+
+def _validate_local_search_recovery_statistics(
+    canonical_rows: list[RunRecord],
+    local_search_recovery: list[LocalSearchRecoveryRecord],
+) -> list[LocalSearchRecoveryRecord]:
+    expected_local_search_recovery = _local_search_recovery_statistics(
+        canonical_rows
+    )
+    if [record.to_csv_row() for record in local_search_recovery] != [
+        record.to_csv_row() for record in expected_local_search_recovery
+    ]:
+        _fail(
+            "Local Search recovery statistics do not match canonical raw results"
+        )
+    return expected_local_search_recovery
+
+
+def _validate_report_headlines(
+    output: Path,
+    config: ExperimentConfig,
+    expected_descriptive: list[DescriptiveStatisticsRecord],
+    instances: list[InstanceRecord],
+    expected_confidence_intervals: list[ConfidenceIntervalRecord],
+    expected_local_search_recovery: list[LocalSearchRecoveryRecord],
+    expected_censored_runtime: list[CensoredRuntimeRecord],
+) -> None:
+    report = (output / "results_summary.md").read_text(encoding="utf-8")
+    actual_headlines = _markdown_section(
+        report,
+        "## Headline checks",
+        "## P5.1 descriptive aggregate",
+    )
+    expected_headlines = _headline_lines(
+        config,
+        expected_descriptive,
+        instances,
+        expected_confidence_intervals,
+        expected_local_search_recovery,
+        expected_censored_runtime,
+    )
+    if actual_headlines != expected_headlines:
+        _fail(
+            "automatic conclusion headlines do not match the canonical "
+            "small-sample eligibility gate or P6 automatic-fact contract"
+        )
+
+
+def _validate_gap_group_coverage(
+    canonical_rows: list[RunRecord],
+    descriptive: list[DescriptiveStatisticsRecord],
+) -> None:
+    expected_gap_groups = {
+        (
+            row.config_hash,
+            row.case_id,
+            row.family,
+            row.algorithm_id,
+            row.algorithm,
+        )
+        for row in canonical_rows
+    }
+    actual_gap_groups = [
+        (
+            row.config_hash,
+            row.case_id,
+            row.family,
+            row.algorithm_id,
+            row.algorithm,
+        )
+        for row in descriptive
+        if row.metric == "optimality_gap"
+    ]
+    if (
+        len(actual_gap_groups) != len(expected_gap_groups)
+        or set(actual_gap_groups) != expected_gap_groups
+    ):
+        _fail(
+            "descriptive statistics must contain exactly one optimality-gap "
+            "row per algorithm variant and case"
+        )
+
+
+def _validate_greedy_failure_statistics(
+    canonical_rows: list[RunRecord],
+    greedy_failure: list[GreedyFailureRecord],
+) -> None:
+    expected_greedy_failure = _greedy_failure_statistics(canonical_rows)
+    if [record.to_csv_row() for record in greedy_failure] != [
+        record.to_csv_row() for record in expected_greedy_failure
+    ]:
+        _fail("Greedy failure statistics do not match canonical raw results")
+
+
+def _validate_local_search_remaining_gap_statistics(
+    canonical_rows: list[RunRecord],
+    local_search_remaining_gap: list[LocalSearchRemainingGapRecord],
+) -> None:
+    expected_local_search_remaining_gap = (
+        _local_search_remaining_gap_statistics(canonical_rows)
+    )
+    if [record.to_csv_row() for record in local_search_remaining_gap] != [
+        record.to_csv_row()
+        for record in expected_local_search_remaining_gap
+    ]:
+        _fail(
+            "Local Search remaining-gap statistics do not match canonical raw "
+            "results"
+        )
+
+
+def _validate_heuristic_exact_runtime_ratio_statistics(
+    canonical_rows: list[RunRecord],
+    heuristic_exact_runtime_ratio: list[HeuristicExactRuntimeRatioRecord],
+) -> None:
+    expected_heuristic_exact_runtime_ratio = (
+        _heuristic_exact_runtime_ratio_statistics(canonical_rows)
+    )
+    if [record.to_csv_row() for record in heuristic_exact_runtime_ratio] != [
+        record.to_csv_row()
+        for record in expected_heuristic_exact_runtime_ratio
+    ]:
+        _fail(
+            "heuristic/exact runtime-ratio statistics do not match canonical "
+            "raw results"
+        )
+
+
+def _validate_bnb_node_reduction_statistics(
+    canonical_rows: list[RunRecord],
+    bnb_node_reduction: list[BranchAndBoundNodeReductionRecord],
+) -> None:
+    expected_bnb_node_reduction = _bnb_node_reduction_statistics(
+        canonical_rows
+    )
+    if [record.to_csv_row() for record in bnb_node_reduction] != [
+        record.to_csv_row() for record in expected_bnb_node_reduction
+    ]:
+        _fail(
+            "Branch-and-Bound node-reduction statistics do not match "
+            "canonical raw results"
+        )
+
+
+def _validate_quality_runtime_pareto_statistics(
+    canonical_rows: list[RunRecord],
+    quality_runtime_pareto: list[QualityRuntimeParetoRecord],
+) -> None:
+    expected_quality_runtime_pareto = _quality_runtime_pareto_statistics(
+        canonical_rows
+    )
+    if [record.to_csv_row() for record in quality_runtime_pareto] != [
+        record.to_csv_row() for record in expected_quality_runtime_pareto
+    ]:
+        _fail(
+            "quality-runtime Pareto statistics do not match canonical raw "
+            "results"
+        )
+
+
+def _validate_gap_density_association_statistics(
+    canonical_rows: list[RunRecord],
+    instances: list[InstanceRecord],
+    gap_density_association: list[GapDensityAssociationRecord],
+) -> None:
+    expected_gap_density_association = (
+        _gap_density_association_statistics(
+            canonical_rows,
+            _canonical_instance_records(instances),
+        )
+    )
+    if [record.to_csv_row() for record in gap_density_association] != [
+        record.to_csv_row()
+        for record in expected_gap_density_association
+    ]:
+        _fail(
+            "gap-density association statistics do not match canonical "
+            "instance and raw evidence"
+        )
+
+
+def _validate_gap_overlap_association_statistics(
+    canonical_rows: list[RunRecord],
+    instances: list[InstanceRecord],
+    gap_overlap_association: list[GapOverlapAssociationRecord],
+) -> None:
+    expected_gap_overlap_association = (
+        _gap_overlap_association_statistics(
+            canonical_rows,
+            _canonical_instance_records(instances),
+        )
+    )
+    if [record.to_csv_row() for record in gap_overlap_association] != [
+        record.to_csv_row()
+        for record in expected_gap_overlap_association
+    ]:
+        _fail(
+            "gap-overlap association statistics do not match canonical "
+            "instance and raw evidence"
+        )
+
+
+def _validate_gap_clustering_association_statistics(
+    canonical_rows: list[RunRecord],
+    instances: list[InstanceRecord],
+    gap_clustering_association: list[GapClusteringAssociationRecord],
+) -> None:
+    expected_gap_clustering_association = (
+        _gap_clustering_association_statistics(
+            canonical_rows,
+            _canonical_instance_records(instances),
+        )
+    )
+    if [record.to_csv_row() for record in gap_clustering_association] != [
+        record.to_csv_row()
+        for record in expected_gap_clustering_association
+    ]:
+        _fail(
+            "gap-clustering association statistics do not match canonical "
+            "instance and raw evidence"
+        )
+
+
+def _validate_runtime_set_count_association_statistics(
+    canonical_rows: list[RunRecord],
+    instances: list[InstanceRecord],
+    runtime_set_count_association: list[RuntimeSetCountAssociationRecord],
+) -> None:
+    expected_runtime_set_count_association = (
+        _runtime_set_count_association_statistics(
+            canonical_rows,
+            _canonical_instance_records(instances),
+        )
+    )
+    if [record.to_csv_row() for record in runtime_set_count_association] != [
+        record.to_csv_row()
+        for record in expected_runtime_set_count_association
+    ]:
+        _fail(
+            "runtime-set-count association statistics do not match canonical "
+            "instance and raw evidence"
+        )
+
+
+def _validate_runtime_k_association_statistics(
+    canonical_rows: list[RunRecord],
+    instances: list[InstanceRecord],
+    runtime_k_association: list[RuntimeKAssociationRecord],
+) -> None:
+    expected_runtime_k_association = _runtime_k_association_statistics(
+        canonical_rows,
+        _canonical_instance_records(instances),
+    )
+    if [record.to_csv_row() for record in runtime_k_association] != [
+        record.to_csv_row() for record in expected_runtime_k_association
+    ]:
+        _fail(
+            "runtime-k association statistics do not match canonical instance "
+            "and raw evidence"
+        )
+
+
+def _validate_search_nodes_dominated_ratio_association_statistics(
+    canonical_rows: list[RunRecord],
+    instances: list[InstanceRecord],
+    search_nodes_dominated_ratio_association: list[SearchNodesDominatedRatioAssociationRecord],
+) -> None:
+    expected_search_nodes_dominated_ratio_association = (
+        _search_nodes_dominated_ratio_association_statistics(
+            canonical_rows,
+            _canonical_instance_records(instances),
+        )
+    )
+    if [
+        record.to_csv_row()
+        for record in search_nodes_dominated_ratio_association
+    ] != [
+        record.to_csv_row()
+        for record in expected_search_nodes_dominated_ratio_association
+    ]:
+        _fail(
+            "search-nodes dominated-ratio association statistics do not match "
+            "canonical instance and raw evidence"
+        )
+
+
+def _validate_report_charts(
+    output: Path,
+    descriptive: list[DescriptiveStatisticsRecord],
+    gap_density_association: list[GapDensityAssociationRecord],
+    gap_overlap_association: list[GapOverlapAssociationRecord],
+    gap_clustering_association: list[GapClusteringAssociationRecord],
+    local_search_recovery: list[LocalSearchRecoveryRecord],
+    quality_runtime_pareto: list[QualityRuntimeParetoRecord],
+    runtime_set_count_association: list[RuntimeSetCountAssociationRecord],
+    runtime_k_association: list[RuntimeKAssociationRecord],
+    search_nodes_dominated_ratio_association: list[SearchNodesDominatedRatioAssociationRecord],
+    censored_runtime: list[CensoredRuntimeRecord],
+    reference_statuses: list[ReferenceStatusRecord],
+) -> None:
+    expected_charts = {
+        "gap_by_case.svg": _render_gap_by_case_chart(descriptive),
+        "gap_vs_structural_parameter.svg": (
+            _render_gap_structural_association_chart(
+                gap_density_association,
+                gap_overlap_association,
+                gap_clustering_association,
+            )
+        ),
+        "local_search_recovery.svg": _render_local_search_recovery_chart(
+            local_search_recovery
+        ),
+        "quality_runtime_pareto.svg": _render_quality_runtime_pareto_chart(
+            quality_runtime_pareto
+        ),
+        "runtime_scaling.svg": _render_runtime_scaling_chart(
+            runtime_set_count_association,
+            runtime_k_association,
+        ),
+        "node_scaling.svg": _render_node_scaling_chart(
+            search_nodes_dominated_ratio_association
+        ),
+        "timeout_by_case.svg": _render_timeout_by_case_chart(
+            censored_runtime
+        ),
+        "reference_coverage_by_case.svg": _render_reference_coverage_chart(
+            reference_statuses
+        ),
+    }
+    for filename, expected_chart in expected_charts.items():
+        actual_chart = (output / filename).read_text(encoding="utf-8")
+        if actual_chart != expected_chart:
+            _fail(f"{filename} does not match canonical typed records")
+
+
+def validate(config_path: Path, output: Path) -> None:
+    config = load_config(config_path)
+    plan = plan_benchmark(config)
+    manifest_path = output / "manifest.json"
+    if not manifest_path.is_file():
+        _fail("manifest.json does not exist")
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if not isinstance(manifest, dict):
+        _fail("manifest root must be an object")
+    _validate_manifest(output, manifest)
+
+    configuration = manifest.get("configuration")
+    execution = manifest.get("execution")
+    if not isinstance(configuration, dict) or not isinstance(execution, dict):
+        _fail("manifest configuration and execution sections must be objects")
+    expected_hash = config_hash(config)
+    if configuration.get("config_hash") != expected_hash:
+        _fail("manifest configuration hash does not match the input config")
+    _validate_manifest_algorithm_identity(config, manifest)
+    if execution.get("planned_runs") != plan.algorithm_run_count:
+        _fail("manifest planned run count does not match the execution plan")
+    if execution.get("planned_instances") != plan.instance_count:
+        _fail("manifest planned instance count does not match the execution plan")
+    _validate_analysis_contract(manifest)
+    _validate_p6_chart_contract(manifest)
+    _validate_reference_coverage_contract(manifest)
+    _validate_confidence_interval_contract(manifest)
+    _validate_automatic_conclusion_contract(manifest)
+    _validate_p6_automatic_fact_contract(manifest)
+    _validate_censored_runtime_contract(manifest)
+    _validate_optimality_gap_contract(manifest)
+    _validate_greedy_failure_contract(manifest)
+    _validate_local_search_recovery_contract(manifest)
+    _validate_local_search_remaining_gap_contract(manifest)
+    _validate_heuristic_exact_runtime_ratio_contract(manifest)
+    _validate_bnb_node_reduction_contract(manifest)
+    _validate_quality_runtime_pareto_contract(manifest)
+    _validate_gap_density_association_contract(manifest)
+    _validate_gap_overlap_association_contract(manifest)
+    _validate_gap_clustering_association_contract(manifest)
+    _validate_runtime_set_count_association_contract(manifest)
+    _validate_runtime_k_association_contract(manifest)
+    _validate_search_nodes_dominated_ratio_contract(manifest)
 
     instances = _load_records(output / "instances.csv", InstanceRecord)
     rows = _load_records(output / "raw_results.csv", RunRecord)
@@ -1665,138 +2285,46 @@ def validate(config_path: Path, output: Path) -> None:
         SearchNodesDominatedRatioAssociationRecord,
         allow_empty=True,
     )
-    if len(rows) != plan.algorithm_run_count:
-        _fail("raw result count does not match the execution plan")
-    if len(instances) != plan.instance_count:
-        _fail("instance record count does not match the execution plan")
-    _validate_run_identity(config, expected_hash, rows)
-    instance_keys = {
-        (record.case_id, record.repetition, record.instance_id)
-        for record in instances
-    }
-    if len(instance_keys) != len(instances):
-        _fail("instances.csv contains duplicate composite instance keys")
-    if {record.config_hash for record in instances} != {expected_hash}:
-        _fail("instance records contain an unexpected configuration hash")
-    if len({row.run_id for row in rows}) != len(rows):
-        _fail("raw results contain duplicate run_id values")
-    if {row.config_hash for row in rows} != {expected_hash}:
-        _fail("raw results contain an unexpected configuration hash")
-    if {row.case_id for row in rows} != set(plan.case_ids):
-        _fail("raw result case IDs do not match the execution plan")
-    if any(
-        (row.case_id, row.repetition, row.instance_id) not in instance_keys
-        for row in rows
-    ):
-        _fail("a raw result does not link to exactly one instance record")
-
-    bad_statuses = {
-        row.status.value
-        for row in rows
-        if row.status in {SolutionStatus.ERROR, SolutionStatus.TIMEOUT}
-    }
-    if bad_statuses:
-        _fail(f"starter benchmark produced non-accepted statuses: {sorted(bad_statuses)}")
-    if any(row.coverage is None for row in rows):
-        _fail("starter benchmark contains a result without a feasible coverage value")
-
-    instance_ids = {row.instance_id for row in rows}
-    referenced_ids = {row.instance_id for row in rows if row.optimum is not None}
-    if referenced_ids != instance_ids:
-        _fail("not every starter instance has an exact optimum reference")
-    raw_groups = Counter(
-        (row.case, row.family, row.algorithm_id, row.algorithm) for row in rows
+    _validate_record_consistency(
+        config,
+        plan,
+        expected_hash,
+        instances,
+        rows,
+        summaries,
     )
-    summary_groups = {
-        (summary.case, summary.family, summary.algorithm_id, summary.algorithm): summary.runs
-        for summary in summaries
-    }
-    if summary_groups != dict(raw_groups):
-        _fail("summary groups or run counts do not match the raw results")
-    canonical_rows = _canonical_run_records(
-        _normalize_optima(rows, instances)
+    canonical_rows, canonical_instances = _validate_canonical_records(
+        config,
+        rows,
+        instances,
     )
-    canonical_instances = _canonical_instance_records(instances)
-    _validate_lazy_greedy_rows(config, canonical_rows)
-    if [row.to_csv_row() for row in rows] != [
-        row.to_csv_row() for row in canonical_rows
-    ]:
-        _fail(
-            "raw results do not match normalized exact references and "
-            "canonical precision"
-        )
-    expected_descriptive = _descriptive_statistics(canonical_rows)
-    if [record.to_csv_row() for record in descriptive] != [
-        record.to_csv_row() for record in expected_descriptive
-    ]:
-        _fail("descriptive statistics do not match canonical raw results")
-    expected_confidence_intervals = _confidence_interval_statistics(
-        expected_descriptive
+    expected_descriptive = _validate_descriptive_statistics(
+        canonical_rows,
+        descriptive,
     )
-    if [record.to_csv_row() for record in confidence_intervals] != [
-        record.to_csv_row() for record in expected_confidence_intervals
-    ]:
-        _fail(
-            "confidence intervals do not match canonical descriptive "
-            "statistics recomputed from raw results"
-        )
-    expected_censored_runtime = _censored_runtime_statistics(canonical_rows)
-    if [record.to_csv_row() for record in censored_runtime] != [
-        record.to_csv_row() for record in expected_censored_runtime
-    ]:
-        _fail(
-            "censored-runtime statistics do not match canonical raw results"
-        )
-    expected_reference_statuses = _reference_status_records(
+    expected_confidence_intervals = _validate_confidence_interval_statistics(
+        expected_descriptive,
+        confidence_intervals,
+    )
+    expected_censored_runtime = _validate_censored_runtime_statistics(
+        canonical_rows,
+        censored_runtime,
+    )
+    _validate_reference_statistics(
         config,
         canonical_rows,
         canonical_instances,
+        reference_statuses,
+        reference_coverage,
+        reference_censoring_bias,
+        reference_cutoff_sensitivity,
     )
-    if [record.to_csv_row() for record in reference_statuses] != [
-        record.to_csv_row() for record in expected_reference_statuses
-    ]:
-        _fail("reference statuses do not match canonical instances and raw results")
-    expected_reference_coverage = _reference_coverage_statistics(
-        expected_reference_statuses
+    expected_local_search_recovery = _validate_local_search_recovery_statistics(
+        canonical_rows,
+        local_search_recovery,
     )
-    if [record.to_csv_row() for record in reference_coverage] != [
-        record.to_csv_row() for record in expected_reference_coverage
-    ]:
-        _fail("reference coverage does not use all generated instances")
-    expected_reference_censoring_bias = _reference_censoring_bias_statistics(
-        expected_reference_statuses,
-        canonical_instances,
-    )
-    if [record.to_csv_row() for record in reference_censoring_bias] != [
-        record.to_csv_row() for record in expected_reference_censoring_bias
-    ]:
-        _fail("reference censoring-bias comparisons do not match canonical evidence")
-    expected_reference_cutoff_sensitivity = (
-        _reference_cutoff_sensitivity_statistics(
-            config,
-            expected_reference_statuses,
-        )
-    )
-    if [record.to_csv_row() for record in reference_cutoff_sensitivity] != [
-        record.to_csv_row() for record in expected_reference_cutoff_sensitivity
-    ]:
-        _fail("reference cutoff sensitivity does not match exact-solver statuses")
-    expected_local_search_recovery = _local_search_recovery_statistics(
-        canonical_rows
-    )
-    if [record.to_csv_row() for record in local_search_recovery] != [
-        record.to_csv_row() for record in expected_local_search_recovery
-    ]:
-        _fail(
-            "Local Search recovery statistics do not match canonical raw results"
-        )
-    report = (output / "results_summary.md").read_text(encoding="utf-8")
-    actual_headlines = _markdown_section(
-        report,
-        "## Headline checks",
-        "## P5.1 descriptive aggregate",
-    )
-    expected_headlines = _headline_lines(
+    _validate_report_headlines(
+        output,
         config,
         expected_descriptive,
         instances,
@@ -1804,204 +2332,74 @@ def validate(config_path: Path, output: Path) -> None:
         expected_local_search_recovery,
         expected_censored_runtime,
     )
-    if actual_headlines != expected_headlines:
-        _fail(
-            "automatic conclusion headlines do not match the canonical "
-            "small-sample eligibility gate or P6 automatic-fact contract"
-        )
-    expected_gap_groups = {
-        (
-            row.config_hash,
-            row.case_id,
-            row.family,
-            row.algorithm_id,
-            row.algorithm,
-        )
-        for row in canonical_rows
-    }
-    actual_gap_groups = [
-        (
-            row.config_hash,
-            row.case_id,
-            row.family,
-            row.algorithm_id,
-            row.algorithm,
-        )
-        for row in descriptive
-        if row.metric == "optimality_gap"
-    ]
-    if (
-        len(actual_gap_groups) != len(expected_gap_groups)
-        or set(actual_gap_groups) != expected_gap_groups
-    ):
-        _fail(
-            "descriptive statistics must contain exactly one optimality-gap "
-            "row per algorithm variant and case"
-        )
-    expected_greedy_failure = _greedy_failure_statistics(canonical_rows)
-    if [record.to_csv_row() for record in greedy_failure] != [
-        record.to_csv_row() for record in expected_greedy_failure
-    ]:
-        _fail("Greedy failure statistics do not match canonical raw results")
-    expected_local_search_remaining_gap = (
-        _local_search_remaining_gap_statistics(canonical_rows)
-    )
-    if [record.to_csv_row() for record in local_search_remaining_gap] != [
-        record.to_csv_row()
-        for record in expected_local_search_remaining_gap
-    ]:
-        _fail(
-            "Local Search remaining-gap statistics do not match canonical raw "
-            "results"
-        )
-    expected_heuristic_exact_runtime_ratio = (
-        _heuristic_exact_runtime_ratio_statistics(canonical_rows)
-    )
-    if [record.to_csv_row() for record in heuristic_exact_runtime_ratio] != [
-        record.to_csv_row()
-        for record in expected_heuristic_exact_runtime_ratio
-    ]:
-        _fail(
-            "heuristic/exact runtime-ratio statistics do not match canonical "
-            "raw results"
-        )
-    expected_bnb_node_reduction = _bnb_node_reduction_statistics(
-        canonical_rows
-    )
-    if [record.to_csv_row() for record in bnb_node_reduction] != [
-        record.to_csv_row() for record in expected_bnb_node_reduction
-    ]:
-        _fail(
-            "Branch-and-Bound node-reduction statistics do not match "
-            "canonical raw results"
-        )
-    expected_quality_runtime_pareto = _quality_runtime_pareto_statistics(
-        canonical_rows
-    )
-    if [record.to_csv_row() for record in quality_runtime_pareto] != [
-        record.to_csv_row() for record in expected_quality_runtime_pareto
-    ]:
-        _fail(
-            "quality-runtime Pareto statistics do not match canonical raw "
-            "results"
-        )
-    expected_gap_density_association = (
-        _gap_density_association_statistics(
-            canonical_rows,
-            _canonical_instance_records(instances),
-        )
-    )
-    if [record.to_csv_row() for record in gap_density_association] != [
-        record.to_csv_row()
-        for record in expected_gap_density_association
-    ]:
-        _fail(
-            "gap-density association statistics do not match canonical "
-            "instance and raw evidence"
-        )
-    expected_gap_overlap_association = (
-        _gap_overlap_association_statistics(
-            canonical_rows,
-            _canonical_instance_records(instances),
-        )
-    )
-    if [record.to_csv_row() for record in gap_overlap_association] != [
-        record.to_csv_row()
-        for record in expected_gap_overlap_association
-    ]:
-        _fail(
-            "gap-overlap association statistics do not match canonical "
-            "instance and raw evidence"
-        )
-    expected_gap_clustering_association = (
-        _gap_clustering_association_statistics(
-            canonical_rows,
-            _canonical_instance_records(instances),
-        )
-    )
-    if [record.to_csv_row() for record in gap_clustering_association] != [
-        record.to_csv_row()
-        for record in expected_gap_clustering_association
-    ]:
-        _fail(
-            "gap-clustering association statistics do not match canonical "
-            "instance and raw evidence"
-        )
-    expected_runtime_set_count_association = (
-        _runtime_set_count_association_statistics(
-            canonical_rows,
-            _canonical_instance_records(instances),
-        )
-    )
-    if [record.to_csv_row() for record in runtime_set_count_association] != [
-        record.to_csv_row()
-        for record in expected_runtime_set_count_association
-    ]:
-        _fail(
-            "runtime-set-count association statistics do not match canonical "
-            "instance and raw evidence"
-        )
-    expected_runtime_k_association = _runtime_k_association_statistics(
+    _validate_gap_group_coverage(
         canonical_rows,
-        _canonical_instance_records(instances),
+        descriptive,
     )
-    if [record.to_csv_row() for record in runtime_k_association] != [
-        record.to_csv_row() for record in expected_runtime_k_association
-    ]:
-        _fail(
-            "runtime-k association statistics do not match canonical instance "
-            "and raw evidence"
-        )
-    expected_search_nodes_dominated_ratio_association = (
-        _search_nodes_dominated_ratio_association_statistics(
-            canonical_rows,
-            _canonical_instance_records(instances),
-        )
+    _validate_greedy_failure_statistics(
+        canonical_rows,
+        greedy_failure,
     )
-    if [
-        record.to_csv_row()
-        for record in search_nodes_dominated_ratio_association
-    ] != [
-        record.to_csv_row()
-        for record in expected_search_nodes_dominated_ratio_association
-    ]:
-        _fail(
-            "search-nodes dominated-ratio association statistics do not match "
-            "canonical instance and raw evidence"
-        )
-    expected_charts = {
-        "gap_by_case.svg": _render_gap_by_case_chart(descriptive),
-        "gap_vs_structural_parameter.svg": (
-            _render_gap_structural_association_chart(
-                gap_density_association,
-                gap_overlap_association,
-                gap_clustering_association,
-            )
-        ),
-        "local_search_recovery.svg": _render_local_search_recovery_chart(
-            local_search_recovery
-        ),
-        "quality_runtime_pareto.svg": _render_quality_runtime_pareto_chart(
-            quality_runtime_pareto
-        ),
-        "runtime_scaling.svg": _render_runtime_scaling_chart(
-            runtime_set_count_association,
-            runtime_k_association,
-        ),
-        "node_scaling.svg": _render_node_scaling_chart(
-            search_nodes_dominated_ratio_association
-        ),
-        "timeout_by_case.svg": _render_timeout_by_case_chart(
-            censored_runtime
-        ),
-        "reference_coverage_by_case.svg": _render_reference_coverage_chart(
-            reference_statuses
-        ),
-    }
-    for filename, expected_chart in expected_charts.items():
-        actual_chart = (output / filename).read_text(encoding="utf-8")
-        if actual_chart != expected_chart:
-            _fail(f"{filename} does not match canonical typed records")
+    _validate_local_search_remaining_gap_statistics(
+        canonical_rows,
+        local_search_remaining_gap,
+    )
+    _validate_heuristic_exact_runtime_ratio_statistics(
+        canonical_rows,
+        heuristic_exact_runtime_ratio,
+    )
+    _validate_bnb_node_reduction_statistics(
+        canonical_rows,
+        bnb_node_reduction,
+    )
+    _validate_quality_runtime_pareto_statistics(
+        canonical_rows,
+        quality_runtime_pareto,
+    )
+    _validate_gap_density_association_statistics(
+        canonical_rows,
+        instances,
+        gap_density_association,
+    )
+    _validate_gap_overlap_association_statistics(
+        canonical_rows,
+        instances,
+        gap_overlap_association,
+    )
+    _validate_gap_clustering_association_statistics(
+        canonical_rows,
+        instances,
+        gap_clustering_association,
+    )
+    _validate_runtime_set_count_association_statistics(
+        canonical_rows,
+        instances,
+        runtime_set_count_association,
+    )
+    _validate_runtime_k_association_statistics(
+        canonical_rows,
+        instances,
+        runtime_k_association,
+    )
+    _validate_search_nodes_dominated_ratio_association_statistics(
+        canonical_rows,
+        instances,
+        search_nodes_dominated_ratio_association,
+    )
+    _validate_report_charts(
+        output,
+        descriptive,
+        gap_density_association,
+        gap_overlap_association,
+        gap_clustering_association,
+        local_search_recovery,
+        quality_runtime_pareto,
+        runtime_set_count_association,
+        runtime_k_association,
+        search_nodes_dominated_ratio_association,
+        censored_runtime,
+        reference_statuses,
+    )
 
 
 def main() -> int:
