@@ -29,8 +29,8 @@ with that function and retains the original root calculation in the same directo
 Every moved name is explicitly imported back into the facade. No task execution,
 replay, public plan definition or runner lifecycle is moved in B1.
 
-The current benchmark source matches the B0 unexempted type snapshot, and no
-recorded diagnostic falls inside these moved definitions. Later planning,
+The pre-extraction benchmark source at the B1 base matches the B0 unexempted
+type snapshot, and no recorded diagnostic falls inside these moved definitions. Later planning,
 artifact and statistics diagnostics stay in their respective batches. The new
 modules use the default type-check coverage without additional exemptions.
 
