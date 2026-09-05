@@ -30,7 +30,7 @@ from maxcover.algorithms import ALGORITHMS
 from maxcover.benchmark import _case_seed
 from maxcover.config import load_config
 from maxcover.contracts import InstanceRecord, RunRecord
-from maxcover.model import SolutionStatus
+from maxcover.model import MaximumCoverageInstance, SolutionStatus
 from maxcover.reproducibility import config_hash
 
 
@@ -98,6 +98,7 @@ def load_inputs(config_path: Path, results: Path) -> PilotData:
     expected_keys = {(case_id, repetition) for case_id in cases for repetition in range(30)}
     by_key: dict[tuple[str, int], InstanceRecord] = {}
     by_id: dict[str, InstanceRecord] = {}
+    generated: dict[str, MaximumCoverageInstance] = {}
     for record in instances:
         key = (record.case_id, record.repetition)
         if record.config_hash != identifier:
@@ -111,7 +112,8 @@ def load_inputs(config_path: Path, results: Path) -> PilotData:
                 or (record.universe_size, record.set_count, record.k) != (48, 16, 4)
                 or json.loads(record.parameters) != expected_parameters):
             raise ValueError("instances.csv: case dimensions or parameters mismatch")
-        if (record.seed != _case_seed(config, case, case_index, record.repetition)
+        expected_seed = _case_seed(config, case, case_index, record.repetition)
+        if (record.seed != expected_seed
                 or record.coupling_seed is not None or record.coupling_pair_id is not None):
             raise ValueError("instances.csv: seed or coupling differs from the fixed plan")
         if record.generator_version != 1 or record.instance_origin != "stochastic" or record.is_adversarial:
@@ -120,6 +122,7 @@ def load_inputs(config_path: Path, results: Path) -> PilotData:
             raise ValueError("instances.csv: missing structural diagnostic")
         by_key[key] = record
         by_id[record.instance_id] = record
+        generated[record.instance_id] = case.generate(expected_seed)
     if set(by_key) != expected_keys:
         raise ValueError("instances.csv: incomplete planned repetitions")
 
@@ -148,6 +151,8 @@ def load_inputs(config_path: Path, results: Path) -> PilotData:
             raise ValueError("raw_results.csv: algorithm did not complete successfully")
         if len(record.selected) > record.k or any(index >= record.set_count for index in record.selected):
             raise ValueError("raw_results.csv: invalid selected indices")
+        if generated[record.instance_id].coverage(record.selected) != record.coverage:
+            raise ValueError("raw_results.csv: selected sets do not match declared coverage")
         by_run[key] = record
         run_ids.add(record.run_id)
     if set(by_run) != {(instance_id, algorithm_id) for instance_id in by_id for algorithm_id in algorithms}:
