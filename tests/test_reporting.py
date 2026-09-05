@@ -47,7 +47,16 @@ class ReportingTests(unittest.TestCase):
         cls.config_path = fixture / "config.json"
         for filename in ("raw_results.csv", "instances.csv"):
             shutil.copyfile(fixture / filename, output / filename)
-        with patch.object(benchmark, "_execute_task", side_effect=AssertionError("unexpected execution")):
+
+        def prepare_report_files(output_dir, *args, **kwargs):
+            # The runner publishes these files before returning its records.
+            for filename in benchmark.REPORT_FILENAMES:
+                (output_dir / filename).touch()
+
+        # Build report inputs without first passing them through the candidate
+        # writer: an idempotent mutation there would hide from render's check.
+        with patch.object(benchmark, "_execute_task", side_effect=AssertionError("unexpected execution")), \
+                patch.object(benchmark, "write_report_artifacts", side_effect=prepare_report_files):
             cls.result = benchmark.summarize_benchmark(cls.config_path, output)
         cls.names = tuple(name for name in inspect.signature(reporting.write_report_artifacts).parameters
                           if name not in {"output_dir", "config_path", "config"})
@@ -62,8 +71,18 @@ class ReportingTests(unittest.TestCase):
         before = pickle.dumps(arguments, protocol=4)
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)
-            result = reporting.write_report_artifacts(directory, self.config_path, self.result.config, **arguments)
+            markdown_writes = []
+            write_text = Path.write_text
+
+            def record_write(path, *args, **kwargs):
+                if path.name == "results_summary.md":
+                    markdown_writes.append(path)
+                return write_text(path, *args, **kwargs)
+
+            with patch.object(Path, "write_text", record_write):
+                result = reporting.write_report_artifacts(directory, self.config_path, self.result.config, **arguments)
             self.assertIsNone(result)
+            self.assertEqual(markdown_writes, [directory / "results_summary.md"])
             self.assertEqual(set(path.name for path in directory.iterdir()), set(benchmark.REPORT_FILENAMES))
             for path in directory.glob("*.svg"):
                 self.assertEqual(ET.fromstring(path.read_bytes()).tag, "{http://www.w3.org/2000/svg}svg")
