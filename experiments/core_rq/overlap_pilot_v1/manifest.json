@@ -1,0 +1,958 @@
+{
+  "algorithms": {
+    "exact_reference": {
+      "algorithm_seeds": [],
+      "enabled": true,
+      "name": "brute_force",
+      "options": {
+        "max_set_count": 16,
+        "time_limit_seconds": null
+      },
+      "version": 1
+    },
+    "greedy": {
+      "algorithm_seeds": [],
+      "enabled": true,
+      "name": "greedy",
+      "options": {},
+      "version": 1
+    }
+  },
+  "analysis_contract": {
+    "algorithm_seed_role": "nested_within_instance",
+    "canonical_aggregate": "descriptive_statistics.csv",
+    "canonical_schema_version": 1,
+    "compatibility_aggregate": "summary.csv",
+    "compatibility_semantics": "legacy_raw_run_aggregate",
+    "repetition_unit": "instance_seed",
+    "runtime_policy": "optimal_or_feasible_only",
+    "schema_version": 1
+  },
+  "automatic_conclusion_contract": {
+    "algorithm_seed_role": "nested_within_instance",
+    "eligibility_rule": "interval_status_estimable_and_sample_count_at_least_minimum",
+    "factual_execution_count_policy": "permitted_when_explicitly_marked_non_inferential",
+    "headline_estimator": "canonical_instance_equal_weight_mean",
+    "headline_metric": "optimality_gap",
+    "ineligible_policy": "suppress_metric_claim_and_report_gate_status",
+    "minimum_independent_sample_count": 10,
+    "population_generalization": "not_in_scope",
+    "repetition_unit": "instance_seed",
+    "schema_version": 1,
+    "scope": "automatic_metric_headlines",
+    "significance_testing": "not_in_scope",
+    "source_artifact": "confidence_interval_statistics.csv",
+    "source_artifact_schema_version": 1,
+    "threshold_semantics": "operational_reporting_guardrail_not_power_guarantee"
+  },
+  "bnb_node_reduction_contract": {
+    "aggregation": {
+      "aggregate": "1-sum_enhanced_nodes/sum_baseline_nodes",
+      "maximum": "maximum_of_instance_reductions",
+      "mean": "equal_weight_mean_of_instance_reductions",
+      "median": "median_of_instance_reductions",
+      "minimum": "minimum_of_instance_reductions"
+    },
+    "algorithm_pair": [
+      "branch_and_bound",
+      "branch_and_bound_enhanced"
+    ],
+    "algorithm_seed_policy": "forbidden",
+    "artifact": "bnb_node_reduction_statistics.csv",
+    "artifact_schema_version": 1,
+    "availability": "always",
+    "canonical_precision": "raw_results_csv_round_trip_10_decimal_places",
+    "eligible_statuses": [
+      "optimal"
+    ],
+    "empty_behavior": "header_only",
+    "error_policy": "exclude_pair_and_count_by_algorithm",
+    "formula": "1-enhanced_nodes/baseline_nodes",
+    "negative_reduction_policy": "retain",
+    "node_source": "nodes_or_iterations_validated_against_metadata_when_present",
+    "objective_agreement_policy": "required",
+    "repetition_unit": "instance_seed",
+    "runtime_policy": "not_in_scope",
+    "schema_version": 1,
+    "timeout_policy": "exclude_pair_and_count_by_algorithm",
+    "variant_pairing": "cross_product_within_case",
+    "zero_baseline_nodes_policy": "exclude_pair_and_count",
+    "zero_eligible_policy": "blank_statistics_and_zero_totals"
+  },
+  "censored_runtime_contract": {
+    "across_instance_censor_time": "equal_weight_mean_median_minimum_maximum",
+    "algorithm_seed_layout_policy": "fixed_within_variant",
+    "algorithm_seed_role": "nested_within_instance",
+    "artifact": "censored_runtime_statistics.csv",
+    "artifact_schema_version": 1,
+    "availability": "always",
+    "canonical_precision": "raw_results_csv_round_trip_10_decimal_places",
+    "censoring_rate": "instances_with_any_timeout/instance_count",
+    "completed_runtime_statistics_source": "descriptive_statistics.csv",
+    "completed_statuses": [
+      "optimal",
+      "feasible"
+    ],
+    "confidence_interval": "not_in_scope",
+    "configured_time_limit_policy": "not_substituted_for_observed_elapsed_time",
+    "empty_behavior": "header_only",
+    "error_policy": "excluded_from_runtime_observations_and_counted",
+    "fully_right_censored_instance": "all_planned_runs_timeout",
+    "hazard_model": "not_in_scope",
+    "kaplan_meier": "not_in_scope",
+    "repetition_unit": "instance_seed",
+    "restricted_mean_survival_time": "not_in_scope",
+    "right_censored_status": "timeout",
+    "schema_version": 1,
+    "scope": "all_executed_algorithm_variants",
+    "survival_curve": "not_in_scope",
+    "time_to_event_source": "runtime_seconds",
+    "timeout_time_semantics": "observed_elapsed_time_to_right_censoring",
+    "within_instance_censor_time": "arithmetic_mean_across_timeout_algorithm_seeds",
+    "zero_censoring_policy": "blank_censor_time_statistics"
+  },
+  "confidence_interval_contract": {
+    "algorithm_seed_role": "nested_within_instance",
+    "artifact": "confidence_interval_statistics.csv",
+    "artifact_schema_version": 1,
+    "availability": "always",
+    "bounds_policy": "unbounded_no_domain_clipping",
+    "canonical_precision": "descriptive_statistics_csv_round_trip_and_ci_10_decimal_places",
+    "censored_runtime_analysis": "not_in_scope",
+    "confidence_level": 0.95,
+    "critical_value": "inverse_student_t_cdf_via_regularized_incomplete_beta",
+    "degrees_of_freedom": "sample_count-1",
+    "empty_behavior": "header_only",
+    "error_policy": "excluded_from_samples_and_counted",
+    "estimand": "instance_mean",
+    "interval_formula": "mean_plus_or_minus_t_0.975_df_times_standard_error",
+    "method": "student_t_two_sided",
+    "metrics": [
+      "coverage",
+      "optimality_gap",
+      "runtime_seconds"
+    ],
+    "minimum_sample_count": 2,
+    "repetition_unit": "instance_seed",
+    "runtime_policy": "completed_runtime_samples_only",
+    "schema_version": 1,
+    "scope": "all_canonical_descriptive_metric_rows",
+    "significance_testing": "not_in_scope",
+    "singleton_policy": "insufficient_samples_mean_present_interval_blank",
+    "source_artifact": "descriptive_statistics.csv",
+    "source_artifact_schema_version": 1,
+    "standard_error": "sample_standard_deviation/sqrt(sample_count)",
+    "timeout_policy": "excluded_from_runtime_samples_and_counted",
+    "zero_sample_policy": "no_samples_blank_mean_and_interval"
+  },
+  "configuration": {
+    "config_hash": "593d362a8a5bdcd8dc0366e9d1cb05238c6a07b8cc0c75419691511c53e8e17d",
+    "path": "config.json"
+  },
+  "environment": {
+    "operating_system": "Windows-11-10.0.26200-SP0",
+    "processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+    "python": "3.12.3",
+    "python_implementation": "CPython"
+  },
+  "execution": {
+    "planned_instances": 60,
+    "planned_runs": 120,
+    "resumed_runs": 0,
+    "workers": 1
+  },
+  "experiment": "Core overlap matched-control pilot",
+  "gap_clustering_association_contract": {
+    "across_level_weighting": "equal",
+    "algorithm_seed_role": "nested_within_instance_with_fixed_layout",
+    "artifact": "gap_clustering_association_statistics.csv",
+    "artifact_schema_version": 1,
+    "association_coordinates": "case_level_predictor_and_complete_block_mean_gap",
+    "automatic_conclusion_independent_count": "eligible_block_count",
+    "automatic_conclusion_minimum_sample_count": 10,
+    "automatic_headline": "not_emitted",
+    "availability": "always",
+    "block_layout_policy": "fixed_case_levels_across_blocks",
+    "canonical_precision": "instances_and_raw_csv_round_trip_then_10_decimal_statistics",
+    "causal_inference": "not_in_scope",
+    "complete_block_policy": "all_levels_require_usable_gap_or_drop_block_from_all_levels",
+    "constant_clustering_policy": "blank_correlation_and_ols",
+    "constant_gap_policy": "blank_correlation_zero_slope_intercept_equals_mean_gap",
+    "coupling_identity": [
+      "coupling_pair_id",
+      "coupling_seed"
+    ],
+    "empty_behavior": "header_only",
+    "error_policy": "exclude_gap_invalidate_block_and_count",
+    "group_by": [
+      "config_hash",
+      "family",
+      "algorithm_id",
+      "algorithm"
+    ],
+    "minimum_level_count": 2,
+    "mixed_effects_modeling": "not_in_scope",
+    "nonlinear_modeling": "not_in_scope",
+    "pairwise_overlap_policy": "not_used_as_clustering_proxy",
+    "predictor": "realized_bridge_fraction",
+    "predictor_direction": "higher_means_more_cross_cluster_mixing_not_stronger_clustering",
+    "predictor_formula": "bridge_count/set_count",
+    "predictor_source": "instances.csv.parameters",
+    "reference_policy": "normalized_positive_exact_optimum",
+    "repetition_unit": "coupling_seed_block",
+    "required_family": "mixed_cluster",
+    "required_research_question_id": "mixed_cluster_bridges",
+    "response": "level_mean_relative_optimality_gap",
+    "response_formula": "(optimum-coverage)/optimum",
+    "schema_version": 1,
+    "scope": "mixed_cluster_executed_algorithm_variants_only",
+    "significance_testing": "not_in_scope",
+    "source_artifacts": [
+      "instances.csv",
+      "raw_results.csv"
+    ],
+    "statistics": [
+      "level_means",
+      "level_sample_standard_deviations",
+      "pearson_correlation",
+      "ols_slope_with_intercept"
+    ],
+    "target_bridge_fraction_policy": "not_used_as_predictor",
+    "timeout_policy": "include_feasible_incumbent_gap_when_available_and_count",
+    "within_instance_gap": "arithmetic_mean_across_available_algorithm_seed_gaps",
+    "within_level_gap": "arithmetic_mean_across_same_eligible_complete_blocks",
+    "zero_optimum_policy": "exclude_instance_and_invalidate_block"
+  },
+  "gap_density_association_contract": {
+    "across_instance_weighting": "equal",
+    "algorithm_seed_layout_policy": "fixed_within_variant",
+    "algorithm_seed_role": "nested_within_instance",
+    "artifact": "gap_density_association_statistics.csv",
+    "artifact_schema_version": 1,
+    "automatic_conclusion_minimum_sample_count": 10,
+    "automatic_headline": "not_emitted",
+    "availability": "always",
+    "canonical_precision": "instances_and_raw_csv_round_trip_then_10_decimal_statistics",
+    "case_pooling": "within_family_across_executed_cases",
+    "causal_inference": "not_in_scope",
+    "constant_density_policy": "blank_correlation_and_ols",
+    "constant_gap_policy": "blank_correlation_zero_slope_intercept_equals_mean_gap",
+    "cross_family_pooling": "forbidden",
+    "empty_behavior": "header_only",
+    "error_policy": "exclude_gap_and_count",
+    "group_by": [
+      "config_hash",
+      "family",
+      "algorithm_id",
+      "algorithm"
+    ],
+    "minimum_sample_count": 2,
+    "nonlinear_modeling": "not_in_scope",
+    "predictor": "actual_density",
+    "predictor_source": "instances.csv",
+    "reference_policy": "normalized_positive_exact_optimum",
+    "repetition_unit": "instance_seed",
+    "response": "relative_optimality_gap",
+    "response_formula": "(optimum-coverage)/optimum",
+    "schema_version": 1,
+    "scope": "all_executed_algorithm_variants",
+    "significance_testing": "not_in_scope",
+    "source_artifacts": [
+      "instances.csv",
+      "raw_results.csv"
+    ],
+    "statistics": [
+      "sample_means",
+      "sample_standard_deviations",
+      "pearson_correlation",
+      "ols_slope_with_intercept"
+    ],
+    "timeout_policy": "include_feasible_incumbent_gap_when_available_and_count",
+    "within_instance_gap": "arithmetic_mean_across_available_algorithm_seed_gaps",
+    "zero_optimum_policy": "exclude_and_count"
+  },
+  "gap_overlap_association_contract": {
+    "across_instance_weighting": "equal",
+    "algorithm_seed_layout_policy": "fixed_within_variant",
+    "algorithm_seed_role": "nested_within_instance",
+    "artifact": "gap_overlap_association_statistics.csv",
+    "artifact_schema_version": 1,
+    "automatic_conclusion_minimum_sample_count": 10,
+    "automatic_headline": "not_emitted",
+    "availability": "always",
+    "canonical_precision": "instances_and_raw_csv_round_trip_then_10_decimal_statistics",
+    "case_pooling": "within_family_across_executed_cases",
+    "causal_inference": "not_in_scope",
+    "clustering_analysis": "not_in_scope",
+    "constant_gap_policy": "blank_correlation_zero_slope_intercept_equals_mean_gap",
+    "constant_overlap_policy": "blank_correlation_and_ols",
+    "cross_family_pooling": "forbidden",
+    "empty_behavior": "header_only",
+    "error_policy": "exclude_gap_and_count",
+    "group_by": [
+      "config_hash",
+      "family",
+      "algorithm_id",
+      "algorithm"
+    ],
+    "minimum_sample_count": 2,
+    "missing_predictor_policy": "exclude_and_count_not_zero_fill",
+    "nonlinear_modeling": "not_in_scope",
+    "predictor": "pairwise_overlap_mean_jaccard",
+    "predictor_definition": "mean_jaccard_across_valid_unordered_candidate_set_pairs",
+    "predictor_source": "instances.csv",
+    "reference_policy": "normalized_positive_exact_optimum",
+    "repetition_unit": "instance_seed",
+    "response": "relative_optimality_gap",
+    "response_formula": "(optimum-coverage)/optimum",
+    "schema_version": 1,
+    "scope": "all_executed_algorithm_variants",
+    "significance_testing": "not_in_scope",
+    "source_artifacts": [
+      "instances.csv",
+      "raw_results.csv"
+    ],
+    "statistics": [
+      "sample_means",
+      "sample_standard_deviations",
+      "pearson_correlation",
+      "ols_slope_with_intercept"
+    ],
+    "timeout_policy": "include_feasible_incumbent_gap_when_available_and_count",
+    "within_instance_gap": "arithmetic_mean_across_available_algorithm_seed_gaps",
+    "zero_optimum_policy": "exclude_and_count"
+  },
+  "git": {
+    "commit": "27acae5f2ee9f478fba22af98c6694382a0a7100",
+    "dirty": false
+  },
+  "greedy_failure_contract": {
+    "algorithm": "greedy",
+    "algorithm_seed_policy": "forbidden",
+    "artifact": "greedy_failure_statistics.csv",
+    "artifact_schema_version": 1,
+    "availability": "always",
+    "denominator": "completed_greedy_with_exact_reference",
+    "eligible_statuses": [
+      "feasible"
+    ],
+    "empty_behavior": "header_only",
+    "error_policy": "excluded_from_denominator_and_counted",
+    "failure_event": "coverage_lt_optimum",
+    "missing_reference_policy": "excluded_from_denominator_and_counted",
+    "reference_policy": "normalized_exact_optimum",
+    "repetition_unit": "instance_seed",
+    "schema_version": 1,
+    "success_event": "coverage_eq_optimum",
+    "timeout_policy": "excluded_from_denominator_and_counted",
+    "zero_denominator_policy": "blank_rates",
+    "zero_optimum_is_reference": true
+  },
+  "heuristic_exact_runtime_ratio_contract": {
+    "aggregation": {
+      "maximum": "maximum_of_instance_ratios",
+      "mean": "equal_weight_mean_of_instance_ratios",
+      "median": "median_of_instance_ratios",
+      "minimum": "minimum_of_instance_ratios"
+    },
+    "artifact": "heuristic_exact_runtime_ratio_statistics.csv",
+    "artifact_schema_version": 1,
+    "availability": "always",
+    "canonical_precision": "raw_results_csv_round_trip_10_decimal_places",
+    "censored_runtime_analysis": "not_in_scope",
+    "eligible_statuses": [
+      "optimal",
+      "feasible"
+    ],
+    "empty_behavior": "header_only",
+    "error_policy": "exclude_runtime_and_count_by_algorithm",
+    "exact_algorithm_seed_policy": "forbidden",
+    "formula": "mean_completed_heuristic_runtime/exact_runtime",
+    "heuristic_algorithm_seed_role": "nested_within_instance",
+    "repetition_unit": "instance_seed",
+    "schema_version": 1,
+    "scope": "all_executed_heuristic_exact_variant_pairs",
+    "timeout_policy": "exclude_runtime_and_count_by_algorithm",
+    "variant_pairing": "cross_product_within_case",
+    "within_instance_heuristic_runtime": "arithmetic_mean_of_completed_algorithm_seed_runs",
+    "zero_eligible_policy": "blank_statistics",
+    "zero_exact_runtime_policy": "exclude_pair_and_count"
+  },
+  "local_search_recovery_contract": {
+    "aggregation": "equal_weight_mean_of_instance_recovery_rates",
+    "algorithm_pair": [
+      "greedy",
+      "local_search"
+    ],
+    "algorithm_seed_policy": "forbidden",
+    "artifact": "local_search_recovery_statistics.csv",
+    "artifact_schema_version": 1,
+    "availability": "always",
+    "coverage_above_optimum_policy": "error",
+    "denominator": "completed_local_search_on_completed_greedy_failure_with_exact_reference",
+    "eligible_statuses": {
+      "greedy": [
+        "feasible"
+      ],
+      "local_search": [
+        "feasible"
+      ]
+    },
+    "empty_behavior": "header_only",
+    "error_policy": "exclude_pair_and_count_by_algorithm",
+    "formula": "(local_search_coverage-greedy_coverage)/(optimum-greedy_coverage)",
+    "greedy_failure_event": "greedy_coverage_lt_optimum",
+    "greedy_optimal_policy": "exclude_no_recoverable_gap",
+    "local_search_below_greedy_policy": "error",
+    "missing_reference_policy": "exclude_pair",
+    "reference_policy": "normalized_exact_optimum",
+    "remaining_gap_policy": "separate_local_search_remaining_gap_statistics_artifact",
+    "repetition_unit": "instance_seed",
+    "runtime_policy": "not_in_scope",
+    "schema_version": 1,
+    "timeout_policy": "exclude_pair_and_count_by_algorithm",
+    "variant_pairing": "cross_product_within_case",
+    "zero_denominator_policy": "blank_rates",
+    "zero_optimum_policy": "not_a_greedy_failure"
+  },
+  "local_search_remaining_gap_contract": {
+    "algorithm_pair": [
+      "greedy",
+      "local_search"
+    ],
+    "algorithm_seed_policy": "forbidden",
+    "artifact": "local_search_remaining_gap_statistics.csv",
+    "artifact_schema_version": 1,
+    "availability": "always",
+    "canonical_precision": "raw_results_csv_round_trip_10_decimal_places",
+    "coverage_above_optimum_policy": "error",
+    "denominator": "completed_local_search_on_completed_greedy_failure_with_exact_reference",
+    "eligible_statuses": {
+      "greedy": [
+        "feasible"
+      ],
+      "local_search": [
+        "feasible"
+      ]
+    },
+    "empty_behavior": "header_only",
+    "error_policy": "exclude_pair",
+    "formula": "(optimum-local_search_coverage)/optimum",
+    "gap_scale": "relative_to_optimum",
+    "greedy_failure_event": "greedy_coverage_lt_optimum",
+    "greedy_optimal_policy": "exclude_no_recoverable_gap",
+    "local_search_below_greedy_policy": "error",
+    "maximum_aggregation": "maximum_of_eligible_instance_remaining_gaps",
+    "mean_aggregation": "equal_weight_mean_of_eligible_instance_remaining_gaps",
+    "missing_reference_policy": "exclude_pair",
+    "reference_policy": "normalized_exact_optimum",
+    "repetition_unit": "instance_seed",
+    "runtime_policy": "not_in_scope",
+    "schema_version": 1,
+    "timeout_policy": "exclude_pair",
+    "variant_pairing": "cross_product_within_case",
+    "zero_denominator_policy": "blank_statistics",
+    "zero_gap_event": "local_search_coverage_eq_optimum"
+  },
+  "optimality_gap_contract": {
+    "absolute_gap_policy": "not_in_scope",
+    "algorithm_seed_role": "nested_within_instance",
+    "artifact": "descriptive_statistics.csv",
+    "artifact_schema_version": 1,
+    "canonical_precision": "raw_results_csv_round_trip_10_decimal_places",
+    "compatibility_aggregate_policy": "summary_csv_excluded",
+    "coverage_above_optimum_policy": "error",
+    "eligible_statuses": [
+      "optimal",
+      "feasible",
+      "timeout"
+    ],
+    "error_policy": "exclude_and_count",
+    "formula": "(optimum-coverage)/optimum",
+    "gap_scale": "relative",
+    "group_by": [
+      "config_hash",
+      "case_id",
+      "family",
+      "algorithm_id",
+      "algorithm"
+    ],
+    "maximum_aggregation": "maximum_of_instance_mean_gaps",
+    "mean_aggregation": "equal_weight_mean_of_instance_gaps",
+    "missing_reference_policy": "exclude",
+    "positive_optimum_required": true,
+    "reference_policy": "normalized_exact_optimum",
+    "repetition_unit": "instance_seed",
+    "row_selector": {
+      "metric": "optimality_gap"
+    },
+    "sample_count_semantics": "eligible_instance_count",
+    "schema_version": 1,
+    "scope": "all_executed_algorithm_variants",
+    "timeout_policy": "include_feasible_incumbent_and_count",
+    "within_instance_aggregation": "arithmetic_mean_of_eligible_runs",
+    "zero_optimum_policy": "count_reference_exclude_gap",
+    "zero_sample_policy": "blank_statistics"
+  },
+  "outputs": {
+    "bnb_node_reduction_statistics.csv": {
+      "bytes": 528,
+      "sha256": "1565ffa7b4883d95423c9857be79fa765496e62fcc95dfb1bf7079df4deca8bf"
+    },
+    "censored_runtime_statistics.csv": {
+      "bytes": 1165,
+      "sha256": "b05e28d38b0142a16352d454a83c8965f3e67be3bca8e38dd3276c968759e8f5"
+    },
+    "confidence_interval_statistics.csv": {
+      "bytes": 3665,
+      "sha256": "7afa20a797d9c552381b4f5b08410a6ec24c9abf648fcd888af6e1a237ebc786"
+    },
+    "descriptive_statistics.csv": {
+      "bytes": 3874,
+      "sha256": "799bf25686f5b33f8178a42fdb4d0b34684cfea1341e2da48c02d8c200a3b335"
+    },
+    "gap_by_case.svg": {
+      "bytes": 3460,
+      "sha256": "98be9611c123407003498f441626cd5c6cf40ca9c639d2a690aa44ce71209312"
+    },
+    "gap_by_family.svg": {
+      "bytes": 2786,
+      "sha256": "0d866e386294b5d8564ae1c1521fb8751847ae2e7e1073a88236aecf481b5646"
+    },
+    "gap_clustering_association_statistics.csv": {
+      "bytes": 648,
+      "sha256": "14bedf3edf3073a57256c92487cedfe0d3f31886d5b013cfed7d42c4315efcf3"
+    },
+    "gap_density_association_statistics.csv": {
+      "bytes": 1652,
+      "sha256": "8df9c698a0917f752c9e8a4600a653a6d465cced74dbc17fd4e8513947bcfaf1"
+    },
+    "gap_overlap_association_statistics.csv": {
+      "bytes": 1763,
+      "sha256": "53e6f68329cb067353c115069c0781016a90129f7846bc2d25da189672a8209b"
+    },
+    "gap_vs_structural_parameter.svg": {
+      "bytes": 5068,
+      "sha256": "ef243bf85a1f0d38b1f2600a462eae8a4e51e82bd88c7e0db6edb50879ae2cbc"
+    },
+    "greedy_failure_statistics.csv": {
+      "bytes": 792,
+      "sha256": "5c13453c053f4632eb4be60e871076ca1ad15baf9cccc9f0fafdf9cab83d2b46"
+    },
+    "heuristic_exact_runtime_ratio_statistics.csv": {
+      "bytes": 907,
+      "sha256": "ae260133b0225fb904f0200376d6852bea9dc462007c876a3cddbcd65a190164"
+    },
+    "instances.csv": {
+      "bytes": 22375,
+      "sha256": "4a1001eea3bb46588cfaefae52a1016277b4ccac6ca185c077d593f52ccc20dd"
+    },
+    "local_search_recovery.svg": {
+      "bytes": 826,
+      "sha256": "138a86c35278aa616e3dfc1c3163db9cee99c90ea292ff26eb30787e0ef7e187"
+    },
+    "local_search_recovery_statistics.csv": {
+      "bytes": 423,
+      "sha256": "5cd52a810b299705d443c975c02b534def5d5c13907875174c1eac34b695a064"
+    },
+    "local_search_remaining_gap_statistics.csv": {
+      "bytes": 306,
+      "sha256": "989a3b2255f4bf6a8ecd77b7026fde660ca8ee16bae37b4301fbac7467a81ff9"
+    },
+    "node_scaling.svg": {
+      "bytes": 991,
+      "sha256": "03f1c25c4638a069b4319eba4b682aed18a4f6bcc6daa92af6c338ec057a5f5b"
+    },
+    "quality_runtime_pareto.svg": {
+      "bytes": 4258,
+      "sha256": "8312afb8095fb5014dc30bf073a3d05cb1586781ed7810927357660d4ee3c6b0"
+    },
+    "quality_runtime_pareto_statistics.csv": {
+      "bytes": 1070,
+      "sha256": "e5fd39c03cc247ae968f3256a8de5cc7fbccec40bbfcbd48d709d6f7e4239b89"
+    },
+    "raw_results.csv": {
+      "bytes": 62786,
+      "sha256": "3bf3fdabc5b15cf8b108c60c47ba3ceba72783a583ff00520f6eecf85107b7e5"
+    },
+    "reference_censoring_bias_statistics.csv": {
+      "bytes": 4776,
+      "sha256": "363aa574a9aa52f191e3e109cd375c805d06252e97d2ef654018b6cd0e202321"
+    },
+    "reference_coverage_by_case.svg": {
+      "bytes": 2136,
+      "sha256": "defbd7ad731e58ac4040a760d1fdb7a7e9966250427c51925a4b74911f1c71d6"
+    },
+    "reference_coverage_statistics.csv": {
+      "bytes": 2712,
+      "sha256": "2e27a17740808804692cbf8add376bd397c581aa4a07acbbe46a689ef00a4b8f"
+    },
+    "reference_cutoff_sensitivity_statistics.csv": {
+      "bytes": 770,
+      "sha256": "0eb5d09b4047141684b9795eb28cb2fc82734db1789983d80abbd4b75a8451fc"
+    },
+    "reference_status.csv": {
+      "bytes": 19085,
+      "sha256": "829b4adbcbcd486088f98d8a3b1a0604738a1c870b493f3fb344f0ebce037dbd"
+    },
+    "results_summary.md": {
+      "bytes": 24539,
+      "sha256": "8332bab0c19951204dbab3f5f3900e16ce6f96294cd69fcd18faa2199a3fd19c"
+    },
+    "runtime_by_algorithm.svg": {
+      "bytes": 2822,
+      "sha256": "b65fdc9ea627a7dde4ebf4fe04c1981114e22ce0a35b207a324d6eb7778ee3d9"
+    },
+    "runtime_k_association_statistics.csv": {
+      "bytes": 1465,
+      "sha256": "d778cade0b5ad843bfc862aa3a41de6c3e32f30b8c51de882552a831a18ffc06"
+    },
+    "runtime_scaling.svg": {
+      "bytes": 6198,
+      "sha256": "c2e6f42df923496956469fc17f86981fbaa5926d9b543d85c40036769e8a59d5"
+    },
+    "runtime_set_count_association_statistics.csv": {
+      "bytes": 1543,
+      "sha256": "750d3afb42ece4cff20ba21b53cfa84580304373d9e279343372e5de843479c3"
+    },
+    "search_nodes_dominated_ratio_association_statistics.csv": {
+      "bytes": 450,
+      "sha256": "17efb55a1daa40044f6f40669f20c75245a8003f3e642bf2e00a3d36418feae9"
+    },
+    "summary.csv": {
+      "bytes": 512,
+      "sha256": "f41088c81e5cd6beca9ce3353aeb74422abf21e393e5d5468b5079b66a3fd5d7"
+    },
+    "timeout_by_case.svg": {
+      "bytes": 3865,
+      "sha256": "03624a49c26e2b55bdcb1dffde15010547c618dfb5727906a653d85a09c71fab"
+    }
+  },
+  "p6_automatic_fact_contract": {
+    "algorithm_ranking": "not_supported",
+    "hardest_case": {
+      "empty_policy": "explicit_unavailable_without_completed_or_censored_runtime",
+      "error_policy": "counted_but_not_used_as_difficulty_evidence",
+      "interpretation": "machine_specific_fixed_corpus_operational_diagnostic",
+      "population": "configured_exact_algorithm_variants",
+      "selection_rule": "maximum_instance_censoring_rate_then_maximum_mean_completed_runtime_then_stable_identity",
+      "timeout_policy": "right_censoring_precedes_completed_runtime"
+    },
+    "inference": "none",
+    "local_search_recovery": {
+      "empty_policy": "explicit_unavailable_zero_eligible_pairs",
+      "estimand": "eligible_pair_count_weighted_mean_gap_recovery_rate",
+      "interpretation": "fixed_corpus_descriptive_fact",
+      "unit": "paired_instance_seed_within_case_variant_pair"
+    },
+    "population_generalization": "not_in_scope",
+    "schema_version": 1,
+    "scope": "results_summary_headline_checks",
+    "source_artifacts": [
+      "descriptive_statistics.csv",
+      "local_search_recovery_statistics.csv",
+      "censored_runtime_statistics.csv"
+    ]
+  },
+  "p6_chart_contract": {
+    "association_interpretation": "descriptive_non_causal",
+    "availability": "always",
+    "canonical_charts": {
+      "gap_by_case.svg": [
+        "descriptive_statistics.csv"
+      ],
+      "gap_vs_structural_parameter.svg": [
+        "gap_density_association_statistics.csv",
+        "gap_overlap_association_statistics.csv",
+        "gap_clustering_association_statistics.csv"
+      ],
+      "local_search_recovery.svg": [
+        "local_search_recovery_statistics.csv"
+      ],
+      "node_scaling.svg": [
+        "search_nodes_dominated_ratio_association_statistics.csv"
+      ],
+      "quality_runtime_pareto.svg": [
+        "quality_runtime_pareto_statistics.csv"
+      ],
+      "reference_coverage_by_case.svg": [
+        "reference_status.csv",
+        "reference_coverage_statistics.csv"
+      ],
+      "runtime_scaling.svg": [
+        "runtime_set_count_association_statistics.csv",
+        "runtime_k_association_statistics.csv"
+      ],
+      "timeout_by_case.svg": [
+        "censored_runtime_statistics.csv"
+      ]
+    },
+    "compatibility_charts": [
+      "gap_by_family.svg",
+      "runtime_by_algorithm.svg"
+    ],
+    "determinism": "stable_sorting_and_fixed_svg_geometry",
+    "empty_behavior": "deterministic_placeholder_svg",
+    "exclusion_annotation": "required",
+    "repetition_unit_annotation": "required",
+    "runtime_interpretation": "machine_specific",
+    "sample_annotation": "required",
+    "schema_version": 1
+  },
+  "quality_runtime_pareto_contract": {
+    "across_instance_aggregation": "equal_weight_arithmetic_mean",
+    "algorithm_seed_layout_policy": "fixed_within_variant",
+    "algorithm_seed_role": "nested_within_instance",
+    "artifact": "quality_runtime_pareto_statistics.csv",
+    "artifact_schema_version": 1,
+    "availability": "always",
+    "canonical_precision": "raw_results_csv_round_trip_and_coordinates_10_decimal_places",
+    "censored_runtime_analysis": "not_in_scope",
+    "comparison_scope": "within_case",
+    "dominance": "no_worse_on_both_objectives_and_strictly_better_on_at_least_one",
+    "eligible_instance_policy": "positive_reference_and_all_runs_of_all_variants_completed",
+    "eligible_statuses": [
+      "optimal",
+      "feasible"
+    ],
+    "empty_behavior": "header_only",
+    "error_policy": "exclude_instance_from_all_points_and_count_by_variant",
+    "objectives": {
+      "mean_relative_gap": "minimize",
+      "mean_runtime_seconds": "minimize"
+    },
+    "quality_formula": "(optimum-coverage)/optimum",
+    "quality_metric": "mean_relative_optimality_gap",
+    "reference_policy": "normalized_positive_exact_optimum",
+    "repetition_unit": "instance_seed",
+    "runtime_metric": "mean_completed_runtime_seconds",
+    "schema_version": 1,
+    "scope": "all_executed_algorithm_variants",
+    "tie_policy": "identical_points_are_co_frontier",
+    "timeout_policy": "exclude_instance_from_all_points_and_count_by_variant",
+    "variant_unit_policy": "identical_instance_units",
+    "within_instance_aggregation": "arithmetic_mean_across_algorithm_seeds",
+    "zero_eligible_policy": "not_evaluable_blank_coordinates",
+    "zero_optimum_policy": "exclude_and_count"
+  },
+  "reference_coverage_contract": {
+    "causal_inference": "not_in_scope",
+    "censoring_bias_artifact": "reference_censoring_bias_statistics.csv",
+    "censoring_bias_artifact_schema_version": 1,
+    "censoring_bias_estimand": "excluded_mean_minus_retained_mean_within_family_and_parameters",
+    "certificate_policy": "validated_independent_optimum_proof",
+    "coverage_artifact": "reference_coverage_statistics.csv",
+    "coverage_artifact_schema_version": 1,
+    "cross_validation_policy": "all_optimal_exact_sources_must_agree; small_instance_flag_requires_brute_force_and_branch_and_bound_or_cp_sat_agreement",
+    "cutoff_sensitivity_artifact": "reference_cutoff_sensitivity_statistics.csv",
+    "cutoff_sensitivity_artifact_schema_version": 1,
+    "cutoff_sensitivity_denominator": "all_generated_instances",
+    "denominator": "all_generated_instances_within_family_and_parameters",
+    "ineligible_solver_status": "not_run",
+    "missing_reference_chart": "reference_coverage_by_case.svg",
+    "numerator": "instances_with_at_least_one_validated_optimum_proof",
+    "reference_status_precedence": [
+      "known_optimum_certificate",
+      "optimal",
+      "feasible",
+      "timeout",
+      "error",
+      "not_run"
+    ],
+    "schema_version": 1,
+    "significance_testing": "not_in_scope",
+    "solver_status_detail": "all_enabled_configured_exact_variants_per_instance",
+    "status_artifact": "reference_status.csv",
+    "status_artifact_schema_version": 1
+  },
+  "runtime_k_association_contract": {
+    "across_instance_weighting": "equal",
+    "algorithm_seed_layout_policy": "fixed_within_variant",
+    "algorithm_seed_role": "nested_within_instance",
+    "artifact": "runtime_k_association_statistics.csv",
+    "artifact_schema_version": 1,
+    "asymptotic_complexity_claim": "not_in_scope",
+    "automatic_conclusion_independent_count": "eligible_instance_count",
+    "automatic_conclusion_minimum_sample_count": 10,
+    "automatic_headline": "not_emitted",
+    "availability": "always",
+    "canonical_precision": "instances_and_raw_csv_round_trip_then_10_decimal_statistics",
+    "case_pooling": "within_family_across_executed_cases",
+    "causal_inference": "not_in_scope",
+    "censored_runtime_artifact": "censored_runtime_statistics.csv",
+    "complete_instance_policy": "all_planned_algorithm_seed_runs_must_be_completed",
+    "constant_k_policy": "blank_correlation_and_ols",
+    "constant_runtime_policy": "blank_correlation_zero_slope_intercept_equals_mean_runtime",
+    "cross_family_pooling": "forbidden",
+    "cross_k_pairing": "not_used_independent_instance_seeds",
+    "cross_machine_runtime_comparison": "not_in_scope",
+    "eligible_statuses": [
+      "optimal",
+      "feasible"
+    ],
+    "empty_behavior": "header_only",
+    "error_policy": "exclude_entire_instance_and_count",
+    "group_by": [
+      "config_hash",
+      "family",
+      "algorithm_id",
+      "algorithm"
+    ],
+    "minimum_sample_count": 2,
+    "nonlinear_or_log_modeling": "not_in_scope",
+    "ols_slope_unit": "seconds_per_selection_budget_unit",
+    "predictor": "k",
+    "predictor_definition": "actual_instance_selection_budget",
+    "predictor_source": "instances.csv",
+    "quality_stability_claim": "not_in_scope",
+    "repetition_unit": "instance_seed",
+    "response": "mean_completed_runtime_seconds",
+    "schema_version": 1,
+    "scope": "all_executed_algorithm_variants",
+    "selected_count_or_algorithm_option_policy": "not_substituted",
+    "significance_testing": "not_in_scope",
+    "source_artifacts": [
+      "instances.csv",
+      "raw_results.csv"
+    ],
+    "statistics": [
+      "sample_means",
+      "sample_standard_deviations",
+      "pearson_correlation",
+      "ols_slope_with_intercept"
+    ],
+    "survival_modeling": "not_in_scope",
+    "timeout_policy": "exclude_entire_instance_and_count",
+    "within_instance_runtime": "arithmetic_mean_across_all_completed_algorithm_seed_runs"
+  },
+  "runtime_set_count_association_contract": {
+    "across_instance_weighting": "equal",
+    "algorithm_seed_layout_policy": "fixed_within_variant",
+    "algorithm_seed_role": "nested_within_instance",
+    "artifact": "runtime_set_count_association_statistics.csv",
+    "artifact_schema_version": 1,
+    "asymptotic_complexity_claim": "not_in_scope",
+    "automatic_conclusion_independent_count": "eligible_instance_count",
+    "automatic_conclusion_minimum_sample_count": 10,
+    "automatic_headline": "not_emitted",
+    "availability": "always",
+    "canonical_precision": "instances_and_raw_csv_round_trip_then_10_decimal_statistics",
+    "case_pooling": "within_family_across_executed_cases",
+    "causal_inference": "not_in_scope",
+    "censored_runtime_artifact": "censored_runtime_statistics.csv",
+    "complete_instance_policy": "all_planned_algorithm_seed_runs_must_be_completed",
+    "constant_runtime_policy": "blank_correlation_zero_slope_intercept_equals_mean_runtime",
+    "constant_set_count_policy": "blank_correlation_and_ols",
+    "cross_family_pooling": "forbidden",
+    "cross_machine_runtime_comparison": "not_in_scope",
+    "eligible_statuses": [
+      "optimal",
+      "feasible"
+    ],
+    "empty_behavior": "header_only",
+    "error_policy": "exclude_entire_instance_and_count",
+    "group_by": [
+      "config_hash",
+      "family",
+      "algorithm_id",
+      "algorithm"
+    ],
+    "minimum_sample_count": 2,
+    "nonlinear_or_log_modeling": "not_in_scope",
+    "ols_slope_unit": "seconds_per_candidate_set",
+    "predictor": "set_count",
+    "predictor_definition": "actual_candidate_set_count",
+    "predictor_source": "instances.csv",
+    "repetition_unit": "instance_seed",
+    "response": "mean_completed_runtime_seconds",
+    "schema_version": 1,
+    "scope": "all_executed_algorithm_variants",
+    "significance_testing": "not_in_scope",
+    "source_artifacts": [
+      "instances.csv",
+      "raw_results.csv"
+    ],
+    "statistics": [
+      "sample_means",
+      "sample_standard_deviations",
+      "pearson_correlation",
+      "ols_slope_with_intercept"
+    ],
+    "survival_modeling": "not_in_scope",
+    "timeout_policy": "exclude_entire_instance_and_count",
+    "unique_or_preprocessed_set_count_policy": "not_substituted",
+    "within_instance_runtime": "arithmetic_mean_across_all_completed_algorithm_seed_runs"
+  },
+  "schema_version": 1,
+  "search_nodes_dominated_ratio_association_contract": {
+    "across_instance_weighting": "equal",
+    "algorithm_seed_policy": "forbidden",
+    "algorithms": [
+      "branch_and_bound",
+      "branch_and_bound_enhanced"
+    ],
+    "artifact": "search_nodes_dominated_ratio_association_statistics.csv",
+    "artifact_schema_version": 1,
+    "asymptotic_complexity_claim": "not_in_scope",
+    "automatic_conclusion_independent_count": "eligible_instance_count",
+    "automatic_conclusion_minimum_sample_count": 10,
+    "automatic_headline": "not_emitted",
+    "availability": "always",
+    "brute_force_enumeration": "not_in_scope",
+    "canonical_precision": "instances_and_raw_csv_round_trip_then_10_decimal_statistics",
+    "case_pooling": "within_family_across_executed_cases",
+    "causal_inference": "not_in_scope",
+    "constant_dominated_ratio_policy": "blank_correlation_and_ols",
+    "constant_nodes_policy": "blank_correlation_zero_slope_intercept_equals_mean_nodes",
+    "cross_family_pooling": "forbidden",
+    "cross_machine_comparison": "not_in_scope",
+    "dominated_unique_or_preprocessed_policy": "not_substituted",
+    "eligible_statuses": [
+      "optimal"
+    ],
+    "empty_behavior": "header_only",
+    "error_policy": "exclude_and_count",
+    "group_by": [
+      "config_hash",
+      "family",
+      "algorithm_id",
+      "algorithm"
+    ],
+    "heuristic_iterations": "not_in_scope",
+    "minimum_sample_count": 2,
+    "node_source": "nodes_or_iterations_validated_against_metadata_when_present",
+    "nonlinear_or_log_modeling": "not_in_scope",
+    "ols_slope_unit": "search_nodes_per_dominated_ratio_unit",
+    "predictor": "dominated_set_ratio",
+    "predictor_definition": "dominated_set_count/set_count",
+    "predictor_source": "instances.csv",
+    "repetition_unit": "instance_seed",
+    "response": "completed_search_nodes",
+    "schema_version": 1,
+    "scope": "executed_branch_and_bound_variants_only",
+    "significance_testing": "not_in_scope",
+    "source_artifacts": [
+      "instances.csv",
+      "raw_results.csv"
+    ],
+    "statistics": [
+      "sample_means",
+      "sample_standard_deviations",
+      "pearson_correlation",
+      "ols_slope_with_intercept"
+    ],
+    "timeout_policy": "exclude_partial_search_and_count",
+    "within_instance_run_policy": "exactly_one"
+  },
+  "seeds": {
+    "base_seed": 7401,
+    "count": 30,
+    "maximum": 16941105954642047162,
+    "minimum": 16941105954642047133
+  },
+  "timing": {
+    "duration_seconds": 0.9237769999999728,
+    "ended_at": "2026-09-05T12:10:57.936242+00:00",
+    "started_at": "2026-09-05T12:10:57.012430+00:00"
+  }
+}

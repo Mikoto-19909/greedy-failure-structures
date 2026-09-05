@@ -2,13 +2,17 @@
 
 记录日期：2026-09-05。
 
-状态：配置与离线分析已实现，正式实验尚未执行。本文中的样本数、参数和阈值都是
-预定设计，不是测量结果。实验准备包含固定配置、输入校验、配对统计、Matplotlib
-图和合成输入测试；正式运行与证据冻结作为后续独立批次。
+状态：固定实验已完成，结果及最小证据见 [C1](../experiments/core_rq/CLAIMS.md#c1)
+和[研究报告](../analysis/overlap_pilot_v1.md)。下文保留原先预定的设计、参数与验收规则。
+实验准备通过 [PR #28](https://github.com/Mikoto-19909/greedy-failure-structures/pull/28)
+交付，包含固定配置、输入校验、配对统计、Matplotlib 图和合成输入测试。
 
 本轮实施起点为 `5ae4e8574dc0c50349e754d9462480168d132de2`，包含已合并的
 PR #21 配对修复，以及 [准备 PR #27](https://github.com/Mikoto-19909/greedy-failure-structures/pull/27)
-统一后的计划。第 2 节保留最初核对时的历史状态；正式运行另记实际完整提交 SHA。
+统一后的计划。第 2 节保留最初核对时的历史状态。正式运行使用干净提交
+`27acae5f2ee9f478fba22af98c6694382a0a7100`，完整输出位于
+`results/core_overlap_pilot_v2/`；验证器和独立统计复算均通过。
+预定样本已经完成并停止，未追加种子或混入其他分支结果。
 
 ## 1. 本次要回答的问题
 
@@ -125,8 +129,8 @@ runner 根据 base seed、seed group 和 repetition 派生实例 seed；
 | --- | --- |
 | `configs/core_overlap_pilot.json` | 保存上述固定配置。 |
 | `analysis/core_overlap_pilot.py` | 一个针对该实验的离线汇总脚本，读取现有 canonical CSV，输出配对表、简短报告和一张图。 |
-| `results/core_overlap_pilot_v1/` | 完整 benchmark 输出，继续 gitignored。 |
-| `results/core_overlap_pilot_v1/analysis/` | `paired_instances.csv`、`report.md`、`failure_rate.svg`、`validation.md`。 |
+| `results/core_overlap_pilot_v2/` | 完整 benchmark 输出，继续 gitignored。 |
+| `results/core_overlap_pilot_v2/analysis/` | `paired_instances.csv`、`report.md`、`failure_rate.svg`、`validation.md`。 |
 | `experiments/core_rq/` 与 `analysis/` | 实验完成后，按第 8 节冻结最小证据及外部说明。 |
 
 分析代码不进入 `src/maxcover/`，不新增 CLI 子命令、注册器或通用报告框架。
@@ -164,8 +168,10 @@ runner 根据 base seed、seed group 和 repetition 派生实例 seed；
    的可行覆盖量，不重新执行算法，也不单独证明参考最优性。
 
 实施补充：PR #28 的后续审查指出，既有完整输出验证器对本配置不核对选择集合
-与覆盖量的一致性。发布结果前补上上述可行解检查；保留首次运行目录，修复提交
-固定后以同一配置和种子重跑到新目录。统计口径和抽样决定保持不变。
+与覆盖量的一致性。上述可行解检查已通过
+[PR #29](https://github.com/Mikoto-19909/greedy-failure-structures/pull/29) 修复并独立复查。
+首次运行目录 `results/core_overlap_pilot_v1/` 保留，修复提交固定后以同一配置和种子
+重跑至 `results/core_overlap_pilot_v2/`；采用后者冻结证据。统计口径和抽样决定未变。
 
 任何实例缺失参考、状态异常、重复或配对不完整，都作为执行问题停止分析。
 本规模要求全部 60 个参考完成，不能静默删行后改用较小分母。
@@ -281,8 +287,8 @@ git rev-parse HEAD
 git status --porcelain
 python --version
 python run_project.py benchmark --config configs/core_overlap_pilot.json --dry-run
-python run_project.py benchmark --config configs/core_overlap_pilot.json --output results/core_overlap_pilot_v1 --workers 1
-python .github/scripts/validate_benchmark_output.py --config configs/core_overlap_pilot.json --output results/core_overlap_pilot_v1
+python run_project.py benchmark --config configs/core_overlap_pilot.json --output results/core_overlap_pilot_v2 --workers 1
+python .github/scripts/validate_benchmark_output.py --config configs/core_overlap_pilot.json --output results/core_overlap_pilot_v2
 ```
 
 dry-run 应显示 2 个 case、60 个实例和 120 条算法运行。
@@ -296,7 +302,7 @@ dry-run 应显示 2 个 case、60 个实例和 120 条算法运行。
 在离线绘图环境提供 matplotlib 后，执行已实现的分析脚本：
 
 ```console
-python analysis/core_overlap_pilot.py --config configs/core_overlap_pilot.json --results results/core_overlap_pilot_v1 --output results/core_overlap_pilot_v1/analysis
+python analysis/core_overlap_pilot.py --config configs/core_overlap_pilot.json --results results/core_overlap_pilot_v2 --output results/core_overlap_pilot_v2/analysis
 ```
 
 报告先列固定实验范围和输入验收，再列结构诊断、失率与 gap 结果，最后写限定结论。

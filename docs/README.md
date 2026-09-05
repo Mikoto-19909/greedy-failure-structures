@@ -5,14 +5,15 @@ examples, method checks, and broader exploratory workflows.
 
 ## Current research
 
-The next checkpoint compares Greedy failures under `high_overlap` and a
+The completed checkpoint compares Greedy failures under `high_overlap` and a
 dimension- and expected-size-matched `uniform` control. The
 [execution plan in PR #23](https://github.com/Mikoto-19909/greedy-failure-structures/pull/23)
 specifies the fixed pilot and its prerequisites. The
 [configuration](../configs/core_overlap_pilot.json) and
-[offline analysis](../analysis/core_overlap_pilot.py) are prepared. The formal
-experiment is pending; use the [pilot commands](cli.md#core-overlap-pilot)
-on a clean fixed source revision.
+[offline analysis](../analysis/core_overlap_pilot.py) have been run on a clean
+fixed source revision. Read the [pilot report](../analysis/overlap_pilot_v1.md)
+and [C1 evidence](../experiments/core_rq/CLAIMS.md#c1), or use the
+[pilot commands](cli.md#core-overlap-pilot) to reproduce it.
 
 Start with [`analysis/README.md`](../analysis/README.md) for research status.
 The quick/full and broader workflows below serve other purposes.
@@ -42,8 +43,8 @@ revisits existing instance families. Both retain schema v1 for compatibility.
 ## Experiment guidance
 
 - [`core_overlap_checkpoint_plan.zh-CN.md`](core_overlap_checkpoint_plan.zh-CN.md):
-  planned single-point comparison of Greedy failures under high overlap and a
-  matched uniform control (Simplified Chinese; experiment not yet executed)
+  fixed single-point comparison of Greedy failures under high overlap and a
+  matched uniform control (Simplified Chinese; completed pilot and original design)
 - [`failure_mechanisms.md`](failure_mechanisms.md): structural stressors,
   direct greedy traps, and the configurations that exercise them
 - [`generator_isolation.md`](generator_isolation.md): target-metric monotonicity,

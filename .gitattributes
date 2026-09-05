@@ -1,3 +1,5 @@
 * text=auto eol=lf
 *.ps1 text eol=crlf
 
+# Preserve the published Matplotlib bytes, including generated line whitespace.
+analysis/overlap_pilot_v1.svg -text whitespace=-blank-at-eol,cr-at-eol

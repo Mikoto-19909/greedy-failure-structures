@@ -1,0 +1,36 @@
+{
+  "schema_version": 3,
+  "name": "Core overlap matched-control pilot",
+  "base_seed": 7401,
+  "repetitions": 30,
+  "algorithms": [
+    { "name": "greedy" },
+    {
+      "id": "exact_reference",
+      "name": "brute_force",
+      "options": { "max_set_count": 16, "time_limit_seconds": null }
+    }
+  ],
+  "cases": [
+    {
+      "name": "overlap",
+      "seed_group": "core_overlap_pilot",
+      "family": "high_overlap",
+      "universe_size": 48,
+      "set_count": 16,
+      "k": 4,
+      "core_fraction": 0.5,
+      "core_probability": 0.8,
+      "peripheral_probability": 0.05
+    },
+    {
+      "name": "overlap_control",
+      "seed_group": "core_overlap_pilot",
+      "family": "uniform",
+      "universe_size": 48,
+      "set_count": 16,
+      "k": 4,
+      "density": 0.425
+    }
+  ]
+}

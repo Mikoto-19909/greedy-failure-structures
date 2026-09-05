@@ -24,8 +24,9 @@ python -m pip install -e ".[oracle]"
 
 The [pilot configuration](../configs/core_overlap_pilot.json) and
 [offline analysis script](../analysis/core_overlap_pilot.py) are implemented.
-The formal experiment is pending. Read the plan's prerequisites and use the
-[dedicated commands](#core-overlap-pilot) on a clean fixed commit.
+The formal experiment is complete; see the [report](../analysis/overlap_pilot_v1.md)
+and [C1](../experiments/core_rq/CLAIMS.md#c1). Use the
+[dedicated commands](#core-overlap-pilot) to reproduce the fixed design.
 
 Omitting the CLI command runs `quick`. The PowerShell wrapper also defaults to
 quick, and the Dashboard initially prefers `quick.json` without a retained
@@ -44,17 +45,19 @@ See the [workflow index](README.md) for those roles.
 
 ## Core overlap pilot
 
-Commit the configuration and analysis preparation before running the formal
-experiment. Start from a clean fixed revision and a new output directory; keep
+The published evidence uses clean commit `27acae5f2ee9f478fba22af98c6694382a0a7100`,
+after [preparation PR #28](https://github.com/Mikoto-19909/greedy-failure-structures/pull/28)
+and the [selection validation fix](https://github.com/Mikoto-19909/greedy-failure-structures/pull/29).
+Reproduce it from that revision and a new output directory; keep
 the prescribed seed batch even if the result is inconclusive or reversed.
 Matplotlib is an optional offline plotting dependency:
 
 ```console
 python -m pip install matplotlib
 python run_project.py benchmark --config configs/core_overlap_pilot.json --dry-run
-python run_project.py benchmark --config configs/core_overlap_pilot.json --output results/core_overlap_pilot_v1 --workers 1
-python .github/scripts/validate_benchmark_output.py --config configs/core_overlap_pilot.json --output results/core_overlap_pilot_v1
-python analysis/core_overlap_pilot.py --config configs/core_overlap_pilot.json --results results/core_overlap_pilot_v1 --output results/core_overlap_pilot_v1/analysis
+python run_project.py benchmark --config configs/core_overlap_pilot.json --output results/core_overlap_pilot_v2 --workers 1
+python .github/scripts/validate_benchmark_output.py --config configs/core_overlap_pilot.json --output results/core_overlap_pilot_v2
+python analysis/core_overlap_pilot.py --config configs/core_overlap_pilot.json --results results/core_overlap_pilot_v2 --output results/core_overlap_pilot_v2/analysis
 ```
 
 The analysis also invokes the complete-output validator before its own input
