@@ -549,29 +549,9 @@ def _validate_manifest(output: Path, manifest: dict[str, object]) -> None:
             _fail(f"SHA-256 mismatch for {filename}")
 
 
-def validate(config_path: Path, output: Path) -> None:
-    config = load_config(config_path)
-    plan = plan_benchmark(config)
-    manifest_path = output / "manifest.json"
-    if not manifest_path.is_file():
-        _fail("manifest.json does not exist")
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    if not isinstance(manifest, dict):
-        _fail("manifest root must be an object")
-    _validate_manifest(output, manifest)
-
-    configuration = manifest.get("configuration")
-    execution = manifest.get("execution")
-    if not isinstance(configuration, dict) or not isinstance(execution, dict):
-        _fail("manifest configuration and execution sections must be objects")
-    expected_hash = config_hash(config)
-    if configuration.get("config_hash") != expected_hash:
-        _fail("manifest configuration hash does not match the input config")
-    _validate_manifest_algorithm_identity(config, manifest)
-    if execution.get("planned_runs") != plan.algorithm_run_count:
-        _fail("manifest planned run count does not match the execution plan")
-    if execution.get("planned_instances") != plan.instance_count:
-        _fail("manifest planned instance count does not match the execution plan")
+def _validate_analysis_contract(
+    manifest: dict[str, object],
+) -> None:
     analysis_contract = manifest.get("analysis_contract")
     expected_analysis_contract = {
         "schema_version": 1,
@@ -585,6 +565,11 @@ def validate(config_path: Path, output: Path) -> None:
     }
     if analysis_contract != expected_analysis_contract:
         _fail("manifest analysis contract is missing or inconsistent")
+
+
+def _validate_p6_chart_contract(
+    manifest: dict[str, object],
+) -> None:
     expected_p6_chart_contract = {
         "schema_version": 1,
         "availability": "always",
@@ -630,6 +615,11 @@ def validate(config_path: Path, output: Path) -> None:
     }
     if manifest.get("p6_chart_contract") != expected_p6_chart_contract:
         _fail("manifest P6 chart contract is missing or inconsistent")
+
+
+def _validate_reference_coverage_contract(
+    manifest: dict[str, object],
+) -> None:
     expected_reference_coverage_contract = {
         "schema_version": 1,
         "status_artifact": "reference_status.csv",
@@ -668,6 +658,11 @@ def validate(config_path: Path, output: Path) -> None:
     }
     if manifest.get("reference_coverage_contract") != expected_reference_coverage_contract:
         _fail("manifest reference-coverage contract is missing or inconsistent")
+
+
+def _validate_confidence_interval_contract(
+    manifest: dict[str, object],
+) -> None:
     confidence_interval_contract = manifest.get(
         "confidence_interval_contract"
     )
@@ -717,6 +712,11 @@ def validate(config_path: Path, output: Path) -> None:
         _fail(
             "manifest confidence-interval contract is missing or inconsistent"
         )
+
+
+def _validate_automatic_conclusion_contract(
+    manifest: dict[str, object],
+) -> None:
     automatic_conclusion_contract = manifest.get(
         "automatic_conclusion_contract"
     )
@@ -751,6 +751,11 @@ def validate(config_path: Path, output: Path) -> None:
         _fail(
             "manifest automatic-conclusion contract is missing or inconsistent"
         )
+
+
+def _validate_p6_automatic_fact_contract(
+    manifest: dict[str, object],
+) -> None:
     p6_automatic_fact_contract = manifest.get("p6_automatic_fact_contract")
     expected_p6_automatic_fact_contract = {
         "schema_version": 1,
@@ -787,6 +792,11 @@ def validate(config_path: Path, output: Path) -> None:
     }
     if p6_automatic_fact_contract != expected_p6_automatic_fact_contract:
         _fail("manifest P6 automatic-fact contract is missing or inconsistent")
+
+
+def _validate_censored_runtime_contract(
+    manifest: dict[str, object],
+) -> None:
     censored_runtime_contract = manifest.get("censored_runtime_contract")
     expected_censored_runtime_contract = {
         "schema_version": 1,
@@ -829,6 +839,11 @@ def validate(config_path: Path, output: Path) -> None:
         _fail(
             "manifest censored-runtime contract is missing or inconsistent"
         )
+
+
+def _validate_optimality_gap_contract(
+    manifest: dict[str, object],
+) -> None:
     optimality_gap_contract = manifest.get("optimality_gap_contract")
     expected_optimality_gap_contract = {
         "schema_version": 1,
@@ -868,6 +883,11 @@ def validate(config_path: Path, output: Path) -> None:
     }
     if optimality_gap_contract != expected_optimality_gap_contract:
         _fail("manifest optimality-gap contract is missing or inconsistent")
+
+
+def _validate_greedy_failure_contract(
+    manifest: dict[str, object],
+) -> None:
     greedy_failure_contract = manifest.get("greedy_failure_contract")
     expected_greedy_failure_contract = {
         "schema_version": 1,
@@ -891,6 +911,11 @@ def validate(config_path: Path, output: Path) -> None:
     }
     if greedy_failure_contract != expected_greedy_failure_contract:
         _fail("manifest Greedy failure contract is missing or inconsistent")
+
+
+def _validate_local_search_recovery_contract(
+    manifest: dict[str, object],
+) -> None:
     local_search_recovery_contract = manifest.get(
         "local_search_recovery_contract"
     )
@@ -934,6 +959,11 @@ def validate(config_path: Path, output: Path) -> None:
     }
     if local_search_recovery_contract != expected_local_search_recovery_contract:
         _fail("manifest Local Search recovery contract is missing or inconsistent")
+
+
+def _validate_local_search_remaining_gap_contract(
+    manifest: dict[str, object],
+) -> None:
     local_search_remaining_gap_contract = manifest.get(
         "local_search_remaining_gap_contract"
     )
@@ -986,6 +1016,11 @@ def validate(config_path: Path, output: Path) -> None:
             "manifest Local Search remaining-gap contract is missing or "
             "inconsistent"
         )
+
+
+def _validate_heuristic_exact_runtime_ratio_contract(
+    manifest: dict[str, object],
+) -> None:
     heuristic_exact_runtime_ratio_contract = manifest.get(
         "heuristic_exact_runtime_ratio_contract"
     )
@@ -1030,6 +1065,11 @@ def validate(config_path: Path, output: Path) -> None:
             "manifest heuristic/exact runtime-ratio contract is missing or "
             "inconsistent"
         )
+
+
+def _validate_bnb_node_reduction_contract(
+    manifest: dict[str, object],
+) -> None:
     bnb_node_reduction_contract = manifest.get(
         "bnb_node_reduction_contract"
     )
@@ -1074,6 +1114,11 @@ def validate(config_path: Path, output: Path) -> None:
             "manifest Branch-and-Bound node-reduction contract is missing or "
             "inconsistent"
         )
+
+
+def _validate_quality_runtime_pareto_contract(
+    manifest: dict[str, object],
+) -> None:
     quality_runtime_pareto_contract = manifest.get(
         "quality_runtime_pareto_contract"
     )
@@ -1126,6 +1171,11 @@ def validate(config_path: Path, output: Path) -> None:
         _fail(
             "manifest quality-runtime Pareto contract is missing or inconsistent"
         )
+
+
+def _validate_gap_density_association_contract(
+    manifest: dict[str, object],
+) -> None:
     gap_density_association_contract = manifest.get(
         "gap_density_association_contract"
     )
@@ -1195,6 +1245,11 @@ def validate(config_path: Path, output: Path) -> None:
             "manifest gap-density association contract is missing or "
             "inconsistent"
         )
+
+
+def _validate_gap_overlap_association_contract(
+    manifest: dict[str, object],
+) -> None:
     gap_overlap_association_contract = manifest.get(
         "gap_overlap_association_contract"
     )
@@ -1269,6 +1324,11 @@ def validate(config_path: Path, output: Path) -> None:
             "manifest gap-overlap association contract is missing or "
             "inconsistent"
         )
+
+
+def _validate_gap_clustering_association_contract(
+    manifest: dict[str, object],
+) -> None:
     gap_clustering_association_contract = manifest.get(
         "gap_clustering_association_contract"
     )
@@ -1353,6 +1413,11 @@ def validate(config_path: Path, output: Path) -> None:
             "manifest gap-clustering association contract is missing or "
             "inconsistent"
         )
+
+
+def _validate_runtime_set_count_association_contract(
+    manifest: dict[str, object],
+) -> None:
     runtime_set_count_association_contract = manifest.get(
         "runtime_set_count_association_contract"
     )
@@ -1428,6 +1493,11 @@ def validate(config_path: Path, output: Path) -> None:
             "manifest runtime-set-count association contract is missing or "
             "inconsistent"
         )
+
+
+def _validate_runtime_k_association_contract(
+    manifest: dict[str, object],
+) -> None:
     runtime_k_association_contract = manifest.get(
         "runtime_k_association_contract"
     )
@@ -1499,6 +1569,11 @@ def validate(config_path: Path, output: Path) -> None:
         _fail(
             "manifest runtime-k association contract is missing or inconsistent"
         )
+
+
+def _validate_search_nodes_dominated_ratio_contract(
+    manifest: dict[str, object],
+) -> None:
     search_nodes_dominated_ratio_contract = manifest.get(
         "search_nodes_dominated_ratio_association_contract"
     )
@@ -1572,6 +1647,51 @@ def validate(config_path: Path, output: Path) -> None:
             "manifest search-nodes dominated-ratio association contract is "
             "missing or inconsistent"
         )
+
+
+def validate(config_path: Path, output: Path) -> None:
+    config = load_config(config_path)
+    plan = plan_benchmark(config)
+    manifest_path = output / "manifest.json"
+    if not manifest_path.is_file():
+        _fail("manifest.json does not exist")
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if not isinstance(manifest, dict):
+        _fail("manifest root must be an object")
+    _validate_manifest(output, manifest)
+
+    configuration = manifest.get("configuration")
+    execution = manifest.get("execution")
+    if not isinstance(configuration, dict) or not isinstance(execution, dict):
+        _fail("manifest configuration and execution sections must be objects")
+    expected_hash = config_hash(config)
+    if configuration.get("config_hash") != expected_hash:
+        _fail("manifest configuration hash does not match the input config")
+    _validate_manifest_algorithm_identity(config, manifest)
+    if execution.get("planned_runs") != plan.algorithm_run_count:
+        _fail("manifest planned run count does not match the execution plan")
+    if execution.get("planned_instances") != plan.instance_count:
+        _fail("manifest planned instance count does not match the execution plan")
+    _validate_analysis_contract(manifest)
+    _validate_p6_chart_contract(manifest)
+    _validate_reference_coverage_contract(manifest)
+    _validate_confidence_interval_contract(manifest)
+    _validate_automatic_conclusion_contract(manifest)
+    _validate_p6_automatic_fact_contract(manifest)
+    _validate_censored_runtime_contract(manifest)
+    _validate_optimality_gap_contract(manifest)
+    _validate_greedy_failure_contract(manifest)
+    _validate_local_search_recovery_contract(manifest)
+    _validate_local_search_remaining_gap_contract(manifest)
+    _validate_heuristic_exact_runtime_ratio_contract(manifest)
+    _validate_bnb_node_reduction_contract(manifest)
+    _validate_quality_runtime_pareto_contract(manifest)
+    _validate_gap_density_association_contract(manifest)
+    _validate_gap_overlap_association_contract(manifest)
+    _validate_gap_clustering_association_contract(manifest)
+    _validate_runtime_set_count_association_contract(manifest)
+    _validate_runtime_k_association_contract(manifest)
+    _validate_search_nodes_dominated_ratio_contract(manifest)
 
     instances = _load_records(output / "instances.csv", InstanceRecord)
     rows = _load_records(output / "raw_results.csv", RunRecord)
