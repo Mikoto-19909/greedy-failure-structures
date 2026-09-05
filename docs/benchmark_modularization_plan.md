@@ -19,6 +19,7 @@ PR 5 (B5) remains conditional on the resulting runner's clarity.
 
 ### B1 implementation
 
+B1 is implemented in [PR #35](https://github.com/Mikoto-19909/greedy-failure-structures/pull/35).
 B1 starts from `62bbc13cfd04af017774af78f6f8ec545578b2b2`, after reporting
 [PR #34](https://github.com/Mikoto-19909/greedy-failure-structures/pull/34).
 It moves the two planning/task types, artifact inventories and path enumeration,
@@ -47,6 +48,9 @@ The existing B0 artifact comparison and lifecycle tests remain the acceptance
 gates. Under the user's targeted-local-check authorization, repeated full local
 unit/content/license/type checks are omitted; relevant checks run for the move,
 the license manifest is regenerated, and final required CI remains enabled.
+The moved source passed the old/new artifact comparison, relevant API, pickle
+and lifecycle tests, and its first default mypy check. Mechanical source/AST
+comparisons confirm that moved and retained definitions are unchanged.
 
 B0 implementation starts from `c40658d4cbc16b45fb640b1d97c03688baee16b7`,
 after the fixed pilot and documentation PR #31. No production code had moved
