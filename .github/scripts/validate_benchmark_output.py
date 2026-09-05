@@ -111,8 +111,8 @@ from maxcover.contracts import (  # noqa: E402
     SummaryRecord,
 )
 from maxcover.model import MaximumCoverageInstance, SolutionStatus  # noqa: E402
-from maxcover.reporting import (  # noqa: E402
-    _headline_lines,
+from maxcover._report_markdown import _headline_lines
+from maxcover._report_charts import (
     _render_gap_by_case_chart,
     _render_gap_structural_association_chart,
     _render_local_search_recovery_chart,

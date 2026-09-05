@@ -1,6 +1,6 @@
 # 报告模块拆分计划
 
-记录日期：2026-09-05。状态：待实施。
+记录日期：2026-09-05。状态：拆分已实现，由 PR #34 验收。
 
 本计划以主分支 `ddf6a8a` 的实现为参照。文档存档不表示源码已经拆分。
 实施前重新核对主分支和 benchmark 拆分的进度，以实际代码确定迁移位置。
@@ -20,6 +20,32 @@
 类型准备已修正各记录循环的局部变量复用、异构序列注解和既有 CSV 往返的注解边界。
 未移动函数、提取章节或修改数学及格式文本；取消 reporting 豁免的独立配置检查通过，
 B0 的旧版／新版比较也通过。类型代码与移除豁免使用独立提交，完成审查后再开始搬迁。
+该前置工作已通过 [PR #33](https://github.com/Mikoto-19909/greedy-failure-structures/pull/33)
+合并，两个提交的历史保留。
+
+报告拆分从 `d10ed00d542b18c8c0673a2e8ab28487552909a4` 开始。
+实施见 [PR #34](https://github.com/Mikoto-19909/greedy-failure-structures/pull/34)。
+标签、图表与 Markdown 函数已按下表原样迁移；公开入口保持原签名，验证器私有导入
+迁到实际定义模块。所有搬迁函数正文与迁移前文本相同，B0 及固定报告边界输入比较
+均通过。机械搬迁提交为 `600726e`；后续独立提交提取 Markdown 章节，
+保持现有顺序与空行。
+
+实际按原有交错顺序提取了描述统计、参考覆盖、置信区间、结论资格、删失运行时间、
+各解质量指标及六种关联章节；各函数仅接收所需记录并返回文本行。
+`_write_markdown()` 保留完整参数、首尾固定内容、标题检查和唯一文件写入。
+将章节函数体内联后的 AST 与机械搬迁提交相同。
+
+报告专用基线由 B0 固定旧实现生成，包含正常、空样本、缺少参考值、不可估计关联、
+暂缓结论及可选序列单独出现或缺省的输入。机械搬迁和章节提取均使用同一批冻结输入，
+逐字节比较 Markdown/SVG，并验证输入未变异。新增
+[报告行为测试](../tests/test_reporting.py) 检查公开入口、产物集合、章节顺序、
+上述边界状态和禁止反向导入；不冻结内部函数数量。
+独立反向审查补强了测试：准备类型化输入时不经过候选报告器，避免幂等变异被
+提前执行后掩盖；另外直接计数 Markdown 写入，以识别字节相同的重复写入。
+
+本批按用户授权只选取相关本地测试，已通过的类型检查不重复执行；完整单测、
+内容边界、许可证检查和最终类型检查由当前 PR 的必需 CI 覆盖。
+许可证清单仍按暂存内容重新生成，CI 检查及名称保持不变。
 
 ## 目标与边界
 
@@ -140,6 +166,7 @@ rg -n 'maxcover.reporting|from \.reporting|reporting\.' src tests .github
 针对性检查命令从仓库根目录运行：
 
 ```console
+python -m unittest discover -s tests -p 'test_reporting.py' -v
 python -m unittest discover -s tests -p 'test_benchmark.py' -v
 python -m unittest discover -s tests -p 'test_reference_coverage.py' -v
 python -m unittest discover -s tests -p 'test_output_validation.py' -v
