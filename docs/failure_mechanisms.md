@@ -1,135 +1,151 @@
 # Structural Stressors and Greedy Failure Mechanisms
 
-This document separates structures that directly trap Greedy from structures
-that primarily stress preprocessing or exact search. Each workflow produces
-local evidence from a committed configuration; this file stores no experiment
-result or quantitative research claim.
+Start with the fixed `high_overlap` versus `uniform` pilot, then use the
+supplementary workflows below for specific construction and search questions.
+The [completed pilot](../analysis/overlap_pilot_v1.md) did not provide sufficient
+paired evidence of a difference in Greedy failure rates.
+[C1](../experiments/core_rq/CLAIMS.md#c1)
 
-Before interpreting algorithm outcomes, run `python run_project.py
-audit-stressors` and inspect the target monotonicity, dimension controls,
-matched uniform controls, and non-target metric ranges. The audit contract is
-documented in [`generator_isolation.md`](generator_isolation.md).
+## High overlap and a matched uniform control
 
-The controlled replacement workflow keeps the legacy configurations intact
-and runs all six stressor scans from one configuration:
-
-```console
-python run_project.py benchmark --config configs/p7_controlled_stressors.json --output results/p7_controlled_stressors
-```
-
-The P4/P6 commands below remain reproducible mechanism and preprocessing
-workflows, but their dimensions or incidence must not be assumed invariant.
-
-## 1. Duplicate-heavy structure
-
-**Role.** Exact copies increase candidate redundancy and make deduplication a
-meaningful preprocessing question. Copies alone do not force standard Greedy to
-waste a choice: after one copy is selected, another has zero marginal gain while
-any productive alternative remains. This family is therefore primarily a
-search- and preprocessing-stress case rather than a direct Greedy trap.
-
-**Structural signature.** High `duplicate_set_ratio`; many candidate pairs with
-identical membership.
+The pilot tests whether a shared-core generating mechanism makes Greedy more
+likely to miss the optimum than a uniform control. Its
+[fixed configuration](../configs/core_overlap_pilot.json) matches dimensions
+and theoretical expected set size, pairs cases by the configured seed batch,
+and compares Greedy with a completed exhaustive reference.
 
 ```console
-python run_project.py benchmark --config configs/p4_duplicate_heavy.json --output results/p4_duplicate_heavy
+python run_project.py benchmark --config configs/core_overlap_pilot.json --output results/core_overlap_pilot_reproduction --workers 1
 ```
 
-## 2. Dominated sets
+Use a new output directory. The [pilot commands](cli.md#core-overlap-pilot)
+include validation and offline analysis; the
+[research plan](core_overlap_checkpoint_plan.zh-CN.md) defines the comparison
+and stopping conditions.
 
-**Role.** A dominated set is a strict subset of another available set. For the
-same current coverage state, its marginal gain cannot exceed its dominator's,
-so dominance alone does not create a standard Greedy failure. The family tests
-whether dominance elimination reduces exact-search work without changing the
-solution represented in original set indices.
+**Mechanism to test.** A common core makes candidates cover many of the same
+elements. Their fringes and later marginal gains determine which
+combinations Greedy reaches. Equal gains follow the lower-index tie-breaking
+rule. Shared seeds do not automatically align every random draw across
+generators; see [`paired_seed_audit.md`](paired_seed_audit.md).
 
-**Structural signature.** High `dominated_set_ratio`; many strict subset/
-superset candidate relationships.
+**What to inspect.** Read `pairwise_overlap_mean_jaccard` alongside
+`actual_density`, `mean_set_size`, `covered_element_count`, and
+`coverage_skew_gini`. Matching expected set size does not hold all those
+properties fixed, so the comparison cannot attribute a difference to overlap
+alone. The observed result does not establish equivalence, an overlap-strength
+trend, or a result at other scales. [C1](../experiments/core_rq/CLAIMS.md#c1)
 
-```console
-python run_project.py benchmark --config configs/p4_dominated_heavy.json --output results/p4_dominated_heavy
-```
-
-## 3. Adversarial Greedy traps
-
-**Mechanism.** The construction places a bait set first whose initial marginal
-gain is larger than either globally complementary block. Once Greedy selects the
-bait, its remaining choice cannot recover the coverage obtained by selecting
-the two complementary blocks. Version 2 carries a construction certificate for
-its known optimum.
-
-**Structural signature.** A high-gain bait set overlaps both complementary
-blocks, with optional distractors constrained not to repair the lost coverage.
-
-```console
-python run_project.py benchmark --config configs/p6_trap_construction.json --output results/p6_trap_construction
-```
-
-For a transparent single-instance demonstration, run `python run_project.py
-demo`. Its values are computed locally from the fixed source-defined instance.
-
-## 4. Long-tail coverage concentration
-
-**Mechanism to test.** A long-tailed element-weight construction changes how
-coverage is concentrated across candidate sets. High concentration can create
-large early gains followed by weak residual gains, but it does not guarantee a
-Greedy failure. The paired scan measures whether changing the concentration
-parameter changes exact-reference gaps while holding the common random stream
-fixed.
-
-**Structural signature.** Variation in `coverage_skew_gini` under paired
-generator seeds and fixed nominal set size.
-
-```console
-python run_project.py benchmark --config configs/p4_long_tail.json --output results/p4_long_tail
-```
-
-## 5. High overlap
-
-**Mechanism to test.** A shared core makes initial gains similar and leaves each
-set's unique fringe to determine later marginal gains. Near ties increase the
-importance of the repository's deterministic lower-index tie-breaking; the
-selection is not random. The parameter grid tests whether measured overlap is
-associated with an exact-reference gap.
-
-**Structural signature.** High `pairwise_overlap_mean_jaccard`, interpreted
-alongside actual density and exact-reference availability.
+The existing parameter scan remains available for a broader descriptive
+overlap question; its results are separate from the fixed pilot:
 
 ```console
 python run_project.py benchmark --config configs/p6_overlap_scan.json --output results/p6_overlap_scan
 ```
 
-## 6. Clustered structure
+`controlled_high_overlap` serves a different construction check. Its shared
+core and disjoint, equally sized fringes make every selection of the same size
+cover equally many elements. It is therefore not the pilot's treatment
+generator. Details of the controls are in
+[`generator_isolation.md`](generator_isolation.md).
 
-**Mechanism to test.** Sets concentrated within clusters can make early choices
-overrepresent one region when the budget is small relative to the number of
-clusters. This is a hypothesis evaluated by the scan, not a guarantee for every
-generated instance.
+## Adversarial Greedy traps
 
-**Structural signature.** The configured `clusters`, `within_probability`, and
-`outside_probability` levels together with realized instance metrics.
+The certified version-2 construction places a bait set ahead of complementary
+blocks. When `trap_count < block_size`, the bait initially offers more coverage
+than either block but leaves elements uncovered in both. After selecting it,
+Greedy cannot match the complementary blocks within the remaining budget;
+constrained distractors cannot repair the loss.
+
+At the allowed endpoint `trap_count=block_size`, the bait already covers the
+universe, so this family name does not imply a failure at every parameter
+setting. Version 2 supplies a known-optimum certificate in both cases. The
+workflow below also retains the legacy construction for comparison.
+
+```console
+python run_project.py demo
+python run_project.py benchmark --config configs/p6_trap_construction.json --output results/p6_trap_construction
+```
+
+The demo computes its values from a fixed source-defined instance. The
+construction workflow compares the declared variants and certificate-backed
+references. This known construction explains a possible failure mechanism;
+the stochastic high-overlap hypothesis is evaluated by its own matched pilot.
+
+## Supplementary structure and search workflows
+
+### Duplicate-heavy structure
+
+Exact copies increase redundancy. Once one copy is selected, another provides
+no new gain while productive alternatives remain. The workflow examines
+deduplication and exact-search work; use `duplicate_set_ratio` to identify the
+intended structure.
+
+```console
+python run_project.py benchmark --config configs/p4_duplicate_heavy.json --output results/p4_duplicate_heavy
+```
+
+### Dominated sets
+
+A strict subset has no larger marginal gain than its superset for the same
+current coverage. This workflow studies dominance elimination and exact
+search, including whether solutions still refer to the original set indices.
+Inspect `dominated_set_ratio` and the subset relationships.
+
+```console
+python run_project.py benchmark --config configs/p4_dominated_heavy.json --output results/p4_dominated_heavy
+```
+
+### Long-tail coverage concentration
+
+Concentrating coverage can produce large early gains and weaker residual
+gains. Whether that produces a Greedy gap is an empirical question. The paired
+scan varies concentration with fixed nominal set size; inspect the realized
+`coverage_skew_gini` and the availability of exact references.
+
+```console
+python run_project.py benchmark --config configs/p4_long_tail.json --output results/p4_long_tail
+```
+
+### Clustered structure
+
+When sets concentrate within clusters, early choices may overrepresent one
+region of the universe. The scan tests that hypothesis through `clusters`,
+`within_probability`, and `outside_probability`; the configuration alone
+does not establish a failure on each generated instance.
 
 ```console
 python run_project.py benchmark --config configs/p6_clustered_scan.json --output results/p6_clustered_scan
 ```
 
-## Interpreting the workflows
+### Controlled stressor audit
 
-Every P4/P6 command above and the P7 controlled command include at least one
-registered exact algorithm.
-Only an exact run that proves `optimal`, or an independently validated
-instance certificate, supplies a reference optimum. A timeout or merely
-feasible incumbent does not prove one by itself. Optimum-relative failure and
-gap rows therefore report their exact-reference eligibility explicitly.
+For the controlled constructions, inspect target monotonicity, matched
+controls, fixed dimensions and incidence, and movement of other metrics:
 
-`configs/sweeps.json` is an exploratory structural sweep containing Greedy and
-Local Search only. It does not include an exact reference, so its outputs alone
-cannot establish an approximation ratio or an exact-reference Greedy failure
-rate. It remains useful for configuration expansion, structural metrics, and
-raw coverage inspection.
+```console
+python run_project.py audit-stressors
+python run_project.py benchmark --config configs/p7_controlled_stressors.json --output results/p7_controlled_stressors
+```
 
-The benchmark runner writes typed CSV, Markdown, SVG, and manifest artifacts.
-See [`output_schema.md`](output_schema.md) for their semantics and
-[`cli.md`](cli.md) for validation and replay commands. Any future published
-research conclusion still requires the frozen evidence chain described in
+The audit contract is in [`generator_isolation.md`](generator_isolation.md).
+The older P4/P6 configurations retain their own dimensions and parameter
+semantics; do not assume their incidence is invariant across a scan.
+
+## Interpreting outputs
+
+The benchmark commands above include exact-reference candidates. A completed
+exact run with `status=optimal`, or an independently validated construction
+certificate, supplies a reference optimum. A feasible or timed-out incumbent
+alone does not. Inspect the stopping metadata as well as status: `feasible`
+does not itself establish completed execution.
+
+`configs/sweeps.json` contains Greedy and Local Search without an exact
+reference. It supports configuration expansion, structural metrics, and raw
+coverage inspection; its outputs alone cannot establish an exact-reference
+approximation ratio or Greedy failure rate.
+
+See [`output_schema.md`](output_schema.md) for CSV, report, chart, and manifest
+semantics, and [`cli.md`](cli.md) for validation and replay. Publication and
+evidence-review requirements are maintained in
 [`CONTRIBUTING.md`](../CONTRIBUTING.md).

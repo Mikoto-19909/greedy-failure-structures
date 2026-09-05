@@ -1,29 +1,21 @@
 # Security policy
 
-This is research code for studying the Maximum Coverage problem. It is a
-command-line tool that reads local configuration files and writes local output
-files. It opens no network connections, runs no server, and handles no
-credentials or personal data.
-
-That shapes what a security issue here looks like. The realistic cases are
-input-handling problems: a configuration or replay file that causes unbounded
-memory allocation, a path that escapes its intended output directory, or a
-parser that can be driven into a crash by a malformed input.
+This project studies the Maximum Coverage problem. The CLI reads local
+configuration and replay files and writes local artifacts. The optional
+Dashboard provides these operations through a local HTTP server at
+`127.0.0.1:8501` by default and rejects non-loopback bindings.
 
 ## Reporting
 
-Please do not open a public issue for a suspected vulnerability.
-
-GitHub's private vulnerability reporting will be the reporting channel for this
-repository. It is available only for public repositories, so it will be enabled
-when this repository becomes public; until then, there is no private channel
-here and no report is expected.
+Use [GitHub private vulnerability reporting](https://github.com/Mikoto-19909/greedy-failure-structures/security/advisories/new)
+for suspected vulnerabilities. Include the affected command or Dashboard
+operation, required input, reproduction steps and observed impact. Do not
+publish vulnerability details in a public issue.
 
 ## What to expect
 
-This project is maintained by one person alongside other work. There is no
-response-time commitment, no service-level agreement, and no security support
-for older versions — only the current default branch is considered.
+Security fixes target the current default branch; older versions are not
+supported. The project has no guaranteed response time.
 
 A report that is confirmed will be fixed on the default branch. Credit is given
 in the commit message if you want it.
@@ -31,9 +23,9 @@ in the commit message if you want it.
 ## Scope
 
 In scope: memory-exhaustion or crash conditions reachable from a configuration
-file, a replay input, or a command-line argument; output paths that can escape
-the directory the user specified; dependency vulnerabilities that are actually
-reachable from this code.
+file, replay input, command-line argument or Dashboard request; output paths
+that can escape the directory the user specified; dependency vulnerabilities
+that are reachable from this code.
 
 Out of scope: anything requiring the attacker to already control the machine or
 the Python environment; resource use that is inherent to solving a hard

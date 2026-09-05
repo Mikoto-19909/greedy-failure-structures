@@ -2,257 +2,99 @@
 
 **English** | [简体中文](README.zh-CN.md)
 
-This repository studies how Maximum Coverage instance structure relates to
-Greedy's optimality gap: the loss in coverage relative to an exact optimum.
-It provides Python algorithms, instance generators, and tools to run and
-inspect reproducible experiments.
+This project studies how Maximum Coverage instance structure relates to
+Greedy's optimality gap: the coverage lost relative to an exact optimum.
+It includes algorithms, instance generators and tools for reproducible experiments.
 
 ## Current research
 
-The core checkpoint asks whether the shared-core `high_overlap` generator
-produces more Greedy failures than a `uniform` control matched on dimensions
-and expected set size. The fixed comparison uses Greedy and an exhaustive
-reference at one fixed parameter setting. It does not isolate overlap from
-every other structural difference between the generators.
+The completed pilot compares shared-core `high_overlap` instances with a
+`uniform` control matched on dimensions and expected set size, using Greedy
+and an exhaustive reference. It did not provide sufficient paired evidence
+of a failure-rate difference at the fixed setting. The report retains the
+observed direction and the other structural differences between the generators.
+See [C1](experiments/core_rq/CLAIMS.md#c1).
 
-**Status: fixed pilot completed.** The [research report](analysis/overlap_pilot_v1.md)
-records insufficient paired evidence of a failure-rate difference in this fixed
-setting, with its scope and structural diagnostics. See
-[C1](experiments/core_rq/CLAIMS.md#c1) for frozen evidence and validation.
-Use the [pilot commands](docs/cli.md#core-overlap-pilot) to reproduce the run.
+Read the [pilot report](analysis/overlap_pilot_v1.md), start from the
+[research index](analysis/README.md), or inspect the authoritative
+[claim-to-evidence mapping](experiments/core_rq/CLAIMS.md).
 
-The [research analysis](analysis/README.md) records the current research status.
-Published findings link to the
-[claim ledger](experiments/core_rq/CLAIMS.md) for their evidence.
+## Quick start
 
-## Requirements
-
-- Python 3.11 or newer
-- No third-party dependency for the base package
-- OR-Tools only when the optional exact solver is needed
-
-## Install
+The base package requires Python 3.11 or newer and no third-party runtime dependency.
+From the repository root:
 
 ```console
 python -m pip install -e .
-```
-
-Install the optional exact solver with:
-
-```console
-python -m pip install -e ".[oracle]"
-```
-
-## Run
-
-Choose the workflow by purpose:
-
-| Purpose | Entry point |
-| --- | --- |
-| Current research | The [fixed overlap pilot](docs/cli.md#core-overlap-pilot) and its [published result](analysis/overlap_pilot_v1.md). |
-| Examples and compatibility checks | `demo`, `quick`, and the larger legacy `full.json` workflow below. |
-| Historical exploration and appendices | The [supplementary workflow index](docs/README.md#historical-exploration-and-appendices), including broader structural scans and additional algorithm comparisons. |
-
-### Examples and compatibility checks
-
-Show Greedy's choices on one fixed adversarial instance:
-
-```console
-python run_project.py demo
-```
-
-The values are computed locally for that source-defined example. See
-[Scope](#scope) for the distinction between example output and published findings.
-
-Run the small starter benchmark to check the installation and output workflow:
-
-```console
 python run_project.py quick
 ```
 
-Omitting the CLI command also runs `quick`; the PowerShell wrapper defaults to
-the same action. The Dashboard initially prefers `quick.json` when there is no
-retained configuration selection. These defaults select an example workflow.
+`quick` checks the installation and example output workflow. Its
+`LegacyConfigWarning` is expected because the retained configuration uses an
+older schema. The [CLI guide](docs/cli.md) explains configuration compatibility,
+all commands, optional OR-Tools installation and output validation.
 
-Inspect the quick execution plan without running the algorithms:
+Omitting the CLI command and using the PowerShell wrapper without arguments both
+run quick. The Dashboard also initially prefers `quick.json` when no selection
+has been retained. These defaults select an example workflow.
 
-```console
-python run_project.py benchmark --config configs/quick.json --dry-run
-```
+## Choose a workflow
 
-Run the larger legacy workflow when checking compatibility or revisiting its
-mixture of instance families:
+| Purpose | Entry point |
+| --- | --- |
+| Current research | [Fixed pilot commands](docs/cli.md#core-overlap-pilot), [report](analysis/overlap_pilot_v1.md) and [original design](docs/core_overlap_checkpoint_plan.zh-CN.md). |
+| Examples and compatibility | `python run_project.py demo`, `quick`, and the larger legacy `full.json` workflow in the CLI guide. The name `full` does not designate the complete current research study. |
+| Method checks and broader exploration | The [documentation index](docs/README.md) distinguishes pairing checks, generator audits, functional checks and wider structural scans. |
 
-```console
-python run_project.py benchmark --config configs/full.json --output results/full
-```
+The pilot's offline figure uses Matplotlib. Other optional algorithms and
+configurations remain available for their documented purposes; a phase prefix
+alone does not make a configuration historical.
 
-The name `full` describes that existing workflow, not the complete current
-research study. `configs/quick.json` and
-`configs/full.json` are schema v1, and the loader migrates them to schema 3 in
-memory. Their `LegacyConfigWarning` is expected. These files remain available
-for legacy compatibility and reproduction of the existing workflows.
-
-Verify the completed quick run:
-
-```console
-python .github/scripts/validate_benchmark_output.py --config configs/quick.json --output results/quick
-```
-
-The validator checks supported artifact relationships and recorded checksums.
-A checksum match establishes agreement with the recorded digest; it does not
-establish that the original calculation was correct. Generated outputs remain
-local under `results/`.
-
-The [Lazy Greedy functional workflow](configs/p3_lazy_greedy.json) is also used
-by CI. Its procedure is in the
-[functional test report](docs/lazy_greedy_test_report.md).
-
-### Historical exploration and appendices
-
-Existing configurations remain available for their documented purposes.
-`configs/sweeps.json` is schema 2; the `configs/p3_*` through `configs/p7_*`
-configurations are schema 3. These version labels do not indicate which
-experiment to run next.
-
-For broader structural scans, see the
-[cartography command](docs/cli.md#cartography). The older
-[overlap parameter scan](configs/p6_overlap_scan.json) and the
-[full configuration collection](configs/) support further exploration.
-Neither is a substitute for the fixed pilot described above.
-
-Phase-prefixed configurations are not all historical: `p3_lazy_greedy.json`
-supports CI checks, `p7_controlled_stressors.json` supports generator audits,
-and the pairing configurations support paired-seed method checks. Use the
-[documentation index](docs/README.md) to find those procedures and the
-[CLI reference](docs/cli.md) for complete commands.
-
-## Test
-
-```console
-python -m unittest discover -s tests -v
-```
-
-Optionally, run the type checker:
-
-```console
-python -m pip install -e ".[typecheck]"
-python -m mypy
-```
-
-Read its output narrowly. `pyproject.toml` sets `ignore_errors = true` for
-`maxcover.benchmark` and `maxcover.reporting` — roughly 35% of the source by
-line — so `Success: no issues found in 24 source files` means the remaining
-modules are clean, not that the package is. Those two modules carry a real
-backlog of unresolved type errors; the exemption keeps the check enforceable
-everywhere else instead of leaving it permanently red. Reducing that backlog is
-a welcome contribution, and the exemption list is the place to check what is not
-yet covered.
-
-On Windows, the convenience wrapper provides equivalent commands:
-
-```powershell
-./project.ps1 test
-./project.ps1 typecheck
-./project.ps1 quick
-```
-
-To use the local experiment dashboard:
+## Local dashboard
 
 ```console
 python run_project.py dashboard
 ```
 
-Then open the printed local URL in a browser. The dashboard can validate a
-configuration, start or resume a benchmark under `results/`, inspect generated
-CSV/report artifacts, and replay serialized failure instances. It is a local
-frontend over the same engine used by the CLI; it does not provide accounts,
-remote execution, or a hosted service. Use another loopback address with
-`--host`, and `--port` on the `dashboard` command when the default binding
-needs to change; non-loopback bindings are rejected because state-changing
-requests are intentionally local-only.
-The browser UI includes a Chinese/English language toggle for the full control
-surface and its dynamic run, result, and replay states.
+Open the printed local URL to validate configurations, start or resume runs,
+inspect artifacts and replay instances. The interface supports English and Chinese
+and uses the same experiment engine as the CLI. The server binds to loopback
+addresses; see the [Dashboard command](docs/cli.md#dashboard) and
+[security policy](SECURITY.md) for its operating boundary.
 
-## Reproducibility notes
+## Output and verification
 
-- Use committed configuration files and explicit seeds.
-- Keep fresh and resumed executions separate when diagnosing a run.
-- Treat timeouts as incomplete work, not as proof of optimality.
-- Runtime observations can vary with the machine and optional solver.
-- The starter workflow is a functional check, not a performance claim.
+Use the [output schema](docs/output_schema.md) to read CSVs, reports and manifests,
+and the [reproducibility guide](docs/reproducibility_matrix.md) to distinguish
+stable results from runtime and environment fields that may vary.
+A checksum match establishes agreement with the recorded digest; it does not
+prove the calculation is correct. The CLI guide describes the validator's scope.
 
-## Reviewing published research
+Run the tests with:
 
-Start with the external [research analysis](analysis/README.md). The
-authoritative mapping from each claim ID to its result rows, configuration,
-manifest, and validation record is the
-[core claim ledger](experiments/core_rq/CLAIMS.md). The completed pilot is
-recorded as [C1](experiments/core_rq/CLAIMS.md#c1).
+```console
+python -m unittest discover -s tests -v
+```
+
+[CONTRIBUTING.md](CONTRIBUTING.md#verification) maintains the complete verification
+commands and actual mypy coverage, including the configured exemptions.
+Windows users can also use `./project.ps1 test`, `./project.ps1 typecheck` and
+`./project.ps1 quick`.
 
 ## Scope
 
-This is a code-first repository that may publish a small number of validated
-core research claims. Full benchmark output remains local under `results/`.
-Minimum frozen evidence for a public claim belongs in `experiments/core_rq/`,
-and the external research narrative belongs in `analysis/`; see
-[`CONTRIBUTING.md`](CONTRIBUTING.md) for the publication rule.
+`demo` prints locally computed coverage and a benchmark writes measurements under
+`results/`. Full exploratory output stays local. Public claims are published with
+minimum frozen evidence in `experiments/core_rq/` and an explanation in `analysis/`;
+the claim ledger is the single evidence mapping. CI checks its declared scope,
+while contributors and reviewers verify that the claims match their evidence.
+The publication rules are maintained in CONTRIBUTING.
 
-The distinction matters because the code computes numbers routinely. `demo`
-prints a coverage gap, and a benchmark run writes measurement CSVs to
-`results/`. Those local outputs do not become public findings. A tracked
-quantitative statement becomes a public claim only through the claim ledger,
-frozen evidence, and recorded independent validation. CI permits that prose but
-does not prove that the human-maintained mapping is correct.
+## Documentation and support
 
-## Dashboard
+- [Documentation index](docs/README.md), [English FAQ](docs/faq.md) and [Chinese FAQ](docs/faq.zh-CN.md).
+- [Structural mechanisms](docs/failure_mechanisms.md) and the [Lazy Greedy functional report](docs/lazy_greedy_test_report.md).
+- [Contributing](CONTRIBUTING.md), [additional agent guidance](AGENTS.md), [support](SUPPORT.md) and [security reporting](SECURITY.md).
 
-The repository includes an interactive experiment dashboard as a second
-frontend to the existing experiment engine. A local user can configure and
-validate experiments, start or resume benchmark runs, inspect locally generated
-outputs, compare algorithm behaviour, and replay serialized failure cases
-without reimplementing the underlying research logic.
-
-The command-line interface remains fully supported. The dashboard is not a
-hosted multi-user platform: it is a local frontend over the same configuration,
-benchmark, reporting, validation, and replay functions used by the CLI.
-Database-backed accounts, remote job queues, and hosted execution are outside
-its scope.
-
-## Project layout
-
-- `src/maxcover/`: algorithms, generators, benchmark execution, and reporting
-- `src/maxcover/dashboard.py` and `src/maxcover/dashboard_ui/`: local dashboard
-  service and browser frontend
-- `configs/`: reproducible experiment configurations
-- [`experiments/core_rq/CLAIMS.md`](experiments/core_rq/CLAIMS.md): authoritative
-  mapping from public claims to frozen evidence and validation records
-- [`analysis/README.md`](analysis/README.md): external research analysis entry
-- `tests/`: deterministic unit and contract tests
-- `run_project.py`: primary command-line entry point
-- `project.ps1`: Windows convenience wrapper
-- `LICENSE_MANIFEST.json`: the closed license allow-list, verified by CI
-- `PUBLIC_SNAPSHOT_MANIFEST.json`: the migration archive for the one export
-  that created this repository
-- [`docs/README.md`](docs/README.md): documentation index and scope guide
-- [`docs/cli.md`](docs/cli.md): complete command-line workflow
-- [`docs/output_schema.md`](docs/output_schema.md): generated artifact semantics
-- [`docs/failure_mechanisms.md`](docs/failure_mechanisms.md) and
-  [`docs/faq.md`](docs/faq.md): structural guidance and project rationale
-- [`docs/faq.zh-CN.md`](docs/faq.zh-CN.md): Simplified Chinese FAQ
-- `docs/history/`: migration provenance and pre-public development history
-- [`docs/lazy_greedy_test_report.md`](docs/lazy_greedy_test_report.md):
-  lazy-greedy functional verification process
-
-## Contributing and support
-
-- [`CONTRIBUTING.md`](CONTRIBUTING.md): scope, ground rules, and how to submit
-- [`AGENTS.md`](AGENTS.md): additional constraints for AI coding agents
-- [`SECURITY.md`](SECURITY.md): what counts as a security issue, and reporting
-- [`SUPPORT.md`](SUPPORT.md): what this project does and does not answer
-
-## License
-
-Code is licensed under the MIT License. Documentation and other non-code
-content in this snapshot are licensed under Creative Commons Attribution 4.0.
-See [`LICENSES/README.md`](LICENSES/README.md) for the closed file-level mapping.
+Code uses the MIT License; documentation and other non-code content use CC BY 4.0.
+See the [file-level license mapping](LICENSES/README.md), including third-party exceptions.

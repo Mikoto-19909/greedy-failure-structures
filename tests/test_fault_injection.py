@@ -1,24 +1,16 @@
 """Fault-injection tests for the benchmark publication gates.
 
-The publication path has three independent gates:
+The benchmark validator checks supported identities, record relationships,
+statistics, report headlines and charts. Its Manifest checks establish agreement
+between current files and their recorded digests, not their history or truth.
+The active content-boundary mode permits quantitative prose and leaves claim
+binding to review; the strict mode rejects quantitative claims when selected.
 
-- validate_benchmark_output.py recomputes every derived artifact from the raw
-  results and the execution plan, so a fault survives a correctly refreshed
-  manifest checksum;
-- manifest.json records byte counts and digests over every artifact, so a file
-  altered after the run is caught when the record is not refreshed;
-- check_content_boundary.py rejects quantitative research claims in every
-  tracked prose file, under the active claim mode.
-
-Each case below breaks one thing a declared contract says must hold, on a copy
-of a real quick run, and asserts what the gate actually did. Cases that the
-gate accepts are measured blind spots, not authorial optimism: they are listed
-in docs/fault_injection_matrix.md with the measured mechanism, and each one is
-asserted as "the gate passes" so a future fix is a one-line change here.
-
-The fixture is one real benchmark run, cached under results/ (gitignored),
-because a hand-built fixture would encode this test's idea of the format rather
-than the runner's.
+These cases mutate copies of a real quick run and assert the rejection or known
+acceptance described in docs/fault_injection_matrix.md. They preserve measured
+blind spots as regression cases rather than implying every mutation is detected.
+The fixture is cached under results/ (gitignored). Results for this configuration
+do not establish coverage for every generator or algorithm combination.
 """
 
 from __future__ import annotations

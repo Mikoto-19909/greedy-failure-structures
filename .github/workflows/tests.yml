@@ -110,9 +110,8 @@ jobs:
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
-      # A functional check that the starter workflow completes, not a
-      # measurement. The output is then verified independently: first that the
-      # artifacts exist, then that they say what the configuration implies.
+      # Check that the starter workflow completes and writes its artifacts.
+      # The next validator step checks the supported artifact relationships.
       - name: Run the starter workflow with parallel workers
         run: >-
           python run_project.py benchmark
@@ -128,10 +127,9 @@ jobs:
               exit 1
             }
           done
-      # The manifest checksum proves only that the files were not altered after
-      # being written. This recomputes the statistics from the configuration, so
-      # output written wrongly fails here instead of passing a checksum that
-      # matches its own mistake.
+      # Digests establish agreement with the recorded file checksums. This also
+      # checks identities and recomputes supported statistics from canonical
+      # records, then compares the checked report section and listed charts.
       - name: Validate the output independently of the manifest checksum
         run: >-
           python .github/scripts/validate_benchmark_output.py

@@ -1,114 +1,134 @@
 # Contributing
 
-Thanks for looking at this project. It is research code for studying the
-Maximum Coverage problem, maintained by one person, so please read the scope
-notes below before opening a pull request.
+This project studies the Maximum Coverage problem. Contributions may address
+bugs, portability, documentation and deterministic tests.
 
-## Where development happens
+## Development and scope
 
-This public repository is the canonical home for current software development,
-issues, pull requests, CI and releases. Make changes on a branch, open a pull
-request here, wait for the configured required checks, and merge through the
-pull request. The migration records under `docs/history/` and
-`PUBLIC_SNAPSHOT_MANIFEST.json` are provenance for how the repository began;
-they are not an upstream, an import channel or a synchronization mechanism.
+This public repository is the canonical home for development, issues, pull
+requests, CI and releases. Work on a branch, open a pull request here, wait for
+the configured required checks, and merge through that pull request. Do not push
+directly to the default branch. After merging, delete the merged branches and
+verify that no stale branches remain.
 
-## What this repository accepts
+Keep each pull request focused on one responsibility. Do not cherry-pick
+unrelated governance or configuration changes into a feature pull request or
+reformat unrelated code. When formatting hooks change files, stash or fix those
+changes before retrying the push; do not bypass the hooks.
 
-Bug reports and fixes, portability problems, clearer documentation, and
-additional deterministic tests are all welcome.
+Discuss a new algorithm, instance family or output schema before implementing
+it: these changes can affect stored run identities and reproducibility.
 
-Larger changes — a new algorithm, a new instance family, a new output schema —
-need discussion first. They interact with the reproducibility contracts
-described below, and a change that looks local can invalidate stored run
-identities.
+`docs/history/` and `PUBLIC_SNAPSHOT_MANIFEST.json` record the one-time
+migration. Keep them unchanged when current policy changes. They are not an
+import, upstream publication or synchronization channel; do not add a second
+development path or recurring cross-repository publication workflow.
 
-## Ground rules
+## Correctness and reproducibility
 
-**Determinism is a contract, not a preference.** Stable identities, fixed
-tie-breaking and reproducible ordering are load-bearing. A change that makes
-identical inputs produce different identities or a different result ordering is
-a breaking change, even when the new behaviour looks equivalent.
+Stable identities, fixed tie-breaking and reproducible ordering are contracts.
+If identical inputs acquire different identities or result ordering, the change
+is breaking even when the results look equivalent. Configuration hashes use the
+normalized configuration; check changes against that representation and the
+derived identities rather than treating configuration edits as cosmetic.
 
-**Timeouts are not optima.** A solver that ran out of time yields an incumbent,
-never a reference optimum. Any code or test that treats a timed-out result as
-optimal is wrong regardless of the numbers it produces.
+Randomized algorithms require an explicit seed; deterministic algorithms must
+not take one. A timed-out solver supplies an incumbent, never a reference
+optimum. Code and tests must preserve that distinction.
 
-**Randomized algorithms take an explicit seed; deterministic ones must not.**
+Add a regression test for a bug fix and a seeded case for randomized behavior.
+Test the behavior or fact a rule asserts. The presence of a word in a document
+does not establish that its claim is true, and passing tests establish only the
+cases they cover. When documentation, code and tests disagree, check the
+intended rule and algorithm definition before correcting the mistaken source.
 
 ## Evidence-backed research claims
 
-This repository may publish a small number of validated core research claims.
-Full exploratory output remains untracked under `results/`. The minimum frozen
-evidence for a public claim belongs in `experiments/core_rq/`, and the external
-research narrative belongs in `analysis/`.
+The repository may publish a small number of validated core research claims.
+Full exploratory output stays untracked under `results/`. Minimum frozen
+evidence belongs in `experiments/core_rq/`; the external research narrative
+belongs in `analysis/`.
 
 [`experiments/core_rq/CLAIMS.md`](experiments/core_rq/CLAIMS.md) is the single
-claim ledger. Every quantitative research claim in tracked prose must carry a
-claim ID that leads to the exact result rows or filters, analysis figure,
-configuration, manifest, and independent validator command recorded as PASS.
-The root README may point readers to a claim, but it must not become a second
-copy of the evidence table or analysis.
+claim ledger. Every quantitative research claim in tracked prose must cite its
+claim ID. The entry must identify exact result rows or filters, an analysis
+figure, configuration, manifest and an independent validator command recorded
+as PASS. Do not create a parallel claim list or duplicate the evidence table
+and analysis in the README; link to them.
 
 Run the complete experiment and validator against the gitignored output before
-copying the minimum evidence into the repository. Preserve generated evidence
-filenames and bytes. A generated manifest may contain an absolute configuration
-path; replace it with the repository-relative `config.json` in the complete
-local output and rerun the existing validator before publishing that manifest.
+copying minimum evidence into the repository. Preserve generated filenames and
+bytes. If a generated manifest contains an absolute configuration path, replace
+that path with the repository-relative `config.json` in the complete local
+output and rerun the existing validator before publishing the manifest.
 
-The content-boundary workflow runs in `evidence_backed_claims` mode. That mode
-permits quantitative prose; it does not prove that a claim matches its evidence.
-The contributor and reviewer must check the `CLAIMS.md` mapping. The same
-workflow continues to reject personal paths, credential-shaped strings, and
-broken internal links across tracked text.
+The content-boundary check runs in `evidence_backed_claims` mode. It permits
+quantitative prose and rejects personal paths, credential-shaped strings and
+broken relative links across tracked files. It does not verify the
+claim-to-evidence mapping: contributors and reviewers must check that mapping
+in `CLAIMS.md`. A passing content-boundary check is not evidence that a claim
+matches its source artifacts.
 
-Keep quantitative research claims out of commit messages and release notes,
-where the frozen evidence chain is not present. The existing commit-policy check
-enforces the commit-message part of this rule. The bundled starter workflow
-remains a functional check rather than evidence about algorithm performance.
+The fixture marker is a per-line test-fixture exemption that bypasses every
+content check on that line. Do not use it in ordinary content. If a legitimate
+tracked file needs an exclusion, make the narrowest justified exclusion and
+preserve coverage for the rejected form.
 
-## Before you open a pull request
+Keep quantitative research claims out of commit messages and release notes.
+The commit-policy check enforces the commit-message rule. The bundled starter
+workflow is a functional check, not evidence of algorithm performance.
+
+## Verification
+
+Before merge, verify the final change with the required checks and report their
+actual results:
 
 ```console
 python -m unittest discover -s tests -v
-```
-
-Optionally, with the type checker installed via `pip install -e ".[typecheck]"`:
-
-```console
+python .github/scripts/check_content_boundary.py --claim-mode evidence_backed_claims
+python .github/scripts/build_license_manifest.py --check
 python -m mypy
 ```
 
-A clean mypy run is narrower than it looks. `pyproject.toml` exempts
-`maxcover.benchmark` and `maxcover.reporting` with `ignore_errors = true`, which
-is about 35% of the source by line, and those modules hold a real backlog of
-unresolved errors. So mypy passing does not mean your change is type-clean if it
-lands in either — check it by temporarily removing the override for the module
-you touched. Reducing that backlog is welcome as its own change; do not remove an
-exemption in the same pull request as a behavioural change, since the two cannot
-then be reviewed apart.
+Use relevant tests during development. When the task authorizes targeted local
+testing, state which local checks were omitted and use the required checks on
+the current pull request revision for the remaining coverage. Do not disable
+required CI checks to avoid repeating local checks or present omitted checks
+as passed.
 
-Add a regression test for a bug fix, and a seeded case for anything randomized.
-Keep changes focused; unrelated reformatting makes review harder.
+`build_license_manifest.py` reads the Git index. Stage the intended file changes,
+run `python .github/scripts/build_license_manifest.py`, and stage
+`LICENSE_MANIFEST.json` before running its `--check` command. Check the staged
+diff for whitespace errors before committing, then run the commit-policy check
+over the resulting commit range.
 
-## Commit messages
+Install the type checker with `pip install -e ".[typecheck]"`. The configured
+mypy check covers `src/maxcover`; the per-module `ignore_errors` overrides in
+[`pyproject.toml`](pyproject.toml) identify the legacy modules whose errors are
+excluded. A clean configured run does not establish that a change in an exempt
+module is free of type errors. Check an affected module with its override temporarily
+removed. New modules are checked by default; do not expand exemptions to hide
+problems introduced by a move. Keep necessary type fixes separate from a
+mechanical move, and remove an exemption in a separate pull request from a
+behavioral change.
 
-Write in the imperative and say why, not just what. Conventional-commit
-prefixes (`feat:`, `fix:`, `docs:`, `refactor:`) are used here.
+If a tool is unavailable, report the missing check and use available CI coverage;
+do not substitute an earlier revision's result. Agents must also follow the
+independent review requirements in [`AGENTS.md`](AGENTS.md).
 
-Do not attribute commits to an AI assistant. No `Co-Authored-By` trailer naming
-a model, and no "generated with" line. Authorship stays with the person who
-submitted the work. This is checked over the commit range by
-`.github/scripts/check_commits.py`.
+## Commit messages and authorship
 
-If you are directing an AI agent to work in this repository, [`AGENTS.md`](AGENTS.md)
-carries the additional constraints that apply to it — chiefly around reviewing
-its own work, since the defects here have concentrated in changes where a
-documented rule and its enforcing code disagreed.
+Use imperative conventional-commit messages (`feat:`, `fix:`, `docs:`,
+`refactor:`) that explain why the change is needed.
 
-## Licensing your contribution
+Authorship stays with the contributor. Do not add an AI assistant or model to a
+`Co-Authored-By` trailer, a "generated with" line, or the author or committer
+identity. `.github/scripts/check_commits.py` checks these fields over the commit
+range.
 
-Code contributions are under the MIT License; documentation and other non-code
-content are under CC BY 4.0. See [`LICENSES/README.md`](LICENSES/README.md) for
-the file-level mapping. By submitting a pull request you agree your
-contribution is licensed on those terms.
+## Licensing
+
+Code contributions use the MIT License. Documentation and other non-code
+content use CC BY 4.0; see [`LICENSES/README.md`](LICENSES/README.md) for the
+file-level mapping. By submitting a pull request, you agree to license your
+contribution on those terms.

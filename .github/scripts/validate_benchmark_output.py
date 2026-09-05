@@ -1,28 +1,21 @@
-"""Validate a completed benchmark using the project's own public contracts.
+"""Check completed starter-workflow artifacts against supported contracts.
 
-Why this exists separately from the benchmark itself
----------------------------------------------------
-`manifest.json` carries a checksum, and verifying it proves the files were not
-altered after they were written. It cannot prove they were written correctly: a
-run that computed a statistic wrongly, wrote a CSV under the wrong schema
-version, or pooled algorithm seeds without averaging them in-instance first
-produces output whose checksum matches perfectly.
+A matching checksum establishes agreement with the recorded digest. Changing
+the file and its digest together can preserve that agreement; it does not prove
+the file's history or the correctness of its calculation.
 
-So this reads the artifacts back and recomputes what they claim from the
-configuration alone. Prefer it over trusting the manifest checksum by itself.
+This validator also checks execution-plan identities and record consistency,
+recomputes supported typed statistics from the raw and instance records, and
+compares the report's headline section and explicitly listed charts. It shares
+statistics and rendering helpers with the producer rather than independently
+implementing every calculation. Other report content and legacy charts receive
+checksum checks only; algorithm selection replay is limited to supported Lazy
+Greedy and Greedy rows. See docs/output_schema.md and the fault-injection matrix
+for these boundaries.
 
-Scope, and one coupling worth stating
--------------------------------------
-The recomputation imports statistics helpers from `maxcover.benchmark` that are
-private by name. That is a real coupling: an internal refactor of `benchmark.py`
-can break this validator, which is the opposite of what an independent check
-should depend on. Promoting those helpers to a public API is the correct fix, but
-it touches the reproducibility contracts around `run_id`, so it is left as
-separate work rather than bundled into the change that first made this validator
-available here.
-
-Exit status is 0 when every artifact validates and 1 otherwise, so it works as a
-CI gate.
+The CI acceptance policy rejects timeout and error statuses and requires
+an optimum reference for every instance. Exit status is 0 when the checks
+pass and 1 for reported validation failures.
 """
 
 from __future__ import annotations
@@ -158,14 +151,8 @@ Record = TypeVar(
     ReferenceCutoffSensitivityRecord,
 )
 
-# The manifest's own schema version, as written by `benchmark.py`.
-#
-# Declared here rather than imported because `benchmark.py` writes the value
-# inline and exposes no constant for it. Introducing one would mean editing a
-# 5000-line module that is exempt from type checking, which does not belong in
-# the change that first brings this validator into the repository. The coupling
-# is therefore explicit and asserted by tests/test_output_validation.py, so a
-# future bump fails loudly here instead of passing silently.
+# Keep the validator's expected Manifest version separate from the producer's
+# declaration. tests/test_output_validation.py compares it with a runner output.
 MANIFEST_SCHEMA_VERSION = 1
 
 REQUIRED_OUTPUTS = {
@@ -529,15 +516,7 @@ def _markdown_section(
 
 
 def _validate_manifest(output: Path, manifest: dict[str, object]) -> None:
-    # The manifest's own schema version, before anything inside it is trusted.
-    #
-    # This was missing, and a test written from the declaration rather than from
-    # this function found it: a manifest could claim any schema version at all
-    # and still validate, because only the `outputs` array was ever examined.
-    # That is the failure this whole script exists to catch — output that was
-    # written wrongly rather than altered afterwards — appearing in the checker
-    # itself. Every artifact's own schema version is verified elsewhere; the
-    # container's was not.
+    # Check the Manifest version before consuming its declarations.
     declared = manifest.get("schema_version")
     if declared != MANIFEST_SCHEMA_VERSION:
         _fail(
