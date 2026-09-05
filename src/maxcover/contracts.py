@@ -54,25 +54,27 @@ from ._run_contracts import (
 from ._statistics_contracts import (
     AUTOMATIC_CONCLUSION_CONTRACT_SCHEMA_VERSION,
     AUTOMATIC_CONCLUSION_MINIMUM_SAMPLE_COUNT,
-    BNB_NODE_REDUCTION_SCHEMA_VERSION,
     CENSORED_RUNTIME_SCHEMA_VERSION,
     CONFIDENCE_INTERVAL_SCHEMA_VERSION,
     DESCRIPTIVE_STATISTICS_METRICS,
     DESCRIPTIVE_STATISTICS_SCHEMA_VERSION,
     GREEDY_FAILURE_SCHEMA_VERSION,
-    HEURISTIC_EXACT_RUNTIME_RATIO_SCHEMA_VERSION,
     LOCAL_SEARCH_RECOVERY_SCHEMA_VERSION,
     LOCAL_SEARCH_REMAINING_GAP_SCHEMA_VERSION,
     QUALITY_RUNTIME_PARETO_SCHEMA_VERSION,
-    BranchAndBoundNodeReductionRecord,
     CensoredRuntimeRecord,
     ConfidenceIntervalRecord,
     DescriptiveStatisticsRecord,
     GreedyFailureRecord,
-    HeuristicExactRuntimeRatioRecord,
     LocalSearchRecoveryRecord,
     LocalSearchRemainingGapRecord,
     QualityRuntimeParetoRecord,
+)
+from ._performance_contracts import (
+    BNB_NODE_REDUCTION_SCHEMA_VERSION,
+    HEURISTIC_EXACT_RUNTIME_RATIO_SCHEMA_VERSION,
+    BranchAndBoundNodeReductionRecord,
+    HeuristicExactRuntimeRatioRecord,
 )
 from .model import (
     MaximumCoverageInstance,

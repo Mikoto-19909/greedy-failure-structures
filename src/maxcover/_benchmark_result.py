@@ -25,15 +25,17 @@ from ._reference_contracts import (
 )
 from ._run_contracts import RunRecord, SummaryRecord
 from ._statistics_contracts import (
-    BranchAndBoundNodeReductionRecord,
     CensoredRuntimeRecord,
     ConfidenceIntervalRecord,
     DescriptiveStatisticsRecord,
     GreedyFailureRecord,
-    HeuristicExactRuntimeRatioRecord,
     LocalSearchRecoveryRecord,
     LocalSearchRemainingGapRecord,
     QualityRuntimeParetoRecord,
+)
+from ._performance_contracts import (
+    BranchAndBoundNodeReductionRecord,
+    HeuristicExactRuntimeRatioRecord,
 )
 
 if TYPE_CHECKING:
