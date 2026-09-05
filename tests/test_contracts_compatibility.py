@@ -14,6 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 import maxcover
+import maxcover.benchmark as benchmark
 import maxcover.contracts as contracts
 from maxcover.algorithms import ALGORITHMS
 from maxcover.config import load_config
@@ -323,6 +324,10 @@ class ContractsCompatibilityTests(unittest.TestCase):
             if hasattr(contracts, name):
                 with self.subTest(name=name):
                     self.assertIs(getattr(maxcover, name), getattr(contracts, name))
+            if name in {"BenchmarkPlan", "plan_benchmark", "replay_instance_file",
+                        "run_benchmark", "summarize_benchmark"}:
+                with self.subTest(benchmark_export=name):
+                    self.assertIs(getattr(maxcover, name), getattr(benchmark, name))
 
     def test_csv_headers_schema_column_and_class_modules_are_frozen(self) -> None:
         for name, rendered_fields in EXPECTED_CSV_FIELDS.items():

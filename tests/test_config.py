@@ -412,7 +412,7 @@ class ConfigurationTests(unittest.TestCase):
             config_path = root / "invalid.json"
             config_path.write_text(json.dumps(value), encoding="utf-8")
             output = root / "output"
-            with patch("maxcover.benchmark._run_algorithms") as algorithms:
+            with patch("maxcover.benchmark._execute_task") as algorithms:
                 with self.assertRaises(ConfigurationError):
                     run_benchmark(config_path, output)
             algorithms.assert_not_called()
