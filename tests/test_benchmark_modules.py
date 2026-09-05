@@ -113,7 +113,10 @@ class BenchmarkModuleTests(unittest.TestCase):
                                   "_fixed_size_control_pairs", "_instance_record", "_instances_for_config",
                                   "_resolved_case_parameters", "_structural_coupling_pair_id", "_tasks_for_config")),
             (benchmark_artifacts, ("REPORT_FILENAMES", "RUNNER_OWNED_FILENAMES",
-                                   "SEARCH_COMPARISON_FIELDS", "STOCHASTIC_SUMMARY_FIELDS", "_runner_owned_paths")),
+                                   "SEARCH_COMPARISON_FIELDS", "STOCHASTIC_SUMMARY_FIELDS", "_runner_owned_paths",
+                                   "_csv_text", "_canonical_run_records", "_canonical_instance_records", "_write_csv",
+                                   "_validate_existing_instances", "_clean_runner_owned_artifacts",
+                                   "_write_search_comparison", "_write_stochastic_summary", "_read_existing")),
             (benchmark_manifest, ("PROJECT_ROOT", "_git_state", "_write_manifest")),
         ):
             for name in names:
