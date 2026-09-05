@@ -1,6 +1,6 @@
 # 输出验证脚本整理计划
 
-记录日期：2026-09-05。状态：同文件提取已完成，等待 PR 验收。
+记录日期：2026-09-05。状态：同文件提取已完成，由 PR #39 验收。
 
 原计划以主分支 `ddf6a8a` 的实现为参照。实施前已重新核对：
 [PR #21](https://github.com/Mikoto-19909/greedy-failure-structures/pull/21)
@@ -10,6 +10,7 @@
 
 ## 实施进展
 
+实施见 [PR #39](https://github.com/Mikoto-19909/greedy-failure-structures/pull/39)。
 实施基线为 `2a3fd189baf13743ce94837823db7719a67bb9a4`。报告拆分和 benchmark
 B0–B4 已通过各自 PR 验收并合并，报告私有导入与 benchmark 兼容别名均已稳定。
 可选 B5 已在完整 runner 上评估并取消，理由记录在
