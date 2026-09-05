@@ -5,8 +5,8 @@ that was written wrongly rather than altered afterwards. So a test that only
 confirms "valid output passes" would test almost nothing — the interesting half
 is whether corrupted output actually fails.
 
-Each case here therefore breaks one specific thing the validator's docstring or
-the project's contracts say must hold, and asserts the validator rejects it. The
+Cases break requirements from the validator's docstring or the project's
+contracts and assert rejection, including faults combined across stages. The
 cases come from those declarations, not from reading the recomputation code:
 deriving them from the implementation is what let earlier defects through, since
 the test then shares the implementation's blind spots.
@@ -58,7 +58,7 @@ def run_validator(output: Path) -> subprocess.CompletedProcess[str]:
 
 
 class OutputValidatorTests(unittest.TestCase):
-    """Break one contract per test and require the validator to notice."""
+    """Reject broken contracts, including combinations of independent faults."""
 
     reference: Path
     _root: tempfile.TemporaryDirectory[str]
@@ -188,6 +188,40 @@ class OutputValidatorTests(unittest.TestCase):
         path.write_text("\n".join(lines[:-1]) + "\n", encoding="utf-8")
         self.assertRejected("a result row was removed")
 
+    def test_duplicate_run_identity_is_rejected_without_changing_row_count(self) -> None:
+        path = self.output / "raw_results.csv"
+        rows = list(csv.DictReader(path.read_text(encoding="utf-8").splitlines()))
+        original_count = len(rows)
+        self.assertGreater(original_count, 1)
+        self.assertNotEqual(rows[0]["run_id"], rows[-1]["run_id"])
+        rows[-1] = dict(rows[0])
+        with path.open("w", encoding="utf-8", newline="") as handle:
+            writer = csv.DictWriter(handle, fieldnames=list(rows[0]))
+            writer.writeheader()
+            writer.writerows(rows)
+        self.refreshManifestEntry(path.name)
+        self.assertEqual(len(list(csv.DictReader(path.read_text(encoding="utf-8").splitlines()))), original_count)
+        self.assertRejected("duplicate and missing run identities with an unchanged row count")
+
+    def test_invalid_schema_and_output_inventory_are_rejected_together(self) -> None:
+        path = self.output / "manifest.json"
+        manifest = json.loads(path.read_text(encoding="utf-8"))
+        manifest["schema_version"] += 99
+        manifest["outputs"] = []
+        path.write_text(json.dumps(manifest), encoding="utf-8")
+        self.assertRejected("invalid schema and untrusted output inventory")
+
+    def test_headline_and_chart_tampering_is_rejected_after_checksum_refresh(self) -> None:
+        report = self.output / "results_summary.md"
+        text = report.read_text(encoding="utf-8")
+        self.assertIn("## Headline checks", text)
+        report.write_text(text.replace("## Headline checks", "## Broken headline checks", 1), encoding="utf-8")
+        chart = self.output / "runtime_scaling.svg"
+        chart.write_text(chart.read_text(encoding="utf-8") + "\n<!-- tampered -->\n", encoding="utf-8")
+        self.refreshManifestEntry(report.name)
+        self.refreshManifestEntry(chart.name)
+        self.assertRejected("both the checked report section and a canonical chart differ")
+
     def test_a_wrong_schema_version_is_rejected(self) -> None:
         # Schema versions are contracts; a CSV claiming the wrong one is exactly
         # the case a checksum agrees with.
@@ -241,7 +275,7 @@ class OutputValidatorTests(unittest.TestCase):
 
     def test_the_expected_schema_version_matches_what_the_runner_writes(self) -> None:
         # The validator declares MANIFEST_SCHEMA_VERSION itself, because
-        # benchmark.py writes the value inline and exposes no constant. That
+        # the runner writes the value inline and exposes no constant. That
         # duplication is only safe while the two agree, so this compares the
         # validator's expectation against a manifest the runner actually wrote.
         # A future bump then fails here rather than making every run invalid.
