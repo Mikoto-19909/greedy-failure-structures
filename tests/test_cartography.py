@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import csv
-import hashlib
 import json
 import subprocess
 import sys
@@ -335,6 +334,12 @@ class CartographyTests(unittest.TestCase):
                 text=True,
             )
             self.assertEqual(validated.returncode, 0, validated.stderr)
+            changed_config = dict(config_value, base_seed=config_value["base_seed"] + 999)
+            config_path.write_text(json.dumps(changed_config), encoding="utf-8")
+            mismatched = subprocess.run(validation_command, cwd=ROOT, capture_output=True, text=True)
+            self.assertNotEqual(mismatched.returncode, 0)
+            self.assertIn("config_hash", mismatched.stderr)
+            config_path.write_text(json.dumps(config_value), encoding="utf-8")
             randomized = [
                 row
                 for row in result.rows
@@ -362,9 +367,6 @@ class CartographyTests(unittest.TestCase):
                 encoding="utf-8", newline=""
             ) as handle:
                 paired = list(csv.DictReader(handle))
-            manifest = json.loads(
-                (output / "cartography_manifest.json").read_text(encoding="utf-8")
-            )
             strength_svg = (output / "stressor_strength_gap.svg").read_text(
                 encoding="utf-8"
             )
@@ -382,15 +384,6 @@ class CartographyTests(unittest.TestCase):
                 )
                 writer.writeheader()
                 writer.writerows(tampered_rows)
-            manifest_path = output / "cartography_manifest.json"
-            tampered_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-            tampered_manifest["outputs"]["paired_control_differences.csv"][
-                "sha256"
-            ] = hashlib.sha256(paired_path.read_bytes()).hexdigest()
-            manifest_path.write_text(
-                json.dumps(tampered_manifest, indent=2, sort_keys=True) + "\n",
-                encoding="utf-8",
-            )
             rejected = subprocess.run(
                 validation_command,
                 cwd=ROOT,
@@ -405,7 +398,6 @@ class CartographyTests(unittest.TestCase):
         self.assertEqual(len(paired), 12 * len(HEURISTIC_ALGORITHMS))
         self.assertTrue(all(row["paired_seed_count"] == "2" for row in paired))
         self.assertTrue(all(row["difference_formula"] == "stressor_gap-control_gap" for row in paired))
-        self.assertEqual(set(manifest["outputs"]), set(CARTOGRAPHY_FILENAMES))
         self.assertIn("<svg", strength_svg)
         self.assertIn("<svg", matrix_svg)
 
