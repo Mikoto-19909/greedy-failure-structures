@@ -196,6 +196,9 @@ contract; replay does not translate options between algorithms.
 The runner writes CSV results and reports without a manifest or file checksums.
 Configuration, instance, and run hashes remain internal identifiers for result
 joins and resume. Keep the experiment configuration with its results.
+Ordinary runs, resume, and summarize remove a retired `manifest.json` after
+checking the existing inputs, before writing refreshed outputs. Rejected inputs
+leave the existing results and legacy metadata in place.
 
 For detailed checks on a completed run:
 

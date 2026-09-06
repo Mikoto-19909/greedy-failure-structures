@@ -442,6 +442,8 @@ def run_benchmark(
             "existing raw_results.csv contains runs outside the current plan; "
             "use --force"
         )
+    # Retired metadata must not survive a validated run, resume, or summarize.
+    (output_dir / "manifest.json").unlink(missing_ok=True)
     _write_csv(
         output_dir / "instances.csv", instance_records, InstanceRecord.CSV_FIELDS
     )
