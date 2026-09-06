@@ -177,7 +177,7 @@ the raw seeds in raw_results.csv; they are diagnostics, not the coupling
 acceptance condition. Run it from the repository root:
 
 ~~~console
-PYTHONPATH=src python -m maxcover.paired_seed_analysis --paired-results results/pairing-v1/paired --unpaired-results results/pairing-v1/unpaired --output results/pairing-v1/analysis
+PYTHONPATH=src python -m maxcover.paired_seed_analysis --paired-config configs/pairing_paired.json --unpaired-config configs/pairing_unpaired.json --paired-results results/pairing-v1/paired --unpaired-results results/pairing-v1/unpaired --output results/pairing-v1/analysis
 ~~~
 
 On Windows PowerShell the equivalent is: set the path variable to the source

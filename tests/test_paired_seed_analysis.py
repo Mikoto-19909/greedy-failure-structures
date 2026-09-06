@@ -1,4 +1,4 @@
-"""Verify the paired-seed analysis module on synthetic inputs only."""
+"""Check synthetic arithmetic separately from plan-validated analysis inputs."""
 
 from __future__ import annotations
 
@@ -18,10 +18,13 @@ sys.path.insert(0, str(ROOT / "src"))
 from maxcover._instance_contracts import InstanceRecord
 from maxcover._run_contracts import RunRecord
 from maxcover.model import SolutionStatus
+from maxcover.benchmark import run_benchmark
+from maxcover.config import load_config
 from maxcover.paired_seed_analysis import (
     AnalysisError,
     ComparisonRow,
     DifferenceSummary,
+    _compare_records,
     analyze_pairing,
     load_instance_records,
     load_run_records,
@@ -282,7 +285,7 @@ class PairingInvarianceTest(unittest.TestCase):
         )
         paired_instances, unpaired_instances = self._instances_for(paired, unpaired)
         with self.assertRaises(AnalysisError):
-            analyze_pairing(
+            _compare_records(
                 paired,
                 unpaired,
                 paired_instances=paired_instances,
@@ -315,7 +318,7 @@ class PairingInvarianceTest(unittest.TestCase):
             case="treatment", repetition=0, seed=2000, universe_size=10
         )
         with self.assertRaises(AnalysisError):
-            analyze_pairing(
+            _compare_records(
                 paired,
                 unpaired,
                 paired_instances=paired_instances,
@@ -326,7 +329,7 @@ class PairingInvarianceTest(unittest.TestCase):
         record = _record(case="orphan_control", repetition=0, seed=1, coverage=6)
         instance = _instance_record(case="orphan_control", repetition=0, seed=1)
         with self.assertRaises(AnalysisError):
-            analyze_pairing(
+            _compare_records(
                 [record],
                 [record],
                 paired_instances=[instance],
@@ -344,7 +347,7 @@ class PairingInvarianceTest(unittest.TestCase):
             case="treatment_control", repetition=0, seed=1
         )
         with self.assertRaises(AnalysisError):
-            analyze_pairing(
+            _compare_records(
                 [first, second, control],
                 [first, second, control],
                 paired_instances=[instance, control_instance],
@@ -401,7 +404,7 @@ class EffectiveCouplingTest(unittest.TestCase):
                           for row, item in zip(paired, paired_instances)]
                 unpaired = [replace(row, family=item.family, parameters=item.parameters)
                             for row, item in zip(unpaired, unpaired_instances)]
-                rows, samples = analyze_pairing(
+                rows, samples = _compare_records(
                     paired, unpaired, paired_instances=paired_instances,
                     unpaired_instances=unpaired_instances,
                 )
@@ -455,7 +458,7 @@ class EffectiveCouplingTest(unittest.TestCase):
             ),
         ]
         with self.assertRaisesRegex(AnalysisError, "effective coupling seed"):
-            analyze_pairing(
+            _compare_records(
                 paired,
                 unpaired,
                 paired_instances=paired_instances,
@@ -506,7 +509,7 @@ class EffectiveCouplingTest(unittest.TestCase):
                   for row, item in zip(paired, paired_instances)]
         unpaired = [replace(row, family=item.family, parameters=item.parameters)
                     for row, item in zip(unpaired, unpaired_instances)]
-        rows, _ = analyze_pairing(
+        rows, _ = _compare_records(
             paired,
             unpaired,
             paired_instances=paired_instances,
@@ -548,7 +551,7 @@ class EffectiveCouplingTest(unittest.TestCase):
             ),
         ]
         with self.assertRaisesRegex(AnalysisError, "independent effective seeds"):
-            analyze_pairing(
+            _compare_records(
                 paired,
                 unpaired,
                 paired_instances=paired_instances,
@@ -586,7 +589,7 @@ class EffectiveCouplingTest(unittest.TestCase):
             ),
         ]
         with self.assertRaisesRegex(AnalysisError, "records only one"):
-            analyze_pairing(
+            _compare_records(
                 paired,
                 unpaired,
                 paired_instances=paired_instances,
@@ -615,7 +618,7 @@ class EffectiveCouplingTest(unittest.TestCase):
             ),
         ]
         with self.assertRaisesRegex(AnalysisError, "records neither"):
-            analyze_pairing(
+            _compare_records(
                 paired,
                 unpaired,
                 paired_instances=[],
@@ -656,7 +659,7 @@ class EffectiveCouplingTest(unittest.TestCase):
             ),
         ]
         with self.assertRaisesRegex(AnalysisError, "neither a seed nor"):
-            analyze_pairing(
+            _compare_records(
                 paired,
                 unpaired,
                 paired_instances=paired_instances,
@@ -740,7 +743,7 @@ class VarianceComparisonTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             directory = Path(tmp)
             self._dataset(directory)
-            rows, samples = analyze_pairing(
+            rows, samples = _compare_records(
                 load_run_records(directory / "paired"),
                 load_run_records(directory / "unpaired"),
                 paired_instances=load_instance_records(directory / "paired"),
@@ -782,7 +785,7 @@ class VarianceComparisonTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             directory = Path(tmp)
             self._dataset(directory)
-            rows, _ = analyze_pairing(
+            rows, _ = _compare_records(
                 load_run_records(directory / "paired"),
                 load_run_records(directory / "unpaired"),
                 paired_instances=load_instance_records(directory / "paired"),
@@ -843,7 +846,7 @@ class VarianceComparisonTest(unittest.TestCase):
                 case="treatment_control", repetition=1, seed=3001, family="uniform"
             ),
         ]
-        rows, _ = analyze_pairing(
+        rows, _ = _compare_records(
             paired,
             unpaired,
             paired_instances=paired_instances,
@@ -866,35 +869,12 @@ class VarianceComparisonTest(unittest.TestCase):
                 with self.subTest(field=field):
                     changed = [replace(paired[0], **{field: value}), *paired[1:]]
                     with self.assertRaisesRegex(AnalysisError, "run does not match its instance row"):
-                        analyze_pairing(
+                        _compare_records(
                             changed, unpaired,
                             paired_instances=load_instance_records(directory / "paired"),
                             unpaired_instances=load_instance_records(directory / "unpaired"),
                         )
 
-    def test_cli_writes_comparison_and_differences(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            directory = Path(tmp)
-            self._dataset(directory)
-            output = directory / "analysis"
-            status = main(
-                [
-                    "--paired-results",
-                    str(directory / "paired"),
-                    "--unpaired-results",
-                    str(directory / "unpaired"),
-                    "--output",
-                    str(output),
-                ]
-            )
-            self.assertEqual(status, 0)
-            self.assertTrue((output / "comparison.csv").is_file())
-            self.assertTrue((output / "differences.csv").is_file())
-            self.assertFalse((output / "analysis_manifest.json").exists())
-            with (output / "comparison.csv").open("r", encoding="utf-8") as handle:
-                rows = list(csv.DictReader(handle))
-            self.assertEqual(len(rows), 2)
-            self.assertEqual(set(rows[0]), set(ComparisonRow.CSV_FIELDS))
 
 
     def test_summary_of_empty_series_is_empty(self) -> None:
@@ -903,6 +883,120 @@ class VarianceComparisonTest(unittest.TestCase):
         self.assertIsNone(summary.mean)
         self.assertIsNone(summary.sample_variance)
         self.assertIsNone(summary.treatment_control_correlation)
+
+
+class PlannedPairingTests(unittest.TestCase):
+    """Real runner outputs exercise the public input boundary without manifests."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.temporary = tempfile.TemporaryDirectory()
+        cls.root = Path(cls.temporary.name)
+        cls.paths = {}
+        cls.configs = {}
+        cls.runs = {}
+        cls.instances = {}
+        for scheme in ("paired", "unpaired"):
+            config = json.loads((ROOT / f"configs/pairing_{scheme}.json").read_text(encoding="utf-8"))
+            config["repetitions"] = 2
+            config["cases"] = config["cases"][:2]
+            for case in config["cases"]:
+                case.update(universe_size=12, set_count=6, k=2)
+            config["algorithms"] = [{"name": "greedy"}, {"name": "brute_force"}]
+            path = cls.root / f"{scheme}.json"
+            path.write_text(json.dumps(config), encoding="utf-8")
+            run_benchmark(path, cls.root / scheme)
+            cls.paths[scheme] = path
+            cls.configs[scheme] = load_config(path)
+            cls.runs[scheme] = load_run_records(cls.root / scheme)
+            cls.instances[scheme] = load_instance_records(cls.root / scheme)
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        cls.temporary.cleanup()
+
+    def analyze(self, records=None, *, scheme="paired", instances=None):
+        runs = dict(self.runs)
+        inputs = dict(self.instances)
+        if records is not None:
+            runs[scheme] = records
+        if instances is not None:
+            inputs[scheme] = instances
+        return analyze_pairing(
+            runs["paired"], runs["unpaired"],
+            paired_config=self.configs["paired"], unpaired_config=self.configs["unpaired"],
+            paired_instances=inputs["paired"], unpaired_instances=inputs["unpaired"],
+        )
+
+    def test_real_complete_inputs_and_reordered_rows_are_accepted(self) -> None:
+        expected = self.analyze()
+        self.assertEqual(expected, self.analyze(list(reversed(self.runs["paired"]))))
+        self.assertTrue(expected[0])
+
+    def test_run_identity_and_algorithm_metadata_match_the_plan(self) -> None:
+        for scheme in ("paired", "unpaired"):
+            original = self.runs[scheme]
+            for field, value in (("run_id", "f" * 64), ("algorithm", "unknown"),
+                                 ("algorithm_id", "unknown"), ("algorithm_options", '{"unknown":true}'),
+                                 ("seed", original[0].seed + 1), ("instance_id", "e" * 64)):
+                with self.subTest(scheme=scheme, field=field):
+                    changed = [replace(original[0], **{field: value}), *original[1:]]
+                    with self.assertRaisesRegex(AnalysisError, "execution plan"):
+                        self.analyze(changed, scheme=scheme)
+
+    def test_duplicate_and_missing_planned_runs_are_rejected(self) -> None:
+        original = self.runs["paired"]
+        with self.assertRaisesRegex(AnalysisError, "duplicate run_id"):
+            self.analyze([replace(row, run_id=original[0].run_id) for row in original])
+        with self.assertRaisesRegex(AnalysisError, "execution plan"):
+            self.analyze(original[:-1])
+
+    def test_coordinated_coverage_gap_edits_still_fail_selected_set_check(self) -> None:
+        original = self.runs["paired"]
+        index = next(i for i, row in enumerate(original) if row.algorithm == "greedy")
+        row = original[index]
+        changed = list(original)
+        changed[index] = replace(row, coverage=1, optimality_gap=(row.optimum - 1) / row.optimum)
+        with self.assertRaisesRegex(AnalysisError, "coverage does not match"):
+            self.analyze(changed)
+
+    def test_instance_table_must_match_the_configured_generation(self) -> None:
+        changed = list(self.instances["paired"])
+        changed[0] = replace(changed[0], pairwise_overlap_mean_jaccard=0.999)
+        with self.assertRaisesRegex(AnalysisError, "instance plan"):
+            self.analyze(instances=changed)
+
+    def test_present_error_record_is_distinct_from_a_missing_run(self) -> None:
+        changed = list(self.runs["paired"])
+        index = next(i for i, row in enumerate(changed) if row.algorithm == "greedy")
+        metadata = json.loads(changed[index].algorithm_metadata)
+        metadata["termination"] = "error"
+        changed[index] = replace(changed[index], status=SolutionStatus.ERROR,
+                                 coverage=None, best_bound=None, optimality_gap=None, selected=(),
+                                 algorithm_metadata=json.dumps(metadata), error_message="test failure")
+        rows, _ = self.analyze(changed)
+        row = next(item for item in rows if item.algorithm_id == "greedy" and item.metric == "coverage")
+        self.assertEqual(row.paired_missing_count, 1)
+
+    def test_cli_checks_configurations_before_writing_comparisons(self) -> None:
+        output = self.root / "analysis"
+        argv = [
+            "--paired-config", str(self.paths["paired"]),
+            "--unpaired-config", str(self.paths["unpaired"]),
+            "--paired-results", str(self.root / "paired"),
+            "--unpaired-results", str(self.root / "unpaired"), "--output", str(output),
+        ]
+        status = main(argv)
+        self.assertEqual(status, 0)
+        self.assertTrue((output / "comparison.csv").is_file())
+        self.assertTrue((output / "differences.csv").is_file())
+        self.assertFalse((output / "analysis_manifest.json").exists())
+        invalid_output = self.root / "invalid-analysis"
+        argv[argv.index("--paired-config") + 1] = str(self.paths["unpaired"])
+        argv[argv.index("--output") + 1] = str(invalid_output)
+        with self.assertRaises(AnalysisError):
+            main(argv)
+        self.assertFalse(invalid_output.exists())
 
 
 if __name__ == "__main__":

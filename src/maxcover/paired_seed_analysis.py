@@ -6,9 +6,9 @@ reduce the spread of the treatment-minus-control difference relative to
 generating the two independently?
 
 The analysis reads the canonical raw_results.csv and instances.csv artifacts
-produced by the benchmark runner. It validates record identities and pairing.
-The effective seed
-that drove generation -- the coupling seed when the runner injected one,
+produced by the benchmark runner. Each input requires its experiment configuration
+so run identities, algorithm options, and selected-set coverage can be checked.
+The effective seed that drove generation -- the coupling seed when the runner injected one,
 otherwise the instance seed -- must be shared between a treatment and its
 matched control at every repetition in the paired run and must be independent
 in the unpaired run; when that does not hold the analysis refuses to compare.
@@ -32,7 +32,7 @@ and raises when they do not hold.
 
 Run it as a module:
 
-    python -m maxcover.paired_seed_analysis --paired-results results/pairing-v1/paired --unpaired-results results/pairing-v1/unpaired --output results/pairing-v1/analysis
+    python -m maxcover.paired_seed_analysis --paired-config configs/pairing_paired.json --unpaired-config configs/pairing_unpaired.json --paired-results results/pairing-v1/paired --unpaired-results results/pairing-v1/unpaired --output results/pairing-v1/analysis
 
 Numeric results are written to the output directory (comparison.csv and
 differences.csv). Inputs need no manifest or file checksums.
@@ -51,6 +51,13 @@ from typing import ClassVar
 
 from ._instance_contracts import InstanceRecord
 from ._run_contracts import RunRecord
+from .benchmark_planning import (
+    _instance_record,
+    _instances_for_config,
+    _validate_run_identity,
+)
+from .config import ExperimentConfig, load_config
+from .reproducibility import config_hash
 
 
 METRICS = ("coverage", "optimality_gap")
@@ -541,7 +548,7 @@ def _validate_effective_coupling(
         raise AnalysisError(issues)
 
 
-def analyze_pairing(
+def _compare_records(
     paired_records: list[RunRecord],
     unpaired_records: list[RunRecord],
     *,
@@ -698,6 +705,52 @@ def analyze_pairing(
     return comparison, samples
 
 
+def analyze_pairing(
+    paired_records: list[RunRecord],
+    unpaired_records: list[RunRecord],
+    *,
+    paired_config: ExperimentConfig,
+    unpaired_config: ExperimentConfig,
+    paired_instances: list[InstanceRecord],
+    unpaired_instances: list[InstanceRecord],
+    control_suffix: str = DEFAULT_CONTROL_SUFFIX,
+) -> tuple[list[ComparisonRow], list[dict[str, object]]]:
+    """Validate both experiment inputs before computing paired statistics."""
+
+    for scheme, config, records, instances in (
+        ("paired", paired_config, paired_records, paired_instances),
+        ("unpaired", unpaired_config, unpaired_records, unpaired_instances),
+    ):
+        try:
+            identifier = config_hash(config)
+            planned = _instances_for_config(config)
+            expected = {
+                item.instance_id: _instance_record(item, identifier).to_csv_row()
+                for item in planned
+            }
+            actual = {item.instance_id: item.to_csv_row() for item in instances}
+            if len(actual) != len(instances) or actual != expected:
+                raise ValueError("instances.csv does not match the instance plan")
+            tasks = _validate_run_identity(
+                config, identifier, records, planned_instances=planned,
+            )
+            for row in records:
+                instance = tasks[row.run_id].instance
+                if (len(row.selected) > instance.k
+                        or len(set(row.selected)) != len(row.selected)
+                        or any(index < 0 or index >= instance.set_count for index in row.selected)):
+                    raise ValueError(f"run {row.run_id} has invalid selected indices")
+                if row.coverage is not None and instance.coverage(row.selected) != row.coverage:
+                    raise ValueError(f"run {row.run_id} coverage does not match its selected sets")
+        except ValueError as error:
+            raise AnalysisError([f"{scheme}: {error}"]) from error
+    return _compare_records(
+        paired_records, unpaired_records,
+        paired_instances=paired_instances, unpaired_instances=unpaired_instances,
+        control_suffix=control_suffix,
+    )
+
+
 DIFFERENCE_FIELDS = (
     "scheme",
     "family",
@@ -766,6 +819,8 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--paired-results", type=Path, required=True, metavar="DIR")
     parser.add_argument("--unpaired-results", type=Path, required=True, metavar="DIR")
+    parser.add_argument("--paired-config", type=Path, required=True, metavar="PATH")
+    parser.add_argument("--unpaired-config", type=Path, required=True, metavar="PATH")
     parser.add_argument("--output", type=Path, required=True, metavar="DIR")
     parser.add_argument(
         "--control-suffix",
@@ -782,6 +837,8 @@ def main(argv: list[str] | None = None) -> int:
     comparison, samples = analyze_pairing(
         paired,
         unpaired,
+        paired_config=load_config(args.paired_config),
+        unpaired_config=load_config(args.unpaired_config),
         paired_instances=paired_instances,
         unpaired_instances=unpaired_instances,
         control_suffix=args.control_suffix,

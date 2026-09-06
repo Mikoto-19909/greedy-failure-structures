@@ -13,6 +13,7 @@ from .config import CaseConfig, ExperimentConfig
 from .contracts import (
     AlgorithmRunOptions,
     InstanceRecord,
+    RunRecord,
     P4_3_COUPLED_FAMILIES,
     P4_3_INSTANCE_ORIGINS,
     P4_3_RESEARCH_QUESTION_IDS,
@@ -423,3 +424,69 @@ def _tasks_for_config(
                     )
                 )
     return tasks
+
+
+def _validate_run_identity(
+    config: ExperimentConfig, expected_hash: str, rows: Sequence[RunRecord],
+    *, planned_instances: Sequence[_PlannedInstance] | None = None,
+) -> dict[str, _RunTask]:
+    if planned_instances is None:
+        planned_instances = _instances_for_config(config)
+    tasks = _tasks_for_config(config, expected_hash, planned_instances)
+    expected_by_run_id = {task.run_id: task for task in tasks}
+    if len(expected_by_run_id) != len(tasks):
+        raise ValueError("the execution plan contains duplicate run_id values")
+    actual_by_run_id = {row.run_id: row for row in rows}
+    if len(actual_by_run_id) != len(rows):
+        raise ValueError("raw results contain duplicate run_id values")
+    missing = sorted(set(expected_by_run_id) - set(actual_by_run_id))
+    unexpected = sorted(set(actual_by_run_id) - set(expected_by_run_id))
+    if missing or unexpected:
+        raise ValueError(
+            "raw results run_id values do not match the execution plan "
+            f"(missing={len(missing)}, unexpected={len(unexpected)})"
+        )
+
+    fields = (
+        "config_hash",
+        "case_id",
+        "case",
+        "repetition",
+        "seed",
+        "instance_id",
+        "family",
+        "universe_size",
+        "set_count",
+        "k",
+        "parameters",
+        "algorithm_id",
+        "algorithm_seed",
+        "algorithm",
+        "algorithm_options",
+    )
+    for run_id, task in expected_by_run_id.items():
+        row = actual_by_run_id[run_id]
+        expected_values = {
+            "config_hash": expected_hash,
+            "case_id": task.case_id,
+            "case": task.case_id,
+            "repetition": task.repetition,
+            "seed": task.instance.seed,
+            "instance_id": task.instance_id,
+            "family": task.instance.family,
+            "universe_size": task.instance.universe_size,
+            "set_count": task.instance.set_count,
+            "k": task.instance.k,
+            "parameters": canonical_json(dict(task.instance.parameters)),
+            "algorithm_id": task.algorithm_id,
+            "algorithm_seed": task.algorithm_seed,
+            "algorithm": task.algorithm,
+            "algorithm_options": canonical_json(task.option_values),
+        }
+        for field in fields:
+            if getattr(row, field) != expected_values[field]:
+                raise ValueError(
+                    f"raw result {run_id} field {field!r} does not match "
+                    "the execution plan"
+                )
+    return expected_by_run_id
