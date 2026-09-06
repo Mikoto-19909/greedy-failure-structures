@@ -204,7 +204,7 @@ class SummarizeCommandTests(unittest.TestCase):
             reproducible_names = [
                 name
                 for name in RUNNER_OWNED_FILENAMES
-                if name != "manifest.json" and (output_dir / name).is_file()
+                if (output_dir / name).is_file()
             ]
             expected = {
                 name: (output_dir / name).read_bytes()

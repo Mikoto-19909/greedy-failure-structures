@@ -9,7 +9,6 @@ import time
 from collections.abc import Iterable, Mapping
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
-from datetime import datetime, timezone
 from pathlib import Path
 
 from .algorithms import ALGORITHMS
@@ -29,7 +28,6 @@ from .benchmark_artifacts import (
     _write_search_comparison,
     _write_stochastic_summary,
 )
-from .benchmark_manifest import PROJECT_ROOT, _git_state, _write_manifest
 from .benchmark_statistics import (
     _validate_certificate_bound,
     _normalize_optima,
@@ -277,8 +275,8 @@ def _rows_for_instance(
 
 
 def _execute_task(task: _RunTask) -> _CompletedRun:
-    specification = ALGORITHMS[task.algorithm]
     started = time.perf_counter()
+    specification = ALGORITHMS[task.algorithm]
     try:
         solution = specification.run(task.instance, task.options)
     # Preserve a replayable failure instead of losing completed experiment progress.
@@ -413,9 +411,6 @@ def run_benchmark(
         or checkpoint_interval <= 0
     ):
         raise ValueError("checkpoint_interval must be a positive integer")
-    started_at = datetime.now(timezone.utc)
-    started = time.perf_counter()
-    git_state = _git_state()
     config = load_config(config_path)
     identifier = config_hash(config)
     if expected_config_hash is not None and identifier != expected_config_hash:
@@ -715,20 +710,6 @@ def run_benchmark(
                 output_dir / filename,
                 (temporary_dir / filename).read_text(encoding="utf-8"),
             )
-    duration_seconds = time.perf_counter() - started
-    _write_manifest(
-        output_dir=output_dir,
-        config_path=config_path,
-        config=config,
-        identifier=identifier,
-        tasks=tasks,
-        instances=instance_records,
-        started_at=started_at,
-        duration_seconds=duration_seconds,
-        workers=workers,
-        resumed_runs=len(existing),
-        git_state=git_state,
-    )
     return BenchmarkResult(
         config=config,
         rows=tuple(canonical_rows),
@@ -824,5 +805,5 @@ def summarize_benchmark(config_path: Path, output_dir: Path) -> BenchmarkResult:
         )
 
     # With every planned run present, the shared runner executes no algorithm and
-    # deterministically rebuilds all typed statistics, reports, charts, and Manifest.
+    # deterministically rebuilds all typed statistics, reports, and charts.
     return run_benchmark(config_path, output_dir)

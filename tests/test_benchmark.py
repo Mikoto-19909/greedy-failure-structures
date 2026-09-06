@@ -219,9 +219,9 @@ class BenchmarkTests(unittest.TestCase):
                 "node_scaling.svg",
                 "timeout_by_case.svg",
                 "reference_coverage_by_case.svg",
-                "manifest.json",
             ):
                 self.assertTrue((output / filename).is_file(), filename)
+            self.assertFalse((output / "manifest.json").exists())
             chart_expectations = {
                 "gap_by_case.svg": (
                     "source=descriptive_statistics.csv",

@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import ast
-import hashlib
-import json
 import subprocess
 import sys
 import unittest
@@ -15,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from maxcover import benchmark
-from maxcover import benchmark_artifacts, benchmark_manifest, benchmark_planning
+from maxcover import benchmark_artifacts, benchmark_planning
 from maxcover import benchmark_associations, benchmark_statistics
 
 
@@ -83,12 +81,6 @@ print('PASS: both old protocols preserve task contents, aliases and shared insta
 class BenchmarkModuleTests(unittest.TestCase):
     def test_old_planning_pickles_load_in_a_new_interpreter(self) -> None:
         fixture = ROOT / "tests/fixtures/benchmark_planning"
-        provenance = json.loads((fixture / "provenance.json").read_bytes())
-        self.assertEqual(provenance["baseline_commit"], "c40658d4cbc16b45fb640b1d97c03688baee16b7")
-        for filename, metadata in provenance["files"].items():
-            data = (fixture / filename).read_bytes()
-            self.assertEqual(len(data), metadata["bytes"])
-            self.assertEqual(hashlib.sha256(data).hexdigest(), metadata["sha256"])
         completed = subprocess.run(
             [sys.executable, "-c", PICKLE_CHECK, str(ROOT / "src"), str(fixture)],
             cwd=ROOT, capture_output=True, text=True, encoding="utf-8", timeout=30,
@@ -107,7 +99,7 @@ class BenchmarkModuleTests(unittest.TestCase):
                     elif isinstance(node, ast.Import):
                         self.assertNotIn("maxcover.benchmark", [alias.name for alias in node.names])
 
-    def test_facade_aliases_and_git_root_remain_correct(self) -> None:
+    def test_facade_aliases_remain_correct(self) -> None:
         for module, names in (
             (benchmark_planning, ("_PlannedInstance", "_RunTask", "_STRUCTURAL_COUPLING_INTENSITY",
                                   "_case_seed", "_coupling_pair_id", "_coupling_seed",
@@ -118,7 +110,6 @@ class BenchmarkModuleTests(unittest.TestCase):
                                    "_csv_text", "_canonical_run_records", "_canonical_instance_records", "_write_csv",
                                    "_validate_existing_instances", "_clean_runner_owned_artifacts",
                                    "_write_search_comparison", "_write_stochastic_summary", "_read_existing")),
-            (benchmark_manifest, ("PROJECT_ROOT", "_git_state", "_write_manifest")),
             (benchmark_statistics, (
                 "_validate_certificate_bound", "_normalize_optima", "_reference_status_records",
                 "_reference_coverage_statistics", "_REFERENCE_BIAS_METRICS",
@@ -144,15 +135,6 @@ class BenchmarkModuleTests(unittest.TestCase):
             for name in names:
                 with self.subTest(name=name):
                     self.assertIs(getattr(benchmark, name), getattr(module, name))
-        self.assertEqual(benchmark_manifest.PROJECT_ROOT, ROOT)
-        with patch.object(benchmark_manifest.subprocess, "run", side_effect=[
-            subprocess.CompletedProcess([], 0, "abcdef\n"),
-            subprocess.CompletedProcess([], 0, ""),
-        ]) as invoke:
-            self.assertEqual(benchmark._git_state(), {"commit": "abcdef", "dirty": False})
-        self.assertEqual([call.args[0] for call in invoke.call_args_list],
-                         [["git", "rev-parse", "HEAD"], ["git", "status", "--porcelain"]])
-        self.assertTrue(all(call.kwargs["cwd"] == ROOT for call in invoke.call_args_list))
 
 
 if __name__ == "__main__":

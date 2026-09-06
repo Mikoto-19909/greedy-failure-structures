@@ -77,7 +77,7 @@ RUNNER_OWNED_FILENAMES = (
     "search_nodes_dominated_ratio_association_statistics.csv",
     "search_comparison.csv",
     "stochastic_summary.csv",
-    "manifest.json",
+    "manifest.json",  # Remove legacy output when replacing a run.
     *REPORT_FILENAMES,
 )
 

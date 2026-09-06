@@ -1,8 +1,6 @@
 name: tests
 
-# Functional verification only. Content-boundary checks live in their own
-# workflow so that adding evidence verification later does not require
-# restructuring this one.
+# Verify algorithms, result handling, and example runs.
 
 on:
   push:
@@ -175,16 +173,16 @@ jobs:
       - name: Confirm the expected artifacts were written
         shell: bash
         run: |
-          for artifact in raw_results.csv manifest.json results_summary.md; do
+          for artifact in raw_results.csv results_summary.md; do
             test -f "results/ci-quick/$artifact" || {
               echo "missing artifact: $artifact" >&2
               exit 1
             }
           done
-      # Digests establish agreement with the recorded file checksums. This also
-      # checks identities and recomputes supported statistics from canonical
-      # records, then compares the checked report section and listed charts.
-      - name: Validate the output independently of the manifest checksum
+      # Recompute supported results from the configuration and CSV inputs.
+      # Check identities, statistics, selected charts, and the generated
+      # headline section. The next slice removes the text comparison.
+      - name: Validate the output from the experiment data
         run: >-
           python .github/scripts/validate_benchmark_output.py
           --config configs/quick.json
@@ -224,7 +222,7 @@ jobs:
       - name: Confirm the expected artifacts were written
         shell: bash
         run: |
-          for artifact in raw_results.csv instances.csv summary.csv manifest.json results_summary.md; do
+          for artifact in raw_results.csv instances.csv summary.csv results_summary.md; do
             test -f "results/ci-lazy-greedy/$artifact" || {
               echo "missing artifact: $artifact" >&2
               exit 1

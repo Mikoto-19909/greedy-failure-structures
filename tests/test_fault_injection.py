@@ -1,14 +1,11 @@
-"""Fault-injection tests for benchmark artifact and headline validation.
+"""Fault-injection tests for numerical outputs and the existing headline checks.
 
-The content-publication checks have been retired. These tests exercise the
-remaining benchmark validator on copies of a real quick run.
+Manifest and content-publication gates have been retired.
 """
 
 from __future__ import annotations
 
 import csv
-import hashlib
-import json
 import shutil
 import subprocess
 import sys
@@ -21,12 +18,8 @@ VALIDATOR = REPO_ROOT / ".github" / "scripts" / "validate_benchmark_output.py"
 CONFIG = REPO_ROOT / "configs" / "quick.json"
 FIXTURE_DIR = REPO_ROOT / "results" / "_fixture_quick"
 
-# The claim strings below are assembled from fragments rather than written as
-# literals, so the reviewer sees the construction next to the rule it probes.
 _FRAGMENT_FAILED = "Greedy failed on "
 _FRAGMENT_COUNT = "3 of 12 instances."
-_FRAGMENT_MEAN = "The mean coverage was "
-_FRAGMENT_VALUE = "44.0 across the four families."
 
 
 def _run_validator(output: Path) -> subprocess.CompletedProcess[str]:
@@ -42,22 +35,6 @@ def _run_validator(output: Path) -> subprocess.CompletedProcess[str]:
         cwd=REPO_ROOT,
         capture_output=True,
         text=True,
-    )
-
-
-def _refresh_manifest_entry(output: Path, filename: str) -> None:
-    """Rewrite the checksum record to match the altered artifact."""
-    artifact = output / filename
-    payload = artifact.read_bytes()
-    manifest_path = output / "manifest.json"
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    manifest["outputs"][filename] = {
-        "bytes": len(payload),
-        "sha256": hashlib.sha256(payload).hexdigest(),
-    }
-    manifest_path.write_text(
-        json.dumps(manifest, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
     )
 
 
@@ -189,7 +166,6 @@ class FaultInjectionGateTests(unittest.TestCase):
         else:
             self.fail("no greedy row with a positive gap in the fixture")
         _write_rows(self.output / "raw_results.csv", fields, rows)
-        _refresh_manifest_entry(self.output, "raw_results.csv")
         self.assertRejected(
             "a coverage value was raised while the gap column stayed put",
             "optimality_gap does not match optimum and coverage",
@@ -215,7 +191,6 @@ class FaultInjectionGateTests(unittest.TestCase):
         else:
             self.fail("no greedy row in the fixture")
         _write_rows(self.output / "raw_results.csv", fields, rows)
-        _refresh_manifest_entry(self.output, "raw_results.csv")
         # The validator only re-checks coverage against the selected sets when
         # a Lazy Greedy pairing exists (validator._validate_lazy_greedy_rows);
         # quick.json has no Lazy Greedy variant, so the link is never replayed.
@@ -240,7 +215,6 @@ class FaultInjectionGateTests(unittest.TestCase):
         else:
             self.fail("no brute_force row in the fixture")
         _write_rows(self.output / "raw_results.csv", fields, rows)
-        _refresh_manifest_entry(self.output, "raw_results.csv")
         self.assertAccepted(
             "selected changed on an exact run whose coverage was left in place"
         )
@@ -257,30 +231,13 @@ class FaultInjectionGateTests(unittest.TestCase):
         else:
             self.fail("no greedy row with a positive gap in the fixture")
         _write_rows(self.output / "raw_results.csv", fields, rows)
-        _refresh_manifest_entry(self.output, "raw_results.csv")
         self.assertRejected(
             "the gap column no longer equals the recomputed value",
             "optimality_gap does not match optimum and coverage",
         )
 
     # -------------------------------------------------------------------
-    # 4. manifest checksum tampering
     # -------------------------------------------------------------------
-    def test_manifest_checksum_tamper_is_rejected(self) -> None:
-        manifest_path = self.output / "manifest.json"
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        digest = manifest["outputs"]["raw_results.csv"]["sha256"]
-        manifest["outputs"]["raw_results.csv"]["sha256"] = (
-            ("0" if digest[0] != "0" else "1") + digest[1:]
-        )
-        manifest_path.write_text(
-            json.dumps(manifest, indent=2, sort_keys=True) + "\n",
-            encoding="utf-8",
-        )
-        self.assertRejected(
-            "the recorded digest was flipped without touching the artifact",
-            "SHA-256 mismatch for raw_results.csv",
-        )
 
     # -------------------------------------------------------------------
     # 5. seed tampering
@@ -289,7 +246,6 @@ class FaultInjectionGateTests(unittest.TestCase):
         fields, rows = _read_rows(self.output / "raw_results.csv")
         rows[0]["seed"] = str(int(rows[0]["seed"]) + 1000)
         _write_rows(self.output / "raw_results.csv", fields, rows)
-        _refresh_manifest_entry(self.output, "raw_results.csv")
         self.assertRejected(
             "a raw row was given a seed the execution plan does not contain",
             "field 'seed' does not match",
@@ -299,7 +255,6 @@ class FaultInjectionGateTests(unittest.TestCase):
         fields, rows = _read_rows(self.output / "instances.csv")
         rows[0]["seed"] = "9999"
         _write_rows(self.output / "instances.csv", fields, rows)
-        _refresh_manifest_entry(self.output, "instances.csv")
         # The validator re-derives the plan for raw rows only. Instance records
         # are compared by config hash, composite key uniqueness and presence of
         # their derived evidence; seed is not part of that chain.
@@ -310,7 +265,6 @@ class FaultInjectionGateTests(unittest.TestCase):
         rows[0]["seed"] = "9999"
         rows[0]["run_id"] = "0" * 64
         _write_rows(self.output / "raw_results.csv", fields, rows)
-        _refresh_manifest_entry(self.output, "raw_results.csv")
         self.assertRejected(
             "seed and run_id changed together, so run_id no longer matches the plan",
             "run_id values do not match the execution plan",
@@ -323,7 +277,6 @@ class FaultInjectionGateTests(unittest.TestCase):
         fields, rows = _read_rows(self.output / "raw_results.csv")
         rows = list(reversed(rows))
         _write_rows(self.output / "raw_results.csv", fields, rows)
-        _refresh_manifest_entry(self.output, "raw_results.csv")
         # Every recomputation in the validator keys on run_id or sorts by group
         # key, so row order is not part of the checked contract.
         self.assertAccepted("raw_result rows were written in reverse order")
@@ -332,7 +285,6 @@ class FaultInjectionGateTests(unittest.TestCase):
         fields, rows = _read_rows(self.output / "instances.csv")
         rows = list(reversed(rows))
         _write_rows(self.output / "instances.csv", fields, rows)
-        _refresh_manifest_entry(self.output, "instances.csv")
         self.assertAccepted("instance records were written in reverse order")
 
     # -------------------------------------------------------------------
@@ -347,7 +299,6 @@ class FaultInjectionGateTests(unittest.TestCase):
         else:
             self.fail("no greedy_trap greedy row in the fixture")
         _write_rows(self.output / "raw_results.csv", fields, rows)
-        _refresh_manifest_entry(self.output, "raw_results.csv")
         self.assertRejected(
             "status flipped to optimal while is_exact still says false",
             "CSV field 'is_exact' conflicts with status",
@@ -366,7 +317,6 @@ class FaultInjectionGateTests(unittest.TestCase):
         else:
             self.fail("no greedy_trap greedy row in the fixture")
         _write_rows(self.output / "raw_results.csv", fields, rows)
-        _refresh_manifest_entry(self.output, "raw_results.csv")
         # The flip is internally consistent now; the derived statistics
         # recomputation is what refuses it.
         self.assertRejected(
@@ -386,7 +336,6 @@ class FaultInjectionGateTests(unittest.TestCase):
         else:
             self.fail("no uniform_sparse repetition zero row in the fixture")
         _write_rows(self.output / "instances.csv", fields, rows)
-        _refresh_manifest_entry(self.output, "instances.csv")
         self.assertRejected(
             "only the optimum value of a certificate was injected",
             "known optimum certificate fields must be all present or all absent",
@@ -404,7 +353,6 @@ class FaultInjectionGateTests(unittest.TestCase):
         else:
             self.fail("no uniform_sparse repetition zero row in the fixture")
         _write_rows(self.output / "instances.csv", fields, rows)
-        _refresh_manifest_entry(self.output, "instances.csv")
         self.assertRejected(
             "a complete fabricated certificate on a stochastic instance",
             "certificate fields must remain unknown",
@@ -422,22 +370,22 @@ class FaultInjectionGateTests(unittest.TestCase):
         else:
             self.fail("no greedy_trap row in the fixture")
         _write_rows(self.output / "instances.csv", fields, rows)
-        _refresh_manifest_entry(self.output, "instances.csv")
         self.assertRejected(
             "a complete fabricated certificate on a legacy built instance",
             "legacy adversarial certificate fields must remain unknown",
         )
 
     # -------------------------------------------------------------------
-    # 9. quantitative conclusion without an evidence chain
+    # 9. Markdown text is outside numeric validation
     # -------------------------------------------------------------------
+
+
     def test_conclusion_outside_the_headline_section_is_a_measured_blind_spot(self) -> None:
         summary = self.output / "results_summary.md"
         text = summary.read_text(encoding="utf-8")
         claim = _FRAGMENT_FAILED + _FRAGMENT_COUNT
         text = text + "\n\n## Conclusion\n\n" + claim + "\n"
         summary.write_text(text, encoding="utf-8")
-        _refresh_manifest_entry(self.output, "results_summary.md")
         # The validator compares exactly the lines between the first
         # "## Headline checks" heading and the next heading. Anything written
         # elsewhere in the summary is never compared.
@@ -457,7 +405,6 @@ class FaultInjectionGateTests(unittest.TestCase):
         )
         text = text.replace(marker, inserted + marker, 1)
         summary.write_text(text, encoding="utf-8")
-        _refresh_manifest_entry(self.output, "results_summary.md")
         self.assertAccepted(
             "a second headline section announcing a different conclusion"
         )
@@ -468,7 +415,6 @@ class FaultInjectionGateTests(unittest.TestCase):
         self.assertIn("**80.00%**", text)
         text = text.replace("**80.00%**", "**81.00%**", 1)
         summary.write_text(text, encoding="utf-8")
-        _refresh_manifest_entry(self.output, "results_summary.md")
         self.assertRejected(
             "a headline value was changed inside the checked section",
             "automatic conclusion headlines do not match",
@@ -479,13 +425,10 @@ class FaultInjectionGateTests(unittest.TestCase):
         text = summary.read_text(encoding="utf-8")
         text = text.replace("## Headline checks", "## Headline check", 1)
         summary.write_text(text, encoding="utf-8")
-        _refresh_manifest_entry(self.output, "results_summary.md")
         self.assertRejected(
             "the checked section heading was renamed",
             "results_summary.md is missing section boundary",
         )
-
-
 
 
 if __name__ == "__main__":

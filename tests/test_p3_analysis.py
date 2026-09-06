@@ -56,7 +56,7 @@ class P3AnalysisTests(unittest.TestCase):
             ],
         )
 
-    def test_paired_search_comparison_is_generated_and_checksummed(self) -> None:
+    def test_paired_search_comparison_is_generated(self) -> None:
         config = {
             "schema_version": 3,
             "name": "paired BnB",
@@ -95,9 +95,6 @@ class P3AnalysisTests(unittest.TestCase):
                 encoding="utf-8", newline=""
             ) as handle:
                 comparisons = list(csv.DictReader(handle))
-            manifest = json.loads(
-                (output / "manifest.json").read_text(encoding="utf-8")
-            )
 
         self.assertEqual(len(result.rows), 4)
         self.assertEqual(len(comparisons), 2)
@@ -107,7 +104,6 @@ class P3AnalysisTests(unittest.TestCase):
                 for row in comparisons
             )
         )
-        self.assertIn("search_comparison.csv", manifest["outputs"])
 
     def test_stochastic_summary_and_parallel_replay_are_deterministic(self) -> None:
         config = {
@@ -145,9 +141,6 @@ class P3AnalysisTests(unittest.TestCase):
                 encoding="utf-8", newline=""
             ) as handle:
                 stochastic = list(csv.DictReader(handle))
-            manifest = json.loads(
-                (root / "serial" / "manifest.json").read_text(encoding="utf-8")
-            )
 
         def stable(result):
             return [
@@ -178,7 +171,6 @@ class P3AnalysisTests(unittest.TestCase):
                 for row in stochastic
             )
         )
-        self.assertIn("stochastic_summary.csv", manifest["outputs"])
 
 
 if __name__ == "__main__":

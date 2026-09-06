@@ -11,7 +11,7 @@ reports the incumbent it had reached when the limit fired, so that incumbent
 and its coverage may differ across machines and are exempt from the guarantee.
 
 Given one baseline result directory and one or more other result directories
-(each containing raw_results.csv and manifest.json), this script compares
+(each containing raw_results.csv), this script compares
 every other directory against the baseline and reports, per field, whether the
 declaration held. The declaration itself lives in
 docs/reproducibility_matrix.md; this script is the enforcement half of that
@@ -73,20 +73,6 @@ DERIVED = frozenset({"is_exact", "timed_out", "schema_version"})
 # Field report order follows the artifact column order.
 REPORT_FIELDS = tuple(field for field in RunRecord.CSV_FIELDS if field not in DERIVED)
 
-# Manifest fields that describe experiment identity and must therefore agree.
-MANIFEST_COMPARED_FIELDS = (
-    "experiment",
-    "configuration.config_hash",
-    "seeds.base_seed",
-    "seeds.minimum",
-    "seeds.maximum",
-    "seeds.count",
-    "execution.planned_instances",
-    "execution.planned_runs",
-    "algorithms",
-)
-
-
 @dataclass(frozen=True)
 class FieldCheck:
     """One reported comparison result."""
@@ -99,47 +85,6 @@ class FieldCheck:
 
 def _field_value(row: RunRecord, field: str) -> object:
     return getattr(row, field)
-
-
-def _display(value: object) -> str:
-    if isinstance(value, tuple):
-        return " ".join(str(item) for item in value)
-    text = str(value)
-    if len(text) <= 96:
-        return text
-    return text[:96] + "..."
-
-
-def _canonical_json(value: object) -> str:
-    """Serialise a JSON value canonically for bit-exact comparison.
-
-    Python equality merges JSON types (2026 == 2026.0, True == 1); the
-    manifest contract is bit-exact, so two values must agree as serialised
-    JSON, including their types. sort_keys keeps map key order out of the
-    result, matching the "as a map" contract for algorithms.
-    """
-    return json.dumps(value, sort_keys=True, separators=(",", ":"))
-
-
-def _json_equal(left: object, right: object) -> bool:
-    """True when two JSON values are type- and value-identical."""
-    return _canonical_json(left) == _canonical_json(right)
-
-
-def _json_type_name(value: object) -> str:
-    """JSON-facing type label for a manifest value; 'null' for None.
-
-    The label keeps a mismatch report readable where str() of two values is
-    otherwise identical, as in 2026 (int) vs "2026" (str).
-    """
-    if value is None:
-        return "null"
-    return type(value).__name__
-
-
-def _typed(value: object) -> str:
-    """Display a value together with its type, for mismatch details."""
-    return f"{_display(value)} ({_json_type_name(value)})"
 
 
 def _load_records(path: Path) -> list[RunRecord]:
@@ -155,41 +100,6 @@ def _load_records(path: Path) -> list[RunRecord]:
     if len(set(identifiers)) != len(identifiers):
         raise ValueError(f"{path.name} contains duplicate run_id values")
     return rows
-
-
-def _load_manifest(path: Path) -> dict[str, object]:
-    if not path.is_file():
-        raise ValueError(f"{path} does not exist")
-    try:
-        value = json.loads(path.read_text(encoding="utf-8"))
-    except (UnicodeDecodeError, json.JSONDecodeError) as error:
-        raise ValueError(f"{path.name} is not valid JSON: {error}") from error
-    if not isinstance(value, dict):
-        raise ValueError(f"{path.name} must contain a JSON object")
-    return value
-
-
-def _manifest_identities(manifest: dict[str, object]) -> dict[str, object]:
-    configuration = manifest.get("configuration")
-    seeds = manifest.get("seeds")
-    execution = manifest.get("execution")
-    return {
-        "experiment": manifest.get("experiment"),
-        "configuration.config_hash": (
-            configuration.get("config_hash") if isinstance(configuration, dict) else None
-        ),
-        "seeds.base_seed": seeds.get("base_seed") if isinstance(seeds, dict) else None,
-        "seeds.minimum": seeds.get("minimum") if isinstance(seeds, dict) else None,
-        "seeds.maximum": seeds.get("maximum") if isinstance(seeds, dict) else None,
-        "seeds.count": seeds.get("count") if isinstance(seeds, dict) else None,
-        "execution.planned_instances": (
-            execution.get("planned_instances") if isinstance(execution, dict) else None
-        ),
-        "execution.planned_runs": (
-            execution.get("planned_runs") if isinstance(execution, dict) else None
-        ),
-        "algorithms": manifest.get("algorithms"),
-    }
 
 
 def _logical_key(row: RunRecord) -> tuple[str, int, str, int | None, str]:
@@ -232,76 +142,8 @@ def _pair_rows(
     return paired, ambiguous
 
 
-def _first_json_diff(
-    left: object,
-    right: object,
-    path: str = "",
-) -> tuple[str, object, object] | None:
-    """Locate the first differing leaf inside two JSON values.
-
-    Returns the dotted path and the two leaf values, or None when the values
-    are equal. Lists are reported as a whole leaf: indexing into them would
-    make the report longer without making the mismatch clearer.
-    """
-    if _json_equal(left, right):
-        return None
-    if isinstance(left, dict) and isinstance(right, dict):
-        for name in sorted(set(left) | set(right)):
-            found = _first_json_diff(
-                left.get(name),
-                right.get(name),
-                f"{path}.{name}" if path else str(name),
-            )
-            if found is not None:
-                return found
-        return None
-    return path, left, right
-
-
-def _algorithm_map_diff(left: object, right: object) -> str:
-    """Describe the first difference between two algorithm identity maps."""
-    if not isinstance(left, dict) or not isinstance(right, dict):
-        return f"(baseline={_typed(left)}, compare={_typed(right)})"
-    diff = _first_json_diff(left, right)
-    if diff is None:
-        return "(algorithm entries differ)"
-    path, left_value, right_value = diff
-    return (
-        f"({len(left)} baseline entries, {len(right)} compare entries; "
-        f"{path}: baseline={_typed(left_value)}, compare={_typed(right_value)})"
-    )
-
 def _row_is_timeout(row: RunRecord) -> bool:
     return row.status is SolutionStatus.TIMEOUT
-
-
-def _manifest_checks(baseline: Path, other: Path) -> list[FieldCheck]:
-    baseline_manifest = _load_manifest(baseline / "manifest.json")
-    other_manifest = _load_manifest(other / "manifest.json")
-    baseline_identities = _manifest_identities(baseline_manifest)
-    other_identities = _manifest_identities(other_manifest)
-    checks: list[FieldCheck] = []
-    for field in MANIFEST_COMPARED_FIELDS:
-        left = baseline_identities[field]
-        right = other_identities[field]
-        if field == "algorithms":
-            if _json_equal(left, right):
-                size = len(left) if isinstance(left, dict) else 0
-                detail = f"({size} algorithm entries)"
-            else:
-                detail = _algorithm_map_diff(left, right)
-        else:
-            detail = f"({_display(left)})" if _json_equal(left, right) else (
-                f"(baseline={_typed(left)}, compare={_typed(right)})"
-            )
-        checks.append(
-            FieldCheck(
-                name=f"manifest.{field}",
-                consistent=_json_equal(left, right),
-                detail=detail,
-            )
-        )
-    return checks
 
 
 def _record_checks(baseline: Path, other: Path, label: str) -> list[FieldCheck]:
@@ -405,7 +247,6 @@ def _record_checks(baseline: Path, other: Path, label: str) -> list[FieldCheck]:
 def compare_pair(baseline: Path, other: Path, label: str) -> list[FieldCheck]:
     """Compare one result directory against the baseline."""
     return [
-        *_manifest_checks(baseline, other),
         *_record_checks(baseline, other, label),
     ]
 
@@ -438,7 +279,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         type=Path,
         required=True,
         metavar="DIR",
-        help="result directory containing raw_results.csv and manifest.json",
+        help="result directory containing raw_results.csv",
     )
     args = parser.parse_args(argv)
     results = [path.resolve() for path in args.result]

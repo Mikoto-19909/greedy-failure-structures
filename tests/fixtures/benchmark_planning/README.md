@@ -17,9 +17,8 @@ instance object within each pair.
 
 `expected.json` was exported by the same old interpreter: it records fields,
 defaults, slots, frozen state, complete instance masks, payload, options and
-identities. `provenance.json` records the source/configuration digests and the
-exact frozen file digests. The generation script digest identifies the local
-pre-move evidence; it is not a production dependency or a test-time generator.
+identities. These existing fixtures are loaded directly; no digest ledger or
+test-time fixture generator is needed.
 
 Tests load these bytes in a new interpreter. They compare actual values against
 the old JSON and assert that the facade aliases and defining module expose the

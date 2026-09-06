@@ -260,7 +260,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="validate existing canonical outputs and rebuild derived artifacts",
         description=(
             "Validate a complete existing checkpoint and rebuild its typed CSV, "
-            "Markdown, SVG, and Manifest artifacts without running algorithms."
+            "Markdown, and SVG artifacts without running algorithms."
         ),
     )
     summarize.add_argument(
