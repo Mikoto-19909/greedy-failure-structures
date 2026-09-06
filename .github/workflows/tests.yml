@@ -39,23 +39,11 @@ jobs:
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
+      - name: Hold detector for cancellation probe
+        run: sleep 120
       - name: Classify the complete pull request diff
         id: classify
-        run: |
-          python - <<'PY'
-          import importlib.util
-          import sys
-          from unittest.mock import patch
-          spec = importlib.util.spec_from_file_location(
-              "temporary_ci_probe_classifier", ".github/scripts/classify_ci_changes.py"
-          )
-          assert spec is not None and spec.loader is not None
-          classifier = importlib.util.module_from_spec(spec)
-          sys.modules[spec.name] = classifier
-          spec.loader.exec_module(classifier)
-          with patch.object(classifier, "classify_event", return_value=("DOCS", "temporary uppercase probe")):
-              raise SystemExit(classifier.main())
-          PY
+        run: python .github/scripts/classify_ci_changes.py
 
   unit-tests:
     name: unit tests (ubuntu-latest, Python 3.12)
