@@ -44,10 +44,14 @@ Assertions must check the fact behind a sentence: run the behavior, or compare
 the stated value with a measurement. A wording check alone cannot establish a
 documented rule.
 
+Report blocking findings or a justified pass as soon as the review checks
+finish. Complete required review records before delivery; report formatting
+must not hold up unrelated work.
+
 ## Execution and scope
 
-Work toward the agreed task and its acceptance conditions. Keep changes focused,
-record adjacent issues without expanding the task, and stop adding work once
+Work through the authorized task and its acceptance conditions. Keep changes
+focused, record adjacent issues without expanding the task, and stop adding work once
 the requested acceptance conditions are met. Follow existing authorization when
 resolving routine implementation choices; discuss larger changes as required
 by CONTRIBUTING when they are outside the agreed scope.
@@ -58,3 +62,34 @@ local checks. Apply explicit task-specific test selection without disabling
 required CI or claiming broader verification than the evidence supports. Keep
 type fixes, mechanical moves and exemption removal separate as CONTRIBUTING
 requires.
+
+## Long-running task efficiency
+
+- At the start, briefly identify the necessary checks and the risk each covers.
+  Add a check or verification tool only for an uncovered risk. Reuse existing
+  tools instead of building duplicate ledgers or general verification frameworks.
+- Freeze or reuse one old baseline for each compatibility boundary before
+  changing it. Do not regenerate old expectations from the candidate to accept
+  unexplained differences.
+- Reuse successful evidence only when the relevant code, dependencies,
+  configuration, inputs and environment have not changed in ways that could
+  affect the result. An unchanged individual file alone does not establish reuse.
+- Use focused local checks during development and consolidate final verification
+  for each batch. Re-run checks for relevant changes, failures or unresolved
+  risks. Keep required CI on the current PR revision; report local omissions and
+  their actual coverage without repeating checks that prove the same fact.
+- Use the smallest agreed set of live remote validation scenarios. Cover
+  suitable boundaries with local counterexamples instead of continually adding
+  remote probe revisions. Combine related documentation, manifest and PR
+  description updates when their evidence is available to reduce small pushes.
+- When subagent use is authorized, delegate only independent work. Keep one
+  writer for shared files and one observer for each CI run. Reuse their results
+  rather than having several agents repeat the same monitoring or review.
+- Run long jobs asynchronously when supported. A session identifier is not a
+  completion result: confirm the outcome and exit status before dependent work.
+  Distinguish network and tool failures from test failures, and resume existing
+  jobs instead of launching duplicates.
+- Reuse valid authorization within its stated destination and scope. If an
+  approval rejection requires additional authorization, explain the concrete
+  missing destination or action in one request and continue unaffected work.
+  Do not repeat unchanged requests or route around the rejection.
