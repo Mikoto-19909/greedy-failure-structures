@@ -34,7 +34,46 @@ from .contracts import (
     SearchNodesDominatedRatioAssociationRecord,
     SummaryRecord,
 )
-from .reproducibility import atomic_write_text
+from .config import ExperimentConfig
+from .benchmark_planning import _instance_record, _instances_for_config, _validate_run_identity
+from .benchmark_statistics import _normalize_optima, _reference_status_records
+from .reproducibility import atomic_write_text, config_hash
+
+
+def _validate_analysis_records(
+    config: ExperimentConfig,
+    rows: Sequence[RunRecord],
+    instances: Sequence[InstanceRecord],
+) -> list[RunRecord]:
+    """Check planned records, actual coverage, and the source of each reference."""
+    identifier = config_hash(config)
+    planned = _instances_for_config(config)
+    generated = [_instance_record(item, identifier) for item in planned]
+    expected = {item.instance_id: item.to_csv_row() for item in generated}
+    actual = {item.instance_id: item.to_csv_row() for item in instances}
+    if len(actual) != len(instances) or actual != expected:
+        raise ValueError("instances.csv does not match the instance plan")
+    tasks = _validate_run_identity(config, identifier, rows, planned_instances=planned)
+    for row in rows:
+        instance = tasks[row.run_id].instance
+        if (len(row.selected) > instance.k
+                or len(set(row.selected)) != len(row.selected)
+                or any(index < 0 or index >= instance.set_count for index in row.selected)):
+            raise ValueError(f"run {row.run_id} has invalid selected indices")
+        if row.coverage is not None and instance.coverage(row.selected) != row.coverage:
+            raise ValueError(f"run {row.run_id} coverage does not match its selected sets")
+    normalized = _canonical_run_records(_normalize_optima(rows, generated))
+    references = {
+        item.instance_id: item.optimum
+        for item in _reference_status_records(config, rows, generated)
+    }
+    for row, checked in zip(rows, normalized):
+        if checked.optimum != references[row.instance_id]:
+            raise ValueError("optimum reference requires an optimal exact run or generated certificate")
+        if (row.optimum != checked.optimum
+                or row.to_csv_row()["optimality_gap"] != checked.to_csv_row()["optimality_gap"]):
+            raise ValueError(f"run {row.run_id} optimum or gap differs from its validated reference")
+    return normalized
 
 
 REPORT_FILENAMES = (
@@ -77,7 +116,7 @@ RUNNER_OWNED_FILENAMES = (
     "search_nodes_dominated_ratio_association_statistics.csv",
     "search_comparison.csv",
     "stochastic_summary.csv",
-    "manifest.json",
+    "manifest.json",  # Retired; removed on validated runs and during --force cleanup.
     *REPORT_FILENAMES,
 )
 

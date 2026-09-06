@@ -1,5 +1,7 @@
 # Lazy Greedy Functional Test Report
 
+> Historical audit: manifest, checksum, and content-publication gates described below have been retired. Current behavior is documented in [CONTRIBUTING.md](../CONTRIBUTING.md) and the [CLI guide](cli.md).
+
 This document records the verification process for the deterministic
 `lazy_greedy` algorithm. It is a functional and contract report, not a
 performance result or a research conclusion.

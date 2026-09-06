@@ -408,19 +408,11 @@ class DashboardService:
             for filename in REPORT_FILENAMES
             if _safe_child(path, filename).is_file()
         ]
-        manifest: object = None
-        manifest_path = _safe_child(path, "manifest.json")
-        if manifest_path.is_file():
-            try:
-                manifest = _read_json(manifest_path)
-            except (OSError, json.JSONDecodeError):
-                manifest = None
         return {
             "name": name,
             "summary": _read_csv(summary_path) if summary_path.is_file() else [],
             "runs": _read_csv(raw_path, limit=2000) if raw_path.is_file() else [],
             "run_limit": 2000,
-            "manifest": manifest,
             "artifacts": artifacts,
         }
 

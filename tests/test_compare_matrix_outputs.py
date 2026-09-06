@@ -7,8 +7,7 @@ and require the script to notice.
 
 Each case therefore comes from the declaration, not from reading the compare
 implementation: a coverage digit change, a selected-sequence change, a row
-order reversal, an instance identity tamper, a manifest identity type change
-(bit-exact covers the serialised JSON type, not only the Python value), and
+order reversal, an instance identity tamper, and
 the two declared exemptions (runtime variation for every row, and incumbent
 variation for a timeout row) must pass without a false positive.
 
@@ -308,77 +307,6 @@ class CompareMatrixOutputsTests(unittest.TestCase):
         )
         self.assertIn("timeout-exempt", result.stdout)
 
-    def test_manifest_config_hash_tamper_is_detected(self) -> None:
-        manifest_path = self.variant / "manifest.json"
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        manifest["configuration"]["config_hash"] = "0" * 64
-        manifest_path.write_text(
-            json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
-        )
-        result = self.assertRejected(
-            "manifest.configuration.config_hash", "a manifest config hash tamper"
-        )
-        self.assertIn("0" * 64, result.stdout)
-
-    def test_manifest_seed_range_tamper_is_detected(self) -> None:
-        manifest_path = self.variant / "manifest.json"
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        manifest["seeds"]["minimum"] = int(manifest["seeds"]["minimum"]) + 1
-        manifest_path.write_text(
-            json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
-        )
-        self.assertRejected(
-            "manifest.seeds.minimum", "a manifest seed range tamper"
-        )
-
-    def test_manifest_seed_minimum_type_change_is_detected(self) -> None:
-        # bit-exact covers the serialised JSON type, not only the Python
-        # value: 2026 (int) and 2026.0 (float) compare equal under ==, so a
-        # cross-version serialisation regression would be reported as
-        # CONSISTENT by a value-only comparison.
-        manifest_path = self.variant / "manifest.json"
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        manifest["seeds"]["minimum"] = float(manifest["seeds"]["minimum"])
-        manifest_path.write_text(
-            json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
-        )
-        result = self.assertRejected(
-            "manifest.seeds.minimum", "a manifest seed minimum type change"
-        )
-        self.assertIn("(int)", result.stdout)
-        self.assertIn("(float)", result.stdout)
-
-    def test_manifest_algorithm_version_type_change_is_detected(self) -> None:
-        # algorithms is compared bit-exact as a map, so a value that changes
-        # JSON type inside a nested entry is a disagreement.
-        manifest_path = self.variant / "manifest.json"
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        entry = manifest["algorithms"].get("greedy")
-        self.assertIsNotNone(entry, "fixture manifest has no greedy entry")
-        entry["version"] = float(entry["version"])
-        manifest_path.write_text(
-            json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
-        )
-        result = self.assertRejected(
-            "manifest.algorithms", "an algorithm version type change"
-        )
-        self.assertIn("greedy.version: baseline=1 (int)", result.stdout)
-        self.assertIn("compare=1.0 (float)", result.stdout)
-
-    def test_manifest_algorithm_enabled_bool_to_int_is_detected(self) -> None:
-        # Python treats True == 1, but bit-exact as a map does not: the
-        # enabled flag changing JSON type must be rejected.
-        manifest_path = self.variant / "manifest.json"
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        entry = manifest["algorithms"].get("greedy")
-        self.assertIsNotNone(entry, "fixture manifest has no greedy entry")
-        entry["enabled"] = 1
-        manifest_path.write_text(
-            json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
-        )
-        self.assertRejected(
-            "manifest.algorithms", "an algorithm enabled type change"
-        )
 
     def test_status_difference_is_detected(self) -> None:
         # The declaration compares status itself: a run stopped by the limit on
@@ -444,12 +372,12 @@ class CompareMatrixOutputsTests(unittest.TestCase):
                 "raw_results.instance_id: inconsistent", result.stdout
             )
             self.assertIn(
-                "manifest.configuration.config_hash: inconsistent",
+                "raw_results.config_hash: inconsistent",
                 result.stdout,
             )
 
     def test_missing_artifact_is_a_hard_error(self) -> None:
-        (self.variant / "manifest.json").unlink()
+        (self.variant / "raw_results.csv").unlink()
         result = run_compare(self.baseline, self.variant)
         self.assertEqual(result.returncode, 1)
         self.assertIn("matrix comparison failed", result.stderr)

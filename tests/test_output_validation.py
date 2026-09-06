@@ -21,7 +21,6 @@ from __future__ import annotations
 
 import csv
 from dataclasses import replace
-import hashlib
 import importlib.util
 import json
 import shutil
@@ -113,19 +112,6 @@ class OutputValidatorTests(unittest.TestCase):
             f"stdout: {result.stdout[-800:]}",
         )
 
-    def refreshManifestEntry(self, filename: str) -> None:
-        artifact = self.output / filename
-        payload = artifact.read_bytes()
-        manifest_path = self.output / "manifest.json"
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        manifest["outputs"][filename] = {
-            "bytes": len(payload),
-            "sha256": hashlib.sha256(payload).hexdigest(),
-        }
-        manifest_path.write_text(
-            json.dumps(manifest, indent=2, sort_keys=True) + "\n",
-            encoding="utf-8",
-        )
 
     # -- the baseline ----------------------------------------------------
 
@@ -158,7 +144,7 @@ class OutputValidatorTests(unittest.TestCase):
             writer.writerows(rows)
         self.assertRejected("a coverage value was altered")
 
-    def test_reference_coverage_is_recomputed_after_checksum_refresh(self) -> None:
+    def test_reference_coverage_is_recomputed(self) -> None:
         path = self.output / "reference_coverage_statistics.csv"
         rows = list(csv.DictReader(path.read_text(encoding="utf-8").splitlines()))
         target = next(row for row in rows if row["status"] == "feasible")
@@ -169,16 +155,14 @@ class OutputValidatorTests(unittest.TestCase):
             writer = csv.DictWriter(handle, fieldnames=list(rows[0]))
             writer.writeheader()
             writer.writerows(rows)
-        self.refreshManifestEntry(path.name)
         self.assertRejected("reference coverage disagrees with instance statuses")
 
-    def test_reference_missingness_chart_is_recomputed_after_checksum_refresh(self) -> None:
+    def test_reference_missingness_chart_is_recomputed(self) -> None:
         path = self.output / "reference_coverage_by_case.svg"
         path.write_text(
             path.read_text(encoding="utf-8").replace("缺失 0", "缺失 1", 1),
             encoding="utf-8",
         )
-        self.refreshManifestEntry(path.name)
         self.assertRejected("reference missingness chart disagrees with typed statuses")
 
     def test_a_dropped_run_row_is_rejected(self) -> None:
@@ -199,75 +183,32 @@ class OutputValidatorTests(unittest.TestCase):
             writer = csv.DictWriter(handle, fieldnames=list(rows[0]))
             writer.writeheader()
             writer.writerows(rows)
-        self.refreshManifestEntry(path.name)
         self.assertEqual(len(list(csv.DictReader(path.read_text(encoding="utf-8").splitlines()))), original_count)
         self.assertRejected("duplicate and missing run identities with an unchanged row count")
 
-    def test_invalid_schema_and_output_inventory_are_rejected_together(self) -> None:
-        path = self.output / "manifest.json"
-        manifest = json.loads(path.read_text(encoding="utf-8"))
-        manifest["schema_version"] += 99
-        manifest["outputs"] = []
-        path.write_text(json.dumps(manifest), encoding="utf-8")
-        self.assertRejected("invalid schema and untrusted output inventory")
 
-    def test_output_inventory_is_checked_with_a_valid_schema(self) -> None:
-        path = self.output / "manifest.json"
-        original = path.read_bytes()
-        for mutation in ("non_object", "missing_declaration"):
-            with self.subTest(mutation=mutation):
-                manifest = json.loads(original)
-                if mutation == "non_object":
-                    manifest["outputs"] = []
-                else:
-                    del manifest["outputs"]["raw_results.csv"]
-                    self.assertTrue((self.output / "raw_results.csv").is_file())
-                path.write_text(json.dumps(manifest), encoding="utf-8")
-                result = run_validator(self.output)
-                self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
-                self.assertIn("CI artifact validation failed:", result.stderr)
-                self.assertIn("outputs", result.stderr)
-                if mutation == "missing_declaration":
-                    self.assertIn("raw_results.csv", result.stderr)
-
-    def test_runtime_chart_tampering_is_rejected_after_checksum_refresh(self) -> None:
+    def test_runtime_chart_tampering_is_rejected(self) -> None:
         chart = self.output / "runtime_scaling.svg"
         chart.write_text(chart.read_text(encoding="utf-8") + "\n<!-- tampered -->\n", encoding="utf-8")
-        self.refreshManifestEntry(chart.name)
         result = run_validator(self.output)
         self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
         self.assertIn("CI artifact validation failed:", result.stderr)
         self.assertIn("runtime_scaling.svg", result.stderr)
 
-    def test_headline_and_chart_tampering_is_rejected_after_checksum_refresh(self) -> None:
+    def test_report_rewrite_does_not_hide_chart_corruption(self) -> None:
         report = self.output / "results_summary.md"
-        text = report.read_text(encoding="utf-8")
-        self.assertIn("## Headline checks", text)
-        report.write_text(text.replace("## Headline checks", "## Broken headline checks", 1), encoding="utf-8")
+        report.write_text("# Edited report\n\nA manually written summary.\n", encoding="utf-8")
         chart = self.output / "runtime_scaling.svg"
         chart.write_text(chart.read_text(encoding="utf-8") + "\n<!-- tampered -->\n", encoding="utf-8")
-        self.refreshManifestEntry(report.name)
-        self.refreshManifestEntry(chart.name)
-        self.assertRejected("both the checked report section and a canonical chart differ")
+        result = run_validator(self.output)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("runtime_scaling.svg", result.stderr)
 
-    def test_a_wrong_schema_version_is_rejected(self) -> None:
-        # Schema versions are contracts; a CSV claiming the wrong one is exactly
-        # the case a checksum agrees with.
-        path = self.output / "manifest.json"
-        payload = json.loads(path.read_text(encoding="utf-8"))
-        if "schema_version" not in payload:
-            self.skipTest("manifest carries no schema_version")
-        payload["schema_version"] = int(payload["schema_version"]) + 99
-        path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
-        self.assertRejected("the manifest schema version was changed")
 
     def test_a_missing_artifact_is_rejected(self) -> None:
         (self.output / "raw_results.csv").unlink()
         self.assertRejected("raw_results.csv was deleted")
 
-    def test_a_missing_manifest_is_rejected(self) -> None:
-        (self.output / "manifest.json").unlink()
-        self.assertRejected("manifest.json was deleted")
 
     def test_an_empty_output_directory_is_rejected(self) -> None:
         for child in sorted(self.output.rglob("*"), reverse=True):
@@ -279,51 +220,22 @@ class OutputValidatorTests(unittest.TestCase):
         (self.output / "raw_results.csv").write_text("", encoding="utf-8")
         self.assertRejected("raw_results.csv was emptied")
 
-    def test_a_corrupt_manifest_is_rejected(self) -> None:
-        (self.output / "manifest.json").write_text("{ not json", encoding="utf-8")
-        self.assertRejected("manifest.json is not parseable")
 
     def test_a_mismatched_config_hash_is_rejected(self) -> None:
-        # Output produced by a different configuration must not validate against
-        # this one, or the check says nothing about which config it belongs to.
-        # The hash lives under `configuration`, not at the top level.
-        path = self.output / "manifest.json"
-        payload = json.loads(path.read_text(encoding="utf-8"))
-        configuration = payload.get("configuration")
-        self.assertIsInstance(configuration, dict)
-        assert isinstance(configuration, dict)
-        digest = configuration["config_hash"]
-        configuration["config_hash"] = ("0" if digest[0] != "0" else "1") + digest[1:]
-        path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        path = self.output / "raw_results.csv"
+        with path.open(newline="", encoding="utf-8") as handle:
+            reader = csv.DictReader(handle)
+            fields, rows = reader.fieldnames, list(reader)
+        rows[0]["config_hash"] = "0" * 64
+        with path.open("w", newline="", encoding="utf-8") as handle:
+            writer = csv.DictWriter(handle, fieldnames=fields)
+            writer.writeheader()
+            writer.writerows(rows)
         self.assertRejected("the recorded config hash was altered")
 
     def test_a_nonexistent_output_directory_is_rejected(self) -> None:
         self.output = self.output.parent / "does-not-exist"
         self.assertRejected("the output directory does not exist")
-
-    def test_the_expected_schema_version_matches_what_the_runner_writes(self) -> None:
-        # The validator declares MANIFEST_SCHEMA_VERSION itself, because
-        # the runner writes the value inline and exposes no constant. That
-        # duplication is only safe while the two agree, so this compares the
-        # validator's expectation against a manifest the runner actually wrote.
-        # A future bump then fails here rather than making every run invalid.
-        import importlib.util
-
-        spec = importlib.util.spec_from_file_location("_validator", VALIDATOR)
-        assert spec is not None and spec.loader is not None
-        module = importlib.util.module_from_spec(spec)
-        sys.modules["_validator"] = module
-        spec.loader.exec_module(module)
-
-        written = json.loads(
-            (self.output / "manifest.json").read_text(encoding="utf-8")
-        )["schema_version"]
-        self.assertEqual(
-            module.MANIFEST_SCHEMA_VERSION,
-            written,
-            "the validator expects a different manifest schema version than the "
-            "runner writes; update MANIFEST_SCHEMA_VERSION in the validator",
-        )
 
 
 class LazyGreedyValidatorTests(unittest.TestCase):

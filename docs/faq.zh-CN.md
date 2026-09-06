@@ -82,7 +82,7 @@ CP-SAT 需要 OR-Tools，核心实验不需要该依赖。惰性评估本身不�
 ## 已完成的结果在哪里？
 
 高重叠对照实验未获得足够的 Greedy 失效率差异证据，这不证明两个总体等价，
-也不说明重叠度本身的影响。[C1](../experiments/core_rq/CLAIMS.md#c1) 将这一结论
+也不说明重叠度本身的影响。[实验数据](../experiments/core_rq/overlap_pilot_v1/) 将这一结论
 对应到冻结证据，[实验分析](../analysis/overlap_pilot_v1.md)解释比较方法与适用
 边界。[研究索引](../analysis/README.md)列出已发布的工作。
 
@@ -90,7 +90,7 @@ CP-SAT 需要 OR-Tools，核心实验不需要该依赖。惰性评估本身不�
 
 ## 如何检查公开结论？
 
-每条结论通过 claim 台账连接到对应证据。发布与审查要求统一维护在
+报告直接链接所用配置与数据。研究流程统一维护在
 [`CONTRIBUTING.md`](../CONTRIBUTING.md)。
 
 <!-- faq:id=determinism -->

@@ -1,5 +1,7 @@
 # 统计与关联记录拆分计划
 
+> 历史设计记录：其中的 manifest、文件摘要及研究登记要求已取消。当前工作流程以 [CONTRIBUTING.md](../CONTRIBUTING.md) 为准。
+
 记录日期：2026-09-05。状态：已完成，由 [PR #41](https://github.com/Mikoto-19909/greedy-failure-structures/pull/41) 交付。
 
 本计划以主分支 `ddf6a8a` 的实现为参照。实施前重新核对入口和调用关系。

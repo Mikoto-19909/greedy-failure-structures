@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import csv
-import hashlib
 import importlib.util
 import sys
 import tempfile
@@ -363,18 +362,7 @@ class LazyGreedyTests(unittest.TestCase):
                 writer.writeheader()
                 writer.writerows(rows)
 
-            manifest_path = output / "manifest.json"
-            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
             payload = raw_path.read_bytes()
-            manifest["outputs"]["raw_results.csv"] = {
-                "bytes": len(payload),
-                "sha256": hashlib.sha256(payload).hexdigest(),
-            }
-            manifest_path.write_text(
-                json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True)
-                + "\n",
-                encoding="utf-8",
-            )
 
             validator = _load_output_validator()
             with self.assertRaisesRegex(ValueError, "marginal evaluations"):

@@ -4,11 +4,9 @@ from __future__ import annotations
 
 import copy
 import csv
-import hashlib
 import importlib.util
 import io
 import json
-import shlex
 import sys
 import tempfile
 import unittest
@@ -21,6 +19,7 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from maxcover import InstanceRecord, RunRecord
 from maxcover.config import load_config
+from maxcover.benchmark_planning import _instances_for_config, _instance_record, _tasks_for_config
 from maxcover.model import SolutionStatus
 from maxcover.reproducibility import config_hash
 
@@ -44,62 +43,33 @@ METRICS = (
 
 
 def _synthetic_inputs() -> tuple[list[dict[str, str]], list[dict[str, str]]]:
-    """Use actual feasible selections, with reference status simulated for loading.
+    """Actual instances and IDs, with feasible selections and simulated statuses.
 
     No solver is run and no optimality claim is established by this fixture.
     """
-    seed_payload = b'{"base_seed":7401,"seed_group":"core_overlap_pilot"}'
-    first_seed = int.from_bytes(hashlib.sha256(seed_payload).digest()[:8], "big")
-    cases = {case.case_id: case for case in load_config(CONFIG).cases}
-    instances: list[dict[str, str]] = []
-    runs: list[dict[str, str]] = []
-    for case, family, parameters, jaccard, gini in (
-        (
-            "overlap", "high_overlap",
-            {"core_fraction": 0.5, "core_probability": 0.8,
-             "peripheral_probability": 0.05}, 0.6, 0.2,
-        ),
-        ("overlap_control", "uniform", {"density": 0.425}, 0.3, 0.1),
-    ):
-        for repetition in range(30):
-            generated = cases[case].generate(first_seed + repetition)
-            selected = (0, 1, 2, 3)
-            coverage = generated.coverage(selected)
-            identifier = hashlib.sha256(f"synthetic:{case}:{repetition}".encode()).hexdigest()
-            record = InstanceRecord(
-                config_hash=CONFIG_HASH, case_id=case, repetition=repetition,
-                instance_id=identifier, seed=first_seed + repetition,
-                family=family, generator_version=1, instance_origin="stochastic",
-                is_adversarial=False, universe_size=48, set_count=16, k=4,
-                parameters=json.dumps(parameters), incidence_count=320,
-                covered_element_count=48, unique_set_count=16,
-                actual_density=320 / 768, mean_set_size=20.0,
-                pairwise_overlap_mean_jaccard=jaccard,
-                pairwise_overlap_total_pairs=120, pairwise_overlap_valid_pairs=120,
-                coverage_skew_gini=gini, duplicate_set_count=0,
-                duplicate_set_ratio=0.0, dominated_set_count=0,
-                dominated_set_ratio=0.0, dominated_unique_ratio=0.0,
-                preprocessed_set_count=16,
-            )
-            instances.append({key: str(value) for key, value in record.to_csv_row().items()})
-            for algorithm_id, algorithm, status, options in (
-                ("greedy", "greedy", SolutionStatus.FEASIBLE, {}),
-                ("exact_reference", "brute_force", SolutionStatus.OPTIMAL,
-                 {"max_set_count": 16, "time_limit_seconds": None}),
-            ):
-                run = RunRecord(
-                    config_hash=CONFIG_HASH, case_id=case, instance_id=identifier,
-                    run_id=hashlib.sha256(f"{identifier}:{algorithm_id}".encode()).hexdigest(),
-                    case=case, repetition=repetition, seed=record.seed, family=family,
-                    universe_size=48, set_count=16, k=4, parameters=record.parameters,
-                    algorithm_id=algorithm_id, algorithm=algorithm,
-                    algorithm_options=json.dumps(options), status=status,
-                    coverage=coverage,
-                    best_bound=coverage if status is SolutionStatus.OPTIMAL else None,
-                    optimum=coverage, optimality_gap=0.0, runtime_seconds=0.01,
-                    nodes_or_iterations=0, selected=selected,
-                )
-                runs.append({key: str(value) for key, value in run.to_csv_row().items()})
+    config = load_config(CONFIG)
+    planned = _instances_for_config(config)
+    records = {item.instance_id: _instance_record(item, CONFIG_HASH) for item in planned}
+    instances = [{key: str(value) for key, value in record.to_csv_row().items()}
+                 for record in records.values()]
+    runs = []
+    for task in _tasks_for_config(config, CONFIG_HASH, planned):
+        record = records[task.instance_id]
+        selected = (0, 1, 2, 3)
+        coverage = task.instance.coverage(selected)
+        status = SolutionStatus.OPTIMAL if task.algorithm == "brute_force" else SolutionStatus.FEASIBLE
+        run = RunRecord(
+            config_hash=CONFIG_HASH, case_id=task.case_id, instance_id=task.instance_id,
+            run_id=task.run_id, case=task.case_id, repetition=task.repetition,
+            seed=record.seed, family=record.family, universe_size=48, set_count=16, k=4,
+            parameters=record.parameters, algorithm_id=task.algorithm_id,
+            algorithm=task.algorithm, algorithm_options=json.dumps(task.option_values),
+            status=status, coverage=coverage,
+            best_bound=coverage if status is SolutionStatus.OPTIMAL else None,
+            optimum=coverage, optimality_gap=0.0, runtime_seconds=0.01,
+            nodes_or_iterations=0, selected=selected,
+        )
+        runs.append({key: str(value) for key, value in run.to_csv_row().items()})
     return instances, runs
 
 
@@ -107,7 +77,6 @@ def _write_inputs(
     directory: Path, instances: list[dict[str, str]], runs: list[dict[str, str]]
 ) -> None:
     directory.mkdir(parents=True, exist_ok=True)
-    outputs: dict[str, dict[str, str | int]] = {}
     for name, fields, records in (
         ("instances.csv", InstanceRecord.CSV_FIELDS, instances),
         ("raw_results.csv", RunRecord.CSV_FIELDS, runs),
@@ -117,16 +86,6 @@ def _write_inputs(
             writer = csv.DictWriter(handle, fieldnames=fields)
             writer.writeheader()
             writer.writerows(records)
-        data = path.read_bytes()
-        outputs[name] = {"sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data)}
-    (directory / "manifest.json").write_text(
-        json.dumps({
-            "schema_version": 1,
-            "configuration": {"config_hash": CONFIG_HASH},
-            "git": {"commit": "a" * 40, "dirty": False},
-            "outputs": outputs,
-        }), encoding="utf-8",
-    )
 
 
 def _pairs(counts: tuple[int, int, int, int]) -> list[dict[str, int | float]]:
@@ -156,11 +115,6 @@ class PilotInputTest(unittest.TestCase):
     def write(self) -> None:
         _write_inputs(self.directory, self.instances, self.runs)
 
-    def manifest(self) -> dict:
-        return json.loads((self.directory / "manifest.json").read_text(encoding="utf-8"))
-
-    def write_manifest(self, manifest: dict) -> None:
-        (self.directory / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
 
     def assert_rejected(self) -> None:
         self.write()
@@ -173,6 +127,18 @@ class PilotInputTest(unittest.TestCase):
         reference = next(item for item in config.algorithms if item.algorithm_id == "exact_reference")
         self.assertEqual(reference.options.max_set_count, 16)
         self.assertIsNone(reference.options.time_limit_seconds)
+
+    def test_structural_metrics_and_run_ids_are_checked_without_a_manifest(self) -> None:
+        for target, field, value in (
+            ("instance", "pairwise_overlap_mean_jaccard", "0.999"),
+            ("instance", "instance_id", "a" * 64),
+            ("run", "run_id", "a" * 64),
+        ):
+            with self.subTest(target=target, field=field):
+                self.instances, self.runs = _synthetic_inputs()
+                rows = self.instances if target == "instance" else self.runs
+                rows[0][field] = value
+                self.assert_rejected()
 
     def test_complete_synthetic_input_is_accepted(self) -> None:
         self.write()
@@ -192,41 +158,9 @@ class PilotInputTest(unittest.TestCase):
         self.write()
         self.assertEqual(pilot.load_inputs(CONFIG, self.directory).rows, expected)
 
-    def test_manifest_version_requires_integer_one(self) -> None:
-        for version in (None, True, 1.0, "1", 0, 2):
-            with self.subTest(version=version):
-                self.write()
-                manifest = self.manifest()
-                manifest["schema_version"] = version
-                self.write_manifest(manifest)
-                with self.assertRaises(ValueError):
-                    pilot.load_inputs(CONFIG, self.directory)
-
-    def test_both_input_hash_declarations_are_required(self) -> None:
-        for name in ("instances.csv", "raw_results.csv"):
-            for missing in ("output", "sha256"):
-                with self.subTest(name=name, missing=missing):
-                    self.write()
-                    manifest = self.manifest()
-                    if missing == "output":
-                        del manifest["outputs"][name]
-                    else:
-                        del manifest["outputs"][name]["sha256"]
-                    self.write_manifest(manifest)
-                    with self.assertRaises(ValueError):
-                        pilot.load_inputs(CONFIG, self.directory)
-
-    def test_actual_csv_bytes_must_match_declared_hash(self) -> None:
-        for name in ("instances.csv", "raw_results.csv"):
-            with self.subTest(name=name):
-                self.write()
-                path = self.directory / name
-                path.write_bytes(path.read_bytes() + b"\n")
-                with self.assertRaisesRegex(ValueError, "(?i)sha|hash|checksum"):
-                    pilot.load_inputs(CONFIG, self.directory)
 
     def test_configuration_hash_must_match_every_source(self) -> None:
-        for source in ("manifest", "instance", "run"):
+        for source in ("instance", "run"):
             with self.subTest(source=source):
                 self.instances, self.runs = _synthetic_inputs()
                 if source == "instance":
@@ -234,10 +168,6 @@ class PilotInputTest(unittest.TestCase):
                 elif source == "run":
                     self.runs[0]["config_hash"] = "b" * 64
                 self.write()
-                if source == "manifest":
-                    manifest = self.manifest()
-                    manifest["configuration"]["config_hash"] = "b" * 64
-                    self.write_manifest(manifest)
                 with self.assertRaises(ValueError):
                     pilot.load_inputs(CONFIG, self.directory)
 
@@ -253,9 +183,6 @@ class PilotInputTest(unittest.TestCase):
                 for row in self.instances + self.runs:
                     row["config_hash"] = changed_hash
                 self.write()
-                manifest = self.manifest()
-                manifest["configuration"]["config_hash"] = changed_hash
-                self.write_manifest(manifest)
                 with self.assertRaises(ValueError):
                     pilot.load_inputs(config_path, self.directory)
 
@@ -423,10 +350,9 @@ class PilotInputTest(unittest.TestCase):
                 self.write()
                 output = self.directory.parent / f"rejected-selection-{index}"
                 errors = io.StringIO()
-                with patch.object(pilot, "validate_complete_output", return_value="synthetic PASS"):
-                    with redirect_stderr(errors):
-                        code = pilot.main(["--config", str(CONFIG), "--results",
-                                           str(self.directory), "--output", str(output)])
+                with redirect_stderr(errors):
+                    code = pilot.main(["--config", str(CONFIG), "--results",
+                                       str(self.directory), "--output", str(output)])
                 self.assertNotEqual(code, 0)
                 self.assertRegex(errors.getvalue(), "(?i)coverage|selected|selection")
                 self.assertFalse(output.exists())
@@ -460,7 +386,7 @@ class PilotInputTest(unittest.TestCase):
                 rows[0][field] = value
                 self.assert_rejected()
 
-    def test_hashing_and_parsing_use_the_same_input_bytes(self) -> None:
+    def test_each_input_is_read_once(self) -> None:
         self.write()
         original_read = Path.read_bytes
         calls: dict[Path, int] = {}
@@ -469,7 +395,7 @@ class PilotInputTest(unittest.TestCase):
             if path.parent == self.directory and path.suffix == ".csv":
                 calls[path] = calls.get(path, 0) + 1
                 if calls[path] > 1:
-                    return b"changed after hashing\n"
+                    return b"changed after reading\n"
             return original_read(path)
 
         with patch.object(Path, "read_bytes", change_after_first_read):
@@ -482,13 +408,12 @@ class PilotInputTest(unittest.TestCase):
         self.instances.pop()
         self.write()
         output = self.directory.parent / "analysis"
-        with patch.object(pilot, "validate_complete_output", return_value="synthetic PASS"):
-            with redirect_stderr(io.StringIO()):
-                try:
-                    code = pilot.main(["--config", str(CONFIG), "--results",
-                                       str(self.directory), "--output", str(output)])
-                except ValueError:
-                    code = 1
+        with redirect_stderr(io.StringIO()):
+            try:
+                code = pilot.main(["--config", str(CONFIG), "--results",
+                                   str(self.directory), "--output", str(output)])
+            except ValueError:
+                code = 1
         self.assertNotEqual(code, 0)
         self.assertFalse(output.exists())
 
@@ -506,41 +431,6 @@ class PilotInputTest(unittest.TestCase):
                                (reference_coverage - greedy_coverage) / reference_coverage)
         self.assertEqual(rows[1]["treatment_failure"], 0)
         self.assertEqual(rows[1]["treatment_gap"], 0.0)
-
-    def test_validation_commands_preserve_external_paths_with_spaces(self) -> None:
-        try:
-            import matplotlib
-        except ImportError:
-            self.skipTest("Matplotlib is an optional offline analysis dependency")
-        matplotlib.use("Agg")
-        external = self.directory.parent / "external fixture"
-        external.mkdir()
-        config_path = external / "fixed config.json"
-        config_path.write_bytes(CONFIG.read_bytes())
-        results = external / "benchmark results"
-        output = external / "analysis artifacts"
-        _write_inputs(results, self.instances, self.runs)
-        data = pilot.load_inputs(config_path, results)
-        pilot.write_analysis(data, config_path, results, output, "synthetic validator fixture")
-
-        validation = (output / "validation.md").read_text(encoding="utf-8")
-        command_lines = validation.split("```console\n", 1)[1].split("\n```", 1)[0].splitlines()
-        commands = [shlex.split(line) for line in command_lines]
-        self.assertEqual(len(commands), 3)
-        for command in commands:
-            emitted_config = Path(command[command.index("--config") + 1])
-            self.assertTrue(emitted_config.is_absolute())
-            self.assertEqual(emitted_config, config_path)
-            self.assertEqual(config_hash(load_config(emitted_config)), CONFIG_HASH)
-
-        self.assertEqual(commands[0][:3], ["python", "run_project.py", "benchmark"])
-        self.assertEqual(commands[1][1], ".github/scripts/validate_benchmark_output.py")
-        for command in commands[:2]:
-            self.assertEqual(Path(command[command.index("--output") + 1]), results)
-        analysis_command = commands[2]
-        self.assertEqual(analysis_command[1], "analysis/core_overlap_pilot.py")
-        self.assertEqual(Path(analysis_command[analysis_command.index("--results") + 1]), results)
-        self.assertEqual(Path(analysis_command[analysis_command.index("--output") + 1]), output)
 
 
 class PilotStatisticsTest(unittest.TestCase):

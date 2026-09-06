@@ -1,5 +1,7 @@
 # Paired-Seed Scheme Audit
 
+> Historical audit: manifest, checksum, and content-publication gates described below have been retired. Current behavior is documented in [CONTRIBUTING.md](../CONTRIBUTING.md) and the [CLI guide](cli.md).
+
 This document audits how the registered instance families consume random-number
 streams during generation, and what "paired" versus "unpaired" means for the
 two experiments defined in configs/pairing_paired.json and
@@ -175,7 +177,7 @@ the raw seeds in raw_results.csv; they are diagnostics, not the coupling
 acceptance condition. Run it from the repository root:
 
 ~~~console
-PYTHONPATH=src python -m maxcover.paired_seed_analysis --paired-results results/pairing-v1/paired --unpaired-results results/pairing-v1/unpaired --output results/pairing-v1/analysis
+PYTHONPATH=src python -m maxcover.paired_seed_analysis --paired-config configs/pairing_paired.json --unpaired-config configs/pairing_unpaired.json --paired-results results/pairing-v1/paired --unpaired-results results/pairing-v1/unpaired --output results/pairing-v1/analysis
 ~~~
 
 On Windows PowerShell the equivalent is: set the path variable to the source

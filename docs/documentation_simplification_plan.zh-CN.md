@@ -1,5 +1,7 @@
 # 文档精简计划
 
+> 历史设计记录：其中的 manifest、文件摘要及研究登记要求已取消。当前工作流程以 [CONTRIBUTING.md](../CONTRIBUTING.md) 为准。
+
 记录日期：2026-09-05。
 
 本文汇总项目介绍、支持说明、技术文档及相关注释的完整调整计划。
@@ -33,7 +35,7 @@
 每份文档集中承担一个用途，减少重复说明、抽象宣传和缺少依据的保证。
 
 原计划记录时的研究检查点是：高重叠实例是否比匹配对照更容易出现非零
-optimality gap（算法解与最优解的差距）？当时尚待验证；现有结果见 [C1](../experiments/core_rq/CLAIMS.md#c1)。
+optimality gap（算法解与最优解的差距）？当时尚待验证；现有结果见 [实验数据](../experiments/core_rq/overlap_pilot_v1/)。
 写作时分别说明背景事实、研究推测和实验结果；不能提前把高重叠写成已证实的失效原因。
 
 本轮调整以现有 Markdown 文件为主，同步修正相关模块说明和工作流注释；
@@ -85,7 +87,7 @@ README 不再把算法数量、实例族数量和工程治理本身列为研究�
 取得结果后再加入实验范围、观察、反例和解释；未观察到差异的结果也应如实记录。
 假设、执行计划和已完成实验需使用明确不同的时态。
 
-[`experiments/core_rq/CLAIMS.md`](../experiments/core_rq/CLAIMS.md) 继续作为
+`experiments/core_rq/CLAIMS.md` 继续作为
 公开结论与证据的唯一对应表。分析页解释结果，README 提供入口，
 两者不另建重复的证据清单。
 
@@ -193,7 +195,7 @@ fault_injection_matrix 的结论应写明配置、变异方式与观测结果。
 
 ## 连带文件与暂缓项目
 
-[`tests/test_documented_claims.py`](../tests/test_documented_claims.py) 已依赖
+`tests/test_documented_claims.py` 已依赖
 FAQ 的章节标记、具体句式，以及 README 的 Scope 章节。
 实施前先定位被修改段落对应的断言：保留双语内容对应、链接一致和可复现边界的检查；
 句式变化时仅更新必要的解析或断言，使其继续核对原有事实。
@@ -229,7 +231,7 @@ FAQ 的章节标记、具体句式，以及 README 的 Scope 章节。
 完整探索输出仍留在未跟踪的 `results/`，公开结论所需的最小证据继续按
 CONTRIBUTING 的要求保存。
 
-新增或修改文档会影响 [`LICENSE_MANIFEST.json`](../LICENSE_MANIFEST.json)。
+新增或修改文档会影响 `LICENSE_MANIFEST.json`。
 实施时先暂存实际修改，再用现有脚本重新生成清单并暂存清单，运行现行要求的检查。
 [`PUBLIC_SNAPSHOT_MANIFEST.json`](../PUBLIC_SNAPSHOT_MANIFEST.json) 和
 `docs/history/` 保存迁移历史，不随这轮文案调整重写。

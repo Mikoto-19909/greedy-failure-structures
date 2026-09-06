@@ -1,5 +1,7 @@
 # Greedy 失效结构后续研究计划
 
+> 历史设计记录：其中的 manifest、文件摘要及研究登记要求已取消。当前工作流程以 [CONTRIBUTING.md](../CONTRIBUTING.md) 为准。
+
 研读日期：2026-09-06。代码核对基线：`d392457`。
 
 状态：文献研读与研究设计；尚未实施下列分析、生成器或认证方法。
@@ -11,7 +13,7 @@
 
 固定共核式 `high_overlap` 与匹配 `uniform` 的比较未获得充分的失效率差异证据；
 并集大小和覆盖频率分布也同时变化。当前结论及其范围以
-[C1](../experiments/core_rq/CLAIMS.md#c1)和[研究报告](../analysis/overlap_pilot_v1.md)
+[实验数据](../experiments/core_rq/overlap_pilot_v1/)和[研究报告](../analysis/overlap_pilot_v1.md)
 为准。本计划不另建研究结果台账。
 
 本次核对了六篇论文的模型、指标和相关方法章节。通过 Undermind 定向阅读全文，
@@ -166,7 +168,7 @@ Deeparnab Chakrabarty, Luc Coté.
 
 先重建原 pilot 全部实例作探索性分析，沿用原配置和 seed，核验重建实例及
 原始选择覆盖；不把重建当作新独立样本，不重新选择原 pilot 主检验。
-原始来源见 [C1](../experiments/core_rq/CLAIMS.md#c1)。
+原始来源见 [实验数据](../experiments/core_rq/overlap_pilot_v1/)。
 另用固定小构造验证多最优解、平局可避免、无平局诱饵和搜索停滞等行为。
 构造未找到某类案例时如实记录，不能把找到所有目标类别作为成功前提。
 
@@ -312,5 +314,5 @@ gap/轨迹差异。没有足够结构变化时停止该构造路线。结论只�
 实例与原始结果、类型化 CSV、manifest、现有完整输出验证器和独立分析复算。
 现有验证器未覆盖的新轨迹/证书，由对应离线验证补足，不能扩大既有 PASS 的含义。
 完整输出留在 `results/`；发布时只冻结必要证据，按
-[CONTRIBUTING](../CONTRIBUTING.md)更新 [CLAIMS](../experiments/core_rq/CLAIMS.md)。
+[CONTRIBUTING](../CONTRIBUTING.md)更新 CLAIMS。
 实现 PR 依现行要求测试、审查和合并，本计划不新增常设门禁。

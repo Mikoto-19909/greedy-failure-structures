@@ -25,7 +25,7 @@ python -m pip install -e ".[oracle]"
 The [pilot configuration](../configs/core_overlap_pilot.json) and
 [offline analysis script](../analysis/core_overlap_pilot.py) are implemented.
 The formal experiment is complete; see the [report](../analysis/overlap_pilot_v1.md)
-and [C1](../experiments/core_rq/CLAIMS.md#c1). Use the
+and [实验数据](../experiments/core_rq/overlap_pilot_v1/). Use the
 [dedicated commands](#core-overlap-pilot) to reproduce the fixed design.
 
 Omitting the CLI command runs `quick`. The PowerShell wrapper also defaults to
@@ -56,8 +56,10 @@ Use the workflow index to choose a configuration by its actual role.
 The published evidence uses clean commit `27acae5f2ee9f478fba22af98c6694382a0a7100`,
 after [preparation PR #28](https://github.com/Mikoto-19909/greedy-failure-structures/pull/28)
 and the [selection validation fix](https://github.com/Mikoto-19909/greedy-failure-structures/pull/29).
-Reproduce it from that revision and a new output directory; keep
-the prescribed seed batch even if the result is inconclusive or reversed.
+The commands below use the current checkout with the same configuration and
+prescribed seed batch. Use a new output directory for a fresh run, and keep the
+batch even if the result is inconclusive or reversed. Replaying the historical
+source revision reproduces its older tooling and output format.
 Matplotlib is an optional offline plotting dependency:
 
 ```console
@@ -68,12 +70,13 @@ python .github/scripts/validate_benchmark_output.py --config configs/core_overla
 python analysis/core_overlap_pilot.py --config configs/core_overlap_pilot.json --results results/core_overlap_pilot_v2 --output results/core_overlap_pilot_v2/analysis
 ```
 
-The analysis also invokes the complete-output validator before its own input
-checks. It writes `paired_instances.csv`, `report.md`, `failure_rate.svg`, and
-`validation.md`. Its table, statistics, and Matplotlib figure need separate
-review before publishing evidence; the benchmark validator does not cover them.
-The full design and acceptance rules remain in the
-[checkpoint plan](core_overlap_checkpoint_plan.zh-CN.md).
+The analysis reads `instances.csv` and `raw_results.csv` directly, checks the
+sample pairing and selected-set coverage, and writes `paired_instances.csv`,
+`report.md`, and `failure_rate.svg`. The detailed benchmark validator above is
+optional. No manifest or separate validation record is needed.
+The [checkpoint plan](core_overlap_checkpoint_plan.zh-CN.md) records the original
+experimental design. Follow [CONTRIBUTING.md](../CONTRIBUTING.md) for the current
+research workflow and checks.
 
 ## Commands
 
@@ -171,7 +174,7 @@ target. The cartography runner checkpoints each batch of 100 newly completed
 runs and writes the complete canonical CSV at the end; after interruption it
 resumes from the last completed batch. Ordinary benchmark calls retain the
 default per-run checkpoint interval. With `--force`, stale cartography-owned
-CSV, SVG, summary, and manifest files are removed before benchmark execution;
+CSV, SVG, summary, and legacy manifest files are removed before benchmark execution;
 unrelated files in the output directory are preserved.
 
 After a completed run, independently recompute the cartography statistics from
@@ -181,9 +184,11 @@ the canonical benchmark rows:
 python .github/scripts/validate_cartography_output.py --config configs/structural_gap_cartography.json --design designs/structural_gap_cartography.json --output results/structural_gap_cartography
 ```
 
-Run the benchmark output validator first; the cartography validator treats its
-validated `raw_results.csv` as the canonical input and separately checks the
-cartography CSV values, layout, and manifest checksums.
+The cartography validator checks the complete configured run identities,
+cartography CSV values, and layout directly against `raw_results.csv`.
+Missing planned runs are rejected; recorded errors and unavailable gaps remain
+part of the reported missing-metric counts. The benchmark output validator
+provides additional checks for completed runs with optimum references.
 
 ### `resume`
 
@@ -199,7 +204,7 @@ the configured plan again under the same output directory.
 ### `summarize`
 
 Validate a complete canonical checkpoint and rebuild its typed CSV, Markdown,
-SVG, and manifest artifacts without running any algorithm:
+and SVG artifacts without running any algorithm:
 
 ```console
 python run_project.py summarize --config configs/p6_uniform_scale.json --output results/p6_uniform_scale
@@ -242,8 +247,23 @@ configurations according to the purpose described above.
 
 ## Output validation
 
-After a completed run, verify the artifacts independently of their own manifest
-checksum:
+For paired-seed analysis, pass the configuration for each input directory. The
+analysis checks the complete run plan, generated instances, algorithm options,
+selected-set coverage, and optimum/gap consistency before computing differences:
+
+```console
+PYTHONPATH=src python -m maxcover.paired_seed_analysis --paired-config configs/pairing_paired.json --unpaired-config configs/pairing_unpaired.json --paired-results results/pairing-v1/paired --unpaired-results results/pairing-v1/unpaired --output results/pairing-v1/analysis
+```
+
+In PowerShell, set `$env:PYTHONPATH = "src"` first and run the command starting
+with `python`. Missing planned rows are rejected; a recorded error or missing
+metric remains visible in the analysis counts. No manifest is required.
+References come from optimal exact-run records or certificates regenerated from
+the configured instances; unavailable references remain unknown. These checks
+do not rerun exact solvers.
+
+For a completed run with optimum references, optionally recompute supported
+results from the configuration and CSVs:
 
 ```console
 python .github/scripts/validate_benchmark_output.py --config configs/p6_uniform_scale.json --output results/p6_uniform_scale

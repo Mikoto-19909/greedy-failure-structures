@@ -98,7 +98,7 @@ the consumption rules are described in [`paired_seed_audit.md`](paired_seed_audi
 
 The high-overlap pilot did not provide sufficient paired evidence of a
 difference in Greedy failure rates. This does not establish equivalence or an
-effect of overlap alone. [C1](../experiments/core_rq/CLAIMS.md#c1) connects that
+effect of overlap alone. [实验数据](../experiments/core_rq/overlap_pilot_v1/) connects that
 statement to the frozen evidence; the
 [pilot analysis](../analysis/overlap_pilot_v1.md) explains the comparison and
 its limits. The [research index](../analysis/README.md) lists published work.
@@ -107,8 +107,8 @@ its limits. The [research index](../analysis/README.md) lists published work.
 
 ## How are published claims checked?
 
-Each claim links to its evidence through the claim ledger. The publication and
-review requirements are maintained in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
+Reports link directly to their configuration and data. The research workflow
+is maintained in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
 
 <!-- faq:id=determinism -->
 

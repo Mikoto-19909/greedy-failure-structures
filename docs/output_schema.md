@@ -1,7 +1,7 @@
 # Benchmark output guide
 
-A completed benchmark writes canonical inputs, derived statistics, rendered
-reports, and a manifest beneath the selected output directory. The record
+A completed benchmark writes canonical inputs, derived statistics, charts,
+and reports beneath the selected output directory. The record
 classes and schema constants in `src/maxcover/` remain the machine-readable
 source of truth; this guide explains how the files relate to one another.
 
@@ -97,7 +97,7 @@ compatibility outputs are conditional, unlike the typed files listed above.
 
 ## Structural gap cartography artifacts
 
-The `cartography` command adds a separate, checksummed local analysis package:
+The `cartography` command adds a local analysis package:
 
 - `structural_gap_statistics.csv` reports `1 - coverage / optimum` by stressor
   family, strength, treatment/control role, algorithm, and instance seed. It
@@ -114,13 +114,21 @@ The `cartography` command adds a separate, checksummed local analysis package:
   interval for each heuristic algorithm.
 - `family_algorithm_gap.svg` is the family-by-algorithm map, using an
   equal-weight mean across the configured strength-level means.
-- `cartography_manifest.json` binds the benchmark configuration, design, raw
-  results, and every cartography artifact by SHA-256.
 
 `validate_cartography_output.py` does not trust those hashes as proof of the
 calculation. It independently rebuilds the instance-seed aggregates, paired
 differences, intervals, and precision diagnostics from `raw_results.csv`, then
-checks the stored values and the manifest bindings.
+checks the complete execution-plan identities and stored values against the raw
+results and design. An absent planned run is rejected even if derived tables
+have been rebuilt; a present error record can still contribute a missing gap.
+Generated instances also check the instance table and selected-set coverage.
+Optimum references come from optimal exact-run records or regenerated
+certificates; stored optimum/gap values must agree with these references.
+Ordinary cartography resumes also remove a retired `cartography_manifest.json`
+before refreshing their analysis artifacts. Rejected configuration, design, or
+checkpoint inputs leave it untouched.
+The paired-analysis CLI similarly removes an old `analysis_manifest.json` only
+after both inputs pass validation, before writing refreshed comparison files.
 
 For algorithms with multiple `algorithm_seeds`, one instance contributes the
 arithmetic mean of its complete algorithm-seed gaps. The independent unit for
@@ -140,7 +148,7 @@ association status instead of substituting zero for missing or constant data:
 - `runtime_k_association_statistics.csv`
 - `search_nodes_dominated_ratio_association_statistics.csv`
 
-These are descriptive associations. The manifest explicitly excludes causal,
+These are descriptive associations. These do not establish causal,
 significance, and more elaborate survival or nonlinear modeling from their
 contracts.
 
@@ -191,46 +199,37 @@ algorithm identity and options, and the result fields used for comparison. The
 the replacement receives the recorded options and must accept that option
 contract; replay does not translate options between algorithms.
 
-## Manifest and independent validation
+## Optional output validation
 
-`manifest.json` records the experiment identity, normalized configuration hash,
-Git state, Python and operating-system metadata, optional OR-Tools version,
-algorithm versions and options, seeds, execution counts, analysis contracts,
-and checksums for runner-owned artifacts.
+The runner writes CSV results and reports without a manifest or file checksums.
+Configuration, instance, and run hashes remain internal identifiers for result
+joins and resume. Keep the experiment configuration with its results.
+Ordinary runs, resume, and summarize remove a retired `manifest.json` after
+checking the existing inputs, before writing refreshed outputs. Rejected inputs
+leave the existing results and legacy metadata in place.
 
-A matching checksum establishes agreement between the current file and the
-recorded digest. The check can still pass if both are changed together; it does
-not establish the file's history or the correctness of its calculation.
-
-For a completed starter workflow, run:
+For detailed checks on a completed run:
 
 ```console
 python .github/scripts/validate_benchmark_output.py --config configs/quick.json --output results/quick
 ```
 
-The validator checks Manifest declarations and file digests, the configuration
-and execution-plan identities, record consistency, and supported typed
-statistics recomputed from `raw_results.csv` and `instances.csv`. It checks
-`summary.csv` groups and run counts, the first `Headline checks` report section,
-and the charts listed in its `expected_charts` mapping. The remaining report
-text and the legacy `gap_by_family.svg` and `runtime_by_algorithm.svg` charts
-are covered by file checksums, not content recomputation.
+The validator checks configuration and execution-plan identities, record
+consistency, supported statistics recomputed from `raw_results.csv` and
+`instances.csv`, summary groups, and selected charts.
+It shares calculation and rendering helpers with the producer. It does not
+replay every algorithm or check legacy charts. Markdown headings, paragraphs,
+and layout are outside its scope, including manually edited report numbers.
+Review prose against its source data; passing this validator does not establish
+that a report's written conclusions are correct. This command
+requires completed runs and an optimum reference for every instance, so it is
+not a general check for exploratory timeout or missing-reference outputs.
 
-The validator shares statistics and rendering helpers with the producer. It
-does not independently reimplement every calculation or replay every algorithm.
-Selection and work-count replay covers a supported Lazy Greedy variant and a
-paired Greedy variant when present. It rejects timeout and error statuses and
-requires a reference optimum for every instance; it
-is not a general acceptance check for all legal timeout or missing-reference
-outputs. The [fault-injection matrix](fault_injection_matrix.md) records the
-tested limits.
+The [core overlap analysis](../analysis/core_overlap_pilot.py) reads the two CSVs
+directly and checks sample pairing, completion, optimal reference status, and
+selected-set coverage against generated instances. It writes the paired table,
+report, and figure. No ledger or separate validation record is required.
 
-The dedicated [core overlap analysis](../analysis/core_overlap_pilot.py) checks
-each pilot run's selected sets against its generated instance and declared
-coverage. Its additional checks and analysis artifacts are separate from the
-benchmark validator's scope.
-
-Full exploratory output stays local under `results/`. A published claim's
-minimum frozen evidence belongs in `experiments/core_rq/`, with its binding in
-[`CLAIMS.md`](../experiments/core_rq/CLAIMS.md), following
-[CONTRIBUTING.md](../CONTRIBUTING.md).
+Reports in `analysis/` should link directly to their configuration and data in
+`experiments/core_rq/`. The [document outlines](../CONTRIBUTING.md#document-structure)
+provide a readable default structure without imposing fixed wording.

@@ -1,12 +1,10 @@
-"""Verify the paired-seed analysis module on synthetic inputs only."""
+"""Check synthetic arithmetic separately from plan-validated analysis inputs."""
 
 from __future__ import annotations
 
 import csv
-import hashlib
-import importlib.util
+from dataclasses import replace
 import json
-import subprocess
 import sys
 import tempfile
 import unittest
@@ -20,12 +18,13 @@ sys.path.insert(0, str(ROOT / "src"))
 from maxcover._instance_contracts import InstanceRecord
 from maxcover._run_contracts import RunRecord
 from maxcover.model import SolutionStatus
+from maxcover.benchmark import run_benchmark
+from maxcover.config import load_config
 from maxcover.paired_seed_analysis import (
-    SUPPORTED_BENCHMARK_MANIFEST_SCHEMA_VERSION,
     AnalysisError,
     ComparisonRow,
     DifferenceSummary,
-    _git_state,
+    _compare_records,
     analyze_pairing,
     load_instance_records,
     load_run_records,
@@ -193,28 +192,6 @@ def _write_instances(directory: Path, records: list[InstanceRecord]) -> None:
             writer.writerow(record.to_csv_row())
 
 
-def _write_benchmark_manifest(directory: Path, scheme: str) -> None:
-    raw = (directory / "raw_results.csv").read_bytes()
-    instances = (directory / "instances.csv").read_bytes()
-    (directory / "manifest.json").write_text(
-        json.dumps(
-            {
-                "schema_version": SUPPORTED_BENCHMARK_MANIFEST_SCHEMA_VERSION,
-                "configuration": {
-                    "config_hash": ("a" if scheme == "paired" else "b") * 64
-                },
-                "git": {"commit": "a" * 40, "dirty": False},
-                "outputs": {
-                    "raw_results.csv": {"sha256": hashlib.sha256(raw).hexdigest()},
-                    "instances.csv": {"sha256": hashlib.sha256(instances).hexdigest()},
-                },
-            }
-        )
-        + "\n",
-        encoding="utf-8",
-    )
-
-
 class CsvRoundTripTest(unittest.TestCase):
     """The module reads the canonical CSV records it is given."""
 
@@ -308,7 +285,7 @@ class PairingInvarianceTest(unittest.TestCase):
         )
         paired_instances, unpaired_instances = self._instances_for(paired, unpaired)
         with self.assertRaises(AnalysisError):
-            analyze_pairing(
+            _compare_records(
                 paired,
                 unpaired,
                 paired_instances=paired_instances,
@@ -341,7 +318,7 @@ class PairingInvarianceTest(unittest.TestCase):
             case="treatment", repetition=0, seed=2000, universe_size=10
         )
         with self.assertRaises(AnalysisError):
-            analyze_pairing(
+            _compare_records(
                 paired,
                 unpaired,
                 paired_instances=paired_instances,
@@ -352,7 +329,7 @@ class PairingInvarianceTest(unittest.TestCase):
         record = _record(case="orphan_control", repetition=0, seed=1, coverage=6)
         instance = _instance_record(case="orphan_control", repetition=0, seed=1)
         with self.assertRaises(AnalysisError):
-            analyze_pairing(
+            _compare_records(
                 [record],
                 [record],
                 paired_instances=[instance],
@@ -370,7 +347,7 @@ class PairingInvarianceTest(unittest.TestCase):
             case="treatment_control", repetition=0, seed=1
         )
         with self.assertRaises(AnalysisError):
-            analyze_pairing(
+            _compare_records(
                 [first, second, control],
                 [first, second, control],
                 paired_instances=[instance, control_instance],
@@ -423,7 +400,11 @@ class EffectiveCouplingTest(unittest.TestCase):
                     )
                     for row in unpaired
                 ]
-                rows, samples = analyze_pairing(
+                paired = [replace(row, family=item.family, parameters=item.parameters)
+                          for row, item in zip(paired, paired_instances)]
+                unpaired = [replace(row, family=item.family, parameters=item.parameters)
+                            for row, item in zip(unpaired, unpaired_instances)]
+                rows, samples = _compare_records(
                     paired, unpaired, paired_instances=paired_instances,
                     unpaired_instances=unpaired_instances,
                 )
@@ -477,7 +458,7 @@ class EffectiveCouplingTest(unittest.TestCase):
             ),
         ]
         with self.assertRaisesRegex(AnalysisError, "effective coupling seed"):
-            analyze_pairing(
+            _compare_records(
                 paired,
                 unpaired,
                 paired_instances=paired_instances,
@@ -518,12 +499,17 @@ class EffectiveCouplingTest(unittest.TestCase):
             ),
         ]
         unpaired_instances = [
-            _instance_record(case="treatment", repetition=0, seed=2000),
+            _coupled_instance(case="treatment", repetition=0, seed=2000,
+                              coupling_pair_id="independent", coupling_seed=2000),
             _instance_record(
                 case="treatment_control", repetition=0, seed=3000, family="uniform"
             ),
         ]
-        rows, _ = analyze_pairing(
+        paired = [replace(row, family=item.family, parameters=item.parameters)
+                  for row, item in zip(paired, paired_instances)]
+        unpaired = [replace(row, family=item.family, parameters=item.parameters)
+                    for row, item in zip(unpaired, unpaired_instances)]
+        rows, _ = _compare_records(
             paired,
             unpaired,
             paired_instances=paired_instances,
@@ -565,7 +551,7 @@ class EffectiveCouplingTest(unittest.TestCase):
             ),
         ]
         with self.assertRaisesRegex(AnalysisError, "independent effective seeds"):
-            analyze_pairing(
+            _compare_records(
                 paired,
                 unpaired,
                 paired_instances=paired_instances,
@@ -603,7 +589,7 @@ class EffectiveCouplingTest(unittest.TestCase):
             ),
         ]
         with self.assertRaisesRegex(AnalysisError, "records only one"):
-            analyze_pairing(
+            _compare_records(
                 paired,
                 unpaired,
                 paired_instances=paired_instances,
@@ -632,7 +618,7 @@ class EffectiveCouplingTest(unittest.TestCase):
             ),
         ]
         with self.assertRaisesRegex(AnalysisError, "records neither"):
-            analyze_pairing(
+            _compare_records(
                 paired,
                 unpaired,
                 paired_instances=[],
@@ -673,7 +659,7 @@ class EffectiveCouplingTest(unittest.TestCase):
             ),
         ]
         with self.assertRaisesRegex(AnalysisError, "neither a seed nor"):
-            analyze_pairing(
+            _compare_records(
                 paired,
                 unpaired,
                 paired_instances=paired_instances,
@@ -757,7 +743,7 @@ class VarianceComparisonTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             directory = Path(tmp)
             self._dataset(directory)
-            rows, samples = analyze_pairing(
+            rows, samples = _compare_records(
                 load_run_records(directory / "paired"),
                 load_run_records(directory / "unpaired"),
                 paired_instances=load_instance_records(directory / "paired"),
@@ -799,7 +785,7 @@ class VarianceComparisonTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             directory = Path(tmp)
             self._dataset(directory)
-            rows, _ = analyze_pairing(
+            rows, _ = _compare_records(
                 load_run_records(directory / "paired"),
                 load_run_records(directory / "unpaired"),
                 paired_instances=load_instance_records(directory / "paired"),
@@ -860,7 +846,7 @@ class VarianceComparisonTest(unittest.TestCase):
                 case="treatment_control", repetition=1, seed=3001, family="uniform"
             ),
         ]
-        rows, _ = analyze_pairing(
+        rows, _ = _compare_records(
             paired,
             unpaired,
             paired_instances=paired_instances,
@@ -873,281 +859,23 @@ class VarianceComparisonTest(unittest.TestCase):
         self.assertEqual(row.unpaired_missing_count, 1)
         self.assertEqual(row.paired_missing_count, 0)
 
-    def test_cli_writes_comparison_and_differences(self) -> None:
+    def test_runs_must_match_their_instance_rows(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             directory = Path(tmp)
             self._dataset(directory)
-            for scheme in ("paired", "unpaired"):
-                _write_benchmark_manifest(directory / scheme, scheme)
-            output = directory / "analysis"
-            status = main(
-                [
-                    "--paired-results",
-                    str(directory / "paired"),
-                    "--unpaired-results",
-                    str(directory / "unpaired"),
-                    "--output",
-                    str(output),
-                ]
-            )
-            self.assertEqual(status, 0)
-            self.assertTrue((output / "comparison.csv").is_file())
-            self.assertTrue((output / "differences.csv").is_file())
-            self.assertTrue((output / "analysis_manifest.json").is_file())
-            with (output / "comparison.csv").open("r", encoding="utf-8") as handle:
-                rows = list(csv.DictReader(handle))
-            self.assertEqual(len(rows), 2)
-            self.assertEqual(set(rows[0]), set(ComparisonRow.CSV_FIELDS))
-            manifest = json.loads(
-                (output / "analysis_manifest.json").read_text(encoding="utf-8")
-            )
-            self.assertEqual(manifest["schema_version"], 1)
-            self.assertEqual(manifest["outputs"]["comparison.csv"]["rows"], 2)
-            self.assertEqual(manifest["outputs"]["differences.csv"]["rows"], 20)
-            self.assertEqual(
-                manifest["inputs"]["paired"]["raw_results_sha256"],
-                hashlib.sha256(
-                    (directory / "paired" / "raw_results.csv").read_bytes()
-                ).hexdigest(),
-            )
-            self.assertEqual(
-                manifest["inputs"]["paired"]["instances_sha256"],
-                hashlib.sha256(
-                    (directory / "paired" / "instances.csv").read_bytes()
-                ).hexdigest(),
-            )
-            self.assertEqual(
-                manifest["inputs"]["paired"]["benchmark_schema_version"],
-                SUPPORTED_BENCHMARK_MANIFEST_SCHEMA_VERSION,
-            )
-            self.assertEqual(
-                manifest["inputs"]["paired"]["raw_results_sha256"],
-                manifest["inputs"]["paired"]["benchmark_raw_results_sha256"],
-            )
-            self.assertEqual(
-                manifest["inputs"]["paired"]["instances_sha256"],
-                manifest["inputs"]["paired"]["benchmark_instances_sha256"],
-            )
-            self.assertEqual(
-                manifest["inputs"]["paired"]["config_hash"], "a" * 64
-            )
-            self.assertEqual(
-                manifest["inputs"]["unpaired"]["config_hash"], "b" * 64
-            )
-            self.assertEqual(
-                manifest["inputs"]["paired"]["benchmark_git"]["commit"],
-                "a" * 40,
-            )
-            self.assertEqual(
-                manifest["outputs"]["comparison.csv"]["sha256"],
-                hashlib.sha256((output / "comparison.csv").read_bytes()).hexdigest(),
-            )
-            self.assertIn("commit", manifest["source"]["git"])
-            self.assertIn("dirty", manifest["source"]["git"])
+            paired = load_run_records(directory / "paired")
+            unpaired = load_run_records(directory / "unpaired")
+            for field, value in (("config_hash", "other"), ("instance_id", "other"), ("seed", 42)):
+                with self.subTest(field=field):
+                    changed = [replace(paired[0], **{field: value}), *paired[1:]]
+                    with self.assertRaisesRegex(AnalysisError, "run does not match its instance row"):
+                        _compare_records(
+                            changed, unpaired,
+                            paired_instances=load_instance_records(directory / "paired"),
+                            unpaired_instances=load_instance_records(directory / "unpaired"),
+                        )
 
-    def test_cli_rejects_missing_or_invalid_manifests_before_writing(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            directory = Path(tmp)
-            self._dataset(directory)
-            output = directory / "analysis"
-            with self.assertRaisesRegex(AnalysisError, "benchmark manifest is missing"):
-                main(
-                    [
-                        "--paired-results",
-                        str(directory / "paired"),
-                        "--unpaired-results",
-                        str(directory / "unpaired"),
-                        "--output",
-                        str(output),
-                    ]
-                )
-            self.assertFalse(output.exists())
-            for scheme in ("paired", "unpaired"):
-                (directory / scheme / "manifest.json").write_text(
-                    "{}\n", encoding="utf-8"
-                )
-            with self.assertRaisesRegex(
-                AnalysisError, "configuration.config_hash must be"
-            ):
-                main(
-                    [
-                        "--paired-results",
-                        str(directory / "paired"),
-                        "--unpaired-results",
-                        str(directory / "unpaired"),
-                        "--output",
-                        str(output),
-                    ]
-                )
-            self.assertFalse(output.exists())
 
-    def test_cli_rejects_unsupported_manifest_schema_version(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            directory = Path(tmp)
-            self._dataset(directory)
-            for scheme in ("paired", "unpaired"):
-                _write_benchmark_manifest(directory / scheme, scheme)
-                manifest = json.loads(
-                    (directory / scheme / "manifest.json").read_text(
-                        encoding="utf-8"
-                    )
-                )
-                manifest["schema_version"] = 2
-                (directory / scheme / "manifest.json").write_text(
-                    json.dumps(manifest) + "\n", encoding="utf-8"
-                )
-            output = directory / "analysis"
-            with self.assertRaisesRegex(AnalysisError, "schema_version must be"):
-                main(
-                    [
-                        "--paired-results",
-                        str(directory / "paired"),
-                        "--unpaired-results",
-                        str(directory / "unpaired"),
-                        "--output",
-                        str(output),
-                    ]
-                )
-            self.assertFalse(output.exists())
-
-    def test_cli_rejects_manifest_checksum_mismatch(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            directory = Path(tmp)
-            self._dataset(directory)
-            for scheme in ("paired", "unpaired"):
-                _write_benchmark_manifest(directory / scheme, scheme)
-            manifest = json.loads(
-                (directory / "paired" / "manifest.json").read_text(
-                    encoding="utf-8"
-                )
-            )
-            manifest["outputs"]["raw_results.csv"]["sha256"] = "f" * 64
-            (directory / "paired" / "manifest.json").write_text(
-                json.dumps(manifest) + "\n", encoding="utf-8"
-            )
-            with self.assertRaisesRegex(
-                AnalysisError, "does not match the benchmark manifest checksum"
-            ):
-                main(
-                    [
-                        "--paired-results",
-                        str(directory / "paired"),
-                        "--unpaired-results",
-                        str(directory / "unpaired"),
-                        "--output",
-                        str(directory / "analysis"),
-                    ]
-                )
-            self.assertFalse((directory / "analysis").exists())
-
-    def test_cli_requires_manifest_output_checksums(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            directory = Path(tmp)
-            self._dataset(directory)
-            for scheme in ("paired", "unpaired"):
-                _write_benchmark_manifest(directory / scheme, scheme)
-                manifest = json.loads(
-                    (directory / scheme / "manifest.json").read_text(
-                        encoding="utf-8"
-                    )
-                )
-                manifest.pop("outputs", None)
-                (directory / scheme / "manifest.json").write_text(
-                    json.dumps(manifest) + "\n", encoding="utf-8"
-                )
-            with self.assertRaisesRegex(AnalysisError, "outputs must be an object"):
-                main(
-                    [
-                        "--paired-results",
-                        str(directory / "paired"),
-                        "--unpaired-results",
-                        str(directory / "unpaired"),
-                        "--output",
-                        str(directory / "analysis"),
-                    ]
-                )
-            self.assertFalse((directory / "analysis").exists())
-
-    def test_cli_rejects_input_modified_after_the_run(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            directory = Path(tmp)
-            self._dataset(directory)
-            for scheme in ("paired", "unpaired"):
-                _write_benchmark_manifest(directory / scheme, scheme)
-            with (directory / "paired" / "raw_results.csv").open(
-                "a", encoding="utf-8", newline=""
-            ) as handle:
-                handle.write("extra,row\n")
-            with self.assertRaisesRegex(
-                AnalysisError, "does not match the benchmark manifest checksum"
-            ):
-                main(
-                    [
-                        "--paired-results",
-                        str(directory / "paired"),
-                        "--unpaired-results",
-                        str(directory / "unpaired"),
-                        "--output",
-                        str(directory / "analysis"),
-                    ]
-                )
-            self.assertFalse((directory / "analysis").exists())
-
-    def test_manifest_instances_checksum_is_required(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            directory = Path(tmp)
-            self._dataset(directory)
-            for scheme in ("paired", "unpaired"):
-                _write_benchmark_manifest(directory / scheme, scheme)
-                manifest = json.loads(
-                    (directory / scheme / "manifest.json").read_text(
-                        encoding="utf-8"
-                    )
-                )
-                manifest["outputs"].pop("instances.csv", None)
-                (directory / scheme / "manifest.json").write_text(
-                    json.dumps(manifest) + "\n", encoding="utf-8"
-                )
-            with self.assertRaisesRegex(
-                AnalysisError, "outputs.instances.csv must be an object"
-            ):
-                main(
-                    [
-                        "--paired-results",
-                        str(directory / "paired"),
-                        "--unpaired-results",
-                        str(directory / "unpaired"),
-                        "--output",
-                        str(directory / "analysis"),
-                    ]
-                )
-            self.assertFalse((directory / "analysis").exists())
-
-    def test_supported_manifest_schema_version_matches_the_validator(self) -> None:
-        # The validator declares its own MANIFEST_SCHEMA_VERSION with the same
-        # rationale and tests/test_output_validation.py binds that declaration
-        # to a manifest the runner actually wrote. Chaining the two declarations
-        # here keeps the pairing analysis honest without a second full run.
-        spec = importlib.util.spec_from_file_location("_validator", VALIDATOR)
-        assert spec is not None and spec.loader is not None
-        module = importlib.util.module_from_spec(spec)
-        sys.modules["_validator"] = module
-        spec.loader.exec_module(module)
-        self.assertEqual(
-            SUPPORTED_BENCHMARK_MANIFEST_SCHEMA_VERSION,
-            module.MANIFEST_SCHEMA_VERSION,
-        )
-
-    def test_source_git_state_counts_untracked_files_as_dirty(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            repository = Path(tmp)
-            subprocess.run(
-                ["git", "init", "-q", repository],
-                check=True,
-                capture_output=True,
-            )
-            (repository / "untracked.py").write_text("pass\n", encoding="utf-8")
-            self.assertIs(_git_state(repository)["dirty"], True)
 
     def test_summary_of_empty_series_is_empty(self) -> None:
         summary = DifferenceSummary.of((), (), ())
@@ -1155,6 +883,171 @@ class VarianceComparisonTest(unittest.TestCase):
         self.assertIsNone(summary.mean)
         self.assertIsNone(summary.sample_variance)
         self.assertIsNone(summary.treatment_control_correlation)
+
+
+class PlannedPairingTests(unittest.TestCase):
+    """Real runner outputs exercise the public input boundary without manifests."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.temporary = tempfile.TemporaryDirectory()
+        cls.root = Path(cls.temporary.name)
+        cls.paths = {}
+        cls.configs = {}
+        cls.runs = {}
+        cls.instances = {}
+        for scheme in ("paired", "unpaired"):
+            config = json.loads((ROOT / f"configs/pairing_{scheme}.json").read_text(encoding="utf-8"))
+            config["repetitions"] = 2
+            config["cases"] = config["cases"][:2]
+            for case in config["cases"]:
+                case.update(universe_size=12, set_count=6, k=2)
+            config["algorithms"] = [{"name": "greedy"}, {"name": "brute_force"}]
+            path = cls.root / f"{scheme}.json"
+            path.write_text(json.dumps(config), encoding="utf-8")
+            run_benchmark(path, cls.root / scheme)
+            cls.paths[scheme] = path
+            cls.configs[scheme] = load_config(path)
+            cls.runs[scheme] = load_run_records(cls.root / scheme)
+            cls.instances[scheme] = load_instance_records(cls.root / scheme)
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        cls.temporary.cleanup()
+
+    def analyze(self, records=None, *, scheme="paired", instances=None):
+        runs = dict(self.runs)
+        inputs = dict(self.instances)
+        if records is not None:
+            runs[scheme] = records
+        if instances is not None:
+            inputs[scheme] = instances
+        return analyze_pairing(
+            runs["paired"], runs["unpaired"],
+            paired_config=self.configs["paired"], unpaired_config=self.configs["unpaired"],
+            paired_instances=inputs["paired"], unpaired_instances=inputs["unpaired"],
+        )
+
+    def test_real_complete_inputs_and_reordered_rows_are_accepted(self) -> None:
+        expected = self.analyze()
+        self.assertEqual(expected, self.analyze(list(reversed(self.runs["paired"]))))
+        self.assertTrue(expected[0])
+
+    def test_run_identity_and_algorithm_metadata_match_the_plan(self) -> None:
+        for scheme in ("paired", "unpaired"):
+            original = self.runs[scheme]
+            for field, value in (("run_id", "f" * 64), ("algorithm", "unknown"),
+                                 ("algorithm_id", "unknown"), ("algorithm_options", '{"unknown":true}'),
+                                 ("seed", original[0].seed + 1), ("instance_id", "e" * 64)):
+                with self.subTest(scheme=scheme, field=field):
+                    changed = [replace(original[0], **{field: value}), *original[1:]]
+                    with self.assertRaisesRegex(AnalysisError, "execution plan"):
+                        self.analyze(changed, scheme=scheme)
+
+    def test_duplicate_and_missing_planned_runs_are_rejected(self) -> None:
+        original = self.runs["paired"]
+        with self.assertRaisesRegex(AnalysisError, "duplicate run_id"):
+            self.analyze([replace(row, run_id=original[0].run_id) for row in original])
+        with self.assertRaisesRegex(AnalysisError, "execution plan"):
+            self.analyze(original[:-1])
+
+    def test_coordinated_coverage_gap_edits_still_fail_selected_set_check(self) -> None:
+        original = self.runs["paired"]
+        index = next(i for i, row in enumerate(original) if row.algorithm == "greedy")
+        row = original[index]
+        changed = list(original)
+        changed[index] = replace(row, coverage=1, optimality_gap=(row.optimum - 1) / row.optimum)
+        with self.assertRaisesRegex(AnalysisError, "coverage does not match"):
+            self.analyze(changed)
+
+    def test_instance_table_must_match_the_configured_generation(self) -> None:
+        changed = list(self.instances["paired"])
+        changed[0] = replace(changed[0], pairwise_overlap_mean_jaccard=0.999)
+        with self.assertRaisesRegex(AnalysisError, "instance plan"):
+            self.analyze(instances=changed)
+
+    def test_coordinated_optimum_gap_edit_is_rejected(self) -> None:
+        changed = list(self.runs["paired"])
+        index = next(i for i, row in enumerate(changed) if row.algorithm == "greedy")
+        row = changed[index]
+        changed[index] = replace(row, optimum=row.optimum + 1,
+                                 optimality_gap=(row.optimum + 1 - row.coverage) / (row.optimum + 1))
+        with self.assertRaisesRegex(AnalysisError, "validated reference"):
+            self.analyze(changed)
+
+    def test_unavailable_reference_stays_unknown(self) -> None:
+        changed = []
+        for row in self.runs["paired"]:
+            if row.algorithm == "brute_force":
+                metadata = json.loads(row.algorithm_metadata)
+                metadata["termination"] = "error"
+                row = replace(row, status=SolutionStatus.ERROR, coverage=None, best_bound=None,
+                              selected=(), optimum=None, optimality_gap=None,
+                              algorithm_metadata=json.dumps(metadata), error_message="test failure")
+            else:
+                row = replace(row, optimum=None, optimality_gap=None)
+            changed.append(row)
+        rows, _ = self.analyze(changed)
+        greedy_gap = next(row for row in rows if row.algorithm_id == "greedy" and row.metric == "optimality_gap")
+        self.assertEqual(greedy_gap.paired.n, 0)
+        self.assertEqual(greedy_gap.paired_missing_count, 2)
+        index = next(i for i, row in enumerate(changed) if row.algorithm == "greedy")
+        row = changed[index]
+        changed[index] = replace(row, optimum=12, optimality_gap=(12-row.coverage)/12)
+        with self.assertRaisesRegex(AnalysisError, "validated reference"):
+            self.analyze(changed)
+        changed[index] = replace(row, status=SolutionStatus.OPTIMAL, best_bound=row.coverage,
+                                 optimum=row.coverage, optimality_gap=0.0)
+        with self.assertRaisesRegex(AnalysisError, "optimal exact run"):
+            self.analyze(changed)
+
+    def test_present_error_record_is_distinct_from_a_missing_run(self) -> None:
+        changed = list(self.runs["paired"])
+        index = next(i for i, row in enumerate(changed) if row.algorithm == "greedy")
+        metadata = json.loads(changed[index].algorithm_metadata)
+        metadata["termination"] = "error"
+        changed[index] = replace(changed[index], status=SolutionStatus.ERROR,
+                                 coverage=None, best_bound=None, optimality_gap=None, selected=(),
+                                 algorithm_metadata=json.dumps(metadata), error_message="test failure")
+        rows, _ = self.analyze(changed)
+        row = next(item for item in rows if item.algorithm_id == "greedy" and item.metric == "coverage")
+        self.assertEqual(row.paired_missing_count, 1)
+
+    def test_cli_checks_configurations_before_writing_comparisons(self) -> None:
+        output = self.root / "analysis"
+        output.mkdir()
+        (output / "analysis_manifest.json").write_text("legacy", encoding="utf-8")
+        argv = [
+            "--paired-config", str(self.paths["paired"]),
+            "--unpaired-config", str(self.paths["unpaired"]),
+            "--paired-results", str(self.root / "paired"),
+            "--unpaired-results", str(self.root / "unpaired"), "--output", str(output),
+        ]
+        status = main(argv)
+        self.assertEqual(status, 0)
+        self.assertTrue((output / "comparison.csv").is_file())
+        self.assertTrue((output / "differences.csv").is_file())
+        self.assertFalse((output / "analysis_manifest.json").exists())
+        invalid_output = self.root / "invalid-analysis"
+        argv[argv.index("--paired-config") + 1] = str(self.paths["unpaired"])
+        argv[argv.index("--output") + 1] = str(invalid_output)
+        with self.assertRaises(AnalysisError):
+            main(argv)
+        self.assertFalse(invalid_output.exists())
+
+    def test_invalid_cli_inputs_preserve_legacy_analysis_metadata(self) -> None:
+        output = self.root / "rejected-analysis"
+        output.mkdir()
+        manifest = output / "analysis_manifest.json"
+        manifest.write_text("legacy", encoding="utf-8")
+        with self.assertRaises(AnalysisError):
+            main([
+                "--paired-config", str(self.paths["unpaired"]),
+                "--unpaired-config", str(self.paths["unpaired"]),
+                "--paired-results", str(self.root / "paired"),
+                "--unpaired-results", str(self.root / "unpaired"), "--output", str(output),
+            ])
+        self.assertEqual(manifest.read_text(encoding="utf-8"), "legacy")
 
 
 if __name__ == "__main__":

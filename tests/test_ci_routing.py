@@ -34,7 +34,6 @@ class RawDiffTests(unittest.TestCase):
         for path in ("docs/README.md", "docs/a_plan.zh-CN.md", "docs/带 空格_plan.zh-CN.md", "docs/a\tb\nc_plan.zh-CN.md"):
             with self.subTest(path=path):
                 self.assertEqual("docs", routing.classify_diff(raw_change(path)))
-                self.assertEqual("docs", routing.classify_diff(raw_change(path) + raw_change("LICENSE_MANIFEST.json")))
 
     def test_document_additions_deletions_and_executable_additions(self) -> None:
         for status, old_mode, new_mode in ((b"A", b"000000", b"100644"), (b"A", b"000000", b"100755"), (b"D", b"100644", b"000000")):
@@ -47,9 +46,6 @@ class RawDiffTests(unittest.TestCase):
                 self.assertEqual("full", routing.classify_diff(raw_change(path)))
                 self.assertEqual("full", routing.classify_diff(raw_change("docs/README.md") + raw_change(path)))
 
-    def test_manifest_alone_and_no_changes_are_full(self) -> None:
-        self.assertEqual("full", routing.classify_diff(raw_change("LICENSE_MANIFEST.json")))
-        self.assertEqual("full", routing.classify_diff(b""))
 
     def test_special_modes_and_unknown_statuses_are_full(self) -> None:
         rows = [raw_change("docs/a_plan.zh-CN.md", b"M", b"100644", b"100755"), raw_change("docs/a_plan.zh-CN.md", b"M", b"100755", b"100644")]
@@ -130,16 +126,6 @@ class GitRoutingTests(unittest.TestCase):
     def profile(self, head: str, base: str | None = None) -> str:
         return routing.classify_event("pull_request", self.event(head, base), self.repo)[0]
 
-    def test_plan_index_and_companion_manifest(self) -> None:
-        self.write("docs/README.md", "updated index\n")
-        self.write("docs/中文 计划_plan.zh-CN.md", "new plan\n")
-        self.write("LICENSE_MANIFEST.json", "{}\n")
-        self.assertEqual("docs", self.profile(self.commit("documents")))
-
-    def test_manifest_content_is_left_to_required_license_checker(self) -> None:
-        self.write("docs/a_plan.zh-CN.md", "updated plan\n")
-        self.write("LICENSE_MANIFEST.json", "deliberately invalid fixture\n")
-        self.assertEqual("docs", self.profile(self.commit("classification is path-only")))
 
     def test_complete_pr_includes_earlier_code_commit(self) -> None:
         self.write("src/example.py", "value = 2\n")

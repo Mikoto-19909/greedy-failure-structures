@@ -13,11 +13,11 @@ The completed pilot compares shared-core `high_overlap` instances with a
 and an exhaustive reference. It did not provide sufficient paired evidence
 of a failure-rate difference at the fixed setting. The report retains the
 observed direction and the other structural differences between the generators.
-See [C1](experiments/core_rq/CLAIMS.md#c1).
+See [pilot data](experiments/core_rq/overlap_pilot_v1/).
 
 Read the [pilot report](analysis/overlap_pilot_v1.md), start from the
-[research index](analysis/README.md), or inspect the authoritative
-[claim-to-evidence mapping](experiments/core_rq/CLAIMS.md).
+[research index](analysis/README.md), or inspect the
+[pilot data](experiments/core_rq/overlap_pilot_v1/).
 
 ## Quick start
 
@@ -64,11 +64,10 @@ addresses; see the [Dashboard command](docs/cli.md#dashboard) and
 
 ## Output and verification
 
-Use the [output schema](docs/output_schema.md) to read CSVs, reports and manifests,
+Use the [output schema](docs/output_schema.md) to read CSVs and reports,
 and the [reproducibility guide](docs/reproducibility_matrix.md) to distinguish
 stable results from runtime and environment fields that may vary.
-A checksum match establishes agreement with the recorded digest; it does not
-prove the calculation is correct. The CLI guide describes the validator's scope.
+The optional validator recomputes results from the configuration and CSVs.
 
 Run the tests with:
 
@@ -84,10 +83,9 @@ Windows users can also use `./project.ps1 test`, `./project.ps1 typecheck` and
 ## Scope
 
 `demo` prints locally computed coverage and a benchmark writes measurements under
-`results/`. Full exploratory output stays local. Public claims are published with
-minimum frozen evidence in `experiments/core_rq/` and an explanation in `analysis/`;
-the claim ledger is the single evidence mapping. CI checks its declared scope,
-while contributors and reviewers verify that the claims match their evidence.
+`results/`. Full exploratory output stays local. Research reports in `analysis/` link directly to configurations and data in
+`experiments/core_rq/`. Keep enough information to rerun and understand a result;
+no claim ledger or file-integrity manifest is required.
 The publication rules are maintained in CONTRIBUTING.
 
 ## Documentation and support

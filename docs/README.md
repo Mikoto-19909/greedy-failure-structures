@@ -12,7 +12,7 @@ specifies the fixed pilot and its prerequisites. The
 [configuration](../configs/core_overlap_pilot.json) and
 [offline analysis](../analysis/core_overlap_pilot.py) have been run on a clean
 fixed source revision. Read the [pilot report](../analysis/overlap_pilot_v1.md)
-and [C1 evidence](../experiments/core_rq/CLAIMS.md#c1), or use the
+and [pilot configuration and data](../experiments/core_rq/overlap_pilot_v1/), or use the
 [pilot commands](cli.md#core-overlap-pilot) to reproduce it.
 
 Start with [`analysis/README.md`](../analysis/README.md) for research status.
@@ -30,7 +30,7 @@ planning document; those studies have not been executed.
 - [`cli.md`](cli.md): validation, execution, resume, summarize, replay, and
   dashboard workflows
 - [`output_schema.md`](output_schema.md): generated CSV, report, replay, and
-  manifest semantics
+  result identity and resume semantics
 - [`reproducibility_matrix.md`](reproducibility_matrix.md): which raw result
   fields must reproduce bit-for-bit and which are exempt, plus the matrix that
   enforces it across operating systems and Python versions
@@ -42,8 +42,8 @@ revisits existing instance families. Both retain schema v1 for compatibility.
 ## Published research
 
 - [`analysis/README.md`](../analysis/README.md): external research analysis
-- [`experiments/core_rq/CLAIMS.md`](../experiments/core_rq/CLAIMS.md):
-  authoritative claim-to-evidence and validation mapping
+- [pilot configuration and data](../experiments/core_rq/overlap_pilot_v1/):
+  experiment configuration and raw data
 
 ## Experiment guidance
 
@@ -87,29 +87,17 @@ versions do not make them the recommended next research experiment.
 
 The fixed core experiment, documentation cleanup, benchmark B0–B4, reporting,
 output validation, generators, record-type splits, and CI routing are complete.
-The original plans record their implementation PRs, compatibility evidence,
-and actual Actions verification.
-The delivery order is implementation preparation, the fixed core experiment,
-documentation cleanup, benchmark compatibility baseline (B0), reporting,
-benchmark extraction (B1–B4), output validation, generators,
-record types, and CI routing. Complete the experiment on a clean fixed commit
-before restructuring source. B0 precedes every production-code split so later
-changes can be compared against the same old implementation and checkpoint.
-Acceptance focuses on behavior and public compatibility. Remove unnecessary
-source-count claims and their tests as documentation is simplified. Default mypy
-covers every module under `src/maxcover` without module-wide error exemptions.
-
-Each batch uses a single-responsibility branch and commits, targeted local
-verification, any required independent review, and required checks on its final
-PR revision before merge and branch cleanup. Unchanged successful evidence is
-reused instead of repeating local gates. Record actual scope and implementation
-PRs in the applicable original plan. Benchmark B5 was assessed and cancelled
-after B4; the documented demo-script cleanup remains conditional.
+The plans below preserve that implementation history and its original checks.
+They are not the current contribution requirements: manifest generation, source
+digest ledgers, and the old/new artifact comparison tool have since been removed.
+Follow [CONTRIBUTING.md](../CONTRIBUTING.md) for new work and verification.
+Benchmark B5 was assessed and cancelled after B4; the documented demo-script
+cleanup remains conditional.
 
 - [`benchmark_modularization_plan.md`](benchmark_modularization_plan.md): B0
-  compatibility baseline and staged runner extraction, including old/new artifact parity
+  historical compatibility baseline and staged runner extraction
 - [`reporting_split_plan.zh-CN.md`](reporting_split_plan.zh-CN.md): report module
-  boundaries, compatibility imports, and fixed-input Markdown/SVG comparisons
+  boundaries and the original compatibility checks
 - [`output_validation_split_plan.zh-CN.md`](output_validation_split_plan.zh-CN.md):
   validator function extraction with preserved rejection behavior and required prechecks
 - [`generators_split_plan.zh-CN.md`](generators_split_plan.zh-CN.md): generator
@@ -126,13 +114,12 @@ after B4; the documented demo-script cleanup remains conditional.
   pre-public milestones and the code-first boundary
 - [`CANONICAL_MIGRATION_RECEIPT.json`](history/CANONICAL_MIGRATION_RECEIPT.json):
   machine-readable migration identities
-- [`LICENSES/README.md`](../LICENSES/README.md): default-deny file-level license
+- [`LICENSES/README.md`](../LICENSES/README.md): content-category license
   mapping
 - [`ci_routing_plan.zh-CN.md`](ci_routing_plan.zh-CN.md): implemented CI routing
   for plan-only pull requests, with required checks, fallback behavior, actual
   Actions runs, and measured operational timings
 
 Generated files under `results/` are local artifacts. They are inputs to local
-inspection and independent validation, not tracked documentation. Only the
-minimum evidence named by the claim ledger is copied into the public evidence
-directory.
+inspection and independent validation, not tracked documentation. Reports link directly to the configurations and data saved in
+`experiments/core_rq/`.

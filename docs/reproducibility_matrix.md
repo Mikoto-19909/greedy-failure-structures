@@ -82,29 +82,6 @@ compare script verifies that the sequence of logical run identities in file
 order is identical in both runs; a row set that is identical as a set but was
 written in a different order is reported as an inconsistent `row_order`.
 
-## Manifest fields
-
-The manifest records machine state alongside experiment identity, so only the
-identity part is compared:
-
-| field | compared |
-| --- | --- |
-| `experiment` | bit-exact |
-| `configuration.config_hash` | bit-exact |
-| `seeds.base_seed` | bit-exact |
-| `seeds.minimum` | bit-exact |
-| `seeds.maximum` | bit-exact |
-| `seeds.count` | bit-exact |
-| `execution.planned_instances` | bit-exact |
-| `execution.planned_runs` | bit-exact |
-| `algorithms` | bit-exact as a map |
-
-Not compared: `environment`, `timing`, `git`, `configuration.path`,
-`execution.workers`, `execution.resumed_runs`, `outputs`, `schema_version`,
-and the analysis-contract blocks. These record the machine, the wall clock,
-the checkout, the absolute path, a run bookkeeping counter, or content
-checksums that legitimately differ because `runtime_seconds` differs. They
-are environment- or artifact-state facts, not experiment identity.
 
 ## Matrix design
 
@@ -117,7 +94,7 @@ python-version: ["3.11", "3.12", "3.13"]
 
 Each cell runs `python run_project.py benchmark --config
 configs/quick.json --output results/quick-matrix --workers 1` on a fresh
-checkout, then uploads `raw_results.csv` and `manifest.json` under an
+checkout, then uploads `raw_results.csv` under an
 artifact named after the cell. The compare job downloads every cell artifact
 and runs the compare script once per non-baseline cell, with the baseline
 cell first: `ubuntu-latest` with Python 3.12. The report text is captured and

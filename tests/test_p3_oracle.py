@@ -1,11 +1,9 @@
 from __future__ import annotations
 
 import importlib.util
-import json
 import random
 import subprocess
 import sys
-import tempfile
 import unittest
 from pathlib import Path
 
@@ -135,18 +133,6 @@ class OptionalOracleTests(unittest.TestCase):
                 sample,
             )
             self.assertEqual(len({solution.coverage for solution in solutions}), 1, sample)
-
-    @unittest.skipUnless(HAS_ORTOOLS, "requires optional OR-Tools dependency")
-    def test_manifest_records_ortools_version(self) -> None:
-        with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
-            config_path = root / "config.json"
-            config_path.write_text(json.dumps(_oracle_config()), encoding="utf-8")
-            run_benchmark(config_path, root / "output")
-            manifest = json.loads(
-                (root / "output" / "manifest.json").read_text(encoding="utf-8")
-            )
-        self.assertRegex(manifest["environment"]["ortools"], r"^9\.15\.")
 
 
 if __name__ == "__main__":

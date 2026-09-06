@@ -28,8 +28,8 @@ Please do not use issues to report a suspected vulnerability — see
 
 **Algorithm comparisons.** Published findings and their evidence are in the
 [research analysis](analysis/README.md) and
-[claim ledger](experiments/core_rq/CLAIMS.md). Evidence publication requirements
-are maintained in [CONTRIBUTING.md](CONTRIBUTING.md).
+[experiment configuration and data](experiments/core_rq/overlap_pilot_v1/). Research workflow guidance
+is maintained in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 **Production use.** The project studies synthetic instances. Production tuning,
 hardening and suitability assessments are outside its scope.

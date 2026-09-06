@@ -19,9 +19,10 @@ ROOT = Path(__file__).resolve().parents[2]
 SOURCE = ROOT / "src"
 sys.path.insert(0, str(SOURCE))
 
-from maxcover.config import ExperimentConfig, load_config  # noqa: E402
-from maxcover.contracts import RunRecord  # noqa: E402
-from maxcover.reproducibility import config_hash, file_sha256  # noqa: E402
+from maxcover.config import load_config  # noqa: E402
+from maxcover.contracts import InstanceRecord, RunRecord  # noqa: E402
+from maxcover.benchmark_artifacts import _validate_analysis_records  # noqa: E402
+from maxcover.reproducibility import config_hash  # noqa: E402
 
 
 FAMILIES = (
@@ -38,14 +39,6 @@ ALGORITHMS_IN_REPORT = (
     "local_search",
     "randomized_greedy",
     "multi_start_local_search",
-)
-OUTPUTS = (
-    "structural_gap_statistics.csv",
-    "paired_control_differences.csv",
-    "precision_diagnostics.csv",
-    "stressor_strength_gap.svg",
-    "family_algorithm_gap.svg",
-    "cartography_summary.md",
 )
 STATISTICS_FIELDS = (
     "family", "strength", "strength_label", "group", "case_id",
@@ -443,46 +436,19 @@ def required_count(deviation: float | None, target: float) -> int | None:
     return lower
 
 
-def validate_manifest(
-    output: Path, config_path: Path, design_path: Path, config: ExperimentConfig
-) -> None:
-    manifest = json.loads(
-        (output / "cartography_manifest.json").read_text(encoding="utf-8")
-    )
-    if not isinstance(manifest, Mapping) or manifest.get("schema_version") != 1:
-        fail("cartography manifest schema is invalid")
-    expected = {
-        "config_hash": config_hash(config),
-        "config_sha256": file_sha256(config_path),
-        "design_sha256": file_sha256(design_path),
-        "raw_results_sha256": file_sha256(output / "raw_results.csv"),
-        "gap_formula": "1-coverage/optimum",
-        "paired_difference_formula": "stressor_gap-control_gap",
-        "repetition_unit": "instance_seed",
-        "algorithm_seed_role": "nested_within_instance",
-    }
-    for field, value in expected.items():
-        if manifest.get(field) != value:
-            fail(f"cartography manifest {field} mismatch")
-    outputs = manifest.get("outputs")
-    if not isinstance(outputs, Mapping) or set(outputs) != set(OUTPUTS):
-        fail("cartography manifest output set is invalid")
-    for filename in OUTPUTS:
-        metadata = outputs[filename]
-        if not isinstance(metadata, Mapping) or metadata.get("sha256") != file_sha256(
-            output / filename
-        ):
-            fail(f"cartography manifest checksum mismatch for {filename}")
-
-
 def validate(config_path: Path, design_path: Path, output: Path) -> None:
     validate_student_t_reference_points()
     config = load_config(config_path)
     minimum, target, levels = load_design(design_path)
     if config.repetitions < minimum:
         fail("configuration does not meet the cartography seed minimum")
-    validate_manifest(output, config_path, design_path, config)
     rows = load_runs(output / "raw_results.csv")
+    identifier = config_hash(config)
+    if {row.config_hash for row in rows} != {identifier}:
+        fail("raw results config_hash does not match the configuration")
+    instances = [InstanceRecord.from_csv_row(row) for row in
+                 load_rows(output / "instances.csv", InstanceRecord.CSV_FIELDS)]
+    rows = _validate_analysis_records(config, rows, instances)
     statistics_rows = load_rows(
         output / "structural_gap_statistics.csv", STATISTICS_FIELDS
     )

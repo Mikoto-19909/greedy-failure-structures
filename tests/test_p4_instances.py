@@ -216,9 +216,6 @@ class InstanceOutputTests(unittest.TestCase):
                 )
             )
             self.assertEqual((output / "notes.txt").read_text(encoding="utf-8"), "preserve me")
-            manifest = json.loads((output / "manifest.json").read_text(encoding="utf-8"))
-            self.assertNotIn("notes.txt", manifest["outputs"])
-            self.assertIn("instances.csv", manifest["outputs"])
 
     def test_each_failed_seed_gets_a_run_id_named_replay(self) -> None:
         config = _base_config(

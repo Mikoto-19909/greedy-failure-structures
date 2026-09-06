@@ -17,7 +17,7 @@ from .algorithms import ALGORITHMS
 from .benchmark import _linear_quantile, _student_t_critical_95, run_benchmark
 from .config import ExperimentConfig, load_config
 from .contracts import BenchmarkResult, RunRecord
-from .reproducibility import atomic_write_text, config_hash, file_sha256
+from .reproducibility import atomic_write_text
 
 
 CARTOGRAPHY_SCHEMA_VERSION = 1
@@ -766,6 +766,8 @@ def write_cartography_artifacts(
                 }
             )
 
+    # Retired metadata must not describe the refreshed artifact files.
+    (output_dir / "cartography_manifest.json").unlink(missing_ok=True)
     _write_csv(output_dir / "structural_gap_statistics.csv", statistics_rows)
     _write_csv(output_dir / "paired_control_differences.csv", paired_rows)
     _write_csv(output_dir / "precision_diagnostics.csv", precision_rows)
@@ -804,27 +806,6 @@ def write_cartography_artifacts(
         ]
     )
     atomic_write_text(output_dir / "cartography_summary.md", summary)
-    manifest = {
-        "schema_version": CARTOGRAPHY_SCHEMA_VERSION,
-        "config_hash": config_hash(result.config),
-        "config_file": Path(config_path).name,
-        "config_sha256": file_sha256(config_path),
-        "design_file": Path(design_path).name,
-        "design_sha256": file_sha256(design_path),
-        "raw_results_sha256": file_sha256(output_dir / "raw_results.csv"),
-        "gap_formula": "1-coverage/optimum",
-        "paired_difference_formula": "stressor_gap-control_gap",
-        "repetition_unit": "instance_seed",
-        "algorithm_seed_role": "nested_within_instance",
-        "outputs": {
-            filename: {"sha256": file_sha256(output_dir / filename)}
-            for filename in CARTOGRAPHY_FILENAMES
-        },
-    }
-    atomic_write_text(
-        output_dir / "cartography_manifest.json",
-        json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
-    )
 
 
 def run_cartography(

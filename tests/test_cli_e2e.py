@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 import shutil
@@ -60,12 +59,6 @@ class CliEndToEndTests(unittest.TestCase):
         self.assertIn("LegacyConfigWarning", explicit_quick.stderr)
         self.assertNotIn("Traceback", explicit_quick.stderr)
         self.assertIn("Completed 48 algorithm runs.", explicit_quick.stdout)
-        manifest = json.loads(
-            (self.workspace / "results" / "quick" / "manifest.json").read_text(
-                encoding="utf-8"
-            )
-        )
-        self.assertEqual(manifest["execution"]["resumed_runs"], 48)
 
         demo = self._run("demo")
         self._assert_success(demo)
@@ -149,7 +142,6 @@ class CliEndToEndTests(unittest.TestCase):
         instances = output_dir / "instances.csv"
         self.assertTrue(raw_results.is_file())
         self.assertTrue(instances.is_file())
-        self.assertTrue((output_dir / "manifest.json").is_file())
 
         resumed = self._run(
             "resume",
@@ -159,12 +151,8 @@ class CliEndToEndTests(unittest.TestCase):
             str(output_dir),
         )
         self._assert_success(resumed)
-        resume_manifest = json.loads(
-            (output_dir / "manifest.json").read_text(encoding="utf-8")
-        )
-        self.assertEqual(resume_manifest["execution"]["resumed_runs"], 2)
 
-        raw_digest = hashlib.sha256(raw_results.read_bytes()).hexdigest()
+        raw_before = raw_results.read_bytes()
         report_path = output_dir / "results_summary.md"
         report_path.write_text("stale report\n", encoding="utf-8")
         summarized = self._run(
@@ -179,7 +167,7 @@ class CliEndToEndTests(unittest.TestCase):
             "Summary rebuilt from canonical benchmark artifacts", summarized.stdout
         )
         self.assertEqual(
-            hashlib.sha256(raw_results.read_bytes()).hexdigest(), raw_digest
+            raw_results.read_bytes(), raw_before
         )
         self.assertNotEqual(report_path.read_text(encoding="utf-8"), "stale report\n")
 

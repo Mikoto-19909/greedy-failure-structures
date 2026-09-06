@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import csv
-import hashlib
 import json
 import subprocess
 import sys
@@ -16,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 import maxcover.benchmark as benchmark_module
+from maxcover.contracts import RunRecord
 from maxcover.algorithms import ALGORITHMS
 from maxcover.benchmark import replay_instance_file, run_benchmark
 from maxcover.generators import uniform_random
@@ -63,6 +63,62 @@ def _stable_rows(result) -> list[dict[str, object]]:
 
 
 class ReproducibilityTests(unittest.TestCase):
+    def test_partial_resume_removes_legacy_manifest_and_only_runs_missing_tasks(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            config = _write_config(root, _config())
+            output = root / "output"
+            original = run_benchmark(config, output)
+            manifest = output / "manifest.json"
+            manifest.write_text('{"legacy":true}\n', encoding="utf-8")
+            note = output / "research-notes.md"
+            note.write_text("keep this note", encoding="utf-8")
+            with (output / "raw_results.csv").open("w", encoding="utf-8", newline="") as handle:
+                writer = csv.DictWriter(handle, fieldnames=RunRecord.CSV_FIELDS)
+                writer.writeheader()
+                writer.writerows(row.to_csv_row() for row in original.rows[:-1])
+            with patch.object(benchmark_module, "_execute_task", wraps=benchmark_module._execute_task) as execute:
+                resumed = run_benchmark(config, output)
+            self.assertEqual(execute.call_count, 1)
+            self.assertEqual(len(resumed.rows), len(original.rows))
+            self.assertFalse(manifest.exists())
+            self.assertEqual(note.read_text(encoding="utf-8"), "keep this note")
+
+    def test_summarize_removes_legacy_manifest_without_rerunning_algorithms(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            config = _write_config(root, _config())
+            output = root / "output"
+            run_benchmark(config, output)
+            raw_before = (output / "raw_results.csv").read_bytes()
+            report_before = (output / "results_summary.md").read_bytes()
+            (output / "manifest.json").write_text("legacy", encoding="utf-8")
+            (output / "results_summary.md").write_text("stale", encoding="utf-8")
+            with patch.object(benchmark_module, "_execute_task", side_effect=AssertionError("unexpected rerun")):
+                benchmark_module.summarize_benchmark(config, output)
+            self.assertFalse((output / "manifest.json").exists())
+            self.assertEqual((output / "raw_results.csv").read_bytes(), raw_before)
+            self.assertEqual((output / "results_summary.md").read_bytes(), report_before)
+
+    def test_invalid_resume_keeps_legacy_manifest_and_existing_data(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            value = _config()
+            config = _write_config(root, value)
+            output = root / "output"
+            run_benchmark(config, output)
+            manifest = output / "manifest.json"
+            manifest.write_text("legacy", encoding="utf-8")
+            raw_before = (output / "raw_results.csv").read_bytes()
+            value["base_seed"] += 1
+            config.write_text(json.dumps(value), encoding="utf-8")
+            for command in (run_benchmark, benchmark_module.summarize_benchmark):
+                with self.subTest(command=command.__name__):
+                    with self.assertRaises(ValueError):
+                        command(config, output)
+                    self.assertEqual(manifest.read_text(encoding="utf-8"), "legacy")
+                    self.assertEqual((output / "raw_results.csv").read_bytes(), raw_before)
+
     @staticmethod
     def _instance_payload() -> dict[str, object]:
         return {
@@ -200,124 +256,6 @@ class ReproducibilityTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, message):
                     instance_from_payload(payload)
 
-    def test_manifest_records_environment_and_valid_output_checksums(self) -> None:
-        with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
-            result = run_benchmark(_write_config(root, _config()), root / "output")
-            manifest = json.loads(
-                (result.output_dir / "manifest.json").read_text(encoding="utf-8")
-            )
-            self.assertEqual(manifest["execution"]["planned_runs"], 4)
-            self.assertEqual(manifest["execution"]["workers"], 1)
-            self.assertEqual(manifest["seeds"]["count"], 2)
-            self.assertEqual(len(manifest["configuration"]["config_hash"]), 64)
-            self.assertIn("commit", manifest["git"])
-            self.assertTrue(manifest["environment"]["python"])
-            self.assertEqual(
-                manifest["optimality_gap_contract"],
-                {
-                    "schema_version": 1,
-                    "artifact": "descriptive_statistics.csv",
-                    "artifact_schema_version": 1,
-                    "row_selector": {"metric": "optimality_gap"},
-                    "scope": "all_executed_algorithm_variants",
-                    "group_by": [
-                        "config_hash",
-                        "case_id",
-                        "family",
-                        "algorithm_id",
-                        "algorithm",
-                    ],
-                    "gap_scale": "relative",
-                    "formula": "(optimum-coverage)/optimum",
-                    "reference_policy": "normalized_exact_optimum",
-                    "positive_optimum_required": True,
-                    "zero_optimum_policy": "count_reference_exclude_gap",
-                    "eligible_statuses": ["optimal", "feasible", "timeout"],
-                    "timeout_policy": "include_feasible_incumbent_and_count",
-                    "error_policy": "exclude_and_count",
-                    "missing_reference_policy": "exclude",
-                    "repetition_unit": "instance_seed",
-                    "algorithm_seed_role": "nested_within_instance",
-                    "within_instance_aggregation": (
-                        "arithmetic_mean_of_eligible_runs"
-                    ),
-                    "mean_aggregation": (
-                        "equal_weight_mean_of_instance_gaps"
-                    ),
-                    "maximum_aggregation": (
-                        "maximum_of_instance_mean_gaps"
-                    ),
-                    "sample_count_semantics": "eligible_instance_count",
-                    "zero_sample_policy": "blank_statistics",
-                    "coverage_above_optimum_policy": "error",
-                    "canonical_precision": (
-                        "raw_results_csv_round_trip_10_decimal_places"
-                    ),
-                    "absolute_gap_policy": "not_in_scope",
-                    "compatibility_aggregate_policy": (
-                        "summary_csv_excluded"
-                    ),
-                },
-            )
-            self.assertEqual(
-                manifest["greedy_failure_contract"],
-                {
-                    "schema_version": 1,
-                    "artifact": "greedy_failure_statistics.csv",
-                    "artifact_schema_version": 1,
-                    "availability": "always",
-                    "empty_behavior": "header_only",
-                    "algorithm": "greedy",
-                    "algorithm_seed_policy": "forbidden",
-                    "repetition_unit": "instance_seed",
-                    "reference_policy": "normalized_exact_optimum",
-                    "zero_optimum_is_reference": True,
-                    "eligible_statuses": ["feasible"],
-                    "denominator": "completed_greedy_with_exact_reference",
-                    "failure_event": "coverage_lt_optimum",
-                    "success_event": "coverage_eq_optimum",
-                    "timeout_policy": "excluded_from_denominator_and_counted",
-                    "error_policy": "excluded_from_denominator_and_counted",
-                    "missing_reference_policy": (
-                        "excluded_from_denominator_and_counted"
-                    ),
-                    "zero_denominator_policy": "blank_rates",
-                },
-            )
-            self.assertIn(
-                "greedy_failure_statistics.csv", manifest["outputs"]
-            )
-            self.assertEqual(
-                manifest["heuristic_exact_runtime_ratio_contract"]["formula"],
-                "mean_completed_heuristic_runtime/exact_runtime",
-            )
-            self.assertIn(
-                "heuristic_exact_runtime_ratio_statistics.csv",
-                manifest["outputs"],
-            )
-            self.assertEqual(
-                manifest["local_search_recovery_contract"]["formula"],
-                "(local_search_coverage-greedy_coverage)/"
-                "(optimum-greedy_coverage)",
-            )
-            self.assertIn(
-                "local_search_recovery_statistics.csv", manifest["outputs"]
-            )
-            self.assertEqual(
-                manifest["local_search_remaining_gap_contract"]["formula"],
-                "(optimum-local_search_coverage)/optimum",
-            )
-            self.assertIn(
-                "local_search_remaining_gap_statistics.csv",
-                manifest["outputs"],
-            )
-            for filename, metadata in manifest["outputs"].items():
-                content = (result.output_dir / filename).read_bytes()
-                self.assertEqual(
-                    hashlib.sha256(content).hexdigest(), metadata["sha256"]
-                )
-                self.assertEqual(len(content), metadata["bytes"])
 
     def test_interruption_checkpoints_and_resume_skips_completed_run_ids(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -348,10 +286,6 @@ class ReproducibilityTests(unittest.TestCase):
             result = run_benchmark(config_path, output)
             self.assertEqual(len(result.rows), 4)
             self.assertEqual(len({row.run_id for row in result.rows}), 4)
-            manifest = json.loads(
-                (output / "manifest.json").read_text(encoding="utf-8")
-            )
-            self.assertEqual(manifest["execution"]["resumed_runs"], 1)
 
     def test_force_reruns_completed_ids(self) -> None:
         value = _config(algorithms=[{"name": "greedy"}])

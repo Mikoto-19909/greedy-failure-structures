@@ -1,8 +1,10 @@
 # 高重叠结构对照实验执行计划
 
+> 历史设计记录：其中的 manifest、文件摘要及研究登记要求已取消。当前工作流程以 [CONTRIBUTING.md](../CONTRIBUTING.md) 为准。
+
 记录日期：2026-09-05。
 
-状态：固定实验已完成，结果及最小证据见 [C1](../experiments/core_rq/CLAIMS.md#c1)
+状态：固定实验已完成，结果及最小证据见 [实验数据](../experiments/core_rq/overlap_pilot_v1/)
 和[研究报告](../analysis/overlap_pilot_v1.md)。下文保留原先预定的设计、参数与验收规则。
 后续方向见[Greedy 失效结构研究计划](greedy_failure_research_plan.zh-CN.md)：
 包含文献研读、失效路径与交换修复、随机模型对照及质量认证的分批设计。
@@ -346,7 +348,7 @@ benchmark manifest 和输入 CSV 的 SHA-256、分析脚本及分析产物的 SH
 
 外部说明放入 `analysis/overlap_pilot_v1.md`，图保存为
 `analysis/overlap_pilot_v1.svg`。图复制或更名时记录原始文件名及相同的哈希。
-使用 [`CLAIMS.md`](../experiments/core_rq/CLAIMS.md) 中下一个可用 claim ID，
+使用 `CLAIMS.md` 中下一个可用 claim ID，
 绑定确切行、过滤条件、主指标与辅助指标、配置、图和验证记录；不提前填入结果。
 
 如果生成的 manifest 包含个人绝对配置路径，按 CONTRIBUTING 的现行办法，
