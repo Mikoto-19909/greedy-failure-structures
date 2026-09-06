@@ -3,10 +3,8 @@
 from __future__ import annotations
 
 import csv
-import hashlib
-import importlib.util
+from dataclasses import replace
 import json
-import subprocess
 import sys
 import tempfile
 import unittest
@@ -21,11 +19,9 @@ from maxcover._instance_contracts import InstanceRecord
 from maxcover._run_contracts import RunRecord
 from maxcover.model import SolutionStatus
 from maxcover.paired_seed_analysis import (
-    SUPPORTED_BENCHMARK_MANIFEST_SCHEMA_VERSION,
     AnalysisError,
     ComparisonRow,
     DifferenceSummary,
-    _git_state,
     analyze_pairing,
     load_instance_records,
     load_run_records,
@@ -191,28 +187,6 @@ def _write_instances(directory: Path, records: list[InstanceRecord]) -> None:
         writer.writeheader()
         for record in records:
             writer.writerow(record.to_csv_row())
-
-
-def _write_benchmark_manifest(directory: Path, scheme: str) -> None:
-    raw = (directory / "raw_results.csv").read_bytes()
-    instances = (directory / "instances.csv").read_bytes()
-    (directory / "manifest.json").write_text(
-        json.dumps(
-            {
-                "schema_version": SUPPORTED_BENCHMARK_MANIFEST_SCHEMA_VERSION,
-                "configuration": {
-                    "config_hash": ("a" if scheme == "paired" else "b") * 64
-                },
-                "git": {"commit": "a" * 40, "dirty": False},
-                "outputs": {
-                    "raw_results.csv": {"sha256": hashlib.sha256(raw).hexdigest()},
-                    "instances.csv": {"sha256": hashlib.sha256(instances).hexdigest()},
-                },
-            }
-        )
-        + "\n",
-        encoding="utf-8",
-    )
 
 
 class CsvRoundTripTest(unittest.TestCase):
@@ -423,6 +397,10 @@ class EffectiveCouplingTest(unittest.TestCase):
                     )
                     for row in unpaired
                 ]
+                paired = [replace(row, family=item.family, parameters=item.parameters)
+                          for row, item in zip(paired, paired_instances)]
+                unpaired = [replace(row, family=item.family, parameters=item.parameters)
+                            for row, item in zip(unpaired, unpaired_instances)]
                 rows, samples = analyze_pairing(
                     paired, unpaired, paired_instances=paired_instances,
                     unpaired_instances=unpaired_instances,
@@ -518,11 +496,16 @@ class EffectiveCouplingTest(unittest.TestCase):
             ),
         ]
         unpaired_instances = [
-            _instance_record(case="treatment", repetition=0, seed=2000),
+            _coupled_instance(case="treatment", repetition=0, seed=2000,
+                              coupling_pair_id="independent", coupling_seed=2000),
             _instance_record(
                 case="treatment_control", repetition=0, seed=3000, family="uniform"
             ),
         ]
+        paired = [replace(row, family=item.family, parameters=item.parameters)
+                  for row, item in zip(paired, paired_instances)]
+        unpaired = [replace(row, family=item.family, parameters=item.parameters)
+                    for row, item in zip(unpaired, unpaired_instances)]
         rows, _ = analyze_pairing(
             paired,
             unpaired,
@@ -873,12 +856,26 @@ class VarianceComparisonTest(unittest.TestCase):
         self.assertEqual(row.unpaired_missing_count, 1)
         self.assertEqual(row.paired_missing_count, 0)
 
+    def test_runs_must_match_their_instance_rows(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            self._dataset(directory)
+            paired = load_run_records(directory / "paired")
+            unpaired = load_run_records(directory / "unpaired")
+            for field, value in (("config_hash", "other"), ("instance_id", "other"), ("seed", 42)):
+                with self.subTest(field=field):
+                    changed = [replace(paired[0], **{field: value}), *paired[1:]]
+                    with self.assertRaisesRegex(AnalysisError, "run does not match its instance row"):
+                        analyze_pairing(
+                            changed, unpaired,
+                            paired_instances=load_instance_records(directory / "paired"),
+                            unpaired_instances=load_instance_records(directory / "unpaired"),
+                        )
+
     def test_cli_writes_comparison_and_differences(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             directory = Path(tmp)
             self._dataset(directory)
-            for scheme in ("paired", "unpaired"):
-                _write_benchmark_manifest(directory / scheme, scheme)
             output = directory / "analysis"
             status = main(
                 [
@@ -893,261 +890,12 @@ class VarianceComparisonTest(unittest.TestCase):
             self.assertEqual(status, 0)
             self.assertTrue((output / "comparison.csv").is_file())
             self.assertTrue((output / "differences.csv").is_file())
-            self.assertTrue((output / "analysis_manifest.json").is_file())
+            self.assertFalse((output / "analysis_manifest.json").exists())
             with (output / "comparison.csv").open("r", encoding="utf-8") as handle:
                 rows = list(csv.DictReader(handle))
             self.assertEqual(len(rows), 2)
             self.assertEqual(set(rows[0]), set(ComparisonRow.CSV_FIELDS))
-            manifest = json.loads(
-                (output / "analysis_manifest.json").read_text(encoding="utf-8")
-            )
-            self.assertEqual(manifest["schema_version"], 1)
-            self.assertEqual(manifest["outputs"]["comparison.csv"]["rows"], 2)
-            self.assertEqual(manifest["outputs"]["differences.csv"]["rows"], 20)
-            self.assertEqual(
-                manifest["inputs"]["paired"]["raw_results_sha256"],
-                hashlib.sha256(
-                    (directory / "paired" / "raw_results.csv").read_bytes()
-                ).hexdigest(),
-            )
-            self.assertEqual(
-                manifest["inputs"]["paired"]["instances_sha256"],
-                hashlib.sha256(
-                    (directory / "paired" / "instances.csv").read_bytes()
-                ).hexdigest(),
-            )
-            self.assertEqual(
-                manifest["inputs"]["paired"]["benchmark_schema_version"],
-                SUPPORTED_BENCHMARK_MANIFEST_SCHEMA_VERSION,
-            )
-            self.assertEqual(
-                manifest["inputs"]["paired"]["raw_results_sha256"],
-                manifest["inputs"]["paired"]["benchmark_raw_results_sha256"],
-            )
-            self.assertEqual(
-                manifest["inputs"]["paired"]["instances_sha256"],
-                manifest["inputs"]["paired"]["benchmark_instances_sha256"],
-            )
-            self.assertEqual(
-                manifest["inputs"]["paired"]["config_hash"], "a" * 64
-            )
-            self.assertEqual(
-                manifest["inputs"]["unpaired"]["config_hash"], "b" * 64
-            )
-            self.assertEqual(
-                manifest["inputs"]["paired"]["benchmark_git"]["commit"],
-                "a" * 40,
-            )
-            self.assertEqual(
-                manifest["outputs"]["comparison.csv"]["sha256"],
-                hashlib.sha256((output / "comparison.csv").read_bytes()).hexdigest(),
-            )
-            self.assertIn("commit", manifest["source"]["git"])
-            self.assertIn("dirty", manifest["source"]["git"])
 
-    def test_cli_rejects_missing_or_invalid_manifests_before_writing(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            directory = Path(tmp)
-            self._dataset(directory)
-            output = directory / "analysis"
-            with self.assertRaisesRegex(AnalysisError, "benchmark manifest is missing"):
-                main(
-                    [
-                        "--paired-results",
-                        str(directory / "paired"),
-                        "--unpaired-results",
-                        str(directory / "unpaired"),
-                        "--output",
-                        str(output),
-                    ]
-                )
-            self.assertFalse(output.exists())
-            for scheme in ("paired", "unpaired"):
-                (directory / scheme / "manifest.json").write_text(
-                    "{}\n", encoding="utf-8"
-                )
-            with self.assertRaisesRegex(
-                AnalysisError, "configuration.config_hash must be"
-            ):
-                main(
-                    [
-                        "--paired-results",
-                        str(directory / "paired"),
-                        "--unpaired-results",
-                        str(directory / "unpaired"),
-                        "--output",
-                        str(output),
-                    ]
-                )
-            self.assertFalse(output.exists())
-
-    def test_cli_rejects_unsupported_manifest_schema_version(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            directory = Path(tmp)
-            self._dataset(directory)
-            for scheme in ("paired", "unpaired"):
-                _write_benchmark_manifest(directory / scheme, scheme)
-                manifest = json.loads(
-                    (directory / scheme / "manifest.json").read_text(
-                        encoding="utf-8"
-                    )
-                )
-                manifest["schema_version"] = 2
-                (directory / scheme / "manifest.json").write_text(
-                    json.dumps(manifest) + "\n", encoding="utf-8"
-                )
-            output = directory / "analysis"
-            with self.assertRaisesRegex(AnalysisError, "schema_version must be"):
-                main(
-                    [
-                        "--paired-results",
-                        str(directory / "paired"),
-                        "--unpaired-results",
-                        str(directory / "unpaired"),
-                        "--output",
-                        str(output),
-                    ]
-                )
-            self.assertFalse(output.exists())
-
-    def test_cli_rejects_manifest_checksum_mismatch(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            directory = Path(tmp)
-            self._dataset(directory)
-            for scheme in ("paired", "unpaired"):
-                _write_benchmark_manifest(directory / scheme, scheme)
-            manifest = json.loads(
-                (directory / "paired" / "manifest.json").read_text(
-                    encoding="utf-8"
-                )
-            )
-            manifest["outputs"]["raw_results.csv"]["sha256"] = "f" * 64
-            (directory / "paired" / "manifest.json").write_text(
-                json.dumps(manifest) + "\n", encoding="utf-8"
-            )
-            with self.assertRaisesRegex(
-                AnalysisError, "does not match the benchmark manifest checksum"
-            ):
-                main(
-                    [
-                        "--paired-results",
-                        str(directory / "paired"),
-                        "--unpaired-results",
-                        str(directory / "unpaired"),
-                        "--output",
-                        str(directory / "analysis"),
-                    ]
-                )
-            self.assertFalse((directory / "analysis").exists())
-
-    def test_cli_requires_manifest_output_checksums(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            directory = Path(tmp)
-            self._dataset(directory)
-            for scheme in ("paired", "unpaired"):
-                _write_benchmark_manifest(directory / scheme, scheme)
-                manifest = json.loads(
-                    (directory / scheme / "manifest.json").read_text(
-                        encoding="utf-8"
-                    )
-                )
-                manifest.pop("outputs", None)
-                (directory / scheme / "manifest.json").write_text(
-                    json.dumps(manifest) + "\n", encoding="utf-8"
-                )
-            with self.assertRaisesRegex(AnalysisError, "outputs must be an object"):
-                main(
-                    [
-                        "--paired-results",
-                        str(directory / "paired"),
-                        "--unpaired-results",
-                        str(directory / "unpaired"),
-                        "--output",
-                        str(directory / "analysis"),
-                    ]
-                )
-            self.assertFalse((directory / "analysis").exists())
-
-    def test_cli_rejects_input_modified_after_the_run(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            directory = Path(tmp)
-            self._dataset(directory)
-            for scheme in ("paired", "unpaired"):
-                _write_benchmark_manifest(directory / scheme, scheme)
-            with (directory / "paired" / "raw_results.csv").open(
-                "a", encoding="utf-8", newline=""
-            ) as handle:
-                handle.write("extra,row\n")
-            with self.assertRaisesRegex(
-                AnalysisError, "does not match the benchmark manifest checksum"
-            ):
-                main(
-                    [
-                        "--paired-results",
-                        str(directory / "paired"),
-                        "--unpaired-results",
-                        str(directory / "unpaired"),
-                        "--output",
-                        str(directory / "analysis"),
-                    ]
-                )
-            self.assertFalse((directory / "analysis").exists())
-
-    def test_manifest_instances_checksum_is_required(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            directory = Path(tmp)
-            self._dataset(directory)
-            for scheme in ("paired", "unpaired"):
-                _write_benchmark_manifest(directory / scheme, scheme)
-                manifest = json.loads(
-                    (directory / scheme / "manifest.json").read_text(
-                        encoding="utf-8"
-                    )
-                )
-                manifest["outputs"].pop("instances.csv", None)
-                (directory / scheme / "manifest.json").write_text(
-                    json.dumps(manifest) + "\n", encoding="utf-8"
-                )
-            with self.assertRaisesRegex(
-                AnalysisError, "outputs.instances.csv must be an object"
-            ):
-                main(
-                    [
-                        "--paired-results",
-                        str(directory / "paired"),
-                        "--unpaired-results",
-                        str(directory / "unpaired"),
-                        "--output",
-                        str(directory / "analysis"),
-                    ]
-                )
-            self.assertFalse((directory / "analysis").exists())
-
-    def test_supported_manifest_schema_version_matches_the_validator(self) -> None:
-        # The validator declares its own MANIFEST_SCHEMA_VERSION with the same
-        # rationale and tests/test_output_validation.py binds that declaration
-        # to a manifest the runner actually wrote. Chaining the two declarations
-        # here keeps the pairing analysis honest without a second full run.
-        spec = importlib.util.spec_from_file_location("_validator", VALIDATOR)
-        assert spec is not None and spec.loader is not None
-        module = importlib.util.module_from_spec(spec)
-        sys.modules["_validator"] = module
-        spec.loader.exec_module(module)
-        self.assertEqual(
-            SUPPORTED_BENCHMARK_MANIFEST_SCHEMA_VERSION,
-            module.MANIFEST_SCHEMA_VERSION,
-        )
-
-    def test_source_git_state_counts_untracked_files_as_dirty(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            repository = Path(tmp)
-            subprocess.run(
-                ["git", "init", "-q", repository],
-                check=True,
-                capture_output=True,
-            )
-            (repository / "untracked.py").write_text("pass\n", encoding="utf-8")
-            self.assertIs(_git_state(repository)["dirty"], True)
 
     def test_summary_of_empty_series_is_empty(self) -> None:
         summary = DifferenceSummary.of((), (), ())

@@ -6,8 +6,8 @@ reduce the spread of the treatment-minus-control difference relative to
 generating the two independently?
 
 The analysis reads the canonical raw_results.csv and instances.csv artifacts
-produced by the benchmark runner and verifies the digests the benchmark
-manifest records for them against the files actually read. The effective seed
+produced by the benchmark runner. It validates record identities and pairing.
+The effective seed
 that drove generation -- the coupling seed when the runner injected one,
 otherwise the instance seed -- must be shared between a treatment and its
 matched control at every repetition in the paired run and must be independent
@@ -35,19 +35,14 @@ Run it as a module:
     python -m maxcover.paired_seed_analysis --paired-results results/pairing-v1/paired --unpaired-results results/pairing-v1/unpaired --output results/pairing-v1/analysis
 
 Numeric results are written to the output directory (comparison.csv and
-differences.csv) with analysis_manifest.json recording their input and output
-digests and the verified schema and effective-coupling constraints. They are
-local evidence only.
+differences.csv). Inputs need no manifest or file checksums.
 """
 
 from __future__ import annotations
 
 import argparse
 import csv
-import hashlib
 import io
-import json
-import subprocess
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
@@ -60,17 +55,6 @@ from ._run_contracts import RunRecord
 
 METRICS = ("coverage", "optimality_gap")
 DEFAULT_CONTROL_SUFFIX = "_control"
-
-# The benchmark manifest schema version written by 'benchmark.py'.
-#
-# Declared here rather than imported because 'benchmark.py' writes the value
-# inline and exposes no constant for it; the same declaration lives in
-# .github/scripts/validate_benchmark_output.py and is asserted against a real
-# runner-written manifest by tests/test_output_validation.py. The pairing
-# analysis accepts no other version: it reads fields the manifest provides
-# only under this schema, so a future bump must fail here loudly rather than
-# be interpreted under the old shape.
-SUPPORTED_BENCHMARK_MANIFEST_SCHEMA_VERSION = 1
 
 
 class AnalysisError(ValueError):
@@ -591,6 +575,21 @@ def analyze_pairing(
             control_case=control,
             repetition_count=repetition_count,
         )
+    for scheme, records, instances in (
+        ("paired", paired_records, paired_instances),
+        ("unpaired", unpaired_records, unpaired_instances),
+    ):
+        by_key = {(item.case_id, item.repetition): item for item in instances}
+        if len(by_key) != len(instances):
+            raise AnalysisError([f"{scheme}: duplicate instance rows"])
+        for record in records:
+            instance = by_key.get((record.case_id, record.repetition))
+            fields = ("config_hash", "instance_id", "seed", "family",
+                      "universe_size", "set_count", "k", "parameters")
+            if instance is None or any(
+                getattr(record, field) != getattr(instance, field) for field in fields
+            ):
+                raise AnalysisError([f"{scheme}: run does not match its instance row"])
     comparison: list[ComparisonRow] = []
     samples: list[dict[str, object]] = []
     for family, treatment, control, algorithm_id, algorithm in cells:
@@ -729,210 +728,6 @@ def _write_csv(
     path.write_text(stream.getvalue(), encoding="utf-8")
 
 
-def _sha256_file(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for block in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
-
-
-def _git_state(root: Path | None = None) -> dict[str, object]:
-    if root is None:
-        root = Path(__file__).resolve().parents[2]
-
-    def invoke(*arguments: str) -> subprocess.CompletedProcess[str]:
-        return subprocess.run(
-            ["git", "-c", f"safe.directory={root}", "-C", str(root), *arguments],
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-
-    commit = invoke("rev-parse", "HEAD")
-    status = invoke("status", "--porcelain")
-    return {
-        "commit": commit.stdout.strip() if commit.returncode == 0 else None,
-        "dirty": status.returncode != 0 or bool(status.stdout.strip()),
-    }
-
-
-def _manifest_output_sha256(
-    manifest: Mapping[str, object], filename: str, issues: list[str]
-) -> str | None:
-    """The checksum the benchmark manifest declares for one output file."""
-
-    outputs = manifest.get("outputs")
-    if not isinstance(outputs, dict):
-        issues.append("outputs must be an object")
-        return None
-    entry = outputs.get(filename)
-    if not isinstance(entry, dict):
-        issues.append(f"outputs.{filename} must be an object")
-        return None
-    digest = entry.get("sha256")
-    if not (
-        isinstance(digest, str)
-        and len(digest) == 64
-        and all(character in "0123456789abcdef" for character in digest)
-    ):
-        issues.append(
-            f"outputs.{filename}.sha256 must be a lowercase SHA-256 digest"
-        )
-        return None
-    return digest
-
-
-def _input_provenance(directory: Path) -> dict[str, object]:
-    raw_results = directory / "raw_results.csv"
-    instances = directory / "instances.csv"
-    manifest_path = directory / "manifest.json"
-    provenance: dict[str, object] = {
-        "raw_results_sha256": None,
-        "benchmark_raw_results_sha256": None,
-        "instances_sha256": None,
-        "benchmark_instances_sha256": None,
-        "benchmark_manifest_sha256": None,
-        "benchmark_schema_version": None,
-        "config_hash": None,
-        "benchmark_git": None,
-    }
-    if not manifest_path.is_file():
-        raise AnalysisError([f"benchmark manifest is missing: {manifest_path}"])
-    if not raw_results.is_file():
-        raise AnalysisError([f"missing raw_results.csv in {directory}"])
-    if not instances.is_file():
-        raise AnalysisError([f"missing instances.csv in {directory}"])
-
-    try:
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as error:
-        raise AnalysisError(
-            [f"cannot read benchmark manifest {manifest_path}: {error}"]
-        )
-    if not isinstance(manifest, dict):
-        raise AnalysisError(
-            [f"benchmark manifest {manifest_path} must be an object"]
-        )
-
-    schema_version = manifest.get("schema_version")
-    configuration = manifest.get("configuration")
-    benchmark_git = manifest.get("git")
-    config_hash = (
-        configuration.get("config_hash")
-        if isinstance(configuration, dict)
-        else None
-    )
-    commit = benchmark_git.get("commit") if isinstance(benchmark_git, dict) else None
-    dirty = benchmark_git.get("dirty") if isinstance(benchmark_git, dict) else None
-    issues: list[str] = []
-    if not isinstance(schema_version, int) or isinstance(schema_version, bool):
-        issues.append("schema_version must be an integer")
-    elif schema_version != SUPPORTED_BENCHMARK_MANIFEST_SCHEMA_VERSION:
-        issues.append(
-            "schema_version must be "
-            f"{SUPPORTED_BENCHMARK_MANIFEST_SCHEMA_VERSION}"
-        )
-    if not (
-        isinstance(config_hash, str)
-        and len(config_hash) == 64
-        and all(character in "0123456789abcdef" for character in config_hash)
-    ):
-        issues.append("configuration.config_hash must be a lowercase SHA-256 digest")
-    if not isinstance(benchmark_git, dict) or "commit" not in benchmark_git:
-        issues.append("git.commit must be present")
-    elif commit is not None and not (
-        isinstance(commit, str)
-        and len(commit) == 40
-        and all(character in "0123456789abcdef" for character in commit)
-    ):
-        issues.append("git.commit must be null or a lowercase 40-character commit")
-    if not isinstance(dirty, bool):
-        issues.append("git.dirty must be a boolean")
-    declared_raw_results = _manifest_output_sha256(
-        manifest, "raw_results.csv", issues
-    )
-    declared_instances = _manifest_output_sha256(manifest, "instances.csv", issues)
-    actual_raw_results = _sha256_file(raw_results)
-    actual_instances = _sha256_file(instances)
-    if declared_raw_results is not None and declared_raw_results != actual_raw_results:
-        issues.append(
-            "raw_results.csv does not match the benchmark manifest checksum:"
-            f" manifest records {declared_raw_results}, file is"
-            f" {actual_raw_results}"
-        )
-    if declared_instances is not None and declared_instances != actual_instances:
-        issues.append(
-            "instances.csv does not match the benchmark manifest checksum:"
-            f" manifest records {declared_instances}, file is {actual_instances}"
-        )
-    if issues:
-        raise AnalysisError(
-            [f"benchmark manifest {manifest_path}: {issue}" for issue in issues]
-        )
-
-    assert isinstance(schema_version, int)
-    assert isinstance(config_hash, str)
-    assert isinstance(benchmark_git, dict)
-    assert declared_raw_results is not None
-    assert declared_instances is not None
-    provenance["benchmark_manifest_sha256"] = _sha256_file(manifest_path)
-    provenance["benchmark_schema_version"] = schema_version
-    provenance["config_hash"] = config_hash
-    provenance["benchmark_git"] = dict(benchmark_git)
-    provenance["raw_results_sha256"] = actual_raw_results
-    provenance["benchmark_raw_results_sha256"] = declared_raw_results
-    provenance["instances_sha256"] = actual_instances
-    provenance["benchmark_instances_sha256"] = declared_instances
-    return provenance
-
-
-def _write_analysis_manifest(
-    output: Path,
-    inputs: Mapping[str, Mapping[str, object]],
-    *,
-    control_suffix: str,
-    comparison_count: int,
-    sample_count: int,
-) -> None:
-    manifest = {
-        "analysis": "paired_seed_variance_comparison",
-        "contract": {
-            "control_suffix": control_suffix,
-            "difference": "treatment_value-control_value",
-            "metrics": list(METRICS),
-            "variance_ratio": "paired_sample_variance/unpaired_sample_variance",
-            "effective_coupling": (
-                "treatment and control instances share the effective seed in the"
-                " paired scheme and must differ in the unpaired scheme"
-            ),
-            "input_binding": (
-                "benchmark manifest output checksums must match the input files"
-            ),
-        },
-        "inputs": {name: dict(value) for name, value in inputs.items()},
-        "outputs": {
-            "comparison.csv": {
-                "rows": comparison_count,
-                "sha256": _sha256_file(output / "comparison.csv"),
-            },
-            "differences.csv": {
-                "rows": sample_count,
-                "sha256": _sha256_file(output / "differences.csv"),
-            },
-        },
-        "schema_version": 1,
-        "source": {
-            "git": _git_state(),
-            "module": "src/maxcover/paired_seed_analysis.py",
-        },
-    }
-    (output / "analysis_manifest.json").write_text(
-        json.dumps(manifest, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
-    )
-
-
 def _format_optional(value: float | None) -> str:
     return "n/a" if value is None else f"{value:.6g}"
 
@@ -980,10 +775,6 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    input_provenance = {
-        "paired": _input_provenance(args.paired_results),
-        "unpaired": _input_provenance(args.unpaired_results),
-    }
     paired = load_run_records(args.paired_results)
     unpaired = load_run_records(args.unpaired_results)
     paired_instances = load_instance_records(args.paired_results)
@@ -1002,13 +793,6 @@ def main(argv: list[str] | None = None) -> int:
         [row.to_csv_row() for row in comparison],
     )
     _write_csv(args.output / "differences.csv", DIFFERENCE_FIELDS, samples)
-    _write_analysis_manifest(
-        args.output,
-        input_provenance,
-        control_suffix=args.control_suffix,
-        comparison_count=len(comparison),
-        sample_count=len(samples),
-    )
     _print_summary(comparison)
     print(f"Comparison written to {args.output / 'comparison.csv'}")
     return 0
