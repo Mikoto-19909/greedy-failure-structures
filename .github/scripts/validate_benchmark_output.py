@@ -1,7 +1,14 @@
-"""Recompute benchmark identities, numerical results, report headlines, and charts.
+"""Recompute completed benchmark results from the configuration and CSVs.
 
-File manifests and checksums are no longer required. Markdown headline
-comparison remains until the report-validation slice.
+Checks run identities, record consistency, supported statistics, and selected
+charts. Markdown report wording and layout are outside this check. Shared
+statistics and rendering helpers are used; this does not independently
+reimplement every calculation. Selection
+replay is limited to supported Lazy Greedy and Greedy variants.
+
+This optional detailed check rejects timeout/error runs and requires an optimum
+reference for every instance. It is not required for exploratory analysis.
+Exit status is 0 for success and 1 for reported validation failures.
 """
 
 from __future__ import annotations
@@ -83,7 +90,6 @@ from maxcover._report_charts import (
     _render_runtime_scaling_chart,
     _render_timeout_by_case_chart,
 )
-from maxcover._report_markdown import _headline_lines
 from maxcover.reproducibility import canonical_json, config_hash  # noqa: E402
 
 
@@ -404,22 +410,6 @@ def _validate_lazy_greedy_rows(config: object, rows: list[object]) -> None:
             _fail("Lazy Greedy trajectory does not end at the independently replayed work count")
 
 
-def _markdown_section(
-    document: str, heading: str, next_heading: str
-) -> list[str]:
-    lines = document.splitlines()
-    try:
-        start = lines.index(heading) + 1
-        end = lines.index(next_heading, start)
-    except ValueError as error:
-        _fail(f"results_summary.md is missing section boundary: {error}")
-    while start < end and lines[start] == "":
-        start += 1
-    while end > start and lines[end - 1] == "":
-        end -= 1
-    return lines[start:end]
-
-
 def _validate_record_consistency(
     config: ExperimentConfig,
     plan: BenchmarkPlan,
@@ -600,36 +590,6 @@ def _validate_local_search_recovery_statistics(
             "Local Search recovery statistics do not match canonical raw results"
         )
     return expected_local_search_recovery
-
-
-def _validate_report_headlines(
-    output: Path,
-    config: ExperimentConfig,
-    expected_descriptive: list[DescriptiveStatisticsRecord],
-    instances: list[InstanceRecord],
-    expected_confidence_intervals: list[ConfidenceIntervalRecord],
-    expected_local_search_recovery: list[LocalSearchRecoveryRecord],
-    expected_censored_runtime: list[CensoredRuntimeRecord],
-) -> None:
-    report = (output / "results_summary.md").read_text(encoding="utf-8")
-    actual_headlines = _markdown_section(
-        report,
-        "## Headline checks",
-        "## P5.1 descriptive aggregate",
-    )
-    expected_headlines = _headline_lines(
-        config,
-        expected_descriptive,
-        instances,
-        expected_confidence_intervals,
-        expected_local_search_recovery,
-        expected_censored_runtime,
-    )
-    if actual_headlines != expected_headlines:
-        _fail(
-            "automatic conclusion headlines do not match the canonical "
-            "small-sample eligibility gate or P6 automatic-fact contract"
-        )
 
 
 def _validate_gap_group_coverage(
@@ -1033,11 +993,11 @@ def validate(config_path: Path, output: Path) -> None:
         canonical_rows,
         descriptive,
     )
-    expected_confidence_intervals = _validate_confidence_interval_statistics(
+    _validate_confidence_interval_statistics(
         expected_descriptive,
         confidence_intervals,
     )
-    expected_censored_runtime = _validate_censored_runtime_statistics(
+    _validate_censored_runtime_statistics(
         canonical_rows,
         censored_runtime,
     )
@@ -1050,14 +1010,9 @@ def validate(config_path: Path, output: Path) -> None:
         reference_censoring_bias,
         reference_cutoff_sensitivity,
     )
-    expected_local_search_recovery = _validate_local_search_recovery_statistics(
+    _validate_local_search_recovery_statistics(
         canonical_rows,
         local_search_recovery,
-    )
-    _validate_report_headlines(
-        output, config, expected_descriptive, instances,
-        expected_confidence_intervals, expected_local_search_recovery,
-        expected_censored_runtime,
     )
     _validate_gap_group_coverage(
         canonical_rows,

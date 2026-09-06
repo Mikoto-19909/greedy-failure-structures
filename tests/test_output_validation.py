@@ -195,16 +195,14 @@ class OutputValidatorTests(unittest.TestCase):
         self.assertIn("CI artifact validation failed:", result.stderr)
         self.assertIn("runtime_scaling.svg", result.stderr)
 
-
-
-    def test_headline_and_chart_tampering_is_rejected(self) -> None:
+    def test_report_rewrite_does_not_hide_chart_corruption(self) -> None:
         report = self.output / "results_summary.md"
-        text = report.read_text(encoding="utf-8")
-        self.assertIn("## Headline checks", text)
-        report.write_text(text.replace("## Headline checks", "## Broken headline checks", 1), encoding="utf-8")
+        report.write_text("# Edited report\n\nA manually written summary.\n", encoding="utf-8")
         chart = self.output / "runtime_scaling.svg"
         chart.write_text(chart.read_text(encoding="utf-8") + "\n<!-- tampered -->\n", encoding="utf-8")
-        self.assertRejected("both the checked report section and a canonical chart differ")
+        result = run_validator(self.output)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("runtime_scaling.svg", result.stderr)
 
 
     def test_a_missing_artifact_is_rejected(self) -> None:

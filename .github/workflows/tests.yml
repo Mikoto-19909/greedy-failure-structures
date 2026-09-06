@@ -180,8 +180,8 @@ jobs:
             }
           done
       # Recompute supported results from the configuration and CSV inputs.
-      # Check identities, statistics, selected charts, and the generated
-      # headline section. The next slice removes the text comparison.
+      # Check identities, statistics, and selected charts; prose is reviewed
+      # against the data without enforcing a fixed Markdown template.
       - name: Validate the output from the experiment data
         run: >-
           python .github/scripts/validate_benchmark_output.py

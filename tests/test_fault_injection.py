@@ -1,6 +1,14 @@
-"""Fault-injection tests for numerical outputs and the existing headline checks.
+"""Fault-injection tests for benchmark result validation.
 
-Manifest and content-publication gates have been retired.
+The benchmark validator checks supported identities, record relationships,
+statistics and selected charts. Markdown wording and layout are outside its
+scope; research prose is reviewed against the underlying data.
+
+These cases mutate copies of a real quick run and assert the rejection or known
+acceptance. They preserve measured
+blind spots as regression cases rather than implying every mutation is detected.
+The fixture is cached under results/ (gitignored). Results for this configuration
+do not establish coverage for every generator or algorithm combination.
 """
 
 from __future__ import annotations
@@ -17,10 +25,6 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 VALIDATOR = REPO_ROOT / ".github" / "scripts" / "validate_benchmark_output.py"
 CONFIG = REPO_ROOT / "configs" / "quick.json"
 FIXTURE_DIR = REPO_ROOT / "results" / "_fixture_quick"
-
-_FRAGMENT_FAILED = "Greedy failed on "
-_FRAGMENT_COUNT = "3 of 12 instances."
-
 
 def _run_validator(output: Path) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
@@ -378,57 +382,16 @@ class FaultInjectionGateTests(unittest.TestCase):
     # -------------------------------------------------------------------
     # 9. Markdown text is outside numeric validation
     # -------------------------------------------------------------------
-
-
-    def test_conclusion_outside_the_headline_section_is_a_measured_blind_spot(self) -> None:
+    def test_report_rewriting_does_not_change_numeric_validation(self) -> None:
         summary = self.output / "results_summary.md"
-        text = summary.read_text(encoding="utf-8")
-        claim = _FRAGMENT_FAILED + _FRAGMENT_COUNT
-        text = text + "\n\n## Conclusion\n\n" + claim + "\n"
-        summary.write_text(text, encoding="utf-8")
-        # The validator compares exactly the lines between the first
-        # "## Headline checks" heading and the next heading. Anything written
-        # elsewhere in the summary is never compared.
-        self.assertAccepted(
-            "a fabricated conclusion appended after the checked section"
-        )
-
-    def test_duplicate_headline_section_is_a_measured_blind_spot(self) -> None:
-        summary = self.output / "results_summary.md"
-        text = summary.read_text(encoding="utf-8")
-        marker = "## Next analysis questions"
-        inserted = (
-            "## Headline checks\n\n"
-            + _FRAGMENT_FAILED
-            + _FRAGMENT_COUNT
-            + "\n\n"
-        )
-        text = text.replace(marker, inserted + marker, 1)
-        summary.write_text(text, encoding="utf-8")
-        self.assertAccepted(
-            "a second headline section announcing a different conclusion"
-        )
-
-    def test_headline_value_tamper_is_rejected(self) -> None:
-        summary = self.output / "results_summary.md"
-        text = summary.read_text(encoding="utf-8")
-        self.assertIn("**80.00%**", text)
-        text = text.replace("**80.00%**", "**81.00%**", 1)
-        summary.write_text(text, encoding="utf-8")
-        self.assertRejected(
-            "a headline value was changed inside the checked section",
-            "automatic conclusion headlines do not match",
-        )
-
-    def test_headline_section_rename_is_rejected(self) -> None:
-        summary = self.output / "results_summary.md"
-        text = summary.read_text(encoding="utf-8")
-        text = text.replace("## Headline checks", "## Headline check", 1)
-        summary.write_text(text, encoding="utf-8")
-        self.assertRejected(
-            "the checked section heading was renamed",
-            "results_summary.md is missing section boundary",
-        )
+        original = summary.read_text(encoding="utf-8")
+        for text in (
+            original.replace("## Headline checks", "## Main findings", 1),
+            "# 研究报告\n\n## 方法与数据\n\n按研究需要重新组织的说明。\n",
+        ):
+            with self.subTest(report=text[:40]):
+                summary.write_text(text, encoding="utf-8")
+                self.assertAccepted("report headings and prose were rewritten")
 
 
 if __name__ == "__main__":
