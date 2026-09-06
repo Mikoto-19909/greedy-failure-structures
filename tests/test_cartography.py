@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import json
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -25,7 +26,10 @@ from maxcover.cartography import (
     _paired_row,
     load_cartography_design,
     run_cartography,
+    write_cartography_artifacts,
 )
+from maxcover.contracts import RunRecord
+from maxcover.model import SolutionStatus
 from maxcover.config import ConfigurationError, load_config, parse_config
 
 
@@ -400,6 +404,87 @@ class CartographyTests(unittest.TestCase):
         self.assertTrue(all(row["difference_formula"] == "stressor_gap-control_gap" for row in paired))
         self.assertIn("<svg", strength_svg)
         self.assertIn("<svg", matrix_svg)
+
+
+class CartographyPlanValidationTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.temporary = tempfile.TemporaryDirectory()
+        cls.root = Path(cls.temporary.name)
+        config, design = _smoke_documents()
+        cls.config_path = cls.root / "config.json"
+        cls.design_path = cls.root / "design.json"
+        cls.config_path.write_text(json.dumps(config), encoding="utf-8")
+        cls.design_path.write_text(json.dumps(design), encoding="utf-8")
+        cls.baseline = cls.root / "baseline"
+        cls.result = run_cartography(cls.config_path, cls.design_path, cls.baseline)
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        cls.temporary.cleanup()
+
+    def setUp(self) -> None:
+        temporary = tempfile.TemporaryDirectory(dir=self.root)
+        self.addCleanup(temporary.cleanup)
+        self.output = Path(temporary.name) / "output"
+        shutil.copytree(self.baseline, self.output)
+
+    def write_runs(self, rows) -> None:
+        with (self.output / "raw_results.csv").open("w", encoding="utf-8", newline="") as handle:
+            writer = csv.DictWriter(handle, fieldnames=RunRecord.CSV_FIELDS)
+            writer.writeheader()
+            writer.writerows(row.to_csv_row() for row in rows)
+
+    def validate(self):
+        return subprocess.run([
+            sys.executable, str(ROOT / ".github/scripts/validate_cartography_output.py"),
+            "--config", str(self.config_path), "--design", str(self.design_path),
+            "--output", str(self.output),
+        ], cwd=ROOT, capture_output=True, text=True, encoding="utf-8")
+
+    def test_real_outputs_validate_without_a_manifest(self) -> None:
+        result = self.validate()
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_wrong_run_algorithm_options_and_coordinated_seeds_are_rejected(self) -> None:
+        original = list(self.result.rows)
+        mutations = [
+            (field, [replace(original[0], **{field: value}), *original[1:]])
+            for field, value in (("run_id", "f" * 64), ("algorithm", "unknown"),
+                                 ("algorithm_id", "unknown"), ("algorithm_options", '{"unknown":true}'),
+                                 ("instance_id", "e" * 64))
+        ]
+        mutations.append(("coordinated seeds", [replace(row, seed=row.seed + 999) for row in original]))
+        mutations.append(("duplicate IDs", [replace(row, run_id=original[0].run_id) for row in original]))
+        for name, rows in mutations:
+            with self.subTest(mutation=name):
+                self.write_runs(rows)
+                result = self.validate()
+                self.assertNotEqual(result.returncode, 0)
+                self.assertRegex(result.stderr, "execution plan|duplicate run_id")
+
+    def test_absent_repetition_is_rejected_even_after_recomputing_tables(self) -> None:
+        rows = tuple(row for row in self.result.rows if row.repetition == 0)
+        self.write_runs(rows)
+        write_cartography_artifacts(self.output, self.config_path, self.design_path,
+                                    replace(self.result, rows=rows, output_dir=self.output))
+        result = self.validate()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("execution plan", result.stderr)
+
+    def test_present_error_run_remains_a_missing_metric(self) -> None:
+        rows = list(self.result.rows)
+        index = next(i for i, row in enumerate(rows) if row.algorithm == "greedy")
+        metadata = json.loads(rows[index].algorithm_metadata)
+        metadata["termination"] = "error"
+        rows[index] = replace(rows[index], status=SolutionStatus.ERROR, coverage=None,
+                              best_bound=None, optimality_gap=None, selected=(),
+                              algorithm_metadata=json.dumps(metadata), error_message="test failure")
+        self.write_runs(rows)
+        write_cartography_artifacts(self.output, self.config_path, self.design_path,
+                                    replace(self.result, rows=tuple(rows), output_dir=self.output))
+        result = self.validate()
+        self.assertEqual(result.returncode, 0, result.stderr)
 
 
 if __name__ == "__main__":

@@ -21,6 +21,7 @@ sys.path.insert(0, str(SOURCE))
 
 from maxcover.config import load_config  # noqa: E402
 from maxcover.contracts import RunRecord  # noqa: E402
+from maxcover.benchmark_planning import _validate_run_identity  # noqa: E402
 from maxcover.reproducibility import config_hash  # noqa: E402
 
 
@@ -442,8 +443,10 @@ def validate(config_path: Path, design_path: Path, output: Path) -> None:
     if config.repetitions < minimum:
         fail("configuration does not meet the cartography seed minimum")
     rows = load_runs(output / "raw_results.csv")
-    if {row.config_hash for row in rows} != {config_hash(config)}:
+    identifier = config_hash(config)
+    if {row.config_hash for row in rows} != {identifier}:
         fail("raw results config_hash does not match the configuration")
+    _validate_run_identity(config, identifier, rows)
     statistics_rows = load_rows(
         output / "structural_gap_statistics.csv", STATISTICS_FIELDS
     )

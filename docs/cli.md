@@ -184,9 +184,11 @@ the canonical benchmark rows:
 python .github/scripts/validate_cartography_output.py --config configs/structural_gap_cartography.json --design designs/structural_gap_cartography.json --output results/structural_gap_cartography
 ```
 
-Run the benchmark output validator first; the cartography validator treats its
-validated `raw_results.csv` as the canonical input and separately checks the
-cartography CSV values and layout.
+The cartography validator checks the complete configured run identities,
+cartography CSV values, and layout directly against `raw_results.csv`.
+Missing planned runs are rejected; recorded errors and unavailable gaps remain
+part of the reported missing-metric counts. The benchmark output validator
+provides additional checks for completed runs with optimum references.
 
 ### `resume`
 

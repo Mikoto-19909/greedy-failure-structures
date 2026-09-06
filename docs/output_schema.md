@@ -118,7 +118,9 @@ The `cartography` command adds a local analysis package:
 `validate_cartography_output.py` does not trust those hashes as proof of the
 calculation. It independently rebuilds the instance-seed aggregates, paired
 differences, intervals, and precision diagnostics from `raw_results.csv`, then
-checks the stored values against the raw results and design.
+checks the complete execution-plan identities and stored values against the raw
+results and design. An absent planned run is rejected even if derived tables
+have been rebuilt; a present error record can still contribute a missing gap.
 
 For algorithms with multiple `algorithm_seeds`, one instance contributes the
 arithmetic mean of its complete algorithm-seed gaps. The independent unit for
