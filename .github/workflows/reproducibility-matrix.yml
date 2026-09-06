@@ -49,7 +49,7 @@ jobs:
           python-version: "3.12"
       - name: Classify the complete pull request diff
         id: classify
-        run: python .github/scripts/classify_ci_changes.py
+        run: exit 1
 
   benchmark:
     name: benchmark (${{ matrix.os }}, Python ${{ matrix.python-version }})

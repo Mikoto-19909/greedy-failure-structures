@@ -41,7 +41,7 @@ jobs:
           python-version: "3.12"
       - name: Classify the complete pull request diff
         id: classify
-        run: python .github/scripts/classify_ci_changes.py
+        run: exit 1
 
   unit-tests:
     name: unit tests (ubuntu-latest, Python 3.12)
