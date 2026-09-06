@@ -16,6 +16,10 @@
 [研究索引](analysis/README.md)了解进展，或查看
 [实验配置与数据](experiments/core_rq/overlap_pilot_v1/)。
 
+[R1 后续报告](analysis/r1_prefix_exchange_report.md)已用同一批实例定位 Greedy
+首次失去最优可达性的步骤，并比较一换一与至多二换二的修复能力。这是探索性
+重分析，没有增加独立样本。
+
 ## 最短运行方式
 
 基础包需要 Python 3.11 或更高版本，没有第三方运行依赖。在仓库根目录执行：

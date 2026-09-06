@@ -19,6 +19,10 @@ Read the [pilot report](analysis/overlap_pilot_v1.md), start from the
 [research index](analysis/README.md), or inspect the
 [pilot data](experiments/core_rq/overlap_pilot_v1/).
 
+The [R1 follow-up](analysis/r1_prefix_exchange_report.md) reanalyzes these same
+instances to locate Greedy's first loss of optimal reachability and measure
+recovery by one- and two-set exchanges. It is exploratory and adds no new samples.
+
 ## Quick start
 
 The base package requires Python 3.11 or newer and no third-party runtime dependency.

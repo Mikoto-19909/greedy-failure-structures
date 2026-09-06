@@ -19,9 +19,11 @@ Start with [`analysis/README.md`](../analysis/README.md) for research status.
 The quick/full and broader workflows below serve other purposes.
 
 The [next research plan](greedy_failure_research_plan.zh-CN.md) connects six
-papers to proposed studies of greedy decision paths, swap recovery, random
-instance regimes, structural controls, and quality certificates. It is a
-planning document; those studies have not been executed.
+papers to studies of greedy decision paths, swap recovery, random instance
+regimes, structural controls, and quality certificates. Its R1a/R1b stage is
+complete: the [prefix and exchange report](../analysis/r1_prefix_exchange_report.md)
+reanalyzes all 60 pilot instances and six separate functional examples. New-sample
+validation (R1c) and R2–R4 remain proposed work.
 
 ## Examples and compatibility checks
 
@@ -44,12 +46,14 @@ revisits existing instance families. Both retain schema v1 for compatibility.
 - [`analysis/README.md`](../analysis/README.md): external research analysis
 - [pilot configuration and data](../experiments/core_rq/overlap_pilot_v1/):
   experiment configuration and raw data
+- [R1 trajectories and summaries](../experiments/r1_prefix_exchange_v1/):
+  exploratory prefix and exchange analysis, with independent recomputation
 
 ## Experiment guidance
 
 - [`greedy_failure_research_plan.zh-CN.md`](greedy_failure_research_plan.zh-CN.md):
   literature-grounded next steps, staged experiments, and verification criteria
-  (Simplified Chinese; planning only)
+  (Simplified Chinese; R1a/R1b completed, later stages proposed)
 - [`core_overlap_checkpoint_plan.zh-CN.md`](core_overlap_checkpoint_plan.zh-CN.md):
   fixed single-point comparison of Greedy failures under high overlap and a
   matched uniform control (Simplified Chinese; completed pilot and original design)
@@ -122,4 +126,4 @@ cleanup remains conditional.
 
 Generated files under `results/` are local artifacts. They are inputs to local
 inspection and independent validation, not tracked documentation. Reports link directly to the configurations and data saved in
-`experiments/core_rq/`.
+`experiments/`.
