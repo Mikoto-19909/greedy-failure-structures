@@ -26,7 +26,7 @@ python run_project.py quick
 ```
 
 `quick` 用于检查安装和示例输出流程。保留配置使用较旧的 schema，因此出现
-`LegacyConfigWarning` 属于预期行为。[CLI 指南](docs/cli.md)集中说明配置兼容、
+`LegacyConfigWarning` 属于预期行为。[CLI 指南](docs/cli.zh-CN.md)集中说明配置兼容、
 完整命令、可选 OR-Tools 安装和输出验证。
 
 省略 CLI 命令或不带参数运行 PowerShell 包装脚本，都会执行 quick。
@@ -36,7 +36,7 @@ Dashboard 在没有保留配置选择时也优先选择 `quick.json`。这些默
 
 | 用途 | 入口 |
 | --- | --- |
-| 当前研究 | [固定试验命令](docs/cli.md#core-overlap-pilot)、[报告](analysis/overlap_pilot_v1.md)和[原始设计](docs/core_overlap_checkpoint_plan.zh-CN.md)。 |
+| 当前研究 | [固定试验命令](docs/cli.zh-CN.md#核心重叠-pilot)、[报告](analysis/overlap_pilot_v1.md)和[原始设计](docs/core_overlap_checkpoint_plan.zh-CN.md)。 |
 | 演示与兼容验证 | `python run_project.py demo`、`quick`，以及 CLI 指南中的较大旧版 `full.json` 工作流。`full` 这一名称不表示当前研究的完整方案。 |
 | 方法检查与更广探索 | [文档索引](docs/README.md)区分配对检查、生成器审计、功能检查和较大的结构扫描。 |
 
@@ -51,11 +51,11 @@ python run_project.py dashboard
 
 打开命令打印的本地地址，可校验配置、启动或恢复运行、查看产物和回放实例。
 界面支持中英文，使用与 CLI 相同的实验引擎。服务器绑定回环地址；运行边界见
-[Dashboard 命令](docs/cli.md#dashboard)和[安全说明](SECURITY.md)。
+[Dashboard 命令](docs/cli.zh-CN.md#dashboard)和[安全说明](SECURITY.md)。
 
 ## 读取输出与验证
 
-使用[输出 schema](docs/output_schema.md)理解 CSV 和报告，使用
+使用[输出 schema](docs/output_schema.zh-CN.md)理解 CSV 和报告，使用
 [复现指南](docs/reproducibility_matrix.md)区分稳定结果与可能变化的运行时间、环境字段。
 可选验证器直接从配置与 CSV 重算结果；CLI 指南说明其检查范围。
 
@@ -79,7 +79,7 @@ python -m unittest discover -s tests -v
 ## 文档与支持
 
 - [文档索引](docs/README.md)、[英文 FAQ](docs/faq.md)和[中文 FAQ](docs/faq.zh-CN.md)。
-- [结构机制](docs/failure_mechanisms.md)与[Lazy Greedy 功能报告](docs/lazy_greedy_test_report.md)。
+- [结构机制](docs/failure_mechanisms.zh-CN.md)与[Lazy Greedy 功能报告](docs/lazy_greedy_test_report.md)。
 - [贡献规则](CONTRIBUTING.md)、[额外代理执行约束](AGENTS.md)、[支持说明](SUPPORT.md)和[安全报告渠道](SECURITY.md)。
 
 代码使用 MIT 许可证，文档及其他非代码内容使用 CC BY 4.0。

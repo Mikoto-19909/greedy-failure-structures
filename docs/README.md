@@ -28,9 +28,9 @@ planning document; those studies have not been executed.
 - [`README.md`](../README.md): installation and the shortest runnable workflow
 - [`README.zh-CN.md`](../README.zh-CN.md): Simplified Chinese project overview
 - [`cli.md`](cli.md): validation, execution, resume, summarize, replay, and
-  dashboard workflows
+  dashboard workflows ([中文](cli.zh-CN.md))
 - [`output_schema.md`](output_schema.md): generated CSV, report, replay, and
-  result identity and resume semantics
+  result identity and resume semantics ([中文](output_schema.zh-CN.md))
 - [`reproducibility_matrix.md`](reproducibility_matrix.md): which raw result
   fields must reproduce bit-for-bit and which are exempt, plus the matrix that
   enforces it across operating systems and Python versions
@@ -55,6 +55,7 @@ revisits existing instance families. Both retain schema v1 for compatibility.
   matched uniform control (Simplified Chinese; completed pilot and original design)
 - [`failure_mechanisms.md`](failure_mechanisms.md): structural stressors,
   direct greedy traps, and the configurations that exercise them
+  ([中文](failure_mechanisms.zh-CN.md))
 - [`generator_isolation.md`](generator_isolation.md): target-metric monotonicity,
   confound checks, overlap tails, cluster separation, and matched controls
 - [`faq.md`](faq.md): project rationale, algorithm roles, and determinism
@@ -107,6 +108,8 @@ cleanup remains conditional.
 
 ## Project policy and history
 
+- [`glossary.md`](glossary.md): the terminology table that Simplified Chinese
+  documentation follows, including terms kept in English
 - [`documentation_simplification_plan.zh-CN.md`](documentation_simplification_plan.zh-CN.md):
   Simplified Chinese plan for documentation corrections and cleanup, including
   related comments, tests, and completion criteria
