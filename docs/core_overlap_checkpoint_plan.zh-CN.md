@@ -4,6 +4,9 @@
 
 状态：固定实验已完成，结果及最小证据见 [C1](../experiments/core_rq/CLAIMS.md#c1)
 和[研究报告](../analysis/overlap_pilot_v1.md)。下文保留原先预定的设计、参数与验收规则。
+后续方向见[Greedy 失效结构研究计划](greedy_failure_research_plan.zh-CN.md)：
+包含文献研读、失效路径与交换修复、随机模型对照及质量认证的分批设计。
+这些是新研究的计划，不改变本次已完成 pilot 的预定分析与停止决定。
 实验准备通过 [PR #28](https://github.com/Mikoto-19909/greedy-failure-structures/pull/28)
 交付，包含固定配置、输入校验、配对统计、Matplotlib 图和合成输入测试。
 

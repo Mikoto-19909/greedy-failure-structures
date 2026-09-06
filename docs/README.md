@@ -18,6 +18,11 @@ and [C1 evidence](../experiments/core_rq/CLAIMS.md#c1), or use the
 Start with [`analysis/README.md`](../analysis/README.md) for research status.
 The quick/full and broader workflows below serve other purposes.
 
+The [next research plan](greedy_failure_research_plan.zh-CN.md) connects six
+papers to proposed studies of greedy decision paths, swap recovery, random
+instance regimes, structural controls, and quality certificates. It is a
+planning document; those studies have not been executed.
+
 ## Examples and compatibility checks
 
 - [`README.md`](../README.md): installation and the shortest runnable workflow
@@ -42,6 +47,9 @@ revisits existing instance families. Both retain schema v1 for compatibility.
 
 ## Experiment guidance
 
+- [`greedy_failure_research_plan.zh-CN.md`](greedy_failure_research_plan.zh-CN.md):
+  literature-grounded next steps, staged experiments, and verification criteria
+  (Simplified Chinese; planning only)
 - [`core_overlap_checkpoint_plan.zh-CN.md`](core_overlap_checkpoint_plan.zh-CN.md):
   fixed single-point comparison of Greedy failures under high overlap and a
   matched uniform control (Simplified Chinese; completed pilot and original design)
