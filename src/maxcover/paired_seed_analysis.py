@@ -51,13 +51,8 @@ from typing import ClassVar
 
 from ._instance_contracts import InstanceRecord
 from ._run_contracts import RunRecord
-from .benchmark_planning import (
-    _instance_record,
-    _instances_for_config,
-    _validate_run_identity,
-)
+from .benchmark_artifacts import _validate_analysis_records
 from .config import ExperimentConfig, load_config
-from .reproducibility import config_hash
 
 
 METRICS = ("coverage", "optimality_gap")
@@ -717,35 +712,17 @@ def analyze_pairing(
 ) -> tuple[list[ComparisonRow], list[dict[str, object]]]:
     """Validate both experiment inputs before computing paired statistics."""
 
+    validated = []
     for scheme, config, records, instances in (
         ("paired", paired_config, paired_records, paired_instances),
         ("unpaired", unpaired_config, unpaired_records, unpaired_instances),
     ):
         try:
-            identifier = config_hash(config)
-            planned = _instances_for_config(config)
-            expected = {
-                item.instance_id: _instance_record(item, identifier).to_csv_row()
-                for item in planned
-            }
-            actual = {item.instance_id: item.to_csv_row() for item in instances}
-            if len(actual) != len(instances) or actual != expected:
-                raise ValueError("instances.csv does not match the instance plan")
-            tasks = _validate_run_identity(
-                config, identifier, records, planned_instances=planned,
-            )
-            for row in records:
-                instance = tasks[row.run_id].instance
-                if (len(row.selected) > instance.k
-                        or len(set(row.selected)) != len(row.selected)
-                        or any(index < 0 or index >= instance.set_count for index in row.selected)):
-                    raise ValueError(f"run {row.run_id} has invalid selected indices")
-                if row.coverage is not None and instance.coverage(row.selected) != row.coverage:
-                    raise ValueError(f"run {row.run_id} coverage does not match its selected sets")
+            validated.append(_validate_analysis_records(config, records, instances))
         except ValueError as error:
             raise AnalysisError([f"{scheme}: {error}"]) from error
     return _compare_records(
-        paired_records, unpaired_records,
+        validated[0], validated[1],
         paired_instances=paired_instances, unpaired_instances=unpaired_instances,
         control_suffix=control_suffix,
     )

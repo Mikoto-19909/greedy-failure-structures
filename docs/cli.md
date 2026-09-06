@@ -249,7 +249,7 @@ configurations according to the purpose described above.
 
 For paired-seed analysis, pass the configuration for each input directory. The
 analysis checks the complete run plan, generated instances, algorithm options,
-and selected-set coverage before computing differences:
+selected-set coverage, and optimum/gap consistency before computing differences:
 
 ```console
 PYTHONPATH=src python -m maxcover.paired_seed_analysis --paired-config configs/pairing_paired.json --unpaired-config configs/pairing_unpaired.json --paired-results results/pairing-v1/paired --unpaired-results results/pairing-v1/unpaired --output results/pairing-v1/analysis
@@ -258,6 +258,9 @@ PYTHONPATH=src python -m maxcover.paired_seed_analysis --paired-config configs/p
 In PowerShell, set `$env:PYTHONPATH = "src"` first and run the command starting
 with `python`. Missing planned rows are rejected; a recorded error or missing
 metric remains visible in the analysis counts. No manifest is required.
+References come from optimal exact-run records or certificates regenerated from
+the configured instances; unavailable references remain unknown. These checks
+do not rerun exact solvers.
 
 For a completed run with optimum references, optionally recompute supported
 results from the configuration and CSVs:

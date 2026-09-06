@@ -966,6 +966,37 @@ class PlannedPairingTests(unittest.TestCase):
         with self.assertRaisesRegex(AnalysisError, "instance plan"):
             self.analyze(instances=changed)
 
+    def test_coordinated_optimum_gap_edit_is_rejected(self) -> None:
+        changed = list(self.runs["paired"])
+        index = next(i for i, row in enumerate(changed) if row.algorithm == "greedy")
+        row = changed[index]
+        changed[index] = replace(row, optimum=row.optimum + 1,
+                                 optimality_gap=(row.optimum + 1 - row.coverage) / (row.optimum + 1))
+        with self.assertRaisesRegex(AnalysisError, "validated reference"):
+            self.analyze(changed)
+
+    def test_unavailable_reference_stays_unknown(self) -> None:
+        changed = []
+        for row in self.runs["paired"]:
+            if row.algorithm == "brute_force":
+                metadata = json.loads(row.algorithm_metadata)
+                metadata["termination"] = "error"
+                row = replace(row, status=SolutionStatus.ERROR, coverage=None, best_bound=None,
+                              selected=(), optimum=None, optimality_gap=None,
+                              algorithm_metadata=json.dumps(metadata), error_message="test failure")
+            else:
+                row = replace(row, optimum=None, optimality_gap=None)
+            changed.append(row)
+        rows, _ = self.analyze(changed)
+        greedy_gap = next(row for row in rows if row.algorithm_id == "greedy" and row.metric == "optimality_gap")
+        self.assertEqual(greedy_gap.paired.n, 0)
+        self.assertEqual(greedy_gap.paired_missing_count, 2)
+        row = changed[0]
+        if row.algorithm == "greedy":
+            changed[0] = replace(row, optimum=12, optimality_gap=(12-row.coverage)/12)
+        with self.assertRaisesRegex(AnalysisError, "validated reference"):
+            self.analyze(changed)
+
     def test_present_error_record_is_distinct_from_a_missing_run(self) -> None:
         changed = list(self.runs["paired"])
         index = next(i for i, row in enumerate(changed) if row.algorithm == "greedy")
