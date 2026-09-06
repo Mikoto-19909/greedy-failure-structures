@@ -1,5 +1,7 @@
 # Paired-Seed Scheme Audit
 
+> Historical audit: manifest, checksum, and content-publication gates described below have been retired. Current behavior is documented in [CONTRIBUTING.md](../CONTRIBUTING.md) and the [CLI guide](cli.md).
+
 This document audits how the registered instance families consume random-number
 streams during generation, and what "paired" versus "unpaired" means for the
 two experiments defined in configs/pairing_paired.json and

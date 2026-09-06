@@ -10,11 +10,11 @@
 已完成的试验使用 Greedy 与穷举参考，比较共核式 `high_overlap` 实例和维度、
 期望集合大小匹配的 `uniform` 对照。本轮未获得足够的失效率差异证据；报告保留
 观察到的方向，并列出两种生成机制之间的其他结构差异。结果对应
-[C1](experiments/core_rq/CLAIMS.md#c1)。
+[实验数据](experiments/core_rq/overlap_pilot_v1/)。
 
 可直接阅读[试验报告](analysis/overlap_pilot_v1.md)，从
-[研究索引](analysis/README.md)了解进展，或检查权威的
-[结论与证据映射](experiments/core_rq/CLAIMS.md)。
+[研究索引](analysis/README.md)了解进展，或查看
+[实验配置与数据](experiments/core_rq/overlap_pilot_v1/)。
 
 ## 最短运行方式
 
@@ -55,9 +55,9 @@ python run_project.py dashboard
 
 ## 读取输出与验证
 
-使用[输出 schema](docs/output_schema.md)理解 CSV、报告和 Manifest，使用
+使用[输出 schema](docs/output_schema.md)理解 CSV 和报告，使用
 [复现指南](docs/reproducibility_matrix.md)区分稳定结果与可能变化的运行时间、环境字段。
-校验和相同表示文件与记录的摘要一致，不能证明计算正确。CLI 指南说明验证器的检查范围。
+可选验证器直接从配置与 CSV 重算结果；CLI 指南说明其检查范围。
 
 运行测试：
 
@@ -72,9 +72,9 @@ python -m unittest discover -s tests -v
 ## 范围
 
 `demo` 打印本地计算的覆盖量，benchmark 将测量结果写入 `results/`。
-完整探索输出留在本地；公开结论的最小冻结证据位于 `experiments/core_rq/`，
-解释位于 `analysis/`，结论台账是唯一的证据映射。CI 执行其声明范围内的检查，
-贡献者和审查者负责核对结论与证据。发布规则集中维护在 CONTRIBUTING 中。
+完整探索输出留在本地；研究报告位于 `analysis/`，直接链接
+`experiments/core_rq/` 中的配置和数据。保留种子、原始结果和分析脚本，
+不再要求结论台账、manifest 或文件摘要。研究流程见 CONTRIBUTING。
 
 ## 文档与支持
 
@@ -83,4 +83,4 @@ python -m unittest discover -s tests -v
 - [贡献规则](CONTRIBUTING.md)、[额外代理执行约束](AGENTS.md)、[支持说明](SUPPORT.md)和[安全报告渠道](SECURITY.md)。
 
 代码使用 MIT 许可证，文档及其他非代码内容使用 CC BY 4.0。
-包括第三方例外在内的逐文件归属见[许可证映射](LICENSES/README.md)。
+包括第三方例外在内的内容类别归属见[许可证映射](LICENSES/README.md)。

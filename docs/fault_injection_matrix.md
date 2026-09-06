@@ -1,7 +1,9 @@
 # Fault-injection matrix: publication gates
 
-This document records the regression cases in
-[`tests/test_fault_injection.py`](../tests/test_fault_injection.py). They mutate
+> Historical audit: manifest, checksum, content-publication gates, and Markdown paragraph comparisons described below have been retired. Current behavior is documented in [CONTRIBUTING.md](../CONTRIBUTING.md) and the [output guide](output_schema.md#optional-output-validation).
+
+This document records cases from an earlier audit. The current
+[`tests/test_fault_injection.py`](../tests/test_fault_injection.py) tests mutate
 copies of a real `quick` run and check both rejections and known acceptances.
 
 Scope: `configs/quick.json` (run with one worker), artifacts under
@@ -20,7 +22,7 @@ python -m unittest discover -s tests -p test_fault_injection.py -v
    identities and record consistency, recomputes supported typed statistics
    from `raw_results.csv` and `instances.csv`, and compares the report's checked
    headline section and listed charts. It does not recompute every field or
-   artifact; the [output guide](output_schema.md#manifest-and-independent-validation)
+   artifact; the [output guide](output_schema.md#optional-output-validation)
    describes the scope.
 2. The Manifest (`manifest.json`) records byte counts and digests. The validator
    compares current files with these records. A changed file fails this check

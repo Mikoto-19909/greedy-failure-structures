@@ -1,5 +1,7 @@
 # 报告模块拆分计划
 
+> 历史实施记录：其中的 manifest、文件摘要、固定文本比较和文档措辞检查要求已取消。当前工作流程以 [CONTRIBUTING.md](../CONTRIBUTING.md) 为准。
+
 记录日期：2026-09-05。状态：拆分已实现，由 PR #34 验收。
 
 本计划以主分支 `ddf6a8a` 的实现为参照。文档存档不表示源码已经拆分。
@@ -134,7 +136,7 @@ rg -n 'maxcover.reporting|from \.reporting|reporting\.' src tests .github
 
 随文档精简删除中英文 README、CONTRIBUTING 中不再需要展示的源码文件数、
 豁免代码行数占比和带固定文件数的 mypy 成功输出，并同步删除
-[test_documented_claims.py](../tests/test_documented_claims.py) 中的
+test_documented_claims.py 中的
 `test_the_documented_share_matches_the_measured_share`、
 `test_the_documented_file_count_matches_what_mypy_checks` 及仅供它们使用的辅助代码。
 若相关文档精简已合并，直接沿用，不重复修改或恢复数字。

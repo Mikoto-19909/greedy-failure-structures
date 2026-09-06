@@ -4,7 +4,7 @@ Start with the fixed `high_overlap` versus `uniform` pilot, then use the
 supplementary workflows below for specific construction and search questions.
 The [completed pilot](../analysis/overlap_pilot_v1.md) did not provide sufficient
 paired evidence of a difference in Greedy failure rates.
-[C1](../experiments/core_rq/CLAIMS.md#c1)
+[实验数据](../experiments/core_rq/overlap_pilot_v1/)
 
 ## High overlap and a matched uniform control
 
@@ -34,7 +34,7 @@ generators; see [`paired_seed_audit.md`](paired_seed_audit.md).
 `coverage_skew_gini`. Matching expected set size does not hold all those
 properties fixed, so the comparison cannot attribute a difference to overlap
 alone. The observed result does not establish equivalence, an overlap-strength
-trend, or a result at other scales. [C1](../experiments/core_rq/CLAIMS.md#c1)
+trend, or a result at other scales. [实验数据](../experiments/core_rq/overlap_pilot_v1/)
 
 The existing parameter scan remains available for a broader descriptive
 overlap question; its results are separate from the fixed pilot:
@@ -145,7 +145,7 @@ reference. It supports configuration expansion, structural metrics, and raw
 coverage inspection; its outputs alone cannot establish an exact-reference
 approximation ratio or Greedy failure rate.
 
-See [`output_schema.md`](output_schema.md) for CSV, report, chart, and manifest
-semantics, and [`cli.md`](cli.md) for validation and replay. Publication and
-evidence-review requirements are maintained in
+See [`output_schema.md`](output_schema.md) for CSV, report, and chart semantics,
+and [`cli.md`](cli.md) for validation and replay. The research workflow and
+document outlines are maintained in
 [`CONTRIBUTING.md`](../CONTRIBUTING.md).

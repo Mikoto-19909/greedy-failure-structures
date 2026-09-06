@@ -2,7 +2,7 @@
 
 在这次固定参数的配对试验中，Greedy 在高重叠处理组失手 12/30 次，在 uniform
 对照组失手 10/30 次，样本失效率差为 6.67 个百分点。双侧精确 McNemar 检验
-得到 p=0.7744140625；本轮未获得足够的失效率差异证据。[C1](../experiments/core_rq/CLAIMS.md#c1)
+得到 p=0.7744140625；本轮未获得足够的失效率差异证据。[实验数据](../experiments/core_rq/overlap_pilot_v1/)
 
 ## 怎样比较
 
@@ -10,7 +10,7 @@
 比较共核式 `high_overlap` 与维度、理论期望集合大小匹配的 `uniform`。
 每组有 30 个实例，按 repetition 配成 30 对；每个实例有 48 个元素、16 个候选集合，
 选择预算为 4。配对共享配置派生的有效 seed，沿用低索引优先的 Greedy 决策规则。
-60 个实例均有完成的穷举最优参考，没有删除或替换配对。[C1](../experiments/core_rq/CLAIMS.md#c1)
+60 个实例均有完成的穷举最优参考，没有删除或替换配对。[实验数据](../experiments/core_rq/overlap_pilot_v1/)
 
 失手定义为整数覆盖量 `G < O`，其中 `O` 是该实例的穷举最优值；相对 gap 为
 `(O-G)/O`。主指标是处理组减对照组的失效率差，预定主检验为双侧精确 McNemar，
@@ -21,7 +21,7 @@ alpha=0.05。辅助 gap 均值包含全部零 gap 实例，不另作显著性搜
 
 四格计数的第一位表示处理组，第二位表示对照组，1 表示失手。
 本节所有数值由[配对表](../experiments/core_rq/overlap_pilot_v1/paired_instances.csv)
-全部数据行计算，对应 [C1](../experiments/core_rq/CLAIMS.md#c1)。
+全部数据行计算，对应 [实验数据](../experiments/core_rq/overlap_pilot_v1/)。
 
 | 指标 | 结果 |
 | --- | --- |
@@ -40,13 +40,13 @@ alpha=0.05。辅助 gap 均值包含全部零 gap 实例，不另作显著性搜
 ![两组 Greedy 失效率，纵轴固定为零到一](overlap_pilot_v1.svg)
 
 图源为离线分析生成的 `failure_rate.svg`，发布时仅更名为 `overlap_pilot_v1.svg`，
-字节及哈希保持一致。原文件名和 SHA-256 记录在 [C1](../experiments/core_rq/CLAIMS.md#c1)。
+分析脚本与[实验数据](../experiments/core_rq/overlap_pilot_v1/)一同保留。
 
 ## 结构是否按预期变化
 
 处理组平均 Jaccard 高于对照，预期的重叠差异已经形成。但覆盖并集、实际密度和
 元素覆盖频率集中程度也有变化。下表保留两组的均值、范围与配对差；数值均来自
-canonical `instances.csv` 中的现有字段，没有另算同名结构指标。[C1](../experiments/core_rq/CLAIMS.md#c1)
+canonical `instances.csv` 中的现有字段，没有另算同名结构指标。[实验数据](../experiments/core_rq/overlap_pilot_v1/)
 
 | 指标 | 处理组均值 [最小, 最大] | 对照组均值 [最小, 最大] | 配对均值差 |
 | --- | --- | --- | --- |
@@ -59,7 +59,7 @@ canonical `instances.csv` 中的现有字段，没有另算同名结构指标。
 ## 这批结果说明什么
 
 观察到的失效率差为正，但配对样本没有提供足够的差异证据；这既不确认原假设，
-也不证明两个总体等价。[C1](../experiments/core_rq/CLAIMS.md#c1)
+也不证明两个总体等价。[实验数据](../experiments/core_rq/overlap_pilot_v1/)
 比较对象是固定参数下的两种生成机制。期望集合大小匹配没有固定所有结构特征，
 因此不能把样本差异单独归因于重叠度，也不能推出重叠强度趋势或其他规模上的结论。
 
@@ -69,16 +69,14 @@ overlap-gap 结果。若以后扩样，需要另行预定样本量、种子批�
 ## 复现与验证
 
 发布证据来自干净提交 `27acae5f2ee9f478fba22af98c6694382a0a7100`。
-按[命令入口](../docs/cli.md#core-overlap-pilot)重建完整输出，再执行独立产物验证器
-和离线分析。验证命令、范围、输入及产物哈希见
-[验证记录](../experiments/core_rq/overlap_pilot_v1/validation.md)。
+按[命令入口](../docs/cli.md#core-overlap-pilot)重建输出并运行离线分析；
+也可直接使用保存的[配置与 CSV 数据](../experiments/core_rq/overlap_pilot_v1/)。
 
 首轮输出保留在 `results/core_overlap_pilot_v1/`。输入校验经
 [PR #29](https://github.com/Mikoto-19909/greedy-failure-structures/pull/29)
 补上“所选集合的实际覆盖量必须等于记录值”后，以相同配置和种子重跑到
 `results/core_overlap_pilot_v2/`，本次冻结采用后者。重跑没有增加独立样本，
-统计仍只使用预定配对。[C1](../experiments/core_rq/CLAIMS.md#c1)
+统计仍只使用预定配对。[实验数据](../experiments/core_rq/overlap_pilot_v1/)
 
-仓库冻结的是最小证据子集；Manifest 还声明了未复制的 benchmark 产物，
-完整输出验证器应对原完整目录或重建后的完整目录运行。它检查既定的产物一致性，
-没有重新穷举所有最优值；新配对统计与 Matplotlib 图另经独立复算和审查。
+仓库保留配置、原始 CSV、配对表和图。离线分析可直接读取这些输入，
+检查配对与所选集合的覆盖量，并重算报告中的统计结果。
