@@ -4,3 +4,7 @@
 # Preserve the published Matplotlib bytes, including generated line whitespace.
 analysis/overlap_pilot_v1.svg -text whitespace=-blank-at-eol,cr-at-eol
 experiments/r1_prefix_exchange_v1/r1_prefix_exchange.svg -text whitespace=-blank-at-eol,cr-at-eol
+
+# Keep captured command output unchanged, including Windows line endings.
+experiments/gate_speed_comparison_v1/**/*.log -text whitespace=-blank-at-eol,-blank-at-eof,cr-at-eol
+experiments/gate_speed_comparison_v1/*.txt -text whitespace=-blank-at-eol,-blank-at-eof,cr-at-eol

@@ -23,7 +23,9 @@ papers to studies of greedy decision paths, swap recovery, random instance
 regimes, structural controls, and quality certificates. Its R1a/R1b stage is
 complete: the [prefix and exchange report](../analysis/r1_prefix_exchange_report.md)
 reanalyzes all 60 pilot instances and six separate functional examples. New-sample
-validation (R1c) and R2–R4 remain proposed work.
+validation (R1c) and R2–R4 remain proposed work. The
+[workflow speed report](../analysis/gate_speed_comparison_report.md) separately
+measures experiment commands and local delivery steps after the gate removal.
 
 ## Examples and compatibility checks
 

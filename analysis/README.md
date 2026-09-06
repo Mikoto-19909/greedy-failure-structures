@@ -14,6 +14,11 @@ with up-to-two-swap recovery. The [design](r1_prefix_exchange_design.md),
 and [saved trajectories and summaries](../experiments/r1_prefix_exchange_v1/)
 accompany the findings. R1c and R2–R4 remain proposed work.
 
+The [workflow speed comparison](gate_speed_comparison_report.md) measures the
+same experiment commands and local research-delivery steps before and after
+removing the gates. Its [paired timings and workflow steps](../experiments/gate_speed_comparison_v1/)
+support a scoped performance observation, not a model reasoning-speed claim.
+
 For new research, keep the configuration, seeds, raw results, and analysis
 script. Link reports directly to their data. The
 [contribution guide](../CONTRIBUTING.md#research-workflow) describes this workflow.
