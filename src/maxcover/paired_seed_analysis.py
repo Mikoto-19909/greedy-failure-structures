@@ -821,6 +821,7 @@ def main(argv: list[str] | None = None) -> int:
         control_suffix=args.control_suffix,
     )
     args.output.mkdir(parents=True, exist_ok=True)
+    (args.output / "analysis_manifest.json").unlink(missing_ok=True)
     _write_csv(
         args.output / "comparison.csv",
         ComparisonRow.CSV_FIELDS,

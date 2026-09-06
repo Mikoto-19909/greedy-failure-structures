@@ -766,6 +766,8 @@ def write_cartography_artifacts(
                 }
             )
 
+    # Retired metadata must not describe the refreshed artifact files.
+    (output_dir / "cartography_manifest.json").unlink(missing_ok=True)
     _write_csv(output_dir / "structural_gap_statistics.csv", statistics_rows)
     _write_csv(output_dir / "paired_control_differences.csv", paired_rows)
     _write_csv(output_dir / "precision_diagnostics.csv", precision_rows)

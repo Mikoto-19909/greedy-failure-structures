@@ -124,6 +124,11 @@ have been rebuilt; a present error record can still contribute a missing gap.
 Generated instances also check the instance table and selected-set coverage.
 Optimum references come from optimal exact-run records or regenerated
 certificates; stored optimum/gap values must agree with these references.
+Ordinary cartography resumes also remove a retired `cartography_manifest.json`
+before refreshing their analysis artifacts. Rejected configuration, design, or
+checkpoint inputs leave it untouched.
+The paired-analysis CLI similarly removes an old `analysis_manifest.json` only
+after both inputs pass validation, before writing refreshed comparison files.
 
 For algorithms with multiple `algorithm_seeds`, one instance contributes the
 arithmetic mean of its complete algorithm-seed gaps. The independent unit for

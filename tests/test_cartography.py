@@ -446,6 +446,31 @@ class CartographyPlanValidationTests(unittest.TestCase):
         result = self.validate()
         self.assertEqual(result.returncode, 0, result.stderr)
 
+    def test_resume_removes_legacy_cartography_manifest_without_rerunning(self) -> None:
+        manifest = self.output / "cartography_manifest.json"
+        manifest.write_text("legacy", encoding="utf-8")
+        note = self.output / "research-notes.md"
+        note.write_text("keep", encoding="utf-8")
+        raw_before = (self.output / "raw_results.csv").read_bytes()
+        with patch("maxcover.benchmark._execute_task", side_effect=AssertionError("unexpected rerun")):
+            run_cartography(self.config_path, self.design_path, self.output)
+        self.assertFalse(manifest.exists())
+        self.assertEqual(note.read_text(encoding="utf-8"), "keep")
+        self.assertEqual((self.output / "raw_results.csv").read_bytes(), raw_before)
+
+    def test_invalid_design_leaves_legacy_cartography_manifest_untouched(self) -> None:
+        manifest = self.output / "cartography_manifest.json"
+        manifest.write_text("legacy", encoding="utf-8")
+        raw_before = (self.output / "raw_results.csv").read_bytes()
+        invalid = self.output.parent / "invalid-design.json"
+        design = json.loads(self.design_path.read_text(encoding="utf-8"))
+        design["minimum_instance_seeds"] = 0
+        invalid.write_text(json.dumps(design), encoding="utf-8")
+        with self.assertRaises(ValueError):
+            run_cartography(self.config_path, invalid, self.output)
+        self.assertEqual(manifest.read_text(encoding="utf-8"), "legacy")
+        self.assertEqual((self.output / "raw_results.csv").read_bytes(), raw_before)
+
     def test_wrong_run_algorithm_options_and_coordinated_seeds_are_rejected(self) -> None:
         original = list(self.result.rows)
         mutations = [

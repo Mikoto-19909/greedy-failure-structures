@@ -1015,6 +1015,8 @@ class PlannedPairingTests(unittest.TestCase):
 
     def test_cli_checks_configurations_before_writing_comparisons(self) -> None:
         output = self.root / "analysis"
+        output.mkdir()
+        (output / "analysis_manifest.json").write_text("legacy", encoding="utf-8")
         argv = [
             "--paired-config", str(self.paths["paired"]),
             "--unpaired-config", str(self.paths["unpaired"]),
@@ -1032,6 +1034,20 @@ class PlannedPairingTests(unittest.TestCase):
         with self.assertRaises(AnalysisError):
             main(argv)
         self.assertFalse(invalid_output.exists())
+
+    def test_invalid_cli_inputs_preserve_legacy_analysis_metadata(self) -> None:
+        output = self.root / "rejected-analysis"
+        output.mkdir()
+        manifest = output / "analysis_manifest.json"
+        manifest.write_text("legacy", encoding="utf-8")
+        with self.assertRaises(AnalysisError):
+            main([
+                "--paired-config", str(self.paths["unpaired"]),
+                "--unpaired-config", str(self.paths["unpaired"]),
+                "--paired-results", str(self.root / "paired"),
+                "--unpaired-results", str(self.root / "unpaired"), "--output", str(output),
+            ])
+        self.assertEqual(manifest.read_text(encoding="utf-8"), "legacy")
 
 
 if __name__ == "__main__":
