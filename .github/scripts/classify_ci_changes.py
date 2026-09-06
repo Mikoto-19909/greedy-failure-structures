@@ -59,7 +59,7 @@ def classify_diff(raw: bytes) -> str:
             return "full"
         if _allowed_document(path):
             has_document = True
-        elif path != "LICENSE_MANIFEST.json":
+        else:
             return "full"
     return "docs" if has_document else "full"
 

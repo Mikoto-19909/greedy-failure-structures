@@ -1,16 +1,7 @@
-"""Fault-injection tests for the benchmark publication gates.
+"""Fault-injection tests for benchmark artifact and headline validation.
 
-The benchmark validator checks supported identities, record relationships,
-statistics, report headlines and charts. Its Manifest checks establish agreement
-between current files and their recorded digests, not their history or truth.
-The active content-boundary mode permits quantitative prose and leaves claim
-binding to review; the strict mode rejects quantitative claims when selected.
-
-These cases mutate copies of a real quick run and assert the rejection or known
-acceptance described in docs/fault_injection_matrix.md. They preserve measured
-blind spots as regression cases rather than implying every mutation is detected.
-The fixture is cached under results/ (gitignored). Results for this configuration
-do not establish coverage for every generator or algorithm combination.
+The content-publication checks have been retired. These tests exercise the
+remaining benchmark validator on copies of a real quick run.
 """
 
 from __future__ import annotations
@@ -27,7 +18,6 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 VALIDATOR = REPO_ROOT / ".github" / "scripts" / "validate_benchmark_output.py"
-CONTENT_CHECKER = REPO_ROOT / ".github" / "scripts" / "check_content_boundary.py"
 CONFIG = REPO_ROOT / "configs" / "quick.json"
 FIXTURE_DIR = REPO_ROOT / "results" / "_fixture_quick"
 
@@ -496,89 +486,6 @@ class FaultInjectionGateTests(unittest.TestCase):
         )
 
 
-class ContentBoundaryFaultInjectionTests(unittest.TestCase):
-    """The claim gate, exercised over a temporary git tree."""
-
-    def _repo(self) -> tempfile.TemporaryDirectory[str]:
-        tmp = tempfile.TemporaryDirectory()
-        subprocess.run(
-            ["git", "init", "-q", tmp.name],
-            check=True,
-            capture_output=True,
-        )
-        return tmp
-
-    def _check(self, root: Path, mode: str = "no_quantitative_claims"):
-        return subprocess.run(
-            [
-                sys.executable,
-                str(CONTENT_CHECKER),
-                "--claim-mode",
-                mode,
-                "--repo-root",
-                str(root),
-            ],
-            cwd=REPO_ROOT,
-            capture_output=True,
-            text=True,
-        )
-
-    def test_a_tracked_conclusion_without_evidence_is_rejected(self) -> None:
-        tmp = self._repo()
-        root = Path(tmp.name)
-        claim = _FRAGMENT_FAILED + _FRAGMENT_COUNT
-        (root / "finding.md").write_text("# Notes\n\n" + claim + "\n", encoding="utf-8")
-        subprocess.run(["git", "add", "-A"], cwd=root, check=True, capture_output=True)
-        result = self._check(root)
-        self.assertEqual(result.returncode, 1)
-        self.assertIn("reads as a quantitative result claim", result.stdout)
-        self.assertIn("finding.md", result.stdout)
-        tmp.cleanup()
-
-    def test_an_untracked_results_artifact_is_not_scanned(self) -> None:
-        tmp = self._repo()
-        root = Path(tmp.name)
-        claim = _FRAGMENT_MEAN + _FRAGMENT_VALUE
-        results = root / "results"
-        results.mkdir()
-        (results / "results_summary.md").write_text(claim + "\n", encoding="utf-8")
-        # Never added: the checker enumerates git ls-files only.
-        result = self._check(root)
-        self.assertEqual(
-            result.returncode,
-            0,
-            f"untracked output was scanned: {result.stdout}",
-        )
-        self.assertIn("tracked files : 0", result.stdout)
-        tmp.cleanup()
-
-    def test_claim_mode_without_quantitative_claims_allows_plain_prose(self) -> None:
-        tmp = self._repo()
-        root = Path(tmp.name)
-        (root / "notes.md").write_text(
-            "# Notes\n\nA runnable study of set coverage algorithms.\n",
-            encoding="utf-8",
-        )
-        subprocess.run(["git", "add", "-A"], cwd=root, check=True, capture_output=True)
-        result = self._check(root)
-        self.assertEqual(result.returncode, 0, result.stdout)
-        tmp.cleanup()
-
-    def test_evidence_mode_defers_claim_binding_to_review(self) -> None:
-        tmp = self._repo()
-        root = Path(tmp.name)
-        claim = _FRAGMENT_FAILED + _FRAGMENT_COUNT
-        (root / "finding.md").write_text("# Notes\n\n" + claim + "\n", encoding="utf-8")
-        subprocess.run(["git", "add", "-A"], cwd=root, check=True, capture_output=True)
-        result = self._check(root, mode="evidence_backed_claims")
-        # The checker permits quantitative prose; CLAIMS.md and review bind it
-        # to evidence outside this function.
-        self.assertEqual(
-            result.returncode,
-            0,
-            f"evidence-backed mode rejected: {result.stdout}",
-        )
-        tmp.cleanup()
 
 
 if __name__ == "__main__":
