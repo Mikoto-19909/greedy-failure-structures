@@ -33,7 +33,6 @@ env:
 jobs:
   detect:
     name: classify changes (reproducibility)
-    if: ${{ false }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
@@ -50,7 +49,21 @@ jobs:
           python-version: "3.12"
       - name: Classify the complete pull request diff
         id: classify
-        run: python .github/scripts/classify_ci_changes.py
+        run: |
+          python - <<'PY'
+          import importlib.util
+          import sys
+          from unittest.mock import patch
+          spec = importlib.util.spec_from_file_location(
+              "temporary_ci_probe_classifier", ".github/scripts/classify_ci_changes.py"
+          )
+          assert spec is not None and spec.loader is not None
+          classifier = importlib.util.module_from_spec(spec)
+          sys.modules[spec.name] = classifier
+          spec.loader.exec_module(classifier)
+          with patch.object(classifier, "classify_event", return_value=("DOCS", "temporary uppercase probe")):
+              raise SystemExit(classifier.main())
+          PY
 
   benchmark:
     name: benchmark (${{ matrix.os }}, Python ${{ matrix.python-version }})
@@ -82,6 +95,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
       # The base package has no third-party dependencies, so no pip install is
       # needed and no dependency cache is used.
+      - name: Fail one benchmark cell for the temporary probe
+        if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11' }}
+        run: exit 1
       - name: Run the quick benchmark with a single worker
         run: >-
           python run_project.py benchmark
