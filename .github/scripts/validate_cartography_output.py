@@ -20,8 +20,8 @@ SOURCE = ROOT / "src"
 sys.path.insert(0, str(SOURCE))
 
 from maxcover.config import load_config  # noqa: E402
-from maxcover.contracts import RunRecord  # noqa: E402
-from maxcover.benchmark_planning import _validate_run_identity  # noqa: E402
+from maxcover.contracts import InstanceRecord, RunRecord  # noqa: E402
+from maxcover.benchmark_artifacts import _validate_analysis_records  # noqa: E402
 from maxcover.reproducibility import config_hash  # noqa: E402
 
 
@@ -446,7 +446,9 @@ def validate(config_path: Path, design_path: Path, output: Path) -> None:
     identifier = config_hash(config)
     if {row.config_hash for row in rows} != {identifier}:
         fail("raw results config_hash does not match the configuration")
-    _validate_run_identity(config, identifier, rows)
+    instances = [InstanceRecord.from_csv_row(row) for row in
+                 load_rows(output / "instances.csv", InstanceRecord.CSV_FIELDS)]
+    rows = _validate_analysis_records(config, rows, instances)
     statistics_rows = load_rows(
         output / "structural_gap_statistics.csv", STATISTICS_FIELDS
     )

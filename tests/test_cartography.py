@@ -472,6 +472,37 @@ class CartographyPlanValidationTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("execution plan", result.stderr)
 
+    def test_coordinated_objective_edits_fail_even_after_rebuilding_tables(self) -> None:
+        for field in ("coverage", "optimum"):
+            with self.subTest(field=field):
+                rows = list(self.result.rows)
+                index = next(i for i, row in enumerate(rows) if row.algorithm == "greedy" and row.coverage > 0)
+                row = rows[index]
+                coverage = row.coverage - 1 if field == "coverage" else row.coverage
+                optimum = row.optimum + 1 if field == "optimum" else row.optimum
+                rows[index] = replace(row, coverage=coverage, optimum=optimum,
+                                      optimality_gap=(optimum-coverage)/optimum)
+                self.write_runs(rows)
+                write_cartography_artifacts(self.output, self.config_path, self.design_path,
+                                            replace(self.result, rows=tuple(rows), output_dir=self.output))
+                result = self.validate()
+                self.assertNotEqual(result.returncode, 0)
+                self.assertRegex(result.stderr, "coverage does not match|validated reference")
+
+    def test_instance_table_is_checked_against_generated_instances(self) -> None:
+        path = self.output / "instances.csv"
+        with path.open(encoding="utf-8", newline="") as handle:
+            reader = csv.DictReader(handle)
+            fields, rows = reader.fieldnames, list(reader)
+        rows[0]["pairwise_overlap_mean_jaccard"] = "0.999"
+        with path.open("w", encoding="utf-8", newline="") as handle:
+            writer = csv.DictWriter(handle, fieldnames=fields)
+            writer.writeheader()
+            writer.writerows(rows)
+        result = self.validate()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("instance plan", result.stderr)
+
     def test_present_error_run_remains_a_missing_metric(self) -> None:
         rows = list(self.result.rows)
         index = next(i for i, row in enumerate(rows) if row.algorithm == "greedy")

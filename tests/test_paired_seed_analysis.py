@@ -991,10 +991,14 @@ class PlannedPairingTests(unittest.TestCase):
         greedy_gap = next(row for row in rows if row.algorithm_id == "greedy" and row.metric == "optimality_gap")
         self.assertEqual(greedy_gap.paired.n, 0)
         self.assertEqual(greedy_gap.paired_missing_count, 2)
-        row = changed[0]
-        if row.algorithm == "greedy":
-            changed[0] = replace(row, optimum=12, optimality_gap=(12-row.coverage)/12)
+        index = next(i for i, row in enumerate(changed) if row.algorithm == "greedy")
+        row = changed[index]
+        changed[index] = replace(row, optimum=12, optimality_gap=(12-row.coverage)/12)
         with self.assertRaisesRegex(AnalysisError, "validated reference"):
+            self.analyze(changed)
+        changed[index] = replace(row, status=SolutionStatus.OPTIMAL, best_bound=row.coverage,
+                                 optimum=row.coverage, optimality_gap=0.0)
+        with self.assertRaisesRegex(AnalysisError, "optimal exact run"):
             self.analyze(changed)
 
     def test_present_error_record_is_distinct_from_a_missing_run(self) -> None:

@@ -121,6 +121,9 @@ differences, intervals, and precision diagnostics from `raw_results.csv`, then
 checks the complete execution-plan identities and stored values against the raw
 results and design. An absent planned run is rejected even if derived tables
 have been rebuilt; a present error record can still contribute a missing gap.
+Generated instances also check the instance table and selected-set coverage.
+Optimum references come from optimal exact-run records or regenerated
+certificates; stored optimum/gap values must agree with these references.
 
 For algorithms with multiple `algorithm_seeds`, one instance contributes the
 arithmetic mean of its complete algorithm-seed gaps. The independent unit for
