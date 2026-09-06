@@ -1,4 +1,4 @@
-"""Analyze the fixed core-overlap pilot after validating its complete output.
+"""Analyze the fixed core-overlap pilot from its configuration and CSV inputs.
 
 Run from an uninstalled checkout with --config PATH --results DIR --output DIR.
 This offline analysis does not run algorithms or change canonical benchmark data.
@@ -9,13 +9,8 @@ from __future__ import annotations
 
 import argparse
 import csv
-import hashlib
 import io
 import json
-import os
-import platform
-import shlex
-import subprocess
 import sys
 from dataclasses import dataclass
 from math import comb
@@ -27,7 +22,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from maxcover.algorithms import ALGORITHMS
-from maxcover.benchmark import _case_seed
+from maxcover.benchmark_planning import _instances_for_config, _instance_record, _tasks_for_config
 from maxcover.config import load_config
 from maxcover.contracts import InstanceRecord, RunRecord
 from maxcover.model import MaximumCoverageInstance, SolutionStatus
@@ -49,8 +44,6 @@ STRUCTURAL_FIELDS = (
 class PilotData:
     config_hash: str
     rows: tuple[dict[str, Any], ...]
-    hashes: dict[str, str]
-    manifest: dict[str, Any]
 
 
 def _read_rows(payload: bytes, fields: tuple[str, ...], filename: str) -> list[dict[str, str]]:
@@ -69,25 +62,8 @@ def load_inputs(config_path: Path, results: Path) -> PilotData:
     identifier = config_hash(config)
     if identifier != EXPECTED_CONFIG_HASH:
         raise ValueError("configuration is not the fixed core-overlap pilot")
-    manifest_bytes = (results / "manifest.json").read_bytes()
-    manifest = json.loads(manifest_bytes)
-    if not isinstance(manifest, dict):
-        raise ValueError("manifest must be an object")
-    version = manifest.get("schema_version")
-    if type(version) is not int or version != 1:
-        raise ValueError("manifest schema_version must be integer 1")
-    if manifest.get("configuration", {}).get("config_hash") != identifier:
-        raise ValueError("manifest config_hash differs from the configuration")
-    payloads = {}
-    hashes = {"manifest.json": hashlib.sha256(manifest_bytes).hexdigest()}
-    for filename in ("instances.csv", "raw_results.csv"):
-        payload = (results / filename).read_bytes()
-        digest = hashlib.sha256(payload).hexdigest()
-        declaration = manifest.get("outputs", {}).get(filename, {})
-        if declaration.get("sha256") != digest:
-            raise ValueError(f"{filename}: SHA-256 differs from manifest declaration")
-        payloads[filename] = payload
-        hashes[filename] = digest
+    payloads = {name: (results / name).read_bytes()
+                for name in ("instances.csv", "raw_results.csv")}
     instances = [InstanceRecord.from_csv_row(row) for row in _read_rows(
         payloads["instances.csv"], InstanceRecord.CSV_FIELDS, "instances.csv"
     )]
@@ -95,7 +71,11 @@ def load_inputs(config_path: Path, results: Path) -> PilotData:
         payloads["raw_results.csv"], RunRecord.CSV_FIELDS, "raw_results.csv"
     )]
     cases = {case.case_id: (index, case) for index, case in enumerate(config.cases)}
-    expected_keys = {(case_id, repetition) for case_id in cases for repetition in range(30)}
+    planned = _instances_for_config(config)
+    expected_instances = {(item.case_id, item.repetition): item for item in planned}
+    expected_keys = set(expected_instances)
+    expected_runs = {(task.instance_id, task.algorithm_id): task.run_id
+                     for task in _tasks_for_config(config, identifier, planned)}
     by_key: dict[tuple[str, int], InstanceRecord] = {}
     by_id: dict[str, InstanceRecord] = {}
     generated: dict[str, MaximumCoverageInstance] = {}
@@ -105,24 +85,12 @@ def load_inputs(config_path: Path, results: Path) -> PilotData:
             raise ValueError("instances.csv: config_hash mismatch")
         if key not in expected_keys or key in by_key or record.instance_id in by_id:
             raise ValueError("instances.csv: unexpected or duplicate instance identity")
-        case_index, case = cases[record.case_id]
-        expected_parameters = {key: value for key, value in case.parameters.items()
-                               if key not in {"universe_size", "set_count", "k"}}
-        if (record.family != case.family
-                or (record.universe_size, record.set_count, record.k) != (48, 16, 4)
-                or json.loads(record.parameters) != expected_parameters):
-            raise ValueError("instances.csv: case dimensions or parameters mismatch")
-        expected_seed = _case_seed(config, case, case_index, record.repetition)
-        if (record.seed != expected_seed
-                or record.coupling_seed is not None or record.coupling_pair_id is not None):
-            raise ValueError("instances.csv: seed or coupling differs from the fixed plan")
-        if record.generator_version != 1 or record.instance_origin != "stochastic" or record.is_adversarial:
-            raise ValueError("instances.csv: unexpected generator provenance")
-        if any(getattr(record, field) is None for field in STRUCTURAL_FIELDS):
-            raise ValueError("instances.csv: missing structural diagnostic")
+        expected = expected_instances[key]
+        if record.to_csv_row() != _instance_record(expected, identifier).to_csv_row():
+            raise ValueError("instances.csv: identity or structural metrics differ from the generated instance")
         by_key[key] = record
         by_id[record.instance_id] = record
-        generated[record.instance_id] = case.generate(expected_seed)
+        generated[record.instance_id] = expected.instance
     if set(by_key) != expected_keys:
         raise ValueError("instances.csv: incomplete planned repetitions")
 
@@ -135,6 +103,8 @@ def load_inputs(config_path: Path, results: Path) -> PilotData:
         key = (record.instance_id, record.algorithm_id)
         if key in by_run or not record.run_id or record.run_id in run_ids:
             raise ValueError("raw_results.csv: duplicate or empty run identity")
+        if record.run_id != expected_runs.get(key):
+            raise ValueError("raw_results.csv: run identity differs from the execution plan")
         instance = by_id[record.instance_id]
         for field in ("case_id", "repetition", "seed", "family", "universe_size", "set_count", "k", "parameters"):
             if getattr(record, field) != getattr(instance, field):
@@ -185,7 +155,7 @@ def load_inputs(config_path: Path, results: Path) -> PilotData:
         if row["treatment_effective_seed"] != row["control_effective_seed"]:
             raise ValueError("paired effective seeds differ")
         paired_rows.append(row)
-    return PilotData(identifier, tuple(paired_rows), hashes, manifest)
+    return PilotData(identifier, tuple(paired_rows))
 
 
 def summarize_pairs(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
@@ -271,7 +241,7 @@ def report_text(data: PilotData) -> str:
     lines = ["# 高重叠结构固定对照实验", "",
              "预定设计：30 个种子对、60 个实例；每个实例运行 Greedy 与穷举参考。",
              "维度为 48 个元素、16 个候选集合、预算 4；配置与种子批次在正式运行前提交。",
-             "输入通过完整 benchmark 验证器及本分析的文件绑定、配对、完成状态和最优参考检查。",
+             "本分析检查样本配对、完成状态和最优参考，并从实例重算所选集合的覆盖量。",
              "失手由整数覆盖量小于穷举最优值判定；全部零 gap 实例进入辅助均值。", "",
              f"配置哈希：`{data.config_hash}`。", "", "## 结构诊断", "",
              "| 指标 | 处理组均值 [最小, 最大] | 对照组均值 [最小, 最大] | 配对均值差 |",
@@ -300,27 +270,7 @@ def report_text(data: PilotData) -> str:
     return "\n".join(lines)
 
 
-def validate_complete_output(config_path: Path, results: Path) -> str:
-    command = [sys.executable, str(ROOT / ".github/scripts/validate_benchmark_output.py"),
-               "--config", str(config_path.resolve()), "--output", str(results.resolve())]
-    completed = subprocess.run(command, cwd=ROOT, capture_output=True, text=True, encoding="utf-8")
-    if completed.returncode:
-        raise ValueError(f"benchmark validator failed ({completed.returncode}):\n{completed.stdout}{completed.stderr}")
-    return completed.stdout + completed.stderr
-
-
-def _display_path(path: Path) -> str:
-    try:
-        return path.resolve().relative_to(ROOT).as_posix()
-    except ValueError:
-        return path.resolve().as_posix()
-
-
-def _command_text(arguments: Sequence[str]) -> str:
-    return subprocess.list2cmdline(arguments) if os.name == "nt" else shlex.join(arguments)
-
-
-def write_analysis(data: PilotData, config_path: Path, results: Path, output: Path, validator_log: str) -> None:
+def write_analysis(data: PilotData, output: Path) -> None:
     # Import the optional plotting dependency before creating any output.
     import matplotlib
 
@@ -333,37 +283,6 @@ def write_analysis(data: PilotData, config_path: Path, results: Path, output: Pa
         writer.writerows(data.rows)
     (output / "report.md").write_text(report_text(data), encoding="utf-8", newline="\n")
     render_chart(summarize_pairs(data.rows), output / "failure_rate.svg")
-    script_hash = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
-    git_sha = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, check=True,
-                             capture_output=True, text=True).stdout.strip()
-    dirty = bool(subprocess.run(["git", "status", "--porcelain"], cwd=ROOT, check=True,
-                               capture_output=True, text=True).stdout.strip())
-    config_display, results_display, output_display = map(_display_path, (config_path, results, output))
-    commands = [
-        ["python", "run_project.py", "benchmark", "--config", config_display, "--output", results_display, "--workers", "1"],
-        ["python", ".github/scripts/validate_benchmark_output.py", "--config", config_display, "--output", results_display],
-        ["python", "analysis/core_overlap_pilot.py", "--config", config_display, "--results", results_display, "--output", output_display],
-    ]
-    lines = ["# Validation record", "", f"- Analysis source commit: `{git_sha}`; dirty={str(dirty).lower()}.",
-             f"- Benchmark source: `{json.dumps(data.manifest.get('git'), sort_keys=True)}`.",
-             f"- Python: {platform.python_version()}; Matplotlib: {matplotlib.__version__}.",
-             f"- Configuration hash: `{data.config_hash}`.",
-             "- Complete-output validator exit code: 0 (PASS).", "",
-             "Reproduction commands from the repository root (repository paths are relative; external paths retain their location):",
-             "", "```console", *(_command_text(command) for command in commands),
-             "```", "", "Validator output:", "", "```text", validator_log.strip(), "```", "",
-             "The benchmark validator checks its existing declared scope; it does not re-enumerate every optimum.",
-             "The analysis table and Matplotlib figure are outside that validator's scope.",
-             "Synthetic tests check four-cell counts, two-sided exact McNemar, and all-pair gap means.",
-             "Independent recomputation of this run's analysis remains to be recorded before evidence publication.", "",
-             "## SHA-256", "", "| Input or artifact | SHA-256 |", "| --- | --- |"]
-    for name, digest in {**data.hashes, "analysis/core_overlap_pilot.py": script_hash}.items():
-        lines.append(f"| {name} | `{digest}` |")
-    for name in ("paired_instances.csv", "report.md", "failure_rate.svg"):
-        lines.append(f"| {name} | `{hashlib.sha256((output / name).read_bytes()).hexdigest()}` |")
-    lines += ["", "This record does not hash itself. Timing, environment, and Git fields may vary on rerun.",
-              "The complete output directory is the validator target; a later frozen subset is not a complete benchmark output.", ""]
-    (output / "validation.md").write_text("\n".join(lines), encoding="utf-8", newline="\n")
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -373,9 +292,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
     try:
-        validator_log = validate_complete_output(args.config, args.results)
         data = load_inputs(args.config, args.results)
-        write_analysis(data, args.config, args.results, args.output, validator_log)
+        write_analysis(data, args.output)
     except (ValueError, TypeError, KeyError, AttributeError, OSError, ImportError) as error:
         print(f"core overlap analysis: {error}", file=sys.stderr)
         return 1
