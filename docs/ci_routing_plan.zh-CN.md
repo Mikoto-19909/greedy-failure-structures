@@ -221,8 +221,6 @@ Pending。任务级跳过通常不会阻止合并，因此不能用“显示绿�
 
 ```console
 python -m unittest discover -s tests -v
-python .github/scripts/check_content_boundary.py --claim-mode evidence_backed_claims
-python .github/scripts/build_license_manifest.py --check
 python -m mypy
 ```
 

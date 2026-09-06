@@ -105,8 +105,7 @@ The `cartography` command adds a local analysis package:
   two-sided Student-t confidence interval.
 - `paired_control_differences.csv` reports seed-paired
   `stressor_gap - control_gap` distributions with the same descriptive and
-  interval fields. Missing exact references are counted and excluded rather
-  than converted to zero.
+  interval fields. Missing exact references are counted and excluded.
 - `precision_diagnostics.csv` estimates the seed count needed to reach the
   design's fixed confidence-interval half-width target using the observed
   paired-difference standard deviation.
@@ -139,7 +138,7 @@ seed, not an individual randomized-algorithm run.
 
 The following files associate instance-equal response values with measured or
 configured structural predictors. They retain eligibility counts and an
-association status instead of substituting zero for missing or constant data:
+association status for missing or constant data:
 
 - `gap_density_association_statistics.csv`
 - `gap_overlap_association_statistics.csv`
@@ -148,9 +147,9 @@ association status instead of substituting zero for missing or constant data:
 - `runtime_k_association_statistics.csv`
 - `search_nodes_dominated_ratio_association_statistics.csv`
 
-These are descriptive associations. These do not establish causal,
-significance, and more elaborate survival or nonlinear modeling from their
-contracts.
+These are descriptive associations. They do not establish causation,
+statistical significance, or support for more elaborate survival or nonlinear
+modeling.
 
 ## Reports and charts
 
