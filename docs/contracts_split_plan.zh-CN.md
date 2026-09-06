@@ -1,6 +1,6 @@
 # 统计与关联记录拆分计划
 
-记录日期：2026-09-05。状态：三组迁移与最终集中兼容验收已完成，进入 PR 验收。
+记录日期：2026-09-05。状态：已完成，由 [PR #41](https://github.com/Mikoto-19909/greedy-failure-structures/pull/41) 交付。
 
 本计划以主分支 `ddf6a8a` 的实现为参照。实施前重新核对入口和调用关系。
 贡献和检查要求沿用 [CONTRIBUTING](../CONTRIBUTING.md) 与 [AGENTS](../AGENTS.md)。
@@ -28,7 +28,7 @@
 与旧基线一致；九份旧 CSV 经新解析器和生产 writer 重写后逐字节一致。两种协议的
 旧 pickle 均成功恢复；一次真实 spawn 同时覆盖旧 payload 加载、record 参数传入及
 Queue 返回。新模块接受默认 mypy 检查并通过，没有增加豁免。相关集成单测与内容、
-许可证和提交检查交由当前 PR 执行，本地未重复运行这些全量门禁。
+许可证和提交检查由 PR #41 的必需检查覆盖并通过，本地未重复运行这些全量门禁。
 
 ## 目标与边界
 
@@ -37,7 +37,7 @@ Queue 返回。新模块接受默认 mypy 检查并通过，没有增加豁免�
 使基础统计、解质量、运行性能和结构关联的定义各有明确位置。
 本轮在生成器拆分后、CI 分流前实施，遵循
 [统一实施顺序](README.md#implementation-plans)。实验与 benchmark B0 均在源码拆分前完成；
-本项仍需另存待迁移记录的旧版 CSV 和 pickle，不能用同版本往返替代旧版加载验证。
+迁移前已另存旧版 CSV 和 pickle，详见上方实施基线；同版本往返不能替代旧版加载验证。
 
 公开入口仍为 [maxcover.contracts](../src/maxcover/contracts.py) 及当前包根导出。
 字段、字段顺序、默认值、`CSV_FIELDS`、schema 常量、CSV 解析、异常、不可变性、
@@ -70,8 +70,8 @@ pickle 与多进程行为保持原样。不引入通用基类、序列化框架�
 2. 包根 `__init__.py` 继续提供既有公开记录类，保留 `maxcover.__all__` 的名称与顺序，
    以及 `test_package_root_export_order_and_identity_are_frozen` 兼容测试。
    这项已有公开入口约束与私有模块布局分开处理，不借本次拆分放宽。
-3. [_benchmark_result.py](../src/maxcover/_benchmark_result.py) 当前直接导入上述旧私有模块，
-   在迁移时同步更新到实际定义模块，其他受影响消费者同样处理。
+3. [_benchmark_result.py](../src/maxcover/_benchmark_result.py) 原先直接导入上述旧私有模块，
+   本次已同步更新到实际定义模块；公开消费者继续使用 `contracts.py`。
 4. 若并行工作需要短期衔接，可保留必要的旧私有导出，调用方迁移后删除；
    旧私有模块路径不作为永久兼容接口，也不为其建立新的固定布局测试。
 

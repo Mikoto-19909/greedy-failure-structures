@@ -15,7 +15,7 @@ The [implementation order](README.md#implementation-plans) completes the fixed
 core experiment and documentation cleanup first. PR 0 (B0) then freezes the
 compatibility baseline before any production-code split. Reporting follows B0;
 benchmark PRs 1–4 (B1–B4) follow reporting; output validation follows benchmark.
-PR 5 (B5) remains conditional on the resulting runner's clarity.
+PR 5 (B5) was conditional on the resulting runner's clarity and has been cancelled.
 
 B0 implementation starts from `c40658d4cbc16b45fb640b1d97c03688baee16b7`,
 after the fixed pilot and documentation PR #31. No production code had moved
@@ -824,8 +824,9 @@ gate.
 
 ## Type-check strategy
 
-`maxcover.benchmark` currently has a mypy error exemption. Newly extracted
-modules will enter the normal strict check unless separately exempted.
+At the original baseline, `maxcover.benchmark` had a mypy error exemption.
+B4 removed the last module-wide exemption. All `src/maxcover` modules now enter
+the default check; see [pyproject.toml](../pyproject.toml) for its current scope.
 
 Do not automatically add the new modules to `ignore_errors`.
 
