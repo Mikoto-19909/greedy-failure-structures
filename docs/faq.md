@@ -114,14 +114,22 @@ is maintained in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
 
 ## What does determinism mean here?
 
-With the same normalized configuration, generator and algorithm versions, and
-explicit seeds, completed runs reproduce the instance identities, selected set
-indices, coverage values, and canonical row ordering. Wall-clock runtime,
-timestamps, and environment metadata may vary by machine. A run stopped by its
+Pin down three inputs — the normalized configuration, the generator and
+algorithm versions, and the explicit seed — and completed runs reproduce the
+instance identities, selected set indices, coverage values, and canonical row
+ordering.
+
+Three things fall outside that promise, and all three are properties of the
+machine rather than of the run: wall-clock runtime, timestamps, and
+environment metadata may vary by machine.
+
+Timeouts are the case worth spelling out separately. A run stopped by its
 wall-clock limit reports the incumbent it had reached when the limit fired;
-that incumbent and its coverage can differ across machines and are exempt from
-this guarantee. Randomised algorithms require an explicit algorithm seed;
-deterministic algorithms reject one.
+because progress is checked against the wall clock, that incumbent and its
+coverage can differ across machines and are exempt from this guarantee.
+
+The same asymmetry shows up in seeding: randomised algorithms require an
+explicit algorithm seed, while deterministic algorithms reject one.
 
 <!-- faq:id=reproduction -->
 
