@@ -77,23 +77,26 @@ versions do not make them the recommended next research experiment.
 
 ## Implementation plans
 
-These plans describe authorized work; their implementation is still pending.
+The fixed core experiment, documentation cleanup, benchmark B0–B4, reporting,
+output validation, generators, record-type splits, and CI routing are complete.
+The original plans record their implementation PRs, compatibility evidence,
+and actual Actions verification.
 The delivery order is implementation preparation, the fixed core experiment,
 documentation cleanup, benchmark compatibility baseline (B0), reporting,
-benchmark extraction (B1–B4, then optional B5), output validation, generators,
+benchmark extraction (B1–B4), output validation, generators,
 record types, and CI routing. Complete the experiment on a clean fixed commit
 before restructuring source. B0 precedes every production-code split so later
 changes can be compared against the same old implementation and checkpoint.
 Acceptance focuses on behavior and public compatibility. Remove unnecessary
-source-count claims and their tests as documentation is simplified, and check new
-modules with mypy by default instead of spreading existing module exemptions.
+source-count claims and their tests as documentation is simplified. Default mypy
+covers every module under `src/maxcover` without module-wide error exemptions.
 
-Each batch uses a single-responsibility branch and commits, targeted verification,
-the full repository checks, any required independent review, and a PR that passes
-its checks before merge and branch cleanup. Record actual scope and implementation
-PRs in the applicable original plan. Generator and record splits are included in
-this delivery; only benchmark B5 and the documented demo-script cleanup remain
-conditional.
+Each batch uses a single-responsibility branch and commits, targeted local
+verification, any required independent review, and required checks on its final
+PR revision before merge and branch cleanup. Unchanged successful evidence is
+reused instead of repeating local gates. Record actual scope and implementation
+PRs in the applicable original plan. Benchmark B5 was assessed and cancelled
+after B4; the documented demo-script cleanup remains conditional.
 
 - [`benchmark_modularization_plan.md`](benchmark_modularization_plan.md): B0
   compatibility baseline and staged runner extraction, including old/new artifact parity
@@ -117,9 +120,9 @@ conditional.
   machine-readable migration identities
 - [`LICENSES/README.md`](../LICENSES/README.md): default-deny file-level license
   mapping
-- [`ci_routing_plan.zh-CN.md`](ci_routing_plan.zh-CN.md): proposed CI routing
-  for plan-only pull requests, including required checks, fallback behavior,
-  and implementation acceptance checks; not yet implemented
+- [`ci_routing_plan.zh-CN.md`](ci_routing_plan.zh-CN.md): implemented CI routing
+  for plan-only pull requests, with required checks, fallback behavior, actual
+  Actions runs, and measured operational timings
 
 Generated files under `results/` are local artifacts. They are inputs to local
 inspection and independent validation, not tracked documentation. Only the

@@ -1,6 +1,6 @@
 # CI 分流实施计划
 
-状态：计划已归档，尚未实施。
+状态：实施与真实 Actions 验收已完成，由 [PR #42](https://github.com/Mikoto-19909/greedy-failure-structures/pull/42) 交付。
 审查日期：2026-09-05。
 审查基线：`main` 提交 `ddf6a8a9a9c2e6928c45aa158fb97da13b24e654`。
 
@@ -10,9 +10,55 @@
 本计划只设计 `docs`（轻量）和 `full`（完整）两个档位，不增加人工标签流程、
 新 CI 平台、定时任务或新的合并门槛。研究检查点和源码拆分不以本计划落地为前提。
 
-最初归档只新增本文、更新文档索引并重新生成许可证清单；下文的脚本、条件和测试
-尚未实施。本轮将 CI 分流安排在记录类型拆分之后，作为
+最初归档只新增本文、更新文档索引并重新生成许可证清单。本轮在记录类型
+[PR #41](https://github.com/Mikoto-19909/greedy-failure-structures/pull/41) 合并后的
+`f186dcd6c8e532d86ebafdd125e1c022ce04807b` 实施 CI 分流，作为
 [统一实施顺序](README.md#implementation-plans) 的最后一项。
+
+## 实际交付与验收
+
+实现提交为 `5b5a7d6c95e58bca8f1fd6981bb701552b40dfd1`。分类器、测试与两份工作流
+通过 22 项定向测试和 8 项独立反向验证，覆盖真实 Git 累计差异、重命名两端、特殊
+模式、NUL 路径、多个共同祖先及失败输出。默认类型检查继续覆盖全部源码模块。
+本轮复用字节未变的成功结果，没有逐场景重复本地全量门禁。
+
+四项必需检查保留原名称和命令，下表核对的是实际步骤。单元测试运行 603 项，
+其中 5 项按既有可选依赖规则跳过：Matplotlib 两项、mypy 一项、OR-Tools 两项；
+独立的必需类型任务安装 mypy 后实际通过。原实验的 Matplotlib 验证与固定证据继续
+保留，跳过的用例未计为已执行通过。
+
+临时 [PR #43](https://github.com/Mikoto-19909/greedy-failure-structures/pull/43) 以实施
+分支为 base，连续验证以下不同场景，已关闭且没有合并。故障版本均从正式工作流
+恢复后只加入该次探针，正式实现没有增加故障开关。
+
+| 实际场景 | 观察结果与运行记录 |
+| --- | --- |
+| 实施 PR | `full`；基础与额外检查全部实际成功。[tests](https://github.com/Mikoto-19909/greedy-failure-structures/actions/runs/33985800804)、[矩阵](https://github.com/Mikoto-19909/greedy-failure-structures/actions/runs/33985800780) |
+| 文档与过期清单 | `docs`，额外任务跳过；内容步骤成功、许可证步骤失败。[拒绝记录](https://github.com/Mikoto-19909/greedy-failure-structures/actions/runs/33985830438) |
+| 文档与有效清单 | `docs`；四项基础检查和两个分类任务实际成功，额外任务跳过。[tests](https://github.com/Mikoto-19909/greedy-failure-structures/actions/runs/34004446609)、[矩阵](https://github.com/Mikoto-19909/greedy-failure-structures/actions/runs/34004446612) |
+| 前次代码、末次仅文档 | 累计 diff 仍含源码，两次分类均为 `full`，完整检查成功。[tests](https://github.com/Mikoto-19909/greedy-failure-structures/actions/runs/34004577246)、[矩阵](https://github.com/Mikoto-19909/greedy-failure-structures/actions/runs/34004577395) |
+| 指定实现分支手动运行 | `workflow_dispatch/full`；额外任务和 compare 成功。[tests](https://github.com/Mikoto-19909/greedy-failure-structures/actions/runs/33985837662)、[矩阵](https://github.com/Mikoto-19909/greedy-failure-structures/actions/runs/33985840271) |
+| 两个分类任务真实失败 | 仅 detect 失败，其余任务和 compare 成功，工作流保留失败结论。[tests](https://github.com/Mikoto-19909/greedy-failure-structures/actions/runs/34004780408)、[矩阵](https://github.com/Mikoto-19909/greedy-failure-structures/actions/runs/34004780381) |
+| 输出缺失与分类任务跳过 | tests 分类成功但无输出、矩阵分类跳过；额外检查和 compare 均成功。[tests](https://github.com/Mikoto-19909/greedy-failure-structures/actions/runs/34005022496)、[矩阵](https://github.com/Mikoto-19909/greedy-failure-structures/actions/runs/34005022448) |
+| 大写结果与单格失败 | `DOCS` 经真实 main/writer 后输出 `full`；指定一格失败，compare 跳过且未下载缺失产物，整体失败保留。[tests](https://github.com/Mikoto-19909/greedy-failure-structures/actions/runs/34005262435)、[矩阵](https://github.com/Mikoto-19909/greedy-failure-structures/actions/runs/34005262479) |
+| 在分类等待步骤取消 | 两个 detect 进入等待后分别请求取消，等待中的额外任务没有实际启动。[tests](https://github.com/Mikoto-19909/greedy-failure-structures/actions/runs/34005525578)、[矩阵](https://github.com/Mikoto-19909/greedy-failure-structures/actions/runs/34005525622) |
+
+证据绑定不可变 head、实际 checkout、源码哈希、job/step 状态及分类日志，没有把
+任务占位行或整体绿色当作执行证明。重复本地全套测试、内容与许可证检查及 mypy
+已按授权省略；最终 PR 的必需检查仍执行，许可证清单始终从当前暂存内容生成。
+
+### 实际耗时
+
+复用分流前文档 PR #22（`565d7c3`）与分流后文档探针 PR #43（`5eea474`）的记录，
+没有另跑基线。以同组四个 workflow 的创建时间为起点，四项必需检查到齐为
+83 秒 → 88 秒；全部 workflow 的完成观察为 157 秒 → 89 秒；实际 job 累计时长为
+823 → 121 job-seconds，已计入两个 detect 的 12 秒并排除未执行任务。本样本的必需
+检查等待没有缩短。实际执行 job 数由 21 变为 6，轻量档位不只有四个 job。
+
+workflow 完成观察采用已处于 completed 状态的 `run.updated_at`；job 累计使用
+`completed_at - started_at`，包含准备与清理、不含启动前排队，也不是计费分钟。
+两次提交、工作流版本和 runner 条件不同，这些数字仅描述本次运维观察。
+逐项时间戳和原始记录哈希保存在本地 `results/_ci_routing/timing_comparison.json`。
 
 ## 已核实的背景
 
@@ -26,8 +72,8 @@
 - [对应复现矩阵运行](https://github.com/Mikoto-19909/greedy-failure-structures/actions/runs/33951698933)
 - [审查时的生效规则集](https://github.com/Mikoto-19909/greedy-failure-structures/rules/21541937)
 
-传统分支保护接口在审查时返回 403；已读取的 ruleset 不能用来证明不存在另一层
-附加要求。实施前重新核对实际合并门槛，保留现有必需检查名称。
+传统分支保护接口在原审查时返回 403。实施时重新读取生效分支规则，确认来自
+`main-protection` 的四个必需检查与下表名称相同；本次不修改规则集或检查名称。
 
 跨环境复现、并行执行和独立输出校验承担不同职责。本计划保留它们在完整档位中的
 覆盖，不合并验证逻辑，也不改变 timeout、确定性、配置身份或输出契约。
@@ -83,13 +129,13 @@ Git 中的改动，不使用 PR 标题、分支名、标签或提交信息来决
 | 复现矩阵及跨环境比较 | 跳过 | 执行，保留六组环境及 `workers=1` |
 
 轻量档位仍运行完整的一套单元测试，包括文档声明与实现的一致性测试。分流不会
-扩大 mypy 的实际覆盖范围；已有豁免的处理仍属于源码拆分计划。
+扩大 mypy 的实际覆盖范围；源码拆分已移除全部模块级豁免，默认检查覆盖全部源码模块。
 
 ## 文件改动与执行方式
 
-| 后续实施文件 | 最小改动 |
+| 实施文件 | 最小改动 |
 | --- | --- |
-| `.github/scripts/classify_ci_changes.py`（拟新增） | 读取事件与 Git 累计差异，执行上述固定规则，输出 `profile` 和简短原因；仅使用标准库与 Git |
+| `.github/scripts/classify_ci_changes.py` | 读取事件与 Git 累计差异，执行上述固定规则，输出 `profile` 和简短原因；仅使用标准库与 Git |
 | `.github/workflows/tests.yml` | 新增 `detect`；把固定 Ubuntu / Python 3.12 单元测试与其余矩阵拆开；额外任务按档位执行 |
 | `.github/workflows/reproducibility-matrix.yml` | 新增 `detect`，调用同一脚本；按档位控制 benchmark 和 compare |
 | `tests/test_ci_routing.py`（拟新增） | 验证分类行为、累计差异和异常回退，不冻结 YAML 排版 |
@@ -123,6 +169,11 @@ if: >-
 只有分类任务成功且明确输出 `docs` 时才减少检查。分类任务失败、跳过、输出缺失
 或出现未知值，都使额外任务按完整档位执行；用户取消运行时停止。可恢复的读取
 异常由脚本输出 `full` 并说明原因。真正的任务失败也由上述条件保留完整验证。
+
+GitHub 字符串比较不区分大小写，因此分类值必须先经过 Python 的唯一最终写出函数。
+它仅接受精确的小写 `docs` 或 `full`，大写、未知、空值等均写为 `full`，再由该步骤
+提供 job output；工作流没有其他输出入口。缺少输出路径或写入失败会让分类任务
+失败，仍由上述条件回退。裸 YAML 字符串比较本身不承担大小写严格校验。
 
 两个工作流分别调用同一个分类脚本；`needs` 不能跨工作流读取输出。不增加
 `workflow_run` 接力、跨工作流缓存或集中调度器。由此会有两个分类任务，不能将
