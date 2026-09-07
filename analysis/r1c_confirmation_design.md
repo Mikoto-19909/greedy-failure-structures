@@ -1,9 +1,10 @@
 # R1c：新样本失效机制验证设计
 
 设计日期：2026-09-07。研究基线：`b0935de4cc22849299538c0ee0aa9aa7e334a3af`。
-状态：设计与新样本适配已完成，并通过独立种子的预检及功能验证；
-正式样本尚未生成或运行。[使用指南](r1c_confirmation_usage.md)给出完整入口。
-正式执行前仍需记录实际执行的源码提交及环境。
+状态：设计、适配与正式实验均已完成。3,000 对新种子及全部 6,000 个实例通过
+独立重算，见[正式报告](r1c_confirmation_report.md)和[使用指南](r1c_confirmation_usage.md)。
+算法与分析执行提交为 `8fc14108577a3c8862a7b21a89113f78edfe7664`；下文保留正式生成前
+固定的样本、统计与停止决定。实际环境及保存频率调整见报告，不回改研究设计。
 
 ## 问题与范围
 
@@ -16,7 +17,7 @@
 这是两个指定生成模型的条件比例比较；两组失败子集本身不同，且并集和元素频率等
 结构也有差异。因此不将差值解释为重叠的单独因果效应，也不外推到其他规模。
 
-R1c 本轮交付设计、输入配置、样本量核算和资源预检，不交付新样本实测结论。
+R1c 的设计阶段交付输入配置、样本量核算和资源预检；后续正式结果单列于报告。
 R2 网格、保度重连、新平局算法及更大交换邻域不属于本批。
 
 ## 唯一主指标与判定
@@ -159,7 +160,7 @@ R1c 使用 [r1c_confirmation.py](r1c_confirmation.py) 和
 ```
 
 预检目录必须不存在，已有结果不会被覆盖。复现需要项目及 Matplotlib 已安装。
-正式入口已就绪；原始 benchmark 可按以下命令运行，本次未执行：
+以下命令复现正式数据与分析；已有输出需按使用指南处理：
 
 ```powershell
 & .venv/Scripts/python.exe run_project.py benchmark --config analysis/r1c_confirmation_config.json --output results/r1c_confirmation_v1/benchmark --workers 1
@@ -167,8 +168,8 @@ R1c 使用 [r1c_confirmation.py](r1c_confirmation.py) 和
 & .venv/Scripts/python.exe -B analysis/validate_r1c_confirmation.py --config analysis/r1c_confirmation_config.json --results results/r1c_confirmation_v1/benchmark --output results/r1c_confirmation_v1/analysis
 ```
 
-原始结果和轨迹放在 `results/r1c_confirmation_v1/`；正式报告与必要配置/数据由后续
-执行批次保存到 `analysis/` 和 `experiments/r1c_confirmation_v1/`，目前这些正式产物不存在。
+原始结果和轨迹放在 `results/r1c_confirmation_v1/`；正式报告保存在 `analysis/`，
+必要配置、原始数据、轨迹、汇总和图已归档到 `experiments/r1c_confirmation_v1/`。
 发布前按 [CONTRIBUTING](../CONTRIBUTING.md)运行相关测试、完整 unittest、mypy 及独立复核。
 冻结的是本设计中的样本、指标与规则；执行源码提交和实际环境在正式运行前记录。
 软件适配不得顺带改变冻结决定，若确有必要则先修订设计，再运行正式新样本。
