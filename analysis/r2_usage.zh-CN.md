@@ -1,0 +1,57 @@
+# R2：运行、恢复与独立验证
+
+R2 用独立定长原图扫描多个预算，输出穷举参考、规范最优见证和机制诊断。
+研究边界见[一体化计划](../docs/r2_r3_integrated_plan.zh-CN.md)。R3 确认实验不属于此入口。
+
+## 环境与执行顺序
+
+使用 Python 3.12、NumPy 2.3.5、SciPy 1.18.1、Matplotlib 3.11.1，以及仓库检查依赖。
+只重建与验证数据表时可用 `analyze --no-plot`，无需安装可选 Matplotlib；默认分析命令仍生成曲线。
+先核对解释器与 `maxcover.__file__` 指向预定工作树；下列命令均从工作树根目录执行。
+独立验证器共享输入设计、种子、生成器及实例身份；覆盖、穷举、结构和统计均独立重算。
+诊断验证复用已有的独立 R1 验证器，不导入 R2 生产计算。
+
+```console
+python analysis/r2_budget_grid.py preflight --output results/r2_preflight_v1 --workers 4
+python analysis/validate_r2_budget_grid.py --output results/r2_preflight_v1 --workers 4
+python analysis/r2_budget_grid.py freeze --preflight results/r2_preflight_v1 --output analysis/r2_f2_config.json
+python analysis/r2_budget_grid.py run --config analysis/r2_f2_config.json --output results/r2_grid_v1 --workers 4
+python analysis/validate_r2_budget_grid.py --output results/r2_grid_v1 --workers 4
+python analysis/r2_budget_grid.py analyze --output results/r2_grid_v1
+python analysis/validate_r2_budget_grid.py --output results/r2_grid_v1 --summaries-only
+```
+
+F2 配置若选用少于 4 个工作进程，后续命令使用配置中较小的数值。
+冻结只选择已授权网格并写设计，不生成正式原图，也不发布证据；已有 F2 文件不会覆盖。
+两个候选网格都超预算时，冻结失败，正式生成不得开始。
+
+## 输出与恢复运行
+
+`graphs/` 中每张原图有一个 JSON 检查点，保存完整有序集合、预算结果、结构、诊断与耗时。
+`run_status.json` 的 `complete` 仅表示生产完成；`verification.json` 的 `passed` 表示
+原图和诊断独立验证通过。`summary_verification.json` 单独表示三张派生表重算通过。
+三个状态不能互相替代。原图缺失、预算缺失或未完成的检查点不能作为完整样本分析。
+
+`budget_results.csv` 保存每个原图/预算的结果；`cell_summary.csv` 包含失效率精确区间、
+四个连续指标及其原图级 bootstrap 逐点区间；`mechanism_summary.csv` 汇总预定诊断，
+`budget_curves.svg` 展示预算曲线。
+所有区间都是逐点区间，不支持事后挑峰的同时推断。
+
+```console
+python analysis/r2_budget_grid.py preflight --output results/r2_preflight_v1 --workers 4 --resume
+python analysis/r2_budget_grid.py run --config analysis/r2_f2_config.json --output results/r2_grid_v1 --workers 4 --resume
+```
+
+恢复运行要求保存的配置与指定配置相同，复用已完成原图，重新计算没有完成检查点的原图。
+分析命令先用独立验证器复算当前读入的原图、穷举参考和轨迹，再从同一份内存数据重建汇总；
+不调用生产入口或增加研究样本，但会重新核对种子生成的输入并计算独立参考，因此耗时增加。
+旧 `verification.json` 的 `passed` 是历史记录，不能证明修改后的数据仍正确。
+`--summaries-only` 仅核对派生表与保存数据的一致性，不证明原图的最优值；两种覆盖必须区分。
+诊断中的 `budget_exhausted` 表示有限交换检查未完成，不等于局部最优。
+
+12 小时计算预算累计生产、原图验证、分析及汇总验证的墙钟时间，正式批次还计入预检耗时。
+`execution.jsonl` 保存实际操作耗时和中断状态；不要删除它来重新获得预算。
+达到上限后停止提交新任务，已运行的单图任务安全退出可能产生短暂超出；不替换难图或删减样本。
+内存按工作进程峰值与进程数量保守检查，输出上限为 2 GiB。资源失败保留已保存输入和结果。
+
+检查点和实验结果留在本机 `results/`，不自动归档至远端。证据发布须另行明确授权。
