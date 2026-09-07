@@ -1,8 +1,9 @@
 # R1c：新样本失效机制验证设计
 
 设计日期：2026-09-07。研究基线：`b0935de4cc22849299538c0ee0aa9aa7e334a3af`。
-状态：设计完成，正式样本尚未生成或运行；仅完成独立种子的资源预检。
-正式执行前还需适配新样本输入和统计输出，并记录实际执行的源码提交。
+状态：设计与新样本适配已完成，并通过独立种子的预检及功能验证；
+正式样本尚未生成或运行。[使用指南](r1c_confirmation_usage.md)给出完整入口。
+正式执行前仍需记录实际执行的源码提交及环境。
 
 ## 问题与范围
 
@@ -104,7 +105,8 @@ uniform 对照：`density=0.425`。两者理论期望集合大小均为 20.4，�
 按实例数简单外推 93.75 倍，约 **5.3 分钟、46 MB**；不包含正式适配开发、
 独立审查及所有后续报告成本，也不假定大批次耗时线性。正式执行预留 **60 分钟
 和 1 GiB 可用空间**。这是操作预算；耗尽时暂停并保留记录，不能按已见结果删样本。
-预检不输出机制比例汇总，不以预检效果调整本设计的主指标或样本量。
+设计阶段的资源预检不输出机制比例汇总。后续适配的功能核验会生成预检统计，
+统一标为 `resource_preflight`；不以这些结果调整本设计的主指标或样本量。
 
 上述种子和数值可通过 [设计核验脚本](r1c_design_check.py)重算。该脚本默认只推导
 种子和计算统计量，不构造正式实例。仅 `--preflight-output` 会运行固定预检批次。
@@ -131,7 +133,7 @@ uniform 对照：`density=0.425`。两者理论期望集合大小均为 20.4，�
 
 ## 执行入口与完成条件
 
-先完成以下适配，保留旧 pilot 的固定输入保护：
+以下适配已实现并验证，旧 pilot 的固定输入保护保持原样：
 
 1. 新增 R1c 专用离线入口，绑定正式配置及所有 planned instances/run IDs；
    复用 `analyze_instance` 的计算，新增来源 `confirmation`，不将新数据标成 `pilot`。
@@ -143,9 +145,10 @@ uniform 对照：`density=0.425`。两者理论期望集合大小均为 20.4，�
 4. 在功能样例和独立预检上核验零失败、零/全可避免事件、多最优解、缺失/重复配对、
    非 optimal 参考、候选遗漏、预算停止和区间端点。由独立复核者实际执行有效与无效输入。
 
-现有 `greedy_failure_paths.py` 调用 `core_overlap_pilot.load_inputs`，会拒绝新配置；
-**不能直接将其 `--design` 指向新配置就宣称 R1c 可运行**。
-正式配置仅供现有 benchmark 生成原始运行结果，后续轨迹和统计入口仍需实现。
+原有 `greedy_failure_paths.py` 仍调用 `core_overlap_pilot.load_inputs` 并拒绝新配置。
+R1c 使用 [r1c_confirmation.py](r1c_confirmation.py) 和
+[validate_r1c_confirmation.py](validate_r1c_confirmation.py)，绑定全部预定输入后分析，
+在独立验证通过后才发布轨迹及三张汇总 CSV；原始 benchmark 接口及公共 CSV schema 不变。
 
 设计核验及非正式预检命令（仓库根目录；`.venv` 是本次本地环境）：
 
@@ -156,10 +159,12 @@ uniform 对照：`density=0.425`。两者理论期望集合大小均为 20.4，�
 ```
 
 预检目录必须不存在，已有结果不会被覆盖。复现需要项目及 Matplotlib 已安装。
-正式入口适配并验证后，原始 benchmark 才按以下命令运行，本次未执行：
+正式入口已就绪；原始 benchmark 可按以下命令运行，本次未执行：
 
 ```powershell
 & .venv/Scripts/python.exe run_project.py benchmark --config analysis/r1c_confirmation_config.json --output results/r1c_confirmation_v1/benchmark --workers 1
+& .venv/Scripts/python.exe -B analysis/r1c_confirmation.py --config analysis/r1c_confirmation_config.json --results results/r1c_confirmation_v1/benchmark --output results/r1c_confirmation_v1/analysis
+& .venv/Scripts/python.exe -B analysis/validate_r1c_confirmation.py --config analysis/r1c_confirmation_config.json --results results/r1c_confirmation_v1/benchmark --output results/r1c_confirmation_v1/analysis
 ```
 
 原始结果和轨迹放在 `results/r1c_confirmation_v1/`；正式报告与必要配置/数据由后续

@@ -24,7 +24,8 @@ regimes, structural controls, and quality certificates. Its R1a/R1b stage is
 complete: the [prefix and exchange report](../analysis/r1_prefix_exchange_report.md)
 reanalyzes all 60 pilot instances and six separate functional examples. The
 [R1c design](../analysis/r1c_confirmation_design.md) fixes the new sample,
-primary interval and stopping rules; only its resource preflight has run.
+primary interval and stopping rules. Its [new-sample adapter](../analysis/r1c_confirmation_usage.md)
+has passed preflight and functional validation.
 The formal R1c experiment and R2–R4 remain future work. The
 [workflow speed report](../analysis/gate_speed_comparison_report.md) separately
 measures experiment commands and local delivery steps after the gate removal.
