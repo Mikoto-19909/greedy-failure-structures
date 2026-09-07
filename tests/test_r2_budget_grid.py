@@ -53,14 +53,22 @@ class R2BudgetTests(unittest.TestCase):
             output = Path(directory) / "batch"
             first = run(design, output, workers=1, stop_after=1)
             self.assertFalse(first["complete"])
-            before = next((output / "graphs").glob("*.json")).read_bytes()
+            checkpoint = output / "graphs" / (design["tasks"][0]["base_graph_id"] + ".json")
+            before = checkpoint.read_bytes()
             with patch("r2_budget_grid.evaluate_task", wraps=evaluate_task) as solver:
                 final = run(design, output, workers=1, resume=True)
                 self.assertEqual(solver.call_count, 2)
             self.assertTrue(final["complete"])
-            self.assertEqual(next((output / "graphs").glob("*.json")).read_bytes(), before)
+            self.assertEqual(checkpoint.read_bytes(), before)
             validate_batch(output, workers=1)
-            with patch.dict(sys.modules, {"matplotlib": None}):
+            real_import = __import__
+
+            def without_plot_dependency(name, *args, **kwargs):
+                if name == "matplotlib" or name.startswith("matplotlib."):
+                    raise ModuleNotFoundError(name)
+                return real_import(name, *args, **kwargs)
+
+            with patch("builtins.__import__", side_effect=without_plot_dependency):
                 analyze(output, plot=False)
             verify_summaries(output)
             data_before = (output / "cell_summary.csv").read_bytes()
