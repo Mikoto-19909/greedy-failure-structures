@@ -64,7 +64,7 @@
 它提供“首选集合连接到哪些频数的元素可能影响后续选择”的具体线索，尚无效应方向结论。
 
 据此完成了独立的 [R3 可行性探测](r3_probe_design.zh-CN.md)，并交付
-[F3 确认设计](r3_confirmation_design.zh-CN.md)。R3 正式确认没有执行。
+[F3 确认设计](r3_confirmation_design.zh-CN.md)；后续已独立完成[R3 正式确认](r3_confirmation_report.zh-CN.md)。
 
 ## 验证、资源与局限
 
@@ -83,7 +83,7 @@ R2/R3 探测的必需验证均实际执行，没有跳过。日志见[完整检�
 不是可推广的速度保证。详见 [执行记录](../results/r2_grid_v1/execution.jsonl)和
 [环境](../results/r2_execution_context.json)。正式批次文件约 19 MiB，未发布至远端。
 
-源码基线为 `b746124`，R2 新增实现未提交；[源码与配置副本](../results/r2_source_v1/)
+R2 原执行采用 `b746124` 加当时未提交的新增实现；[源码与配置副本](../results/r2_source_v1/)
 保存用于复现的离线脚本，公共算法沿用该基线。命令见[使用说明](r2_usage.zh-CN.md)。
 汇总使用已保存数据，并在写表前重新独立验证当前读入的原图及轨迹；汇总验证本身只证明派生一致性。
 只读审计未发现本批数值错误；汇总入口已修正为不依赖历史 `passed` 状态放行变化后的输入。

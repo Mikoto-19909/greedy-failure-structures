@@ -4,8 +4,10 @@ The [R2 exploration report](r2_exploration_report.zh-CN.md) completes the fixed-
 budget grid: 1,800 source graphs, 13,000 budget records and independent verification.
 The [F2 design](r2_exploration_design.zh-CN.md) and [usage guide](r2_usage.zh-CN.md)
 describe the frozen inputs and reproducible commands. Data remain local under `results/`.
-The [R3 confirmation design](r3_confirmation_design.zh-CN.md) follows a completed
-degree-preserving feasibility probe; its confirmation samples have not been generated.
+The [R3 confirmation report](r3_confirmation_report.zh-CN.md) completes the
+[frozen design](r3_confirmation_design.zh-CN.md): 3,000 new source graphs and 12,000
+independently verified endpoints establish the specified protocol contrast.
+See the [execution guide](r3_confirmation_usage.zh-CN.md) for recovery and verification commands.
 
 Start with the [R1c confirmation report](r1c_confirmation_report.md). Its fixed
 3,000 new seed pairs meet the interval-width target but do not establish the
@@ -29,7 +31,7 @@ accompany the findings. The [R1c new-sample design](r1c_confirmation_design.md)
 fixes 3,000 new seed pairs and a single primary contrast in tie-avoidable failure
 proportions. The [analysis and validation commands](r1c_confirmation_usage.md)
 are implemented and independently checked on the complete formal batch as well
-as the preflight and functional examples. R1c and R2 are complete; R3 confirmation and R4 remain future work.
+as the preflight and functional examples. R1c, R2 and R3 confirmation are complete; R4 remains future work.
 
 The [workflow speed comparison](gate_speed_comparison_report.md) measures the
 same experiment commands and local research-delivery steps before and after
