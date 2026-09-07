@@ -71,7 +71,7 @@ GROUPS = {'artifacts', 'cartography', 'routing', 'cli', 'generators', 'dashboard
 RESEARCH_MODULES = {
     'pilot': ('test_core_overlap_pilot',),
     'r1': ('test_greedy_failure_paths', 'test_research_verification'),
-    'r1c': ('test_r1c_confirmation',),
+    'r1c': ('test_r1c_confirmation', 'test_r1c_report'),
 }
 # Producer, verifier, and shared helper ownership; tools need no fake second solver.
 ANALYSIS_OWNERS = {
@@ -81,6 +81,7 @@ ANALYSIS_OWNERS = {
     'r1c_confirmation.py': 'r1c',
     'validate_r1c_confirmation.py': 'r1c',
     'r1c_design_check.py': 'r1c',
+    'render_r1c_confirmation_report.py': 'r1c',
     'compare_research_workflow_speed.py': 'tool',
 }
 
@@ -142,6 +143,8 @@ REQUIRED_RESEARCH = {
         'test_r1c_confirmation.R1cInputTests.test_valid_chain_and_invalid_outputs',
         'test_r1c_confirmation.R1cInputTests.test_partial_budget_or_failed_verification_never_publishes_output',
         'test_r1c_confirmation.R1cInputTests.test_self_consistent_but_false_optimum_is_rejected_by_enumeration',
+        'test_r1c_report.R1cReportPathTests.test_nested_data_paths_resolve_from_repository_not_report_directory',
+        'test_r1c_report.R1cReportPathTests.test_external_data_remains_an_absolute_executable_path',
     ),
 }
 OPTIONAL_CASES = {
