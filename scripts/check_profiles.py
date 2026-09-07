@@ -76,6 +76,8 @@ RESEARCH_MODULES = {
     'pilot': ('test_core_overlap_pilot',),
     'r1': ('test_greedy_failure_paths', 'test_research_verification'),
     'r1c': ('test_r1c_confirmation', 'test_r1c_report'),
+    'r2': ('test_r2_budget_grid',),
+    'r3': ('test_r3_feasibility', 'test_r3_confirmation'),
 }
 # Producer, verifier, and shared helper ownership; tools need no fake second solver.
 ANALYSIS_OWNERS = {
@@ -95,6 +97,14 @@ ANALYSIS_OWNERS = {
     'r1c_design_check.py': 'r1c',
     'render_r1c_confirmation_report.py': 'r1c',
     'compare_research_workflow_speed.py': 'tool',
+    'r2_design.py': 'r2',
+    'r2_budget_grid.py': 'r2',
+    'validate_r2_budget_grid.py': 'r2',
+    'r3_feasibility.py': 'r3',
+    'validate_r3_feasibility.py': 'r3',
+    'r3_confirmation_inputs.py': 'r3',
+    'r3_confirmation.py': 'r3',
+    'validate_r3_confirmation.py': 'r3',
 }
 
 def is_research(test_id: str) -> bool:
@@ -140,6 +150,24 @@ def affected_groups(paths: list[str]) -> set[str]:
     return groups
 
 REQUIRED_RESEARCH = {
+    'r3': (
+        'test_r3_feasibility.R3FeasibilityTests.test_valid_switches_and_damaged_endpoints',
+        'test_r3_feasibility.R3FeasibilityTests.test_equal_column_degrees_cannot_change_exposure',
+        'test_r3_feasibility.R3FeasibilityTests.test_first_loss_is_distinct_from_final_failure',
+        'test_r3_confirmation.R3ConfirmationTests.test_frozen_configuration_and_seed_domains',
+        'test_r3_confirmation.R3ConfirmationTests.test_valid_record_and_corrupt_references_and_chains',
+        'test_r3_confirmation.R3ConfirmationTests.test_recovery_summary_and_stale_pass_rejected',
+        'test_r3_confirmation.R3ConfirmationTests.test_original_graph_unit_and_hoeffding_interval',
+        'test_r3_confirmation.R3ConfirmationTests.test_resource_exhaustion_does_not_generate_replacements',
+    ),
+    'r2': (
+        'test_r2_budget_grid.R2BudgetTests.test_exactly_k_canonical_witnesses_and_duplicate_sets',
+        'test_r2_budget_grid.R2BudgetTests.test_complete_graph_and_corrupt_inputs',
+        'test_r2_budget_grid.R2BudgetTests.test_resume_and_independent_reconstruction',
+        'test_r2_budget_grid.R2BudgetTests.test_incomplete_and_mismatched_designs_rejected',
+        'test_r2_budget_grid.R2BudgetTests.test_metric_denominators_and_bootstrap_unit',
+        'test_r2_budget_grid.R2BudgetTests.test_analyze_rejects_changed_inputs_despite_old_passed_status',
+    ),
     'r3_counterexamples': (
         'test_r3_counterexamples.R3CounterexampleTests.test_same_e0_pair_has_equal_degrees_and_opposite_first_step_outcomes',
         'test_r3_counterexamples.R3CounterexampleTests.test_bad_degrees_forced_optimum_paths_and_false_completion_are_rejected',

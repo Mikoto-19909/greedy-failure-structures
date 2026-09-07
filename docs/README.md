@@ -32,7 +32,8 @@ reanalyzes all 60 pilot instances and six separate functional examples. The
 primary interval and stopping rules. The [R1c confirmation report](../analysis/r1c_confirmation_report.md)
 completes all 3,000 new seed pairs: its interval-width target is met, while the
 primary difference interval includes zero. The [new-sample adapter](../analysis/r1c_confirmation_usage.md)
-and independent validator have checked all 6,000 instances. R2–R4 remain future work. The
+and independent validator have checked all 6,000 instances. R2 exploration is complete;
+R3 has completed its feasibility probe and independent confirmation; R4 remains unexecuted. The
 [workflow speed report](../analysis/gate_speed_comparison_report.md) separately
 measures experiment commands and local delivery steps after the gate removal.
 
@@ -66,7 +67,17 @@ revisits existing instance families. Both retain schema v1 for compatibility.
 
 - [`greedy_failure_research_plan.zh-CN.md`](greedy_failure_research_plan.zh-CN.md):
   literature-grounded next steps, staged experiments, and verification criteria
-  (Simplified Chinese; R1a/R1b and R1c completed, R2–R4 proposed)
+  (Simplified Chinese; R1, R2 and R3 completed, R4 unexecuted)
+- [`r2_r3_integrated_plan.zh-CN.md`](r2_r3_integrated_plan.zh-CN.md):
+  R1 prerequisites, R2 preparation and exploration with an F2 design freeze,
+  and conditional R3 feasibility probes leading to F3 and independent confirmation;
+  the current batch has completed R2 and R3 feasibility/F3/confirmation
+- [R2 exploration report](../analysis/r2_exploration_report.zh-CN.md): complete grid,
+  mechanism observations and independent validation; selected evidence is published and linked by immutable commit
+- [R3 confirmation design](../analysis/r3_confirmation_design.zh-CN.md): the selected
+  local-exposure protocols, independent sampling and prospective inference
+- [R3 confirmation report](../analysis/r3_confirmation_report.zh-CN.md): completed
+  protocol comparison with 3,000 independent source graphs and 12,000 verified endpoints
 - [`core_overlap_checkpoint_plan.zh-CN.md`](core_overlap_checkpoint_plan.zh-CN.md):
   fixed single-point comparison of Greedy failures under high overlap and a
   matched uniform control (Simplified Chinese; completed pilot and original design)
