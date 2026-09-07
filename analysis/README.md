@@ -1,6 +1,12 @@
 # Research analysis
 
-Start with the [high-overlap pilot report](overlap_pilot_v1.md). It explains the
+Start with the [R1c confirmation report](r1c_confirmation_report.md). Its fixed
+3,000 new seed pairs meet the interval-width target but do not establish the
+direction of the conditional tie-avoidability difference. The
+[configuration, raw inputs, trajectories and summaries](../experiments/r1c_confirmation_v1/)
+support the report and figure.
+
+The [high-overlap pilot report](overlap_pilot_v1.md) explains the original
 fixed comparison, observed failure rates, structural diagnostics, and limitations.
 The [configuration and data](../experiments/core_rq/overlap_pilot_v1/) accompany
 the report; [core_overlap_pilot.py](core_overlap_pilot.py) computes the paired
@@ -12,7 +18,11 @@ examples. It locates the first loss of optimal reachability and compares one-swa
 with up-to-two-swap recovery. The [design](r1_prefix_exchange_design.md),
 [analysis](greedy_failure_paths.py), [independent recomputation](validate_greedy_failure_paths.py),
 and [saved trajectories and summaries](../experiments/r1_prefix_exchange_v1/)
-accompany the findings. R1c and R2–R4 remain proposed work.
+accompany the findings. The [R1c new-sample design](r1c_confirmation_design.md)
+fixes 3,000 new seed pairs and a single primary contrast in tie-avoidable failure
+proportions. The [analysis and validation commands](r1c_confirmation_usage.md)
+are implemented and independently checked on the complete formal batch as well
+as the preflight and functional examples. R1c is complete; R2–R4 remain proposed work.
 
 The [workflow speed comparison](gate_speed_comparison_report.md) measures the
 same experiment commands and local research-delivery steps before and after

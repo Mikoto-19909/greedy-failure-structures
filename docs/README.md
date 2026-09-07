@@ -22,8 +22,12 @@ The [next research plan](greedy_failure_research_plan.zh-CN.md) connects six
 papers to studies of greedy decision paths, swap recovery, random instance
 regimes, structural controls, and quality certificates. Its R1a/R1b stage is
 complete: the [prefix and exchange report](../analysis/r1_prefix_exchange_report.md)
-reanalyzes all 60 pilot instances and six separate functional examples. New-sample
-validation (R1c) and R2–R4 remain proposed work. The
+reanalyzes all 60 pilot instances and six separate functional examples. The
+[R1c design](../analysis/r1c_confirmation_design.md) fixes the new sample,
+primary interval and stopping rules. The [R1c confirmation report](../analysis/r1c_confirmation_report.md)
+completes all 3,000 new seed pairs: its interval-width target is met, while the
+primary difference interval includes zero. The [new-sample adapter](../analysis/r1c_confirmation_usage.md)
+and independent validator have checked all 6,000 instances. R2–R4 remain future work. The
 [workflow speed report](../analysis/gate_speed_comparison_report.md) separately
 measures experiment commands and local delivery steps after the gate removal.
 
@@ -50,12 +54,14 @@ revisits existing instance families. Both retain schema v1 for compatibility.
   experiment configuration and raw data
 - [R1 trajectories and summaries](../experiments/r1_prefix_exchange_v1/):
   exploratory prefix and exchange analysis, with independent recomputation
+- [R1c confirmation data](../experiments/r1c_confirmation_v1/): the fixed new
+  sample, raw runs, complete trajectories, statistics, execution context and figure
 
 ## Experiment guidance
 
 - [`greedy_failure_research_plan.zh-CN.md`](greedy_failure_research_plan.zh-CN.md):
   literature-grounded next steps, staged experiments, and verification criteria
-  (Simplified Chinese; R1a/R1b completed, later stages proposed)
+  (Simplified Chinese; R1a/R1b and R1c completed, R2–R4 proposed)
 - [`core_overlap_checkpoint_plan.zh-CN.md`](core_overlap_checkpoint_plan.zh-CN.md):
   fixed single-point comparison of Greedy failures under high overlap and a
   matched uniform control (Simplified Chinese; completed pilot and original design)
