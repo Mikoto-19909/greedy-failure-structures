@@ -4,7 +4,7 @@ Start with the fixed `high_overlap` versus `uniform` pilot, then use the
 supplementary workflows below for specific construction and search questions.
 The [completed pilot](../analysis/overlap_pilot_v1.md) did not provide sufficient
 paired evidence of a difference in Greedy failure rates.
-[实验数据](../experiments/core_rq/overlap_pilot_v1/)
+[Pilot data](../experiments/core_rq/overlap_pilot_v1/)
 
 ## High overlap and a matched uniform control
 
@@ -34,7 +34,7 @@ generators; see [`paired_seed_audit.md`](paired_seed_audit.md).
 `coverage_skew_gini`. Matching expected set size does not hold all those
 properties fixed, so the comparison cannot attribute a difference to overlap
 alone. The observed result does not establish equivalence, an overlap-strength
-trend, or a result at other scales. [实验数据](../experiments/core_rq/overlap_pilot_v1/)
+trend, or a result at other scales. [Pilot data](../experiments/core_rq/overlap_pilot_v1/)
 
 The existing parameter scan remains available for a broader descriptive
 overlap question; its results are separate from the fixed pilot:

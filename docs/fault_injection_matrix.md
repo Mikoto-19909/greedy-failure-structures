@@ -28,12 +28,11 @@ python -m unittest discover -s tests -p test_fault_injection.py -v
    compares current files with these records. A changed file fails this check
    when the record no longer matches; refreshing the record can restore the
    match. This establishes neither the file's history nor its correctness.
-3. The content boundary (`.github/scripts/check_content_boundary.py`) runs in
-   `evidence_backed_claims` mode. It permits quantitative prose while continuing
-   to reject sensitive content and broken links in tracked files. The retained
-   strict mode rejects quantitative claims when selected explicitly. Neither
-   mode scans benchmark artifacts under `results/`, and claim-to-evidence
-   mapping is reviewed through `experiments/core_rq/CLAIMS.md`.
+3. The content boundary (`.github/scripts/check_content_boundary.py`) ran in
+   `evidence_backed_claims` mode. It permitted quantitative prose while
+   continuing to reject sensitive content and broken links in tracked files.
+   This check was removed in PR #46; the rows below that mention it are
+   historical.
 
 ## Benchmark mutations
 
@@ -123,7 +122,6 @@ limits above are not claimed as measured outcomes.
 | test_duplicate_headline_section_is_a_measured_blind_spot | row 9 blind spot, duplicate-section variant |
 | test_headline_value_tamper_is_rejected | row 9 in-section value variant |
 | test_headline_section_rename_is_rejected | row 9 section-rename variant |
-| test_a_tracked_conclusion_without_evidence_is_rejected | row 9 strict-mode tracked-file variant |
-| test_an_untracked_results_artifact_is_not_scanned | row 9 content boundary cell, untracked-artifact variant |
-| test_claim_mode_without_quantitative_claims_allows_plain_prose | content boundary control |
-| test_evidence_mode_defers_claim_binding_to_review | row 9 active content-boundary mode |
+
+The four content-boundary tests that closed this table were removed in PR #46
+along with the check they exercised.

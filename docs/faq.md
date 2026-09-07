@@ -98,7 +98,7 @@ the consumption rules are described in [`paired_seed_audit.md`](paired_seed_audi
 
 The high-overlap pilot did not provide sufficient paired evidence of a
 difference in Greedy failure rates. This does not establish equivalence or an
-effect of overlap alone. [实验数据](../experiments/core_rq/overlap_pilot_v1/) connects that
+effect of overlap alone. [Pilot data](../experiments/core_rq/overlap_pilot_v1/) connects that
 statement to the frozen evidence; the
 [pilot analysis](../analysis/overlap_pilot_v1.md) explains the comparison and
 its limits. The [research index](../analysis/README.md) lists published work.
@@ -114,14 +114,22 @@ is maintained in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
 
 ## What does determinism mean here?
 
-With the same normalized configuration, generator and algorithm versions, and
-explicit seeds, completed runs reproduce the instance identities, selected set
-indices, coverage values, and canonical row ordering. Wall-clock runtime,
-timestamps, and environment metadata may vary by machine. A run stopped by its
+Pin down three inputs — the normalized configuration, the generator and
+algorithm versions, and the explicit seed — and completed runs reproduce the
+instance identities, selected set indices, coverage values, and canonical row
+ordering.
+
+Three things fall outside that promise, and all three are properties of the
+machine rather than of the run: wall-clock runtime, timestamps, and
+environment metadata may vary by machine.
+
+Timeouts are the case worth spelling out separately. A run stopped by its
 wall-clock limit reports the incumbent it had reached when the limit fired;
-that incumbent and its coverage can differ across machines and are exempt from
-this guarantee. Randomised algorithms require an explicit algorithm seed;
-deterministic algorithms reject one.
+because progress is checked against the wall clock, that incumbent and its
+coverage can differ across machines and are exempt from this guarantee.
+
+The same asymmetry shows up in seeding: randomised algorithms require an
+explicit algorithm seed, while deterministic algorithms reject one.
 
 <!-- faq:id=reproduction -->
 

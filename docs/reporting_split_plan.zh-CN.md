@@ -173,7 +173,6 @@ python -m unittest discover -s tests -p 'test_benchmark.py' -v
 python -m unittest discover -s tests -p 'test_reference_coverage.py' -v
 python -m unittest discover -s tests -p 'test_output_validation.py' -v
 python -m unittest discover -s tests -p 'test_fault_injection.py' -v
-python -m unittest discover -s tests -p 'test_documented_claims.py' -v
 ```
 
 完成条件：

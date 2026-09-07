@@ -19,18 +19,22 @@ Start with [`analysis/README.md`](../analysis/README.md) for research status.
 The quick/full and broader workflows below serve other purposes.
 
 The [next research plan](greedy_failure_research_plan.zh-CN.md) connects six
-papers to proposed studies of greedy decision paths, swap recovery, random
-instance regimes, structural controls, and quality certificates. It is a
-planning document; those studies have not been executed.
+papers to studies of greedy decision paths, swap recovery, random instance
+regimes, structural controls, and quality certificates. Its R1a/R1b stage is
+complete: the [prefix and exchange report](../analysis/r1_prefix_exchange_report.md)
+reanalyzes all 60 pilot instances and six separate functional examples. New-sample
+validation (R1c) and R2–R4 remain proposed work. The
+[workflow speed report](../analysis/gate_speed_comparison_report.md) separately
+measures experiment commands and local delivery steps after the gate removal.
 
 ## Examples and compatibility checks
 
 - [`README.md`](../README.md): installation and the shortest runnable workflow
 - [`README.zh-CN.md`](../README.zh-CN.md): Simplified Chinese project overview
 - [`cli.md`](cli.md): validation, execution, resume, summarize, replay, and
-  dashboard workflows
+  dashboard workflows ([中文](cli.zh-CN.md))
 - [`output_schema.md`](output_schema.md): generated CSV, report, replay, and
-  result identity and resume semantics
+  result identity and resume semantics ([中文](output_schema.zh-CN.md))
 - [`reproducibility_matrix.md`](reproducibility_matrix.md): which raw result
   fields must reproduce bit-for-bit and which are exempt, plus the matrix that
   enforces it across operating systems and Python versions
@@ -44,17 +48,20 @@ revisits existing instance families. Both retain schema v1 for compatibility.
 - [`analysis/README.md`](../analysis/README.md): external research analysis
 - [pilot configuration and data](../experiments/core_rq/overlap_pilot_v1/):
   experiment configuration and raw data
+- [R1 trajectories and summaries](../experiments/r1_prefix_exchange_v1/):
+  exploratory prefix and exchange analysis, with independent recomputation
 
 ## Experiment guidance
 
 - [`greedy_failure_research_plan.zh-CN.md`](greedy_failure_research_plan.zh-CN.md):
   literature-grounded next steps, staged experiments, and verification criteria
-  (Simplified Chinese; planning only)
+  (Simplified Chinese; R1a/R1b completed, later stages proposed)
 - [`core_overlap_checkpoint_plan.zh-CN.md`](core_overlap_checkpoint_plan.zh-CN.md):
   fixed single-point comparison of Greedy failures under high overlap and a
   matched uniform control (Simplified Chinese; completed pilot and original design)
 - [`failure_mechanisms.md`](failure_mechanisms.md): structural stressors,
   direct greedy traps, and the configurations that exercise them
+  ([中文](failure_mechanisms.zh-CN.md))
 - [`generator_isolation.md`](generator_isolation.md): target-metric monotonicity,
   confound checks, overlap tails, cluster separation, and matched controls
 - [`faq.md`](faq.md): project rationale, algorithm roles, and determinism
@@ -107,6 +114,8 @@ cleanup remains conditional.
 
 ## Project policy and history
 
+- [`glossary.md`](glossary.md): the terminology table that Simplified Chinese
+  documentation follows, including terms kept in English
 - [`documentation_simplification_plan.zh-CN.md`](documentation_simplification_plan.zh-CN.md):
   Simplified Chinese plan for documentation corrections and cleanup, including
   related comments, tests, and completion criteria
@@ -122,4 +131,4 @@ cleanup remains conditional.
 
 Generated files under `results/` are local artifacts. They are inputs to local
 inspection and independent validation, not tracked documentation. Reports link directly to the configurations and data saved in
-`experiments/core_rq/`.
+`experiments/`.

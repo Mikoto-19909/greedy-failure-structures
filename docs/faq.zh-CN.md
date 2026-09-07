@@ -51,7 +51,7 @@ CP-SAT 需要 OR-Tools，核心实验不需要该依赖。惰性评估本身不�
 `feasible` 表示已有可行 incumbent，但没有最优性证明；它本身不能说明执行已经
 完成，停止原因要看 `algorithm_metadata.termination`。`timeout` 表示达到时间
 限制，`error` 表示没有有效算法结果，两者都不能提供参考最优值。
-字段约定见 [`output_schema.md`](output_schema.md)。
+字段约定见[输出指南](output_schema.zh-CN.md)。
 
 <!-- faq:id=instance-families -->
 
@@ -63,7 +63,7 @@ CP-SAT 需要 OR-Tools，核心实验不需要该依赖。惰性评估本身不�
 
 设计某种结构压力不等于已经观察到 Greedy 失手，需要检查实际实例及其参考值。
 已知对抗构造有各自的参数条件。机制与命令见
-[`failure_mechanisms.md`](failure_mechanisms.md)，受控扫描保持哪些量不变则见
+[结构机制指南](failure_mechanisms.zh-CN.md)，受控扫描保持哪些量不变则见
 [`generator_isolation.md`](generator_isolation.md)。
 
 <!-- faq:id=synthetic-families -->
@@ -97,16 +97,22 @@ CP-SAT 需要 OR-Tools，核心实验不需要该依赖。惰性评估本身不�
 
 ## 这里的确定性是什么意思？
 
-在规范化配置、生成器及算法版本、显式种子相同的情况下，已完成的运行会复现
-实例身份、选中的集合索引、覆盖值以及规范行排序。实际运行时间、时间戳和
-环境元数据可能因机器而异。被墙钟限制中止的运行报告其在限制触发时已达成的 incumbent；
-该 incumbent 及其覆盖量可能因机器而异，不受此保证约束。随机算法必须显式提供
-算法种子，确定性算法会拒绝算法种子。
+把规范化配置、生成器及算法版本、显式种子这三样固定住，已完成的运行会复现
+实例身份、选中的集合索引、覆盖值以及规范行排序。
+
+有三样东西不在这个承诺里，而且它们属于机器，不属于运行本身：实际运行时间、
+时间戳和环境元数据可能因机器而异。
+
+超时值得单独说一句。被墙钟限制中止的运行报告其在限制触发时已达成的 incumbent；
+由于进度按墙钟检查，该 incumbent 及其覆盖量可能因机器而异，不受此保证约束。
+
+同一条不对等的规则也体现在种子上：随机算法必须显式提供算法种子，而确定性
+算法会拒绝算法种子。
 
 <!-- faq:id=reproduction -->
 
 ## 如何复现实验流程？
 
-按[核心实验命令](cli.md#core-overlap-pilot)重建完整输出，再运行验证器与离线
-分析。完整的 [`CLI 参考`](cli.md)介绍配置检查、benchmark、恢复、summarize
-和回放；[`output_schema.md`](output_schema.md)解释产物及验证范围。
+按[核心实验命令](cli.zh-CN.md#核心重叠-pilot)重建完整输出，再运行验证器与离线
+分析。完整的 [CLI 参考](cli.zh-CN.md)介绍配置检查、benchmark、恢复、summarize
+和回放；[输出指南](output_schema.zh-CN.md)解释产物及验证范围。

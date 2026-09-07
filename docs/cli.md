@@ -25,7 +25,7 @@ python -m pip install -e ".[oracle]"
 The [pilot configuration](../configs/core_overlap_pilot.json) and
 [offline analysis script](../analysis/core_overlap_pilot.py) are implemented.
 The formal experiment is complete; see the [report](../analysis/overlap_pilot_v1.md)
-and [实验数据](../experiments/core_rq/overlap_pilot_v1/). Use the
+and [pilot data](../experiments/core_rq/overlap_pilot_v1/). Use the
 [dedicated commands](#core-overlap-pilot) to reproduce the fixed design.
 
 Omitting the CLI command runs `quick`. The PowerShell wrapper also defaults to
@@ -242,8 +242,6 @@ Use `--host` and `--port` to change the loopback address or port. Non-loopback
 bindings are rejected. The dashboard reads `configs/`, writes under `results/`,
 and calls the same validation, benchmark, report, and replay functions as the
 CLI. It provides no accounts, remote queue, or hosted execution.
-Its initial quick selection is an example workflow; choose other existing
-configurations according to the purpose described above.
 
 ## Output validation
 

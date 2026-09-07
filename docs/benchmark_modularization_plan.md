@@ -1,6 +1,8 @@
 # `benchmark.py` Internal Modularization Plan
 
-> 历史设计记录：其中的 manifest、文件摘要及研究登记要求已取消。当前工作流程以 [CONTRIBUTING.md](../CONTRIBUTING.md) 为准。
+> Historical design record: the manifest, file-inventory, and research-registry
+> requirements described below have been retired. The current workflow is
+> defined by [CONTRIBUTING.md](../CONTRIBUTING.md).
 
 Restored from the preserved research stash and reconciled with the main branch
 at `0dd9de338c07df312e268f916e630aceebb11f4a` on 2026-09-05. The research
@@ -887,23 +889,11 @@ Run the repository-prescribed checks:
 
 ```console
 python -m unittest discover -s tests -v
-python .github/scripts/check_content_boundary.py --claim-mode evidence_backed_claims
-python .github/scripts/build_license_manifest.py --check
 python -m mypy
 ```
 
 Run the independent benchmark output validator against the fixed comparison
 output as an additional gate.
-
-When tracked files change, follow the repository's index-backed license
-Manifest order:
-
-```text
-stage intended files
-regenerate LICENSE_MANIFEST.json
-stage LICENSE_MANIFEST.json
-run the Manifest check
-```
 
 ## Stop conditions
 
@@ -961,8 +951,7 @@ Do not include any of the following:
 - Manifest stable fields and output hashes match.
 - single-worker, spawn, interruption, resume, force, and replay paths pass.
 - summarize continues to rebuild without algorithm execution.
-- the full test suite, independent validator, content boundary, license
-  Manifest, and mypy checks pass.
+- the full test suite, independent validator, and mypy checks pass.
 - the optional orchestration pull request is either completed or explicitly
   cancelled after review.
 

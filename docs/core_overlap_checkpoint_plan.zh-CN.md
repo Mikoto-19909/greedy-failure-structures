@@ -189,7 +189,7 @@ runner 根据 base seed、seed group 和 repetition 派生实例 seed；
 ### 每对保存什么
 
 `paired_instances.csv` 固定为每个 repetition 一行，按 repetition 升序输出。
-至少保存：配置哈希、repetition、两边的 case ID、instance ID、有效 seed、
+至少保存：配置哈希、`repetition`、两边的 `case_id`、`instance_id`、有效 `seed`、
 Greedy 覆盖量、穷举最优值、失手标记、相对 gap，以及以下结构字段的两边取值：
 
 - `pairwise_overlap_mean_jaccard`：平均两集合 Jaccard 重叠度；
@@ -348,8 +348,8 @@ benchmark manifest 和输入 CSV 的 SHA-256、分析脚本及分析产物的 SH
 
 外部说明放入 `analysis/overlap_pilot_v1.md`，图保存为
 `analysis/overlap_pilot_v1.svg`。图复制或更名时记录原始文件名及相同的哈希。
-使用 `CLAIMS.md` 中下一个可用 claim ID，
-绑定确切行、过滤条件、主指标与辅助指标、配置、图和验证记录；不提前填入结果。
+报告中的结论直接链接确切行、过滤条件、主指标与辅助指标、配置、图和验证记录；
+不提前填入结果。
 
 如果生成的 manifest 包含个人绝对配置路径，按 CONTRIBUTING 的现行办法，
 在完整本地输出中将 `configuration.path` 改为仓库相对的 `config.json`，
@@ -361,7 +361,7 @@ benchmark manifest 和输入 CSV 的 SHA-256、分析脚本及分析产物的 SH
 不能声称它能直接验证这个精简目录。验证记录写清 PASS 对应的目录与文件范围，
 提供第 6 节重跑命令，并区分确定性字段与会随重跑变化的时间、环境和 manifest 字段。
 
-发布时更新 claim 台账与分析入口，按需更新文档链接和许可证清单。
+发布时在报告与分析入口中链接配置与数据，按需更新文档链接。
 保持 `results/` gitignored，历史迁移清单不变；不在 commit message 或 release note
 中写研究数字。实验脚本、证据与正文按单一职责组织提交，不混入其他维护计划。
 

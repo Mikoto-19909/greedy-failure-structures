@@ -46,7 +46,7 @@ alpha=0.05。辅助 gap 均值包含全部零 gap 实例，不另作显著性搜
 
 处理组平均 Jaccard 高于对照，预期的重叠差异已经形成。但覆盖并集、实际密度和
 元素覆盖频率集中程度也有变化。下表保留两组的均值、范围与配对差；数值均来自
-canonical `instances.csv` 中的现有字段，没有另算同名结构指标。[实验数据](../experiments/core_rq/overlap_pilot_v1/)
+规范 `instances.csv` 中的现有字段，没有另算同名结构指标。[实验数据](../experiments/core_rq/overlap_pilot_v1/)
 
 | 指标 | 处理组均值 [最小, 最大] | 对照组均值 [最小, 最大] | 配对均值差 |
 | --- | --- | --- | --- |
