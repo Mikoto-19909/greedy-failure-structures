@@ -69,12 +69,15 @@ def extended_group(test_id: str) -> str | None:
 
 GROUPS = {'artifacts', 'cartography', 'routing', 'cli', 'generators', 'dashboard'}
 RESEARCH_MODULES = {
+    'counterexamples': ('test_counterexamples',),
     'pilot': ('test_core_overlap_pilot',),
     'r1': ('test_greedy_failure_paths', 'test_research_verification'),
     'r1c': ('test_r1c_confirmation', 'test_r1c_report'),
 }
 # Producer, verifier, and shared helper ownership; tools need no fake second solver.
 ANALYSIS_OWNERS = {
+    'mine_counterexamples.py': 'counterexamples',
+    'validate_counterexamples.py': 'counterexamples',
     'core_overlap_pilot.py': 'pilot',
     'greedy_failure_paths.py': 'r1',
     'validate_greedy_failure_paths.py': 'r1',
@@ -128,6 +131,11 @@ def affected_groups(paths: list[str]) -> set[str]:
     return groups
 
 REQUIRED_RESEARCH = {
+    'counterexamples': (
+        'test_counterexamples.CounterexampleTests.test_known_answer_and_independent_reduction',
+        'test_counterexamples.CounterexampleTests.test_false_optimum_and_incomplete_results_are_rejected',
+        'test_counterexamples.CounterexampleTests.test_budget_exhaustion_never_claims_minimality',
+    ),
     'pilot': (
         'test_core_overlap_pilot.PilotInputTest.test_complete_synthetic_input_is_accepted',
         'test_core_overlap_pilot.PilotStatisticsTest.test_four_cells_and_exact_two_sided_tail',

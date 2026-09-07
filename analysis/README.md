@@ -1,5 +1,10 @@
 # Research analysis
 
+The [counterexample miner and reducer](counterexamples_usage.zh-CN.md) selects
+Greedy failures from saved R1/R1c instances or instance JSON and produces smaller,
+independently checked replay cases. These selected cases support explanation and
+testing, not population failure-rate estimates.
+
 Start with the [R1c confirmation report](r1c_confirmation_report.md). Its fixed
 3,000 new seed pairs meet the interval-width target but do not establish the
 direction of the conditional tie-avoidability difference. The
