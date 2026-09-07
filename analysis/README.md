@@ -9,6 +9,26 @@ The [R3 confirmation report](r3_confirmation_report.zh-CN.md) completes the
 independently verified endpoints establish the specified protocol contrast.
 See the [execution guide](r3_confirmation_usage.zh-CN.md) for recovery and verification commands.
 
+The [R3 fixed-degree counterexample tool](../docs/r3_counterexamples.zh-CN.md)
+finds exploratory pairs for E0 and first-step irrecoverability while preserving
+indexed row and column degrees. It saves exact O/O1 witnesses and replayable
+switches; it does not run or replace the R3 confirmation protocol.
+
+For hands-on counterexample experiments, start with the
+[experiment walkthrough](../docs/counterexample_experiments.zh-CN.md).
+`counterexamples.ps1` offers short commands for mining, creating a conjecture,
+searching it, and independently checking the result before displaying it.
+
+The [bounded conjecture refuter](conjectures_usage.zh-CN.md) searches explicit
+structural premises for a violation of a Greedy coverage-ratio claim. It checks
+the exact witness independently and distinguishes domain exhaustion from an
+unfinished search.
+
+The [counterexample miner and reducer](counterexamples_usage.zh-CN.md) selects
+Greedy failures from saved R1/R1c instances or instance JSON and produces smaller,
+independently checked replay cases. These selected cases support explanation and
+testing, not population failure-rate estimates.
+
 Start with the [R1c confirmation report](r1c_confirmation_report.md). Its fixed
 3,000 new seed pairs meet the interval-width target but do not establish the
 direction of the conditional tie-avoidability difference. The
