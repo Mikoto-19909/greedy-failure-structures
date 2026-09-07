@@ -1,0 +1,1394 @@
+{
+  "diagnostic": {
+    "completion_count": 8008,
+    "first_failure_step": 3,
+    "greedy_selected": [
+      0,
+      2,
+      4,
+      8,
+      3,
+      6
+    ],
+    "mechanism": "tie_avoidable",
+    "one_swap": {
+      "coverage": 15,
+      "evaluations": 120,
+      "exchanges": 1,
+      "rounds": [
+        {
+          "added": [
+            15
+          ],
+          "after": [
+            2,
+            3,
+            4,
+            6,
+            8,
+            15
+          ],
+          "after_coverage": 15,
+          "before": [
+            0,
+            2,
+            3,
+            4,
+            6,
+            8
+          ],
+          "before_coverage": 14,
+          "evaluations": 60,
+          "removed": [
+            0
+          ],
+          "round": 1,
+          "status": "improved"
+        },
+        {
+          "added": [],
+          "after": [
+            2,
+            3,
+            4,
+            6,
+            8,
+            15
+          ],
+          "after_coverage": 15,
+          "before": [
+            2,
+            3,
+            4,
+            6,
+            8,
+            15
+          ],
+          "before_coverage": 15,
+          "evaluations": 60,
+          "removed": [],
+          "round": 2,
+          "status": "local_optimum"
+        }
+      ],
+      "selected": [
+        2,
+        3,
+        4,
+        6,
+        8,
+        15
+      ],
+      "status": "local_optimum"
+    },
+    "optimal_solution_count": 12,
+    "optimum": 15,
+    "optimum_selected": [
+      0,
+      2,
+      5,
+      8,
+      11,
+      14
+    ],
+    "prefixes": [
+      {
+        "completion_count": 8008,
+        "completion_selected": [
+          0,
+          2,
+          5,
+          8,
+          11,
+          14
+        ],
+        "coverage": 0,
+        "optimal_completion": 15,
+        "prefix": [],
+        "step": 0
+      },
+      {
+        "completion_count": 3003,
+        "completion_selected": [
+          0,
+          2,
+          5,
+          8,
+          11,
+          14
+        ],
+        "coverage": 3,
+        "optimal_completion": 15,
+        "prefix": [
+          0
+        ],
+        "step": 1
+      },
+      {
+        "completion_count": 1001,
+        "completion_selected": [
+          0,
+          2,
+          5,
+          8,
+          11,
+          14
+        ],
+        "coverage": 6,
+        "optimal_completion": 15,
+        "prefix": [
+          0,
+          2
+        ],
+        "step": 2
+      },
+      {
+        "completion_count": 286,
+        "completion_selected": [
+          0,
+          2,
+          3,
+          4,
+          6,
+          8
+        ],
+        "coverage": 9,
+        "optimal_completion": 14,
+        "prefix": [
+          0,
+          2,
+          4
+        ],
+        "step": 3
+      },
+      {
+        "completion_count": 66,
+        "completion_selected": [
+          0,
+          2,
+          3,
+          4,
+          6,
+          8
+        ],
+        "coverage": 12,
+        "optimal_completion": 14,
+        "prefix": [
+          0,
+          2,
+          4,
+          8
+        ],
+        "step": 4
+      },
+      {
+        "completion_count": 11,
+        "completion_selected": [
+          0,
+          2,
+          3,
+          4,
+          6,
+          8
+        ],
+        "coverage": 13,
+        "optimal_completion": 14,
+        "prefix": [
+          0,
+          2,
+          4,
+          8,
+          3
+        ],
+        "step": 5
+      },
+      {
+        "completion_count": 1,
+        "completion_selected": [
+          0,
+          2,
+          3,
+          4,
+          6,
+          8
+        ],
+        "coverage": 14,
+        "optimal_completion": 14,
+        "prefix": [
+          0,
+          2,
+          4,
+          8,
+          3,
+          6
+        ],
+        "step": 6
+      }
+    ],
+    "ties": [
+      {
+        "candidate": 0,
+        "chosen": true,
+        "completion_count": 3003,
+        "completion_selected": [
+          0,
+          2,
+          5,
+          8,
+          11,
+          14
+        ],
+        "marginal_gain": 3,
+        "optimal_completion": 15,
+        "preserves_optimum": true,
+        "step": 1
+      },
+      {
+        "candidate": 1,
+        "chosen": false,
+        "completion_count": 3003,
+        "completion_selected": [
+          0,
+          1,
+          2,
+          5,
+          6,
+          8
+        ],
+        "marginal_gain": 3,
+        "optimal_completion": 14,
+        "preserves_optimum": false,
+        "step": 1
+      },
+      {
+        "candidate": 2,
+        "chosen": false,
+        "completion_count": 3003,
+        "completion_selected": [
+          0,
+          2,
+          5,
+          8,
+          11,
+          14
+        ],
+        "marginal_gain": 3,
+        "optimal_completion": 15,
+        "preserves_optimum": true,
+        "step": 1
+      },
+      {
+        "candidate": 3,
+        "chosen": false,
+        "completion_count": 3003,
+        "completion_selected": [
+          2,
+          3,
+          4,
+          6,
+          8,
+          15
+        ],
+        "marginal_gain": 3,
+        "optimal_completion": 15,
+        "preserves_optimum": true,
+        "step": 1
+      },
+      {
+        "candidate": 4,
+        "chosen": false,
+        "completion_count": 3003,
+        "completion_selected": [
+          2,
+          3,
+          4,
+          6,
+          8,
+          15
+        ],
+        "marginal_gain": 3,
+        "optimal_completion": 15,
+        "preserves_optimum": true,
+        "step": 1
+      },
+      {
+        "candidate": 5,
+        "chosen": false,
+        "completion_count": 3003,
+        "completion_selected": [
+          0,
+          2,
+          5,
+          8,
+          11,
+          14
+        ],
+        "marginal_gain": 3,
+        "optimal_completion": 15,
+        "preserves_optimum": true,
+        "step": 1
+      },
+      {
+        "candidate": 6,
+        "chosen": false,
+        "completion_count": 3003,
+        "completion_selected": [
+          2,
+          3,
+          4,
+          6,
+          8,
+          15
+        ],
+        "marginal_gain": 3,
+        "optimal_completion": 15,
+        "preserves_optimum": true,
+        "step": 1
+      },
+      {
+        "candidate": 7,
+        "chosen": false,
+        "completion_count": 3003,
+        "completion_selected": [
+          2,
+          5,
+          7,
+          8,
+          11,
+          14
+        ],
+        "marginal_gain": 3,
+        "optimal_completion": 15,
+        "preserves_optimum": true,
+        "step": 1
+      },
+      {
+        "candidate": 8,
+        "chosen": false,
+        "completion_count": 3003,
+        "completion_selected": [
+          0,
+          2,
+          5,
+          8,
+          11,
+          14
+        ],
+        "marginal_gain": 3,
+        "optimal_completion": 15,
+        "preserves_optimum": true,
+        "step": 1
+      },
+      {
+        "candidate": 9,
+        "chosen": false,
+        "completion_count": 3003,
+        "completion_selected": [
+          0,
+          1,
+          2,
+          5,
+          6,
+          9
+        ],
+        "marginal_gain": 3,
+        "optimal_completion": 14,
+        "preserves_optimum": false,
+        "step": 1
+      },
+      {
+        "candidate": 10,
+        "chosen": false,
+        "completion_count": 3003,
+        "completion_selected": [
+          0,
+          2,
+          4,
+          6,
+          8,
+          10
+        ],
+        "marginal_gain": 3,
+        "optimal_completion": 14,
+        "preserves_optimum": false,
+        "step": 1
+      },
+      {
+        "candidate": 11,
+        "chosen": false,
+        "completion_count": 3003,
+        "completion_selected": [
+          0,
+          2,
+          5,
+          8,
+          11,
+          14
+        ],
+        "marginal_gain": 3,
+        "optimal_completion": 15,
+        "preserves_optimum": true,
+        "step": 1
+      },
+      {
+        "candidate": 12,
+        "chosen": false,
+        "completion_count": 3003,
+        "completion_selected": [
+          0,
+          2,
+          5,
+          8,
+          11,
+          12
+        ],
+        "marginal_gain": 3,
+        "optimal_completion": 14,
+        "preserves_optimum": false,
+        "step": 1
+      },
+      {
+        "candidate": 13,
+        "chosen": false,
+        "completion_count": 3003,
+        "completion_selected": [
+          0,
+          5,
+          8,
+          11,
+          13,
+          14
+        ],
+        "marginal_gain": 3,
+        "optimal_completion": 15,
+        "preserves_optimum": true,
+        "step": 1
+      },
+      {
+        "candidate": 14,
+        "chosen": false,
+        "completion_count": 3003,
+        "completion_selected": [
+          0,
+          2,
+          5,
+          8,
+          11,
+          14
+        ],
+        "marginal_gain": 3,
+        "optimal_completion": 15,
+        "preserves_optimum": true,
+        "step": 1
+      },
+      {
+        "candidate": 15,
+        "chosen": false,
+        "completion_count": 3003,
+        "completion_selected": [
+          0,
+          2,
+          5,
+          8,
+          11,
+          15
+        ],
+        "marginal_gain": 3,
+        "optimal_completion": 15,
+        "preserves_optimum": true,
+        "step": 1
+      },
+      {
+        "candidate": 2,
+        "chosen": true,
+        "completion_count": 1001,
+        "completion_selected": [
+          0,
+          2,
+          5,
+          8,
+          11,
+          14
+        ],
+        "marginal_gain": 3,
+        "optimal_completion": 15,
+        "preserves_optimum": true,
+        "step": 2
+      },
+      {
+        "candidate": 4,
+        "chosen": false,
+        "completion_count": 1001,
+        "completion_selected": [
+          0,
+          2,
+          3,
+          4,
+          6,
+          8
+        ],
+        "marginal_gain": 3,
+        "optimal_completion": 14,
+        "preserves_optimum": false,
+        "step": 2
+      },
+      {
+        "candidate": 5,
+        "chosen": false,
+        "completion_count": 1001,
+        "completion_selected": [
+          0,
+          2,
+          5,
+          8,
+          11,
+          14
+        ],
+        "marginal_gain": 3,
+        "optimal_completion": 15,
+        "preserves_optimum": true,
+        "step": 2
+      },
+      {
+        "candidate": 6,
+        "chosen": false,
+        "completion_count": 1001,
+        "completion_selected": [
+          0,
+          1,
+          2,
+          5,
+          6,
+          8
+        ],
+        "marginal_gain": 3,
+        "optimal_completion": 14,
+        "preserves_optimum": false,
+        "step": 2
+      },
+      {
+        "candidate": 8,
+        "chosen": false,
+        "completion_count": 1001,
+        "completion_selected": [
+          0,
+          2,
+          5,
+          8,
+          11,
+          14
+        ],
+        "marginal_gain": 3,
+        "optimal_completion": 15,
+        "preserves_optimum": true,
+        "step": 2
+      },
+      {
+        "candidate": 10,
+        "chosen": false,
+        "completion_count": 1001,
+        "completion_selected": [
+          0,
+          2,
+          4,
+          6,
+          8,
+          10
+        ],
+        "marginal_gain": 3,
+        "optimal_completion": 14,
+        "preserves_optimum": false,
+        "step": 2
+      },
+      {
+        "candidate": 13,
+        "chosen": false,
+        "completion_count": 1001,
+        "completion_selected": [
+          0,
+          5,
+          8,
+          11,
+          13,
+          14
+        ],
+        "marginal_gain": 3,
+        "optimal_completion": 15,
+        "preserves_optimum": true,
+        "step": 2
+      },
+      {
+        "candidate": 4,
+        "chosen": true,
+        "completion_count": 286,
+        "completion_selected": [
+          0,
+          2,
+          3,
+          4,
+          6,
+          8
+        ],
+        "marginal_gain": 3,
+        "optimal_completion": 14,
+        "preserves_optimum": false,
+        "step": 3
+      },
+      {
+        "candidate": 5,
+        "chosen": false,
+        "completion_count": 286,
+        "completion_selected": [
+          0,
+          2,
+          5,
+          8,
+          11,
+          14
+        ],
+        "marginal_gain": 3,
+        "optimal_completion": 15,
+        "preserves_optimum": true,
+        "step": 3
+      },
+      {
+        "candidate": 6,
+        "chosen": false,
+        "completion_count": 286,
+        "completion_selected": [
+          0,
+          1,
+          2,
+          5,
+          6,
+          8
+        ],
+        "marginal_gain": 3,
+        "optimal_completion": 14,
+        "preserves_optimum": false,
+        "step": 3
+      },
+      {
+        "candidate": 8,
+        "chosen": false,
+        "completion_count": 286,
+        "completion_selected": [
+          0,
+          2,
+          5,
+          8,
+          11,
+          14
+        ],
+        "marginal_gain": 3,
+        "optimal_completion": 15,
+        "preserves_optimum": true,
+        "step": 3
+      },
+      {
+        "candidate": 8,
+        "chosen": true,
+        "completion_count": 66,
+        "completion_selected": [
+          0,
+          2,
+          3,
+          4,
+          6,
+          8
+        ],
+        "marginal_gain": 3,
+        "optimal_completion": 14,
+        "preserves_optimum": false,
+        "step": 4
+      },
+      {
+        "candidate": 3,
+        "chosen": true,
+        "completion_count": 11,
+        "completion_selected": [
+          0,
+          2,
+          3,
+          4,
+          6,
+          8
+        ],
+        "marginal_gain": 1,
+        "optimal_completion": 14,
+        "preserves_optimum": false,
+        "step": 5
+      },
+      {
+        "candidate": 5,
+        "chosen": false,
+        "completion_count": 11,
+        "completion_selected": [
+          0,
+          2,
+          4,
+          5,
+          6,
+          8
+        ],
+        "marginal_gain": 1,
+        "optimal_completion": 14,
+        "preserves_optimum": false,
+        "step": 5
+      },
+      {
+        "candidate": 6,
+        "chosen": false,
+        "completion_count": 11,
+        "completion_selected": [
+          0,
+          2,
+          3,
+          4,
+          6,
+          8
+        ],
+        "marginal_gain": 1,
+        "optimal_completion": 14,
+        "preserves_optimum": false,
+        "step": 5
+      },
+      {
+        "candidate": 10,
+        "chosen": false,
+        "completion_count": 11,
+        "completion_selected": [
+          0,
+          2,
+          4,
+          6,
+          8,
+          10
+        ],
+        "marginal_gain": 1,
+        "optimal_completion": 14,
+        "preserves_optimum": false,
+        "step": 5
+      },
+      {
+        "candidate": 11,
+        "chosen": false,
+        "completion_count": 11,
+        "completion_selected": [
+          0,
+          2,
+          3,
+          4,
+          8,
+          11
+        ],
+        "marginal_gain": 1,
+        "optimal_completion": 14,
+        "preserves_optimum": false,
+        "step": 5
+      },
+      {
+        "candidate": 14,
+        "chosen": false,
+        "completion_count": 11,
+        "completion_selected": [
+          0,
+          2,
+          3,
+          4,
+          8,
+          14
+        ],
+        "marginal_gain": 1,
+        "optimal_completion": 14,
+        "preserves_optimum": false,
+        "step": 5
+      },
+      {
+        "candidate": 15,
+        "chosen": false,
+        "completion_count": 11,
+        "completion_selected": [
+          0,
+          2,
+          3,
+          4,
+          8,
+          15
+        ],
+        "marginal_gain": 1,
+        "optimal_completion": 14,
+        "preserves_optimum": false,
+        "step": 5
+      },
+      {
+        "candidate": 6,
+        "chosen": true,
+        "completion_count": 1,
+        "completion_selected": [
+          0,
+          2,
+          3,
+          4,
+          6,
+          8
+        ],
+        "marginal_gain": 1,
+        "optimal_completion": 14,
+        "preserves_optimum": false,
+        "step": 6
+      },
+      {
+        "candidate": 11,
+        "chosen": false,
+        "completion_count": 1,
+        "completion_selected": [
+          0,
+          2,
+          3,
+          4,
+          8,
+          11
+        ],
+        "marginal_gain": 1,
+        "optimal_completion": 14,
+        "preserves_optimum": false,
+        "step": 6
+      },
+      {
+        "candidate": 14,
+        "chosen": false,
+        "completion_count": 1,
+        "completion_selected": [
+          0,
+          2,
+          3,
+          4,
+          8,
+          14
+        ],
+        "marginal_gain": 1,
+        "optimal_completion": 14,
+        "preserves_optimum": false,
+        "step": 6
+      },
+      {
+        "candidate": 15,
+        "chosen": false,
+        "completion_count": 1,
+        "completion_selected": [
+          0,
+          2,
+          3,
+          4,
+          8,
+          15
+        ],
+        "marginal_gain": 1,
+        "optimal_completion": 14,
+        "preserves_optimum": false,
+        "step": 6
+      }
+    ],
+    "two_swap": {
+      "coverage": 15,
+      "evaluations": 735,
+      "exchanges": 0,
+      "rounds": [
+        {
+          "added": [],
+          "after": [
+            2,
+            3,
+            4,
+            6,
+            8,
+            15
+          ],
+          "after_coverage": 15,
+          "before": [
+            2,
+            3,
+            4,
+            6,
+            8,
+            15
+          ],
+          "before_coverage": 15,
+          "evaluations": 735,
+          "removed": [],
+          "round": 1,
+          "status": "local_optimum"
+        }
+      ],
+      "selected": [
+        2,
+        3,
+        4,
+        6,
+        8,
+        15
+      ],
+      "status": "local_optimum"
+    }
+  },
+  "sets": [
+    [
+      9,
+      12,
+      14
+    ],
+    [
+      0,
+      13,
+      14
+    ],
+    [
+      3,
+      5,
+      15
+    ],
+    [
+      7,
+      9,
+      12
+    ],
+    [
+      0,
+      6,
+      10
+    ],
+    [
+      6,
+      7,
+      10
+    ],
+    [
+      2,
+      6,
+      8
+    ],
+    [
+      3,
+      6,
+      9
+    ],
+    [
+      1,
+      8,
+      13
+    ],
+    [
+      1,
+      12,
+      15
+    ],
+    [
+      3,
+      7,
+      13
+    ],
+    [
+      0,
+      2,
+      14
+    ],
+    [
+      3,
+      12,
+      15
+    ],
+    [
+      3,
+      5,
+      8
+    ],
+    [
+      4,
+      12,
+      15
+    ],
+    [
+      4,
+      8,
+      14
+    ]
+  ],
+  "status": "complete",
+  "structure": {
+    "actual_density": 0.1875,
+    "coverage_skew_gini": 0.24722222222222223,
+    "covered_element_count": 15,
+    "dominated_set_count": 0,
+    "dominated_set_ratio": 0.0,
+    "dominated_unique_ratio": 0.0,
+    "duplicate_set_count": 0,
+    "duplicate_set_ratio": 0.0,
+    "element_frequencies": [
+      3,
+      2,
+      2,
+      5,
+      2,
+      2,
+      4,
+      3,
+      4,
+      3,
+      2,
+      0,
+      5,
+      3,
+      4,
+      4
+    ],
+    "incidence_count": 48,
+    "mean_set_size": 3.0,
+    "pair_intersections": [
+      1,
+      0,
+      2,
+      0,
+      0,
+      0,
+      1,
+      0,
+      1,
+      0,
+      1,
+      1,
+      0,
+      1,
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      1,
+      0,
+      1,
+      2,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      1,
+      1,
+      0,
+      2,
+      2,
+      1,
+      0,
+      0,
+      1,
+      0,
+      1,
+      0,
+      1,
+      1,
+      0,
+      1,
+      0,
+      1,
+      0,
+      2,
+      1,
+      1,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      1,
+      0,
+      0,
+      1,
+      0,
+      1,
+      0,
+      1,
+      0,
+      0,
+      1,
+      0,
+      1,
+      1,
+      0,
+      0,
+      1,
+      1,
+      0,
+      0,
+      1,
+      0,
+      1,
+      0,
+      0,
+      2,
+      0,
+      2,
+      0,
+      0,
+      1,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      1,
+      2,
+      0,
+      0,
+      1,
+      1
+    ],
+    "pairwise_overlap_mean_jaccard": 0.10833333333333334,
+    "pairwise_overlap_total_pairs": 120,
+    "pairwise_overlap_valid_pairs": 120,
+    "preprocessed_set_count": 16,
+    "unique_set_count": 16
+  },
+  "subset_count": 65536,
+  "task": {
+    "base_graph_id": "r2-exploration-n16-d3-r0013",
+    "budgets": [
+      1,
+      2,
+      3,
+      4,
+      6,
+      8,
+      11,
+      16
+    ],
+    "d": 3,
+    "diagnostic_k": 6,
+    "n": 16,
+    "repetition": 13,
+    "seed": 13578557441236493236
+  },
+  "timing": {
+    "base_seconds": 0.022795699998823693,
+    "diagnostic_seconds": 0.03029650000098627,
+    "enumeration_seconds": 0.022050300001865253,
+    "generation_seconds": 9.299999874201603e-05,
+    "peak_memory_bytes": 34013184,
+    "total_seconds": 0.053237299998727394
+  },
+  "values": [
+    {
+      "greedy": 3,
+      "greedy_selected": [
+        0
+      ],
+      "instance_id": "8d4e91b6a09f641b67c03b7e4996962a8f1597a4ed361ad83571383057f92d69",
+      "k": 1,
+      "optimum": 3,
+      "optimum_selected": [
+        0
+      ],
+      "reference_status": "optimal"
+    },
+    {
+      "greedy": 6,
+      "greedy_selected": [
+        0,
+        2
+      ],
+      "instance_id": "2dcac31db8cfcc8d7a3b09de041b3d8b643c5c0ac92ef0eaccdc48abc509f604",
+      "k": 2,
+      "optimum": 6,
+      "optimum_selected": [
+        0,
+        2
+      ],
+      "reference_status": "optimal"
+    },
+    {
+      "greedy": 9,
+      "greedy_selected": [
+        0,
+        2,
+        4
+      ],
+      "instance_id": "8dd139651b2d551bee8f464ea42df95414abd1bb1d9355eb8e3f35250ea61ae3",
+      "k": 3,
+      "optimum": 9,
+      "optimum_selected": [
+        0,
+        2,
+        4
+      ],
+      "reference_status": "optimal"
+    },
+    {
+      "greedy": 12,
+      "greedy_selected": [
+        0,
+        2,
+        4,
+        8
+      ],
+      "instance_id": "16aade1075489f9135bd24901d1a9a20662aa6e2f97b1fc89e6952997c537391",
+      "k": 4,
+      "optimum": 12,
+      "optimum_selected": [
+        0,
+        2,
+        4,
+        8
+      ],
+      "reference_status": "optimal"
+    },
+    {
+      "greedy": 14,
+      "greedy_selected": [
+        0,
+        2,
+        3,
+        4,
+        6,
+        8
+      ],
+      "instance_id": "6196493b4137b96e045f381f8d44ecabf79cc638e193ae954411e172237f5597",
+      "k": 6,
+      "optimum": 15,
+      "optimum_selected": [
+        0,
+        2,
+        5,
+        8,
+        11,
+        14
+      ],
+      "reference_status": "optimal"
+    },
+    {
+      "greedy": 15,
+      "greedy_selected": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        6,
+        8,
+        14
+      ],
+      "instance_id": "b9efd7bc598440787f705747a5988e15c45eeb88f6ec8fa14d4e9716aeaec6e9",
+      "k": 8,
+      "optimum": 15,
+      "optimum_selected": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        6,
+        8,
+        14
+      ],
+      "reference_status": "optimal"
+    },
+    {
+      "greedy": 15,
+      "greedy_selected": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        14
+      ],
+      "instance_id": "78413771d86f1dab461d07eaa47627f5edef2a86ad1953c9d0fc0fef4846a0fa",
+      "k": 11,
+      "optimum": 15,
+      "optimum_selected": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        14
+      ],
+      "reference_status": "optimal"
+    },
+    {
+      "greedy": 15,
+      "greedy_selected": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "instance_id": "ce7c7eea5c41b5fc04eb9d677627e175a44e05ce419051dd94d3119aa61109c6",
+      "k": 16,
+      "optimum": 15,
+      "optimum_selected": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "reference_status": "optimal"
+    }
+  ]
+}
