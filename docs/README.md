@@ -22,8 +22,10 @@ The [next research plan](greedy_failure_research_plan.zh-CN.md) connects six
 papers to studies of greedy decision paths, swap recovery, random instance
 regimes, structural controls, and quality certificates. Its R1a/R1b stage is
 complete: the [prefix and exchange report](../analysis/r1_prefix_exchange_report.md)
-reanalyzes all 60 pilot instances and six separate functional examples. New-sample
-validation (R1c) and R2–R4 remain proposed work. The
+reanalyzes all 60 pilot instances and six separate functional examples. The
+[R1c design](../analysis/r1c_confirmation_design.md) fixes the new sample,
+primary interval and stopping rules; only its resource preflight has run.
+The formal R1c experiment and R2–R4 remain future work. The
 [workflow speed report](../analysis/gate_speed_comparison_report.md) separately
 measures experiment commands and local delivery steps after the gate removal.
 
@@ -55,7 +57,7 @@ revisits existing instance families. Both retain schema v1 for compatibility.
 
 - [`greedy_failure_research_plan.zh-CN.md`](greedy_failure_research_plan.zh-CN.md):
   literature-grounded next steps, staged experiments, and verification criteria
-  (Simplified Chinese; R1a/R1b completed, later stages proposed)
+  (Simplified Chinese; R1a/R1b and the R1c design completed, new experiments pending)
 - [`core_overlap_checkpoint_plan.zh-CN.md`](core_overlap_checkpoint_plan.zh-CN.md):
   fixed single-point comparison of Greedy failures under high overlap and a
   matched uniform control (Simplified Chinese; completed pilot and original design)

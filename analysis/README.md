@@ -12,7 +12,11 @@ examples. It locates the first loss of optimal reachability and compares one-swa
 with up-to-two-swap recovery. The [design](r1_prefix_exchange_design.md),
 [analysis](greedy_failure_paths.py), [independent recomputation](validate_greedy_failure_paths.py),
 and [saved trajectories and summaries](../experiments/r1_prefix_exchange_v1/)
-accompany the findings. R1c and R2–R4 remain proposed work.
+accompany the findings. The [R1c new-sample design](r1c_confirmation_design.md)
+fixes 3,000 new seed pairs and a single primary contrast in tie-avoidable failure
+proportions. Its configuration and resource preflight are ready; the new-sample
+analysis adapter still needs implementation, and the formal experiment has not
+run. R2–R4 remain proposed work.
 
 The [workflow speed comparison](gate_speed_comparison_report.md) measures the
 same experiment commands and local research-delivery steps before and after
