@@ -5,6 +5,11 @@ examples, method checks, and broader exploratory workflows.
 
 ## Current research
 
+Open the [interactive research showcase](greedy_failure_showcase.html) in a browser
+to try coverage cards, trace the first loss of optimal reachability, and preview
+one- or two-card exchanges. The self-contained Chinese page works offline and
+explains the R1c comparison using archived examples and a set-inclusion diagram.
+
 The completed checkpoint compares Greedy failures under `high_overlap` and a
 dimension- and expected-size-matched `uniform` control. The
 [execution plan in PR #23](https://github.com/Mikoto-19909/greedy-failure-structures/pull/23)
