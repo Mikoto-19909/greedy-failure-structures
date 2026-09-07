@@ -286,9 +286,9 @@ def _record_fixtures() -> tuple[object, ...]:
     )
 
 
-def _unpickle_in_spawn(payload: bytes, queue: multiprocessing.Queue) -> None:
-    restored = pickle.loads(payload)
-    queue.put((type(restored).__module__, type(restored).__qualname__, pickle.dumps(restored)))
+def _unpickle_in_spawn(payloads, queue):
+    values = [pickle.loads(payload) for payload in payloads]
+    queue.put([(type(value).__module__, type(value).__qualname__, pickle.dumps(value)) for value in values])
 
 
 class ContractsCompatibilityTests(unittest.TestCase):
@@ -363,19 +363,25 @@ class ContractsCompatibilityTests(unittest.TestCase):
     def test_record_pickles_load_in_a_fresh_spawn_process(self) -> None:
         context = multiprocessing.get_context("spawn")
         values = (contracts.AlgorithmRunOptions(values={"restarts": 2}), *_record_fixtures())
-        for value in values:
-            with self.subTest(name=type(value).__name__):
-                payload = pickle.dumps(value)
-                queue = context.Queue()
-                process = context.Process(target=_unpickle_in_spawn, args=(payload, queue))
-                process.start()
-                module, qualname, restored_payload = queue.get(timeout=15)
-                process.join(timeout=15)
-                self.assertEqual(process.exitcode, 0)
-                self.assertEqual(module, "maxcover.contracts")
-                self.assertEqual(qualname, type(value).__qualname__)
-                self.assertEqual(pickle.loads(restored_payload), value)
-                queue.close()
+        queue = context.Queue()
+        process = context.Process(target=_unpickle_in_spawn, args=([pickle.dumps(value) for value in values], queue))
+        process.start()
+        try:
+            restored = queue.get(timeout=30)
+            process.join(timeout=15)
+            self.assertEqual(process.exitcode, 0)
+            self.assertEqual(len(restored), len(values))
+            for value, (module, qualname, payload) in zip(values, restored):
+                with self.subTest(name=type(value).__name__):
+                    self.assertEqual(module, "maxcover.contracts")
+                    self.assertEqual(qualname, type(value).__qualname__)
+                    self.assertEqual(pickle.loads(payload), value)
+        finally:
+            if process.is_alive():
+                process.terminate()
+            process.join(timeout=15)
+            queue.close()
+
 
     def test_baseline_pickle_successes_do_not_regress(self) -> None:
         values = {

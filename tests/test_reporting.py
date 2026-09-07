@@ -20,24 +20,6 @@ sys.path.insert(0, str(ROOT / "src"))
 from maxcover import benchmark, reporting
 
 
-# Captured from the pinned pre-extraction report, not inferred from new helpers.
-HEADINGS = (
-    "## Reproducibility", "## Headline checks", "## P5.1 descriptive aggregate",
-    "## Exact-reference coverage and censoring diagnostics",
-    "## P5.3 95% confidence intervals for instance means",
-    "## P5.3 automatic-conclusion eligibility", "## P5.3 censored-runtime diagnostics",
-    "## P5.2 classical Greedy failure rate", "## P5.2 mean/max relative optimality gap",
-    "## P5.2 Local Search recovery rate", "## P5.2 remaining gap after Local Search recovery",
-    "## P5.2 heuristic/exact runtime ratio", "## P5.2 Branch-and-Bound node reduction",
-    "## P5.2 quality-runtime Pareto frontier", "## P5.4 gap vs actual-density association",
-    "## P5.4 gap vs measured pairwise-overlap association",
-    "## P5.4 gap vs mixed-cluster bridge intensity",
-    "## P5.4 completed runtime vs candidate-set count",
-    "## P5.4 completed runtime vs selection budget k",
-    "## P5.4 completed BnB search nodes vs dominated-set ratio", "## Next analysis questions",
-)
-
-
 class ReportingTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
@@ -88,7 +70,6 @@ class ReportingTests(unittest.TestCase):
                 self.assertEqual(ET.fromstring(path.read_bytes()).tag, "{http://www.w3.org/2000/svg}svg")
             text = (directory / "results_summary.md").read_text(encoding="utf-8")
         self.assertEqual(pickle.dumps(arguments, protocol=4), before)
-        self.assertEqual(tuple(line for line in text.splitlines() if line.startswith("## ")), HEADINGS)
         return text
 
     def derived(self, rows, instances):

@@ -135,3 +135,9 @@ compared field is consistent with the baseline. The test suite covers the
 four observed failure modes (coverage tamper, selected tamper, row-order
 reversal, instance identity tamper) and the two allowed differences (runtime
 variation and timeout-incumbent variation).
+## Execution frequency
+
+The full comparison runs on main updates and manual dispatch. Ordinary PRs run
+core, platform-focused and required research checks instead. See
+[checks and evidence](checks_and_evidence.zh-CN.md). The comparison semantics and
+timeout exemptions above remain unchanged.

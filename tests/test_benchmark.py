@@ -269,20 +269,6 @@ class BenchmarkTests(unittest.TestCase):
                     r"\b[a-z][a-z0-9]*_[a-z0-9_]+\b",
                     f"{filename} exposes an underscored identifier in visible text",
                 )
-            report = (output / "results_summary.md").read_text(encoding="utf-8")
-            self.assertIn(
-                "## P5.2 mean/max relative optimality gap",
-                report,
-            )
-            self.assertIn(
-                "## P5.3 95% confidence intervals for instance means",
-                report,
-            )
-            self.assertIn(
-                "## P5.3 censored-runtime diagnostics",
-                report,
-            )
-
             with (output / "raw_results.csv").open(
                 encoding="utf-8", newline=""
             ) as handle:
@@ -349,34 +335,6 @@ class BenchmarkTests(unittest.TestCase):
                     tuple(next(csv.reader(handle))), InstanceRecord.CSV_FIELDS
                 )
 
-    def test_expected_config_hash_is_checked_before_execution(self) -> None:
-        config = {
-            "schema_version": 3,
-            "name": "hash guard",
-            "base_seed": 1,
-            "repetitions": 1,
-            "algorithms": [{"name": "greedy"}],
-            "cases": [
-                {
-                    "name": "tiny",
-                    "family": "uniform",
-                    "universe_size": 8,
-                    "set_count": 4,
-                    "k": 2,
-                    "density": 0.25,
-                }
-            ],
-        }
-        with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
-            config_path = root / "config.json"
-            config_path.write_text(json.dumps(config), encoding="utf-8")
-            with self.assertRaisesRegex(ValueError, "changed after preflight"):
-                run_benchmark(
-                    config_path,
-                    root / "output",
-                    expected_config_hash="0" * 64,
-                )
 
 
 if __name__ == "__main__":

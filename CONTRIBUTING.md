@@ -11,8 +11,10 @@ Keep experiment configurations and explicit random seeds. Write exploratory
 results under the gitignored `results/` directory. Save useful configurations,
 raw data, analysis scripts, and figures with the research report when publishing
 a result. Reports should describe the method, sample, findings, and limitations,
-and link directly to the data used. No claim ledger, file checksums, manifest,
-or separate validation record is required.
+and link directly to the data used. At result freezing, publish the explicitly
+selected evidence to a protected codex/evidence/* branch and record the verified
+remote commit. Unfrozen exploration remains local and is not automatically backed up.
+No claim ledger, file checksums, manifest, or separate validation ledger is required.
 
 ## Document structure
 
@@ -54,14 +56,19 @@ reference status, sample pairing, and the arithmetic behind reported results.
 
 ## Verification
 
-Use relevant existing tests while developing. Before merging a code change, run:
+Use relevant existing tests while developing. The daily check runs core tests,
+required research verification and mypy:
 
 ```console
-python -m unittest discover -s tests -v
-python -m mypy
+python scripts/check.py
 ```
 
-Install the type checker with `pip install -e ".[typecheck]"`. Add a focused
+Install check dependencies with `pip install -e ".[typecheck]" scipy==1.18.1 numpy==2.3.5`.
+Before merging changes to the check system, run `python scripts/check.py --profile full`
+and obtain an independent review with valid and invalid inputs. All new tests default
+to core; required research verification must execute, never silently skip.
+See [checks and evidence](docs/checks_and_evidence.zh-CN.md) for profiles, CI routing,
+independent definition review and evidence freezing. Add a focused
 regression test for a bug fix. For runner changes, exercise a fresh run and resume;
 for analysis changes, check the affected calculations. The optional
 `.github/scripts/validate_benchmark_output.py` recomputes results from the

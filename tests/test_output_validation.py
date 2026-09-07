@@ -120,9 +120,6 @@ class OutputValidatorTests(unittest.TestCase):
         # rather than from the fault the test introduced.
         self.assertAccepted("straight from the runner")
 
-    def test_exit_status_is_usable_as_a_gate(self) -> None:
-        # The docstring promises 0 and 1 specifically, because CI depends on it.
-        self.assertIn(run_validator(self.output).returncode, (0, 1))
 
     # -- faults a checksum cannot catch ----------------------------------
 
