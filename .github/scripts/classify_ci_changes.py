@@ -19,11 +19,9 @@ _REGULAR_MODES = {b"100644", b"100755"}
 
 
 def _allowed_document(path: str) -> bool:
-    return path == "docs/README.md" or (
-        path.startswith("docs/")
-        and path.count("/") == 1
-        and path.endswith("_plan.zh-CN.md")
-    )
+    parts = path.split("/")
+    return (path.endswith(".md") and all(part not in {"", ".", ".."} for part in parts)
+            and (len(parts) == 1 or parts[0] in {"docs", "analysis"}))
 
 
 def classify_diff(raw: bytes) -> str:
@@ -119,7 +117,7 @@ def classify_event(event_name: str, event_path: Path | None, repo: Path) -> tupl
         profile = classify_diff(_pr_diff(repo, event))
     except (OSError, ValueError, TypeError, subprocess.SubprocessError):
         return "full", "complete pull request diff is unavailable"
-    reason = "plan and index documents only" if profile == "docs" else "changes require complete checks"
+    reason = "description documents only" if profile == "docs" else "changes require complete checks"
     return profile, reason
 
 

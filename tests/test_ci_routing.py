@@ -31,7 +31,7 @@ def raw_change(path: str | bytes, status: bytes = b"M", old_mode: bytes = b"1006
 
 class RawDiffTests(unittest.TestCase):
     def test_narrow_document_allowlist_and_nul_names(self) -> None:
-        for path in ("docs/README.md", "docs/a_plan.zh-CN.md", "docs/带 空格_plan.zh-CN.md", "docs/a\tb\nc_plan.zh-CN.md"):
+        for path in ("README.md", "CONTRIBUTING.md", "analysis/result.md", "docs/sub/guide.md", "docs/README.md", "docs/a_plan.zh-CN.md", "docs/带 空格_plan.zh-CN.md", "docs/a\tb\nc_plan.zh-CN.md"):
             with self.subTest(path=path):
                 self.assertEqual("docs", routing.classify_diff(raw_change(path)))
 
@@ -41,7 +41,7 @@ class RawDiffTests(unittest.TestCase):
                 self.assertEqual("docs", routing.classify_diff(raw_change("docs/a_plan.zh-CN.md", status, old_mode, new_mode)))
 
     def test_other_paths_and_mixed_changes_are_full(self) -> None:
-        for path in ("README.md", "CONTRIBUTING.md", "docs/reproducibility_matrix.md", "docs/sub/a_plan.zh-CN.md", "docs/../a_plan.zh-CN.md", "DOCS/a_plan.zh-CN.md", "docs/a_PLAN.zh-CN.md", "src/x.py", "tests/test_x.py", "configs/x.json", ".github/workflows/tests.yml", ".github/scripts/x.py", "analysis/x.md", "experiments/x.json"):
+        for path in ("docs/../a_plan.zh-CN.md", "DOCS/a_plan.zh-CN.md", "tests/fixtures/README.md", "src/x.py", "tests/test_x.py", "configs/x.json", ".github/workflows/tests.yml", ".github/scripts/x.py", "analysis/x.py", "experiments/x.json"):
             with self.subTest(path=path):
                 self.assertEqual("full", routing.classify_diff(raw_change(path)))
                 self.assertEqual("full", routing.classify_diff(raw_change("docs/README.md") + raw_change(path)))

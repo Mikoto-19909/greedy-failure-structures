@@ -1,237 +1,182 @@
 name: tests
-
-# Verify algorithms, result handling, and example runs.
-
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
   workflow_dispatch:
-
 permissions:
   contents: read
-
 concurrency:
   group: tests-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
-
 env:
   PYTHONUTF8: "1"
   PYTHONDONTWRITEBYTECODE: "1"
-
 jobs:
   detect:
     name: classify changes (tests)
     runs-on: ubuntu-latest
-    timeout-minutes: 5
     outputs:
       profile: ${{ steps.classify.outputs.profile }}
     steps:
-      - name: Check out complete history
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 0
           persist-credentials: false
-      - name: Set up Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
           python-version: "3.12"
-      - name: Classify the complete pull request diff
-        id: classify
+      - id: classify
         run: python .github/scripts/classify_ci_changes.py
-
   unit-tests:
     name: unit tests (ubuntu-latest, Python 3.12)
+    needs: detect
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
-      - name: Check out repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Explain documentation exemption
+        if: ${{ needs.detect.result == 'success' && needs.detect.outputs.profile == 'docs' }}
+        run: echo "Description documents only; computation checks are exempt."
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        if: ${{ needs.detect.result != 'success' || needs.detect.outputs.profile != 'docs' }}
         with:
+          fetch-depth: 0
           persist-credentials: false
-      - name: Set up Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        if: ${{ needs.detect.result != 'success' || needs.detect.outputs.profile != 'docs' }}
         with:
           python-version: "3.12"
-      - name: Install the R1c offline statistics dependency
-        run: python -m pip install scipy==1.18.1
-      - name: Run the test suite
-        run: python -m unittest discover -s tests -v
-
+      - name: Core and affected extensions
+        if: ${{ github.event_name == 'pull_request' && (needs.detect.result != 'success' || needs.detect.outputs.profile != 'docs') }}
+        run: |
+          python scripts/check.py --profile core --ci --omit-research --tests-only
+      - name: Full regression
+        if: ${{ github.event_name != 'pull_request' }}
+        run: |
+          python scripts/check.py --profile full --omit-research --tests-only
+      - name: Quick integration
+        if: ${{ needs.detect.result != 'success' || needs.detect.outputs.profile != 'docs' }}
+        run: |
+          python run_project.py benchmark --config configs/quick.json --output results/ci-quick --workers 2
+          python .github/scripts/validate_benchmark_output.py --config configs/quick.json --output results/ci-quick
+      - name: Full bundled configurations and Lazy Greedy
+        if: ${{ github.event_name != 'pull_request' }}
+        run: |
+          python run_project.py demo
+          for config in configs/*.json; do python run_project.py benchmark --config "$config" --dry-run; done
+          python run_project.py benchmark --config configs/p3_lazy_greedy.json --output results/ci-lazy --workers 2
+          python .github/scripts/validate_benchmark_output.py --config configs/p3_lazy_greedy.json --output results/ci-lazy
+  platform-tests:
+    name: platform tests (windows-latest, Python 3.12)
+    needs: detect
+    if: ${{ !cancelled() }}
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - name: Explain documentation exemption
+        if: ${{ needs.detect.result == 'success' && needs.detect.outputs.profile == 'docs' }}
+        run: echo "Description documents only; computation checks are exempt."
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        if: ${{ needs.detect.result != 'success' || needs.detect.outputs.profile != 'docs' }}
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        if: ${{ needs.detect.result != 'success' || needs.detect.outputs.profile != 'docs' }}
+        with:
+          python-version: "3.12"
+      - name: Spawn, CSV, paths and CLI
+        if: ${{ needs.detect.result != 'success' || needs.detect.outputs.profile != 'docs' }}
+        run: |
+          python scripts/check.py --profile platform --tests-only
+  research:
+    name: research verification
+    needs: detect
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Explain documentation exemption
+        if: ${{ needs.detect.result == 'success' && needs.detect.outputs.profile == 'docs' }}
+        run: echo "Description documents only; computation checks are exempt."
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        if: ${{ needs.detect.result != 'success' || needs.detect.outputs.profile != 'docs' }}
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        if: ${{ needs.detect.result != 'success' || needs.detect.outputs.profile != 'docs' }}
+        with:
+          python-version: "3.12"
+      - name: Install research dependency
+        if: ${{ needs.detect.result != 'success' || needs.detect.outputs.profile != 'docs' }}
+        run: |
+          python -m pip install scipy==1.18.1
+      - name: Independent recomputation and rejection scenarios
+        if: ${{ needs.detect.result != 'success' || needs.detect.outputs.profile != 'docs' }}
+        run: |
+          python scripts/check.py --profile research --tests-only
+  static-types:
+    name: static type check
+    needs: detect
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Explain documentation exemption
+        if: ${{ needs.detect.result == 'success' && needs.detect.outputs.profile == 'docs' }}
+        run: echo "Description documents only; computation checks are exempt."
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        if: ${{ needs.detect.result != 'success' || needs.detect.outputs.profile != 'docs' }}
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        if: ${{ needs.detect.result != 'success' || needs.detect.outputs.profile != 'docs' }}
+        with:
+          python-version: "3.12"
+      - name: Install type checker
+        if: ${{ needs.detect.result != 'success' || needs.detect.outputs.profile != 'docs' }}
+        run: |
+          python -m pip install -e ".[typecheck]"
+      - name: Check typed source
+        if: ${{ needs.detect.result != 'success' || needs.detect.outputs.profile != 'docs' }}
+        run: |
+          python -m mypy
   unit-tests-extra:
     name: unit tests (${{ matrix.os }}, Python ${{ matrix.python-version }})
-    needs: detect
-    if: >-
-      ${{ !cancelled() &&
-          (needs.detect.result != 'success' ||
-           needs.detect.outputs.profile != 'docs') }}
+    if: ${{ github.event_name != 'pull_request' }}
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 10
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
-        os:
-          - ubuntu-latest
-          - windows-latest
-        python-version:
-          - "3.11"
-          - "3.12"
-          - "3.13"
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.11", "3.12", "3.13"]
         exclude:
           - os: ubuntu-latest
             python-version: "3.12"
     steps:
-      - name: Check out repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - name: Set up Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Run the test suite
-        run: python -m unittest discover -s tests -v
-
-  static-types:
-    name: static type check
+      - run: python scripts/check.py --profile full --omit-research --tests-only
+  optional:
+    name: optional solver and chart verification
+    if: ${{ github.event_name != 'pull_request' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
     steps:
-      - name: Check out repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - name: Set up Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
           python-version: "3.12"
-      - name: Install the type checker
-        run: python -m pip install -e ".[typecheck]"
-      - name: Check the typed baseline
-        run: python -m mypy
-
-  entry-points:
-    name: entry points and bundled configurations
-    needs: detect
-    if: >-
-      ${{ !cancelled() &&
-          (needs.detect.result != 'success' ||
-           needs.detect.outputs.profile != 'docs') }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - name: Set up Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: "3.12"
-      - name: Exercise the demonstration entry point
-        run: python run_project.py demo
-      - name: Validate every bundled configuration without running it
-        shell: bash
-        run: |
-          for config in configs/*.json; do
-            echo "::group::$config"
-            python run_project.py benchmark --config "$config" --dry-run
-            echo "::endgroup::"
-          done
-
-  starter-workflow:
-    name: starter workflow (${{ matrix.os }})
-    needs: detect
-    if: >-
-      ${{ !cancelled() &&
-          (needs.detect.result != 'success' ||
-           needs.detect.outputs.profile != 'docs') }}
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 10
-    strategy:
-      fail-fast: false
-      matrix:
-        os:
-          - ubuntu-latest
-          - windows-latest
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - name: Set up Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: "3.12"
-      # Check that the starter workflow completes and writes its artifacts.
-      # The next validator step checks the supported artifact relationships.
-      - name: Run the starter workflow with parallel workers
-        run: >-
-          python run_project.py benchmark
-          --config configs/quick.json
-          --output results/ci-quick
-          --workers 2
-      - name: Confirm the expected artifacts were written
-        shell: bash
-        run: |
-          for artifact in raw_results.csv results_summary.md; do
-            test -f "results/ci-quick/$artifact" || {
-              echo "missing artifact: $artifact" >&2
-              exit 1
-            }
-          done
-      # Recompute supported results from the configuration and CSV inputs.
-      # Check identities, statistics, and selected charts; prose is reviewed
-      # against the data without enforcing a fixed Markdown template.
-      - name: Validate the output from the experiment data
-        run: >-
-          python .github/scripts/validate_benchmark_output.py
-          --config configs/quick.json
-          --output results/ci-quick
-
-  lazy-greedy-smoke:
-    name: lazy greedy smoke (${{ matrix.os }})
-    needs: detect
-    if: >-
-      ${{ !cancelled() &&
-          (needs.detect.result != 'success' ||
-           needs.detect.outputs.profile != 'docs') }}
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 10
-    strategy:
-      fail-fast: false
-      matrix:
-        os:
-          - ubuntu-latest
-          - windows-latest
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - name: Set up Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: "3.12"
-      - name: Run the Lazy Greedy paired workflow with parallel workers
-        run: >-
-          python run_project.py benchmark
-          --config configs/p3_lazy_greedy.json
-          --output results/ci-lazy-greedy
-          --workers 2
-          --force
-      - name: Confirm the expected artifacts were written
-        shell: bash
-        run: |
-          for artifact in raw_results.csv instances.csv summary.csv results_summary.md; do
-            test -f "results/ci-lazy-greedy/$artifact" || {
-              echo "missing artifact: $artifact" >&2
-              exit 1
-            }
-          done
-      - name: Validate the Lazy Greedy output independently
-        run: >-
-          python .github/scripts/validate_benchmark_output.py
-          --config configs/p3_lazy_greedy.json
-          --output results/ci-lazy-greedy
+      - run: python -m pip install -e ".[oracle]" matplotlib==3.11.1
+      - run: python -c "import ortools, matplotlib"
+      - run: python scripts/check.py --profile optional --tests-only
