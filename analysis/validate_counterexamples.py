@@ -125,6 +125,10 @@ def validate_document(document):
     require(isinstance(entries, list) and bool(entries), "missing inputs")
     failures, exact = [], 0
     for index, entry in enumerate(entries):
+        if "population" in settings:
+            population = settings["population"]
+            require(isinstance(population, str) and bool(population)
+                    and entry["source"].get("population") == population, "population filter mismatch")
         result = recompute(*unpack(entry["instance"]), limit)
         compare(entry["evaluation"], result)
         if result["status"] == "exact":

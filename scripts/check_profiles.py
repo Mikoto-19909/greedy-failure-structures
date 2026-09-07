@@ -69,6 +69,9 @@ def extended_group(test_id: str) -> str | None:
 
 GROUPS = {'artifacts', 'cartography', 'routing', 'cli', 'generators', 'dashboard'}
 RESEARCH_MODULES = {
+    'r3_counterexamples': ('test_r3_counterexamples',),
+    'counterexample_workflow': ('test_counterexample_workflow',),
+    'conjectures': ('test_conjectures',),
     'counterexamples': ('test_counterexamples',),
     'pilot': ('test_core_overlap_pilot',),
     'r1': ('test_greedy_failure_paths', 'test_research_verification'),
@@ -76,6 +79,12 @@ RESEARCH_MODULES = {
 }
 # Producer, verifier, and shared helper ownership; tools need no fake second solver.
 ANALYSIS_OWNERS = {
+    'r3_counterexamples.py': 'r3_counterexamples',
+    'validate_r3_counterexamples.py': 'r3_counterexamples',
+    'counterexample_workflow.py': 'counterexample_workflow',
+    'conjecture_spec.py': 'conjectures',
+    'refute_conjecture.py': 'conjectures',
+    'validate_conjecture.py': 'conjectures',
     'mine_counterexamples.py': 'counterexamples',
     'validate_counterexamples.py': 'counterexamples',
     'core_overlap_pilot.py': 'pilot',
@@ -131,6 +140,22 @@ def affected_groups(paths: list[str]) -> set[str]:
     return groups
 
 REQUIRED_RESEARCH = {
+    'r3_counterexamples': (
+        'test_r3_counterexamples.R3CounterexampleTests.test_same_e0_pair_has_equal_degrees_and_opposite_first_step_outcomes',
+        'test_r3_counterexamples.R3CounterexampleTests.test_bad_degrees_forced_optimum_paths_and_false_completion_are_rejected',
+        'test_r3_counterexamples.R3CounterexampleTests.test_budget_boundaries_and_no_legal_switch_never_make_false_claims',
+        'test_r3_counterexamples.R3CounterexampleTests.test_recoverable_first_step_is_not_final_greedy_success',
+    ),
+    'counterexample_workflow': (
+        'test_counterexample_workflow.CounterexampleWorkflowTests.test_default_mining_excludes_fixtures_and_verifies_selected_cases',
+        'test_counterexample_workflow.CounterexampleWorkflowTests.test_design_refute_overrides_and_show_work_end_to_end',
+        'test_counterexample_workflow.CounterexampleWorkflowTests.test_invalid_parameters_and_ambiguous_results_fail_without_overwriting',
+    ),
+    'conjectures': (
+        'test_conjectures.ConjectureTests.test_equal_size_conjecture_has_a_known_counterexample',
+        'test_conjectures.ConjectureTests.test_exhaustion_budget_and_empty_domains_are_distinct',
+        'test_conjectures.ConjectureTests.test_false_completeness_and_corrupt_witness_are_rejected',
+    ),
     'counterexamples': (
         'test_counterexamples.CounterexampleTests.test_known_answer_and_independent_reduction',
         'test_counterexamples.CounterexampleTests.test_false_optimum_and_incomplete_results_are_rejected',

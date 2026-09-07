@@ -131,11 +131,17 @@ def size(payload):
     return (len(payload["sets"]), payload["universe_size"], sum(map(len, payload["sets"])))
 
 
-def mine(path, *, top=5, max_combinations=200000, max_evaluations=10000):
+def mine(path, *, top=5, max_combinations=200000, max_evaluations=10000, population=None):
     integer(top, "top", 1)
     integer(max_combinations, "max_combinations", 1)
     integer(max_evaluations, "max_evaluations")
     entries = read_inputs(path)
+    if population is not None:
+        if not isinstance(population, str) or not population:
+            raise ValueError("population must be a nonempty source label")
+        entries = [entry for entry in entries if entry["source"].get("population") == population]
+        if not entries:
+            raise ValueError(f"no input records match population={population!r}")
     failures = []
     for index, entry in enumerate(entries):
         evaluation = evaluate(instance_from_payload(entry["instance"]), max_combinations)
@@ -152,13 +158,16 @@ def mine(path, *, top=5, max_combinations=200000, max_evaluations=10000):
         reduced = shrink(instance_from_payload(entry["instance"]), entry["evaluation"],
                          max_combinations=max_combinations, max_evaluations=max_evaluations)
         selected.append({"input_index": index, **reduced})
-    return {"schema_version": 1,
+    document = {"schema_version": 1,
             "settings": {"top": top, "max_combinations": max_combinations,
                          "max_evaluations": max_evaluations},
             "counts": {"input": len(entries), "exact": sum(
                 e["evaluation"]["status"] == "exact" for e in entries),
                 "failures": len(failures), "selected": len(selected)},
             "inputs": entries, "selected": selected}
+    if population is not None:
+        document["settings"]["population"] = population
+    return document
 
 
 def write_outputs(document, output):
