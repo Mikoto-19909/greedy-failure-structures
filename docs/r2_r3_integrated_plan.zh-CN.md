@@ -7,7 +7,7 @@ R2 与 R3 分别在 F2、F3 冻结设计；纳入一体化计划不表示 R3 的
 以下保留分阶段定版规则；本批实际决定见 [F2 设计](../analysis/r2_exploration_design.zh-CN.md)、
 [R2 报告](../analysis/r2_exploration_report.zh-CN.md)和 [F3 设计](../analysis/r3_confirmation_design.zh-CN.md)。
 正式确认结论见 [R3 报告](../analysis/r3_confirmation_report.zh-CN.md)。
-本批采用完整候选网格，R3 方案由实际机制线索及独立探测产生；证据未发布至远端。
+本批采用完整候选网格，R3 方案由实际机制线索及独立探测产生；所选证据已发布并完成远端回读，提交链接见两份报告。
 
 ## 1. 共同问题与已有依据
 

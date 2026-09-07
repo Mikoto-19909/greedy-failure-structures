@@ -6,11 +6,11 @@
 ## 依据与问题
 
 R2 预定诊断的 288 张原图中有 164 张 Greedy 失效，80 张在第一步失去最优可达性。
-这些计数来自[机制汇总](../results/r2_grid_v1/mechanism_summary.csv)，全部轨迹已独立重算。
+这些计数来自[机制汇总](https://github.com/Mikoto-19909/greedy-failure-structures/blob/4a419f338d70068fa988fa97027734cdcda0a036/results/r2_grid_v1/mechanism_summary.csv)，全部轨迹已独立重算。
 定长模型中首步所有集合平局，选择某个最优解内的集合必能保留最优可达性；因此首步
 平局可避免本身不是新的结构证据，也不证明一种平局算法会一路达到最优。
 
-具体结构线索为[原图 n12/d3/r0001](../results/r2_grid_v1/graphs/r2-exploration-n12-d3-r0001.json)：
+具体结构线索为[原图 n12/d3/r0001](https://github.com/Mikoto-19909/greedy-failure-structures/blob/4a419f338d70068fa988fa97027734cdcda0a036/results/r2_grid_v1/graphs/r2-exploration-n12-d3-r0001.json)：
 N=M=12、d=3、k=4；Greedy 首选索引 0，G=10、O=12，强制保留索引 0 后最好覆盖为 10。
 索引 0 的局部交集总量为 8；可保留最优的候选 7、9、10 对应为 7、6、3。
 候选 6 同为 8 也可保留最优；候选 1 的值仅为 5，受限最优却只有 11。

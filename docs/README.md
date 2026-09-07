@@ -68,7 +68,7 @@ revisits existing instance families. Both retain schema v1 for compatibility.
   and conditional R3 feasibility probes leading to F3 and independent confirmation;
   the current batch has completed R2 and R3 feasibility/F3/confirmation
 - [R2 exploration report](../analysis/r2_exploration_report.zh-CN.md): complete grid,
-  mechanism observations and independent validation; data are local under `results/`
+  mechanism observations and independent validation; selected evidence is published and linked by immutable commit
 - [R3 confirmation design](../analysis/r3_confirmation_design.zh-CN.md): the selected
   local-exposure protocols, independent sampling and prospective inference
 - [R3 confirmation report](../analysis/r3_confirmation_report.zh-CN.md): completed

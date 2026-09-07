@@ -3,7 +3,7 @@
 The [R2 exploration report](r2_exploration_report.zh-CN.md) completes the fixed-size
 budget grid: 1,800 source graphs, 13,000 budget records and independent verification.
 The [F2 design](r2_exploration_design.zh-CN.md) and [usage guide](r2_usage.zh-CN.md)
-describe the frozen inputs and reproducible commands. Data remain local under `results/`.
+describe the frozen inputs and reproducible commands. Selected evidence is published on protected evidence branches and linked by immutable commit from each report.
 The [R3 confirmation report](r3_confirmation_report.zh-CN.md) completes the
 [frozen design](r3_confirmation_design.zh-CN.md): 3,000 new source graphs and 12,000
 independently verified endpoints establish the specified protocol contrast.

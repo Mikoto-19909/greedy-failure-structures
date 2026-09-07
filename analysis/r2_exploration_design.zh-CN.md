@@ -7,8 +7,8 @@
 72 张独立预检原图均完成生产与诊断独立验证，实际预检墙钟合计 32.16 秒。
 含 2 倍安全系数及汇总预留的估计为 1,162.50 秒，保守输出估计 100,526,400 字节，
 最大进程峰值 89,305,088 字节，选择 4 个工作进程，满足 12 小时、6 GiB 和 2 GiB 上限。
-预检原始输入与验证结果见 [预检目录](../results/r2_preflight_v1/)，
-种子核对见[检查结果](../results/r2_f2_seed_check.json)：正式/预检种子与已有 3,030 个历史种子不重用。
+预检原始输入与验证结果见 [预检目录](https://github.com/Mikoto-19909/greedy-failure-structures/tree/4a419f338d70068fa988fa97027734cdcda0a036/results/r2_preflight_v1)，
+种子核对见[检查结果](https://github.com/Mikoto-19909/greedy-failure-structures/blob/4a419f338d70068fa988fa97027734cdcda0a036/results/r2_f2_seed_check.json)：正式/预检种子与已有 3,030 个历史种子不重用。
 这些预检结果只决定资源可行性，不作为正式探索统计。
 
 ## 模型、样本与停止

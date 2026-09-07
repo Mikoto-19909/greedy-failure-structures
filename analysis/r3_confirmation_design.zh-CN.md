@@ -17,8 +17,8 @@
 
 ## 探测结果与协议选择
 
-[探测结果](../results/r3_exposure_probe_v1/probe_summary.json)包含 16 张独立原图、
-192 个端点，全部通过[交换重放与最优值验证](../results/r3_exposure_probe_v1/verification.json)。
+[探测结果](https://github.com/Mikoto-19909/greedy-failure-structures/blob/8663e0dcf576ab156535ff7403bb7e4715091357/results/r3_exposure_probe_v1/probe_summary.json)包含 16 张独立原图、
+192 个端点，全部通过[交换重放与最优值验证](https://github.com/Mikoto-19909/greedy-failure-structures/blob/8663e0dcf576ab156535ff7403bb7e4715091357/results/r3_exposure_probe_v1/verification.json)。
 128、512、2048 次提议后，出现两方向平均 E0 分离的原图分别为 15/16、16/16、16/16，
 平均差分别为 2.40625、6.0625、9.46875；2048 次时最小差为 6。
 生产和独立验证合计约 1.35 秒。选择 2048 次是因结构分离更强且成本低，
