@@ -64,17 +64,17 @@ O 与最优见证由独立验证器逐预算枚举：恰好 k 个升序不同索
 不因超时删图、补抽、改预算或换方法。实质修订另存设计并说明原因，原 F4 不覆盖。
 完成固定校准、独立验证和可重建报告即停止，再判断是否有明确扩规模需要。
 
-预检本地产物为 [原图与证书](../results/r4_preflight_v1/graphs/)、
-[独立验证](../results/r4_preflight_v1/verification.json)、
-[派生核对](../results/r4_preflight_v1/summary_verification.json)、
-[分阶段墙钟](../results/r4_preflight_v1/execution.jsonl)及
-[汇总重查计时](../results/r4_preflight_v1/analysis_timing.json)。这些 R4 产物尚未发布到远端。
-执行基线 `cef5b92` 加新增 R4 离线实现，副本保存在 [本地源码快照](../results/r4_source_v1/analysis/)；
-环境 Python 3.12.14、NumPy 2.3.5、SciPy 1.18.1，详见 [运行环境](../results/r4_preflight_v1/run_context.json)。
+预检产物为 [原图与证书](https://github.com/Mikoto-19909/greedy-failure-structures/tree/1a8b1899d927cba202cf7931fe992ecd2b5a1807/results/r4_preflight_v1/graphs/)、
+[独立验证](https://github.com/Mikoto-19909/greedy-failure-structures/blob/1a8b1899d927cba202cf7931fe992ecd2b5a1807/results/r4_preflight_v1/verification.json)、
+[派生核对](https://github.com/Mikoto-19909/greedy-failure-structures/blob/1a8b1899d927cba202cf7931fe992ecd2b5a1807/results/r4_preflight_v1/summary_verification.json)、
+[分阶段墙钟](https://github.com/Mikoto-19909/greedy-failure-structures/blob/1a8b1899d927cba202cf7931fe992ecd2b5a1807/results/r4_preflight_v1/execution.jsonl)及
+[汇总重查计时](https://github.com/Mikoto-19909/greedy-failure-structures/blob/1a8b1899d927cba202cf7931fe992ecd2b5a1807/results/r4_preflight_v1/analysis_timing.json)。这些产物已随 R4 证据快照发布，远端回读信息见研究报告。
+执行基线 `cef5b92` 加新增 R4 离线实现，副本保存在 [执行源码快照](https://github.com/Mikoto-19909/greedy-failure-structures/tree/1a8b1899d927cba202cf7931fe992ecd2b5a1807/results/r4_source_v1/analysis/)；
+环境 Python 3.12.14、NumPy 2.3.5、SciPy 1.18.1，详见 [运行环境](https://github.com/Mikoto-19909/greedy-failure-structures/blob/1a8b1899d927cba202cf7931fe992ecd2b5a1807/results/r4_preflight_v1/run_context.json)。
 
 新增三个分析文件均登记到 `r4`，入口有效/无效输入和恢复运行已实际验证。
 默认检查 429 项、完整检查 489 项，均只有 1 项可选 OR-Tools 跳过，
 38 个公共源码文件类型检查通过；最后的局部修正另通过 9 项 R4 专项测试。
-日志为 [默认检查](../results/r4_default_check.log)、[完整检查](../results/r4_full_check.log)和
-[专项检查](../results/r4_focused_check.log)。另一代理已实际执行有效/无效案例、来源替换拒绝、
+日志为 [默认检查](https://github.com/Mikoto-19909/greedy-failure-structures/blob/1a8b1899d927cba202cf7931fe992ecd2b5a1807/results/r4_default_check.log)、[完整检查](https://github.com/Mikoto-19909/greedy-failure-structures/blob/1a8b1899d927cba202cf7931fe992ecd2b5a1807/results/r4_full_check.log)和
+[专项检查](https://github.com/Mikoto-19909/greedy-failure-structures/blob/1a8b1899d927cba202cf7931fe992ecd2b5a1807/results/r4_focused_check.log)。另一代理已实际执行有效/无效案例、来源替换拒绝、
 恢复和末尾越限检查，并核对 F4 的资源算术；这不等同于外部同行评议。

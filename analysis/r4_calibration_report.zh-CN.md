@@ -24,10 +24,10 @@
 均值、中位数和 nearest-rank P90；没有新增检验、区间或 bootstrap。
 下文跨单元的数量只描述预算记录，不能把 13,000 条记录当成独立原图数或总体概率估计。
 
-全部数值见 [逐预算表](../results/r4_calibration_v1/budget_results.csv)、
-[65 单元汇总](../results/r4_calibration_v1/cell_summary.csv)及
-[报告数值摘录](../results/r4_calibration_v1/report_facts.json)。原始输入、证书与见证保存在
-[原图检查点](../results/r4_calibration_v1/graphs/)。所有参考均完成，没有零分母或比例缺失。
+全部数值见 [逐预算表](https://github.com/Mikoto-19909/greedy-failure-structures/blob/1a8b1899d927cba202cf7931fe992ecd2b5a1807/results/r4_calibration_v1/budget_results.csv)、
+[65 单元汇总](https://github.com/Mikoto-19909/greedy-failure-structures/blob/1a8b1899d927cba202cf7931fe992ecd2b5a1807/results/r4_calibration_v1/cell_summary.csv)及
+[报告数值摘录](https://github.com/Mikoto-19909/greedy-failure-structures/blob/1a8b1899d927cba202cf7931fe992ecd2b5a1807/results/r4_calibration_v1/report_facts.json)。原始输入、证书与见证保存在
+[原图检查点](https://github.com/Mikoto-19909/greedy-failure-structures/tree/1a8b1899d927cba202cf7931fe992ecd2b5a1807/results/r4_calibration_v1/graphs/)。所有参考均完成，没有零分母或比例缺失。
 
 ## 收紧、认证与未决实例
 
@@ -38,7 +38,7 @@
   本次逐行结果与之吻合；这项一致性不是“发现两种方法统计等价”的新实验结论。
 
 唯一收紧例是
-[`N=12,d=3,r0150,k=4`](../results/r4_calibration_v1/graphs/r2-exploration-n12-d3-r0150.json)：
+[`N=12,d=3,r0150,k=4`](https://github.com/Mikoto-19909/greedy-failure-structures/blob/1a8b1899d927cba202cf7931fe992ecd2b5a1807/results/r4_calibration_v1/graphs/r2-exploration-n12-d3-r0150.json)：
 `G=9`、`O=11`、`U_initial=12`、`U=11`。首选集合 `S0={1,3,7}` 与每个剩余候选
 都有交集，所以 `P_1` 后的最大边际为 2，`U_1=3+4×2=11`。
 从空前缀到终点的候选界依次为 12、11、13、15、17；取最小后得到 11。
@@ -61,11 +61,11 @@ U/O 的中位数和 P90 均为 1.11111；`mean(G/U)=0.86439`，而 `mean(G/O)=0.
 
 四个正式阶段的入口内部墙钟分别为：生产 **204.900 秒**、独立验证 **348.489 秒**、
 汇总前重查及汇总 **146.626 秒**、派生验证 **0.710 秒**，合计 **700.725 秒**
-（约 11.68 分钟）。[执行记录](../results/r4_calibration_v1/execution.jsonl)还单独记录报告计算
+（约 11.68 分钟）。[执行记录](https://github.com/Mikoto-19909/greedy-failure-structures/blob/1a8b1899d927cba202cf7931fe992ecd2b5a1807/results/r4_calibration_v1/execution.jsonl)还单独记录报告计算
 及独立审阅计算；含 F4 预检的 4.828874 秒在内，累计 **706.656 秒（11.78 分钟）**，
 未触发 1 小时停止条件。
 外层命令含启动的四阶段墙钟合计约 702.180 秒，见
-[命令运行记录](../results/r4_command_runs.jsonl)；它是另一计时口径，不与内部墙钟相加。
+[命令运行记录](https://github.com/Mikoto-19909/greedy-failure-structures/blob/1a8b1899d927cba202cf7931fe992ecd2b5a1807/results/r4_command_runs.jsonl)；它是另一计时口径，不与内部墙钟相加。
 
 计算分量分别保留，避免把小实例的指数枚举成本归给证书方法：
 
@@ -84,23 +84,23 @@ U/O 的中位数和 P90 均为 1.11111；`mean(G/U)=0.86439`，而 `mean(G/O)=0.
 高于 F4 预检的 **60.51 MiB** 余量估计，但低于冻结的 6 GiB 上限。
 正式批次约 **28.72 MiB**，低于 2 GiB 输出上限。小预检批次低估了全量输入及派生表
 加载的内存，保留原估计并如实报告差异，不把估计修写成保证。
-峰值记录见 [原图验证进程](../results/r4_verification_process.json)、
-[汇总进程](../results/r4_analysis_process.json)和
-[派生验证进程](../results/r4_derived_process.json)；生产阶段使用原图记录中的进程峰值。
+峰值记录见 [原图验证进程](https://github.com/Mikoto-19909/greedy-failure-structures/blob/1a8b1899d927cba202cf7931fe992ecd2b5a1807/results/r4_verification_process.json)、
+[汇总进程](https://github.com/Mikoto-19909/greedy-failure-structures/blob/1a8b1899d927cba202cf7931fe992ecd2b5a1807/results/r4_analysis_process.json)和
+[派生验证进程](https://github.com/Mikoto-19909/greedy-failure-structures/blob/1a8b1899d927cba202cf7931fe992ecd2b5a1807/results/r4_derived_process.json)；生产阶段使用原图记录中的进程峰值。
 首次外层测量的 venv 启动器内存不作为研究进程内存，说明见运行环境。
 以上均为当前机器、当前数据和单次执行的记录，不外推为大实例性能保证。
 
 ## 验证、复现与停止结论
 
-[原图独立验证](../results/r4_calibration_v1/verification.json)覆盖全部 1,800 图和 13,000 个预算；
-[派生验证](../results/r4_calibration_v1/summary_verification.json)覆盖全部逐行指标及 65 个单元。
+[原图独立验证](https://github.com/Mikoto-19909/greedy-failure-structures/blob/1a8b1899d927cba202cf7931fe992ecd2b5a1807/results/r4_calibration_v1/verification.json)覆盖全部 1,800 图和 13,000 个预算；
+[派生验证](https://github.com/Mikoto-19909/greedy-failure-structures/blob/1a8b1899d927cba202cf7931fe992ecd2b5a1807/results/r4_calibration_v1/summary_verification.json)覆盖全部逐行指标及 65 个单元。
 汇总入口在写表前再次复核当前读取的同一批数据。没有修改冻结配置、替换原图、
 跳过缺失参考或因观察结果更换方法。
 
 执行源码为 `cef5b92` 加 F4 已验证的 R4 离线实现，
-[源码快照](../results/r4_source_v1/analysis/)与实际运行文件一致；
+[源码快照](https://github.com/Mikoto-19909/greedy-failure-structures/tree/1a8b1899d927cba202cf7931fe992ecd2b5a1807/results/r4_source_v1/analysis/)与实际运行文件一致；
 Python 3.12.14、NumPy 2.3.5、SciPy 1.18.1，完整信息见
-[运行环境](../results/r4_calibration_v1/run_context.json)。
+[运行环境](https://github.com/Mikoto-19909/greedy-failure-structures/blob/1a8b1899d927cba202cf7931fe992ecd2b5a1807/results/r4_calibration_v1/run_context.json)。
 按 [使用说明](r4_usage.zh-CN.md)的 analyze 与派生验证命令，可从保存数据重建并核对汇总。
 报告解释保留在此文档，数量和具体单元值可从所链接 CSV 重算。
 
@@ -113,4 +113,20 @@ F4 前默认检查 428 项通过、1 项可选 OR-Tools 跳过；完整检查 48
 首轮校准已完成。公式与实现有效，初始简单界已承担几乎全部紧度和最优认证作用，
 前缀项的新增收紧不足以单独构成本批之后扩规模的理由。
 当前结束于这一基线结果；任何大实例或更紧方法都需要新的具体问题和独立设计。
-本批 R4 数据仍保存在本地 `results/`，尚未发布为远端证据。
+## 已发布证据
+
+2026-09-08，所选证据已发布到受保护的 `codex/evidence/r4-calibration-v1` 分支，
+不可变提交 [1a8b1899d927cba202cf7931fe992ecd2b5a1807](https://github.com/Mikoto-19909/greedy-failure-structures/tree/1a8b1899d927cba202cf7931fe992ecd2b5a1807)
+已通过远端提交和完整文件树回读。共 3,746 个选定证据文件，约 56.32 MiB，另附 FREEZE.md。
+快照包含 F4 配置、预检、全部原图/证书、逐预算表、汇总、运行记录、R2 来源输入及
+[完整源码归档](https://github.com/Mikoto-19909/greedy-failure-structures/blob/1a8b1899d927cba202cf7931fe992ecd2b5a1807/results/r4_publication_source.zip)。
+归档源码提交为 `f435286598ca8582164e620fa80331256a254bd0`；三个 R4 计算文件
+与实际执行时保存的源码副本逐字节一致。
+
+发布前在正式数据副本上重新独立核验全部 1,800 图，并通过 13,000 行/65 单元的派生核对。
+原批次文件和计时未改写；追加重算耗时 468.609 秒、派生核对 0.809 秒，连同历史研究
+累计约 1,176.074 秒，仍在 F4 的 3,600 秒限制内。
+[本次验证记录](https://github.com/Mikoto-19909/greedy-failure-structures/tree/1a8b1899d927cba202cf7931fe992ecd2b5a1807/results/r4_publication_verification_v1)与历史记录分别保留。
+[发布前完整检查](https://github.com/Mikoto-19909/greedy-failure-structures/blob/1a8b1899d927cba202cf7931fe992ecd2b5a1807/results/r4_publication_full_check.log)执行 489 项，
+488 项通过、1 项可选 OR-Tools 跳过，38 个源码文件类型检查通过。
+以上追加工作用于核验既有证据，未启动新样本或更紧上界实验。
