@@ -1,5 +1,10 @@
 # Research analysis
 
+The [CPU/CUDA acceleration work record](acceleration_workflow_report.zh-CN.md)
+collects the optional CPU verifier, CUDA prototypes, batch scaling and full R2
+A/B measurements. [Archived scripts, timings and complete run outputs](../experiments/acceleration_v1/README.md)
+preserve the completed local work; production backend integration is a separate next step.
+
 The [R2 exploration report](r2_exploration_report.zh-CN.md) completes the fixed-size
 budget grid: 1,800 source graphs, 13,000 budget records and independent verification.
 The [F2 design](r2_exploration_design.zh-CN.md) and [usage guide](r2_usage.zh-CN.md)

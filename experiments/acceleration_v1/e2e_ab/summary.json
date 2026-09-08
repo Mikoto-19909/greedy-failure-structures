@@ -1,0 +1,81 @@
+{
+  "all_graph_and_csv_parity_passed": true,
+  "budget_records": 78000,
+  "fresh_graph_computations": 10800,
+  "max_production_conservative_memory_bytes": 451624960,
+  "modes": {
+    "numba": {
+      "analysis": {
+        "max": 102.87359939999806,
+        "median": 101.93449889999829,
+        "min": 97.58479600000283
+      },
+      "production": {
+        "max": 112.46203249999962,
+        "median": 109.90944630000013,
+        "min": 108.43413330000112
+      },
+      "summary_verification": {
+        "max": 4.171042800000578,
+        "median": 3.3181260999990627,
+        "min": 3.2477537999984634
+      },
+      "total": {
+        "max": 218.59599510000044,
+        "median": 216.02752650000184,
+        "min": 209.34921770000074
+      }
+    },
+    "python": {
+      "analysis": {
+        "max": 181.95205590000114,
+        "median": 172.34725419999813,
+        "min": 167.73580800000127
+      },
+      "production": {
+        "max": 115.0171534000001,
+        "median": 110.72558760000175,
+        "min": 106.62860989999899
+      },
+      "summary_verification": {
+        "max": 3.9210235999998986,
+        "median": 3.3972744999991846,
+        "min": 3.323954600000434
+      },
+      "total": {
+        "max": 296.0899967000005,
+        "median": 291.29850219999935,
+        "min": 277.70057830000223
+      }
+    }
+  },
+  "pairs": [
+    {
+      "numba": 209.34921770000074,
+      "python": 277.70057830000223,
+      "reduction_percent": 24.61333030648606,
+      "repeat": 0,
+      "saved_seconds": 68.3513606000015,
+      "speedup": 1.3264944638959655
+    },
+    {
+      "numba": 216.02752650000184,
+      "python": 296.0899967000005,
+      "reduction_percent": 27.039910531363965,
+      "repeat": 1,
+      "saved_seconds": 80.06247019999864,
+      "speedup": 1.3706123543473427
+    },
+    {
+      "numba": 218.59599510000044,
+      "python": 291.29850219999935,
+      "reduction_percent": 24.958077899790542,
+      "repeat": 2,
+      "saved_seconds": 72.70250709999891,
+      "speedup": 1.3325884679028082
+    }
+  ],
+  "runs": 6,
+  "status": "complete",
+  "total_pipeline_seconds": 1509.061816500005
+}

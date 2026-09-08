@@ -1,0 +1,63 @@
+{
+  "acceptance": "all 1800 non-timing graph records equal archived originals and all six runs; all three CSVs byte-identical across runs; 13000 budget rows; independent summary verification passed",
+  "budget_rows": 13000,
+  "cache_policy": "one tiny known-answer Numba precompile before measurement; each stage starts a new Python process; disk/JIT caches may be warm, all dependency imports inside stage commands count",
+  "cases": [
+    {
+      "backend": "python",
+      "id": "r0-python",
+      "position": 0,
+      "repeat": 0
+    },
+    {
+      "backend": "numba",
+      "id": "r0-numba",
+      "position": 1,
+      "repeat": 0
+    },
+    {
+      "backend": "numba",
+      "id": "r1-numba",
+      "position": 0,
+      "repeat": 1
+    },
+    {
+      "backend": "python",
+      "id": "r1-python",
+      "position": 1,
+      "repeat": 1
+    },
+    {
+      "backend": "python",
+      "id": "r2-python",
+      "position": 0,
+      "repeat": 2
+    },
+    {
+      "backend": "numba",
+      "id": "r2-numba",
+      "position": 1,
+      "repeat": 2
+    }
+  ],
+  "code_commit": "b17a22652982ff0e2d8a6a1201284b004256f6b1",
+  "diagnostic_graphs": 288,
+  "fresh_runs": "no checkpoint resume for timed production; each case has its own new output directory",
+  "graphs": 1800,
+  "memory_budget_bytes": 6442450944,
+  "output_budget_bytes": 2147483648,
+  "preparation_seconds": 0.14072830000077374,
+  "primary_metric": "wall time from first production process launch sequence to exit of summary verification; includes all three command startups, imports, JIT cache load, fresh pools, computation, diagnosis, data I/O and orchestration between stages",
+  "production_workers": 4,
+  "scope": "full declared no-plot R2 workflow; original CPU production only; no CUDA production or plotting; no duplicate separate graph-verification command",
+  "source_archive": "D:\\test area\\greedy-failure\\greedy-failure-structures\\results\\r4_source\\results\\r2_grid_v1",
+  "source_config": "D:\\test area\\greedy-failure\\wt-fast-verification\\results\\batch-scaling-v1\\data\\1800\\config.json",
+  "stage_timeout_seconds": 1200,
+  "stages": [
+    "production",
+    "analysis_with_independent_graph_verification",
+    "summary_verification"
+  ],
+  "verification_workers": 4,
+  "wall_budget_seconds": 7200
+}

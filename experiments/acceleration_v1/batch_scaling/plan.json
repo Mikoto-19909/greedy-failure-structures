@@ -1,0 +1,326 @@
+{
+  "cache_policy": "precompile one tiny kernel before timing; use fresh interpreter and fresh worker pool for every case; OS file and JIT disk caches may be warm; no thread/power settings changed",
+  "cases": [
+    {
+      "backend": "numba",
+      "id": "b90-r0-numba-w1",
+      "position": 0,
+      "repeat": 0,
+      "size": 90,
+      "workers": 1
+    },
+    {
+      "backend": "numba",
+      "id": "b90-r0-numba-w2",
+      "position": 1,
+      "repeat": 0,
+      "size": 90,
+      "workers": 2
+    },
+    {
+      "backend": "numba",
+      "id": "b90-r0-numba-w4",
+      "position": 2,
+      "repeat": 0,
+      "size": 90,
+      "workers": 4
+    },
+    {
+      "backend": "python",
+      "id": "b90-r0-python-w4",
+      "position": 3,
+      "repeat": 0,
+      "size": 90,
+      "workers": 4
+    },
+    {
+      "backend": "numba",
+      "id": "b90-r1-numba-w2",
+      "position": 0,
+      "repeat": 1,
+      "size": 90,
+      "workers": 2
+    },
+    {
+      "backend": "numba",
+      "id": "b90-r1-numba-w4",
+      "position": 1,
+      "repeat": 1,
+      "size": 90,
+      "workers": 4
+    },
+    {
+      "backend": "python",
+      "id": "b90-r1-python-w4",
+      "position": 2,
+      "repeat": 1,
+      "size": 90,
+      "workers": 4
+    },
+    {
+      "backend": "numba",
+      "id": "b90-r1-numba-w1",
+      "position": 3,
+      "repeat": 1,
+      "size": 90,
+      "workers": 1
+    },
+    {
+      "backend": "numba",
+      "id": "b90-r2-numba-w4",
+      "position": 0,
+      "repeat": 2,
+      "size": 90,
+      "workers": 4
+    },
+    {
+      "backend": "python",
+      "id": "b90-r2-python-w4",
+      "position": 1,
+      "repeat": 2,
+      "size": 90,
+      "workers": 4
+    },
+    {
+      "backend": "numba",
+      "id": "b90-r2-numba-w1",
+      "position": 2,
+      "repeat": 2,
+      "size": 90,
+      "workers": 1
+    },
+    {
+      "backend": "numba",
+      "id": "b90-r2-numba-w2",
+      "position": 3,
+      "repeat": 2,
+      "size": 90,
+      "workers": 2
+    },
+    {
+      "backend": "numba",
+      "id": "b360-r0-numba-w1",
+      "position": 0,
+      "repeat": 0,
+      "size": 360,
+      "workers": 1
+    },
+    {
+      "backend": "numba",
+      "id": "b360-r0-numba-w2",
+      "position": 1,
+      "repeat": 0,
+      "size": 360,
+      "workers": 2
+    },
+    {
+      "backend": "numba",
+      "id": "b360-r0-numba-w4",
+      "position": 2,
+      "repeat": 0,
+      "size": 360,
+      "workers": 4
+    },
+    {
+      "backend": "python",
+      "id": "b360-r0-python-w4",
+      "position": 3,
+      "repeat": 0,
+      "size": 360,
+      "workers": 4
+    },
+    {
+      "backend": "numba",
+      "id": "b360-r1-numba-w2",
+      "position": 0,
+      "repeat": 1,
+      "size": 360,
+      "workers": 2
+    },
+    {
+      "backend": "numba",
+      "id": "b360-r1-numba-w4",
+      "position": 1,
+      "repeat": 1,
+      "size": 360,
+      "workers": 4
+    },
+    {
+      "backend": "python",
+      "id": "b360-r1-python-w4",
+      "position": 2,
+      "repeat": 1,
+      "size": 360,
+      "workers": 4
+    },
+    {
+      "backend": "numba",
+      "id": "b360-r1-numba-w1",
+      "position": 3,
+      "repeat": 1,
+      "size": 360,
+      "workers": 1
+    },
+    {
+      "backend": "numba",
+      "id": "b360-r2-numba-w4",
+      "position": 0,
+      "repeat": 2,
+      "size": 360,
+      "workers": 4
+    },
+    {
+      "backend": "python",
+      "id": "b360-r2-python-w4",
+      "position": 1,
+      "repeat": 2,
+      "size": 360,
+      "workers": 4
+    },
+    {
+      "backend": "numba",
+      "id": "b360-r2-numba-w1",
+      "position": 2,
+      "repeat": 2,
+      "size": 360,
+      "workers": 1
+    },
+    {
+      "backend": "numba",
+      "id": "b360-r2-numba-w2",
+      "position": 3,
+      "repeat": 2,
+      "size": 360,
+      "workers": 2
+    },
+    {
+      "backend": "numba",
+      "id": "b1800-r0-numba-w1",
+      "position": 0,
+      "repeat": 0,
+      "size": 1800,
+      "workers": 1
+    },
+    {
+      "backend": "numba",
+      "id": "b1800-r0-numba-w2",
+      "position": 1,
+      "repeat": 0,
+      "size": 1800,
+      "workers": 2
+    },
+    {
+      "backend": "numba",
+      "id": "b1800-r0-numba-w4",
+      "position": 2,
+      "repeat": 0,
+      "size": 1800,
+      "workers": 4
+    },
+    {
+      "backend": "python",
+      "id": "b1800-r0-python-w4",
+      "position": 3,
+      "repeat": 0,
+      "size": 1800,
+      "workers": 4
+    },
+    {
+      "backend": "numba",
+      "id": "b1800-r1-numba-w2",
+      "position": 0,
+      "repeat": 1,
+      "size": 1800,
+      "workers": 2
+    },
+    {
+      "backend": "numba",
+      "id": "b1800-r1-numba-w4",
+      "position": 1,
+      "repeat": 1,
+      "size": 1800,
+      "workers": 4
+    },
+    {
+      "backend": "python",
+      "id": "b1800-r1-python-w4",
+      "position": 2,
+      "repeat": 1,
+      "size": 1800,
+      "workers": 4
+    },
+    {
+      "backend": "numba",
+      "id": "b1800-r1-numba-w1",
+      "position": 3,
+      "repeat": 1,
+      "size": 1800,
+      "workers": 1
+    },
+    {
+      "backend": "numba",
+      "id": "b1800-r2-numba-w4",
+      "position": 0,
+      "repeat": 2,
+      "size": 1800,
+      "workers": 4
+    },
+    {
+      "backend": "python",
+      "id": "b1800-r2-python-w4",
+      "position": 1,
+      "repeat": 2,
+      "size": 1800,
+      "workers": 4
+    },
+    {
+      "backend": "numba",
+      "id": "b1800-r2-numba-w1",
+      "position": 2,
+      "repeat": 2,
+      "size": 1800,
+      "workers": 1
+    },
+    {
+      "backend": "numba",
+      "id": "b1800-r2-numba-w2",
+      "position": 3,
+      "repeat": 2,
+      "size": 1800,
+      "workers": 2
+    }
+  ],
+  "code_commit": "b17a22652982ff0e2d8a6a1201284b004256f6b1",
+  "datasets": [
+    {
+      "budget_rows": 650,
+      "diagnostic_graphs": 90,
+      "repetitions_per_cell": 10,
+      "size": 90
+    },
+    {
+      "budget_rows": 2600,
+      "diagnostic_graphs": 288,
+      "repetitions_per_cell": 40,
+      "size": 360
+    },
+    {
+      "budget_rows": 13000,
+      "diagnostic_graphs": 288,
+      "repetitions_per_cell": 200,
+      "size": 1800
+    }
+  ],
+  "memory_budget_bytes": 6442450944,
+  "output_budget_bytes": 2147483648,
+  "per_case_timeout_seconds": 1200,
+  "preparation_seconds": 28.844137899999623,
+  "primary_metric": "wall seconds from subprocess launch to successful exit, including Python/Numba imports, JIT cache loading, fresh pool startup/shutdown, file read/check, full independent graph/diagnostic validation and report write",
+  "repeats": 3,
+  "scope": "verification only, no instance regeneration/production, analysis/bootstrap/plotting or pipeline speed claim",
+  "secondary_metric": "validate_batch wall_seconds and per-graph base/diagnostic wall totals (totals are not parallel wall time)",
+  "selection": "first 10/40/200 original repetitions in each of nine n,d cells, without filtering outcomes; diagnostic proportions differ",
+  "source": "D:\\test area\\greedy-failure\\greedy-failure-structures\\results\\r4_source\\results\\r2_grid_v1",
+  "source_archive_commit": "4a419f338d70068fa988fa97027734cdcda0a036",
+  "wall_budget_seconds": 7200
+}

@@ -1,0 +1,149 @@
+{
+  "status": "complete",
+  "summaries": [
+    {
+      "m": 12,
+      "batch": 1,
+      "python": {
+        "median": 0.0014762000009795884,
+        "min": 0.001338699999905657,
+        "max": 0.0020322000000305707
+      },
+      "cpu_compiled": {
+        "median": 5.670000064128544e-05,
+        "min": 3.909999941242859e-05,
+        "max": 9.470000077271834e-05
+      },
+      "cuda": {
+        "median": 0.00032450000071548857,
+        "min": 0.0001573999998072395,
+        "max": 0.0004389000005176058
+      },
+      "cuda_speedup_vs_python": 4.549152535361238,
+      "cuda_speedup_vs_compiled_cpu": 0.1747303559823355
+    },
+    {
+      "m": 12,
+      "batch": 3,
+      "python": {
+        "median": 0.003819100000328035,
+        "min": 0.003713699999934761,
+        "max": 0.003942100000131177
+      },
+      "cpu_compiled": {
+        "median": 0.00012679999963438604,
+        "min": 9.339999996882398e-05,
+        "max": 0.0001627000001462875
+      },
+      "cuda": {
+        "median": 0.0003344999986438779,
+        "min": 0.00020360000053187832,
+        "max": 0.000483600000734441
+      },
+      "cuda_speedup_vs_python": 11.417339359675161,
+      "cuda_speedup_vs_compiled_cpu": 0.37907324409104826
+    },
+    {
+      "m": 16,
+      "batch": 1,
+      "python": {
+        "median": 0.02254449999963981,
+        "min": 0.020481600000493927,
+        "max": 0.02531749999980093
+      },
+      "cpu_compiled": {
+        "median": 0.00024389999998675194,
+        "min": 0.0001723000004858477,
+        "max": 0.00038210000093386043
+      },
+      "cuda": {
+        "median": 0.0004902000000583939,
+        "min": 0.00017239999942830764,
+        "max": 0.0008491000007779803
+      },
+      "cuda_speedup_vs_python": 45.99041207049011,
+      "cuda_speedup_vs_compiled_cpu": 0.4975520194975478
+    },
+    {
+      "m": 16,
+      "batch": 3,
+      "python": {
+        "median": 0.06265940000048431,
+        "min": 0.06062310000015714,
+        "max": 0.06505509999988135
+      },
+      "cpu_compiled": {
+        "median": 0.0005379000012908364,
+        "min": 0.0004732999987027142,
+        "max": 0.0005942999996477738
+      },
+      "cuda": {
+        "median": 0.0006190000003698515,
+        "min": 0.00026640000032784883,
+        "max": 0.000939499999731197
+      },
+      "cuda_speedup_vs_python": 101.22681738779552,
+      "cuda_speedup_vs_compiled_cpu": 0.8689822309684039
+    },
+    {
+      "m": 20,
+      "batch": 1,
+      "python": {
+        "median": 0.3186374999986583,
+        "min": 0.3124926000000414,
+        "max": 0.33415899999999965
+      },
+      "cpu_compiled": {
+        "median": 0.005285799999910523,
+        "min": 0.0048606000000290805,
+        "max": 0.00639959999898565
+      },
+      "cuda": {
+        "median": 0.0004683999995904742,
+        "min": 0.0004609000006894348,
+        "max": 0.00105249999978696
+      },
+      "cuda_speedup_vs_python": 680.267933982164,
+      "cuda_speedup_vs_compiled_cpu": 11.284799326498591
+    },
+    {
+      "m": 20,
+      "batch": 3,
+      "python": {
+        "median": 1.426565900001151,
+        "min": 1.044925999998668,
+        "max": 1.531057600001077
+      },
+      "cpu_compiled": {
+        "median": 0.02086819999931322,
+        "min": 0.01738649999970221,
+        "max": 0.026129899999432382
+      },
+      "cuda": {
+        "median": 0.0007179999993240926,
+        "min": 0.000676499999826774,
+        "max": 0.00075970000034431
+      },
+      "cuda_speedup_vs_python": 1986.8605868302016,
+      "cuda_speedup_vs_compiled_cpu": 29.064345430303653
+    }
+  ],
+  "cold_start": {
+    "imports_seconds": 0.7259539000006043,
+    "python_first_call_seconds": 2.9599999834317714e-05,
+    "cpu_compiled_first_call_seconds": 0.7128351999999722,
+    "cuda_first_call_seconds": 0.22597739999946498
+  },
+  "total_wall_seconds": 17.483594299999822,
+  "environment": {
+    "python": "3.12.14 (main, Aug 25 2026, 14:01:42) [MSC v.1944 64 bit (AMD64)]",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "cupy": "14.2.0",
+    "numpy": "2.3.5",
+    "gpu": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "driver_version": 13030,
+    "runtime_version": 12090,
+    "cupy_pool_peak_retained_bytes": 1024
+  },
+  "limits": "Kernel prototype only; no whole-pipeline or CPU-process-pool speedup claim; shared laptop, five warm repetitions, fixed nine graphs."
+}
