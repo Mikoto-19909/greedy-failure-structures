@@ -1,0 +1,684 @@
+{
+  "source": {
+    "sets": [
+      [
+        2,
+        8
+      ],
+      [
+        2,
+        7
+      ],
+      [
+        8,
+        11
+      ],
+      [
+        3,
+        7
+      ],
+      [
+        0,
+        5
+      ],
+      [
+        2,
+        5
+      ],
+      [
+        1,
+        5
+      ],
+      [
+        0,
+        6
+      ],
+      [
+        2,
+        8
+      ],
+      [
+        0,
+        2
+      ],
+      [
+        4,
+        5
+      ],
+      [
+        2,
+        3
+      ]
+    ],
+    "task": {
+      "base_graph_id": "r2-exploration-n12-d2-r0176",
+      "budgets": [
+        1,
+        2,
+        3,
+        5,
+        6,
+        9,
+        12
+      ],
+      "d": 2,
+      "diagnostic_k": null,
+      "n": 12,
+      "repetition": 176,
+      "seed": 5112221823219104447
+    },
+    "values": [
+      {
+        "greedy": 2,
+        "greedy_selected": [
+          0
+        ],
+        "instance_id": "4c9714edfed30b9da7f532a42793c15e4a6608fa584717d66569f0bc8282f51e",
+        "k": 1,
+        "optimum": 2,
+        "optimum_selected": [
+          0
+        ],
+        "reference_status": "optimal"
+      },
+      {
+        "greedy": 4,
+        "greedy_selected": [
+          0,
+          3
+        ],
+        "instance_id": "c1a767e71aa27a70efbdabe2a741f2e8566f3d3c83dd79359371d8a0598eed40",
+        "k": 2,
+        "optimum": 4,
+        "optimum_selected": [
+          0,
+          3
+        ],
+        "reference_status": "optimal"
+      },
+      {
+        "greedy": 6,
+        "greedy_selected": [
+          0,
+          3,
+          4
+        ],
+        "instance_id": "718260778d0560077bb0d3799ec028e45b956d89db88e20719a282acb41602c4",
+        "k": 3,
+        "optimum": 6,
+        "optimum_selected": [
+          0,
+          3,
+          4
+        ],
+        "reference_status": "optimal"
+      },
+      {
+        "greedy": 8,
+        "greedy_selected": [
+          0,
+          2,
+          3,
+          4,
+          6
+        ],
+        "instance_id": "629a0134bbc1dd251304748b3ac5ffe423bbc07959615fda4febe0db2d652b4c",
+        "k": 5,
+        "optimum": 9,
+        "optimum_selected": [
+          0,
+          2,
+          3,
+          6,
+          7
+        ],
+        "reference_status": "optimal"
+      },
+      {
+        "greedy": 9,
+        "greedy_selected": [
+          0,
+          2,
+          3,
+          4,
+          6,
+          7
+        ],
+        "instance_id": "ff9022d6683e61b50970db6c55b85b4d80b4d1fb48bdd746434de5c1e0818abb",
+        "k": 6,
+        "optimum": 10,
+        "optimum_selected": [
+          0,
+          2,
+          3,
+          6,
+          7,
+          10
+        ],
+        "reference_status": "optimal"
+      },
+      {
+        "greedy": 10,
+        "greedy_selected": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          10
+        ],
+        "instance_id": "a9550695686fbaf8f524cc1a83f0a44f37240e54d9e363d3b2fe006b1c55a8c3",
+        "k": 9,
+        "optimum": 10,
+        "optimum_selected": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          10
+        ],
+        "reference_status": "optimal"
+      },
+      {
+        "greedy": 10,
+        "greedy_selected": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "instance_id": "898cdcd10440796f01f8485527c7f0359ed7ffdb58bb013b6f000fc32a39f49b",
+        "k": 12,
+        "optimum": 10,
+        "optimum_selected": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "reference_status": "optimal"
+      }
+    ]
+  },
+  "source_commit": "4a419f338d70068fa988fa97027734cdcda0a036",
+  "status": "complete",
+  "task": {
+    "base_graph_id": "r2-exploration-n12-d2-r0176",
+    "budgets": [
+      1,
+      2,
+      3,
+      5,
+      6,
+      9,
+      12
+    ],
+    "d": 2,
+    "diagnostic_k": null,
+    "n": 12,
+    "repetition": 176,
+    "seed": 5112221823219104447
+  },
+  "timing": {
+    "greedy_seconds": 0.00039770000148564577,
+    "peak_memory_bytes": 40882176,
+    "production_seconds": 7.48999955249019e-05,
+    "source_read_seconds": 0.008699899997736793
+  },
+  "values": [
+    {
+      "greedy": 2,
+      "initial_upper": 2,
+      "k": 1,
+      "path": [
+        0
+      ],
+      "prefixes": [
+        {
+          "coverage": 0,
+          "gain_witness": 0,
+          "max_gain": 2,
+          "t": 0,
+          "upper": 2
+        },
+        {
+          "coverage": 2,
+          "gain_witness": 3,
+          "max_gain": 2,
+          "t": 1,
+          "upper": 4
+        }
+      ],
+      "union_size": 10,
+      "upper": 2
+    },
+    {
+      "greedy": 4,
+      "initial_upper": 4,
+      "k": 2,
+      "path": [
+        0,
+        3
+      ],
+      "prefixes": [
+        {
+          "coverage": 0,
+          "gain_witness": 0,
+          "max_gain": 2,
+          "t": 0,
+          "upper": 4
+        },
+        {
+          "coverage": 2,
+          "gain_witness": 3,
+          "max_gain": 2,
+          "t": 1,
+          "upper": 6
+        },
+        {
+          "coverage": 4,
+          "gain_witness": 4,
+          "max_gain": 2,
+          "t": 2,
+          "upper": 8
+        }
+      ],
+      "union_size": 10,
+      "upper": 4
+    },
+    {
+      "greedy": 6,
+      "initial_upper": 6,
+      "k": 3,
+      "path": [
+        0,
+        3,
+        4
+      ],
+      "prefixes": [
+        {
+          "coverage": 0,
+          "gain_witness": 0,
+          "max_gain": 2,
+          "t": 0,
+          "upper": 6
+        },
+        {
+          "coverage": 2,
+          "gain_witness": 3,
+          "max_gain": 2,
+          "t": 1,
+          "upper": 8
+        },
+        {
+          "coverage": 4,
+          "gain_witness": 4,
+          "max_gain": 2,
+          "t": 2,
+          "upper": 10
+        },
+        {
+          "coverage": 6,
+          "gain_witness": 2,
+          "max_gain": 1,
+          "t": 3,
+          "upper": 9
+        }
+      ],
+      "union_size": 10,
+      "upper": 6
+    },
+    {
+      "greedy": 8,
+      "initial_upper": 10,
+      "k": 5,
+      "path": [
+        0,
+        3,
+        4,
+        2,
+        6
+      ],
+      "prefixes": [
+        {
+          "coverage": 0,
+          "gain_witness": 0,
+          "max_gain": 2,
+          "t": 0,
+          "upper": 10
+        },
+        {
+          "coverage": 2,
+          "gain_witness": 3,
+          "max_gain": 2,
+          "t": 1,
+          "upper": 12
+        },
+        {
+          "coverage": 4,
+          "gain_witness": 4,
+          "max_gain": 2,
+          "t": 2,
+          "upper": 14
+        },
+        {
+          "coverage": 6,
+          "gain_witness": 2,
+          "max_gain": 1,
+          "t": 3,
+          "upper": 11
+        },
+        {
+          "coverage": 7,
+          "gain_witness": 6,
+          "max_gain": 1,
+          "t": 4,
+          "upper": 12
+        },
+        {
+          "coverage": 8,
+          "gain_witness": 7,
+          "max_gain": 1,
+          "t": 5,
+          "upper": 13
+        }
+      ],
+      "union_size": 10,
+      "upper": 10
+    },
+    {
+      "greedy": 9,
+      "initial_upper": 10,
+      "k": 6,
+      "path": [
+        0,
+        3,
+        4,
+        2,
+        6,
+        7
+      ],
+      "prefixes": [
+        {
+          "coverage": 0,
+          "gain_witness": 0,
+          "max_gain": 2,
+          "t": 0,
+          "upper": 12
+        },
+        {
+          "coverage": 2,
+          "gain_witness": 3,
+          "max_gain": 2,
+          "t": 1,
+          "upper": 14
+        },
+        {
+          "coverage": 4,
+          "gain_witness": 4,
+          "max_gain": 2,
+          "t": 2,
+          "upper": 16
+        },
+        {
+          "coverage": 6,
+          "gain_witness": 2,
+          "max_gain": 1,
+          "t": 3,
+          "upper": 12
+        },
+        {
+          "coverage": 7,
+          "gain_witness": 6,
+          "max_gain": 1,
+          "t": 4,
+          "upper": 13
+        },
+        {
+          "coverage": 8,
+          "gain_witness": 7,
+          "max_gain": 1,
+          "t": 5,
+          "upper": 14
+        },
+        {
+          "coverage": 9,
+          "gain_witness": 10,
+          "max_gain": 1,
+          "t": 6,
+          "upper": 15
+        }
+      ],
+      "union_size": 10,
+      "upper": 10
+    },
+    {
+      "greedy": 10,
+      "initial_upper": 10,
+      "k": 9,
+      "path": [
+        0,
+        3,
+        4,
+        2,
+        6,
+        7,
+        10,
+        1,
+        5
+      ],
+      "prefixes": [
+        {
+          "coverage": 0,
+          "gain_witness": 0,
+          "max_gain": 2,
+          "t": 0,
+          "upper": 18
+        },
+        {
+          "coverage": 2,
+          "gain_witness": 3,
+          "max_gain": 2,
+          "t": 1,
+          "upper": 20
+        },
+        {
+          "coverage": 4,
+          "gain_witness": 4,
+          "max_gain": 2,
+          "t": 2,
+          "upper": 22
+        },
+        {
+          "coverage": 6,
+          "gain_witness": 2,
+          "max_gain": 1,
+          "t": 3,
+          "upper": 15
+        },
+        {
+          "coverage": 7,
+          "gain_witness": 6,
+          "max_gain": 1,
+          "t": 4,
+          "upper": 16
+        },
+        {
+          "coverage": 8,
+          "gain_witness": 7,
+          "max_gain": 1,
+          "t": 5,
+          "upper": 17
+        },
+        {
+          "coverage": 9,
+          "gain_witness": 10,
+          "max_gain": 1,
+          "t": 6,
+          "upper": 18
+        },
+        {
+          "coverage": 10,
+          "gain_witness": 1,
+          "max_gain": 0,
+          "t": 7,
+          "upper": 10
+        },
+        {
+          "coverage": 10,
+          "gain_witness": 5,
+          "max_gain": 0,
+          "t": 8,
+          "upper": 10
+        },
+        {
+          "coverage": 10,
+          "gain_witness": 8,
+          "max_gain": 0,
+          "t": 9,
+          "upper": 10
+        }
+      ],
+      "union_size": 10,
+      "upper": 10
+    },
+    {
+      "greedy": 10,
+      "initial_upper": 10,
+      "k": 12,
+      "path": [
+        0,
+        3,
+        4,
+        2,
+        6,
+        7,
+        10,
+        1,
+        5,
+        8,
+        9,
+        11
+      ],
+      "prefixes": [
+        {
+          "coverage": 0,
+          "gain_witness": 0,
+          "max_gain": 2,
+          "t": 0,
+          "upper": 24
+        },
+        {
+          "coverage": 2,
+          "gain_witness": 3,
+          "max_gain": 2,
+          "t": 1,
+          "upper": 26
+        },
+        {
+          "coverage": 4,
+          "gain_witness": 4,
+          "max_gain": 2,
+          "t": 2,
+          "upper": 28
+        },
+        {
+          "coverage": 6,
+          "gain_witness": 2,
+          "max_gain": 1,
+          "t": 3,
+          "upper": 18
+        },
+        {
+          "coverage": 7,
+          "gain_witness": 6,
+          "max_gain": 1,
+          "t": 4,
+          "upper": 19
+        },
+        {
+          "coverage": 8,
+          "gain_witness": 7,
+          "max_gain": 1,
+          "t": 5,
+          "upper": 20
+        },
+        {
+          "coverage": 9,
+          "gain_witness": 10,
+          "max_gain": 1,
+          "t": 6,
+          "upper": 21
+        },
+        {
+          "coverage": 10,
+          "gain_witness": 1,
+          "max_gain": 0,
+          "t": 7,
+          "upper": 10
+        },
+        {
+          "coverage": 10,
+          "gain_witness": 5,
+          "max_gain": 0,
+          "t": 8,
+          "upper": 10
+        },
+        {
+          "coverage": 10,
+          "gain_witness": 8,
+          "max_gain": 0,
+          "t": 9,
+          "upper": 10
+        },
+        {
+          "coverage": 10,
+          "gain_witness": 9,
+          "max_gain": 0,
+          "t": 10,
+          "upper": 10
+        },
+        {
+          "coverage": 10,
+          "gain_witness": 11,
+          "max_gain": 0,
+          "t": 11,
+          "upper": 10
+        },
+        {
+          "coverage": 10,
+          "gain_witness": null,
+          "max_gain": 0,
+          "t": 12,
+          "upper": 10
+        }
+      ],
+      "union_size": 10,
+      "upper": 10
+    }
+  ],
+  "version": "r4-prefix-bound-v1"
+}
