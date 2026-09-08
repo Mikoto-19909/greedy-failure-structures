@@ -9,7 +9,7 @@
 CI 的研究任务固定为 Python 3.12。基础算法与非研究回归继续覆盖 Python 3.11。
 
 ```console
-python -m pip install -e ".[typecheck]" scipy==1.18.1 numpy==2.3.5
+python -m pip install -e ".[typecheck,fast-verification]" scipy==1.18.1
 python scripts/check.py
 python scripts/check.py --profile core --list
 python scripts/check.py --profile research --tests-only
@@ -27,6 +27,8 @@ OR-Tools 自身类型声明与现有兼容调用有差异，因此可选运行�
 不放宽源码类型检查。
 
 新测试默认进入核心，只有 `scripts/check_profiles.py` 中明确列出的场景属于扩展。
+快速验证在运行时属于可选依赖；研究检查环境安装它并实际执行编译枚举、回退和损坏数据拒绝，
+不能以缺少 Numba 为由跳过这些必需场景。基础运行和非研究平台检查仍无需 Numba。
 不要通过改测试名或合并多个方法来制造测试数量下降。所有研究入口的计算验证归入
 必需研究检查；工具脚本明确登记为工具或归属已有研究，文件存在性不等于验证正确。
 

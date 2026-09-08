@@ -25,6 +25,30 @@ F2 配置若选用少于 4 个工作进程，后续命令使用配置中较小�
 冻结只选择已授权网格并写设计，不生成正式原图，也不发布证据；已有 F2 文件不会覆盖。
 两个候选网格都超预算时，冻结失败，正式生成不得开始。
 
+## 可选的快速 CPU 验证
+
+默认仍使用原始 Python 验证器。安装可选依赖后，可在独立验证和重建汇总时选择：
+
+```console
+python -m pip install ".[fast-verification]"
+python analysis/validate_r2_budget_grid.py --output results/r2_grid_v1 --workers 1 --verification-backend numba
+python analysis/r2_budget_grid.py analyze --output results/r2_grid_v1 --no-plot --verification-backend numba --verification-workers 1
+```
+
+`numba` 要求快速后端能初始化；缺少依赖或初始化失败时命令失败。`auto` 尝试相同后端，
+不可用时发出警告并回退到原始 Python 枚举。`python` 不导入 NumPy/Numba 快速后端。
+自动回退只处理依赖和编译初始化问题，非法输入、计算错误和验证不一致仍会失败。
+
+快速后端仅加速独立诊断验证中的前缀补全枚举，使用布尔关联矩阵和完整组合枚举，
+不调用生产端求解器。各预算的原始精确参考、Greedy、交换、结构、身份和汇总检查继续重算。
+它不是 CUDA 后端，也不改变生产阶段。`--summaries-only` 不接受非默认后端选项。
+
+分析默认使用保存配置中的进程上限；`--verification-workers` 可降低实际分析进程数，
+不修改保存配置。小批量可先比较 1 个进程；不要将某一小样本的最优进程数推广到全量。
+首次 JIT 编译和新工作进程的缓存加载有成本，比较性能时应明确是否计入。
+
+后端和分析进程数是本次执行选项，不进入种子、实例身份和结果 CSV；恢复原始验证可直接
+省略这些选项。需要抽查时，可对同一份结果另行执行默认 Python 验证命令。
 ## 输出与恢复运行
 
 `graphs/` 中每张原图有一个 JSON 检查点，保存完整有序集合、预算结果、结构、诊断与耗时。

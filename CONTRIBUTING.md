@@ -63,7 +63,7 @@ required research verification and mypy:
 python scripts/check.py
 ```
 
-Install check dependencies with `pip install -e ".[typecheck]" scipy==1.18.1 numpy==2.3.5`.
+Install check dependencies with `pip install -e ".[typecheck,fast-verification]" scipy==1.18.1`.
 Before merging changes to the check system, run `python scripts/check.py --profile full`
 and obtain an independent review with valid and invalid inputs. All new tests default
 to core; required research verification must execute, never silently skip.

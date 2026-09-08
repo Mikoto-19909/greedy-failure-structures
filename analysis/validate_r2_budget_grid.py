@@ -25,6 +25,7 @@ from maxcover.reproducibility import instance_id
 from r2_design import validate_design, read_json, write_json, load_records, seed_for
 from r2_design import RuntimeBudget, computed_results
 from validate_greedy_failure_paths import expected_path, compare
+from verification_completion import BACKENDS, validate_backend
 
 
 def memory_usage():
@@ -92,8 +93,12 @@ def structure_reference(sets, n):
             "element_frequencies": frequencies, "pair_intersections": intersections}
 
 
-def verify_graph(record, task, diagnostic_limits):
+def verify_graph(record, task, diagnostic_limits, *, completion_backend="python"):
+    validate_backend(completion_backend)
     started = time.perf_counter()
+    if completion_backend != "python":
+        from verification_completion import get_completion_solver
+        get_completion_solver(completion_backend)
     compare(record["task"], task, "task")
     compare(record["status"], "complete", "status")
     n, d = task["n"], task["d"]
@@ -120,18 +125,20 @@ def verify_graph(record, task, diagnostic_limits):
         compare(record["diagnostic"], None, "no unplanned diagnostic")
     else:
         base = {"sets": record["sets"], "k": task["diagnostic_k"], "population": "r2"}
-        expected = expected_path(base, diagnostic_limits)
+        expected = expected_path(base, diagnostic_limits, completion_backend=completion_backend)
         expected = {k: v for k, v in expected.items() if k not in base}
         compare(record["diagnostic"], expected, "independent prefix/exchange path")
     return {"base_seconds": base_done - started, "diagnostic_seconds": time.perf_counter() - base_done,
             "peak_memory_bytes": memory_usage()}
 
 
-def verify_saved(path, task, diagnostic_limits):
-    return task["base_graph_id"], verify_graph(read_json(path), task, diagnostic_limits)
+def verify_saved(path, task, diagnostic_limits, completion_backend="python"):
+    return task["base_graph_id"], verify_graph(read_json(path), task, diagnostic_limits,
+                                             completion_backend=completion_backend)
 
 
-def validate_batch(output, *, workers=4):
+def validate_batch(output, *, workers=4, completion_backend="python"):
+    validate_backend(completion_backend)
     output = Path(output)
     design = validate_design(read_json(output / "config.json"))
     if not 1 <= workers <= design["limits"]["workers"]:
@@ -140,7 +147,8 @@ def validate_batch(output, *, workers=4):
     report = {"status": "incomplete", "graphs": {}, "wall_seconds": 0.0}
     write_json(output / "verification.json", report)
     load_records(output, design)
-    tasks = [(output / "graphs" / (t["base_graph_id"] + ".json"), t, design["diagnostics"]) for t in design["tasks"]]
+    tasks = [(output / "graphs" / (t["base_graph_id"] + ".json"), t, design["diagnostics"],
+              completion_backend) for t in design["tasks"]]
     with RuntimeBudget(output, design, "verification") as budget:
         for identifier, timing in computed_results(verify_saved, tasks, workers, budget):
             if timing["peak_memory_bytes"] * (workers + 1) > design["limits"]["memory_bytes"]:
@@ -247,12 +255,16 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--summaries-only", action="store_true")
+    parser.add_argument("--verification-backend", choices=BACKENDS, default="python",
+                        help="Prefix completion verifier: python (default), auto with fallback, or required numba")
     args = parser.parse_args()
     if args.summaries_only:
+        if args.verification_backend != "python":
+            parser.error("--verification-backend applies to graph verification, not --summaries-only")
         verify_summaries(args.output)
         print("R2 summary verification passed", flush=True)
     else:
-        validate_batch(args.output, workers=args.workers)
+        validate_batch(args.output, workers=args.workers, completion_backend=args.verification_backend)
         print("R2 independent graph verification passed", flush=True)
 
 

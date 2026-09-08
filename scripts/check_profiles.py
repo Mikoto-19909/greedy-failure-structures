@@ -77,7 +77,7 @@ RESEARCH_MODULES = {
     'pilot': ('test_core_overlap_pilot',),
     'r1': ('test_greedy_failure_paths', 'test_research_verification'),
     'r1c': ('test_r1c_confirmation', 'test_r1c_report'),
-    'r2': ('test_r2_budget_grid',),
+    'r2': ('test_r2_budget_grid', 'test_verification_completion'),
     'r3': ('test_r3_feasibility', 'test_r3_confirmation'),
 }
 # Producer, verifier, and shared helper ownership; tools need no fake second solver.
@@ -109,6 +109,7 @@ ANALYSIS_OWNERS = {
     'r2_design.py': 'r2',
     'r2_budget_grid.py': 'r2',
     'validate_r2_budget_grid.py': 'r2',
+    'verification_completion.py': 'r2',
     'r3_feasibility.py': 'r3',
     'validate_r3_feasibility.py': 'r3',
     'r3_confirmation_inputs.py': 'r3',
@@ -192,6 +193,9 @@ REQUIRED_RESEARCH = {
         'test_r2_budget_grid.R2BudgetTests.test_incomplete_and_mismatched_designs_rejected',
         'test_r2_budget_grid.R2BudgetTests.test_metric_denominators_and_bootstrap_unit',
         'test_r2_budget_grid.R2BudgetTests.test_analyze_rejects_changed_inputs_despite_old_passed_status',
+        'test_verification_completion.FastVerificationTests.test_compiled_completion_matches_independent_small_cases',
+        'test_verification_completion.FastVerificationTests.test_fallback_is_explicit_and_does_not_hide_calculation_errors',
+        'test_verification_completion.FastVerificationTests.test_cli_spawn_resume_and_corruption_rejection',
     ),
     'r3_counterexamples': (
         'test_r3_counterexamples.R3CounterexampleTests.test_same_e0_pair_has_equal_degrees_and_opposite_first_step_outcomes',
