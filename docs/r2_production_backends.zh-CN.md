@@ -2,6 +2,7 @@
 
 首版只加速全预算精确枚举，保留原来的 Greedy、结构、诊断和独立验证。
 默认 `python`，配置、种子、实例身份和数值 CSV 不变。
+首版实现、真实 GPU 检查及全量性能结果见[验收记录](../analysis/r2_production_backend_v1_report.zh-CN.md)。
 
 ## CPU
 

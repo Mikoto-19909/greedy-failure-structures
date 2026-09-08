@@ -1,7 +1,8 @@
 # R2 可选 CPU/CUDA 生产后端方案
 
 2026-09-08。首版逐图 CPU/CUDA 接口现已实现；下文保留设计依据和阶段边界。
-实际命令见[生产后端指南](r2_production_backends.zh-CN.md)。全量验收结果单独记录。
+实际命令见[生产后端指南](r2_production_backends.zh-CN.md)，首版阶段 1～3 的结果见
+[实现与验收记录](../analysis/r2_production_backend_v1_report.zh-CN.md)。
 已有研究成果先保存为本地提交 `ad1224e`。跨图批处理仍未实施。
 
 ## 结论与范围

@@ -8,6 +8,8 @@ The [production backend guide](../docs/r2_production_backends.zh-CN.md) describe
 the optional CPU/CUDA interface, timing, fallback and checkpoint boundaries.
 The [implementation plan](../docs/r2_production_backends_plan.zh-CN.md) retains
 the first-version scope and the deferred cross-graph batching work.
+The [first production-backend acceptance report](r2_production_backend_v1_report.zh-CN.md)
+records the completed correctness, recovery, real GPU and full-workflow checks.
 
 The [R2 exploration report](r2_exploration_report.zh-CN.md) completes the fixed-size
 budget grid: 1,800 source graphs, 13,000 budget records and independent verification.

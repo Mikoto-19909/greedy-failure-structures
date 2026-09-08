@@ -1,0 +1,99 @@
+{
+  "acceptance": "pilot must pass before full; all source semantics and three CSVs identical per size; real CUDA events required; fresh production only",
+  "cases": [
+    {
+      "backend": "python",
+      "id": "n9-r0-python",
+      "repeat": 0,
+      "size": 9,
+      "workers": 4
+    },
+    {
+      "backend": "numba",
+      "id": "n9-r0-numba",
+      "repeat": 0,
+      "size": 9,
+      "workers": 4
+    },
+    {
+      "backend": "cuda",
+      "id": "n9-r0-cuda",
+      "repeat": 0,
+      "size": 9,
+      "workers": 1
+    },
+    {
+      "backend": "python",
+      "id": "n1800-r0-python",
+      "repeat": 0,
+      "size": 1800,
+      "workers": 4
+    },
+    {
+      "backend": "numba",
+      "id": "n1800-r0-numba",
+      "repeat": 0,
+      "size": 1800,
+      "workers": 4
+    },
+    {
+      "backend": "cuda",
+      "id": "n1800-r0-cuda",
+      "repeat": 0,
+      "size": 1800,
+      "workers": 1
+    },
+    {
+      "backend": "numba",
+      "id": "n1800-r1-numba",
+      "repeat": 1,
+      "size": 1800,
+      "workers": 4
+    },
+    {
+      "backend": "cuda",
+      "id": "n1800-r1-cuda",
+      "repeat": 1,
+      "size": 1800,
+      "workers": 1
+    },
+    {
+      "backend": "python",
+      "id": "n1800-r1-python",
+      "repeat": 1,
+      "size": 1800,
+      "workers": 4
+    },
+    {
+      "backend": "cuda",
+      "id": "n1800-r2-cuda",
+      "repeat": 2,
+      "size": 1800,
+      "workers": 1
+    },
+    {
+      "backend": "python",
+      "id": "n1800-r2-python",
+      "repeat": 2,
+      "size": 1800,
+      "workers": 4
+    },
+    {
+      "backend": "numba",
+      "id": "n1800-r2-numba",
+      "repeat": 2,
+      "size": 1800,
+      "workers": 4
+    }
+  ],
+  "code_commit": "0eda797c661317a11bac54eb52e7b0c722a54b04",
+  "memory_budget_bytes": 6442450944,
+  "output_budget_bytes": 2147483648,
+  "scope": "per-graph production only; python4,numba4,cuda1 are different supported execution configurations, not a pure hardware comparison",
+  "source": "D:\\test area\\greedy-failure\\greedy-failure-structures\\results\\r4_source\\results\\r2_grid_v1",
+  "stage_timeout_seconds": 1200,
+  "timing": "fresh CLI per stage; run -> analyze no-plot -> summary verification; all process startup/import/cache-load/I/O included; pilot warms JIT disk caches; shared ASCII CUDA cache reused; post-run parity checks excluded",
+  "verification_backend": "numba",
+  "verification_workers": 4,
+  "wall_budget_seconds": 7200
+}
