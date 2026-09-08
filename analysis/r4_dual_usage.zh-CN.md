@@ -1,6 +1,7 @@
 # R4 L5 DUAL 使用说明
 
 本入口实现 [固定比较设计](r4_dual_design.zh-CN.md)中的 Method 4 + Method 3。
+完整 1,800 图/13,000 预算比较已完成，实际结果和成本见[比较报告](r4_dual_comparison_report.zh-CN.md)。
 使用 Python 3.12；此机器可执行文件为 `.venv\Scripts\python.exe`。不依赖 LP 求解器。
 生产器扫描交点，独立验证器显式重建每个残余并计算每轮最大值。
 

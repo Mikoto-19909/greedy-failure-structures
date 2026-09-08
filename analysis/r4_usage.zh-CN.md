@@ -1,5 +1,8 @@
 # R4 前缀上界：输入、预检与校准
 
+后续 L5 DUAL 已另行完成实现和完整固定语料比较，见 [DUAL 使用说明](r4_dual_usage.zh-CN.md)
+及[比较报告](r4_dual_comparison_report.zh-CN.md)。它使用独立版本、配置和输出，不覆盖下面的 F4 基线。
+
 实现 [R4 准备方案](../docs/r4_preparation_plan.zh-CN.md)的整数前缀基线。
 使用 Python 3.12 和[仓库检查依赖](../CONTRIBUTING.md)，执行前检查解释器、版本及
 `maxcover.__file__`。源码目录不变，公共 Greedy、CSV 与原研究恢复运行契约不变。
