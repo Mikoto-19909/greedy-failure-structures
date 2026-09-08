@@ -1,0 +1,44 @@
+{
+  "passed": true,
+  "budgets_per_backend": 46,
+  "fixtures": [
+    [
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      18446744073709551615,
+      18446744073709551615,
+      18446744073709551615,
+      18446744073709551615
+    ],
+    [
+      9223372036854775808,
+      1,
+      9223372036854775808,
+      0
+    ],
+    [
+      3,
+      6,
+      9,
+      12
+    ],
+    [
+      0,
+      0,
+      1,
+      0
+    ]
+  ],
+  "max_packed_score_m20": 68157439,
+  "invalid_value_fallback": {
+    "m": 20,
+    "count": 1,
+    "selected": "compiled",
+    "fallback": "CUDARuntimeError: cudaErrorInvalidValue: invalid argument"
+  },
+  "limits": "small functional checks; no performance measurement; source AST extracted to avoid archival import side effects"
+}
