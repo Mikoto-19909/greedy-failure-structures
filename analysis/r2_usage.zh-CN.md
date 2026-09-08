@@ -27,6 +27,10 @@ F2 配置若选用少于 4 个工作进程，后续命令使用配置中较小�
 
 ## 可选的快速 CPU 验证
 
+生产阶段可独立选择 `--production-backend python|numba|cuda|auto`。
+CPU 支持现有多进程，CUDA 首版使用 `--workers 1` 的隔离拥有者。
+安装、恢复和计时说明见[生产后端指南](../docs/r2_production_backends.zh-CN.md)。
+
 默认仍使用原始 Python 验证器。安装可选依赖后，可在独立验证和重建汇总时选择：
 
 ```console

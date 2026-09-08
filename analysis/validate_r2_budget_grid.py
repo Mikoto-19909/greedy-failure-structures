@@ -141,6 +141,8 @@ def validate_batch(output, *, workers=4, completion_backend="python"):
     validate_backend(completion_backend)
     output = Path(output)
     design = validate_design(read_json(output / "config.json"))
+    if design["phase"] == "preflight" and completion_backend != "python":
+        raise ValueError("F2 preflight verification requires the Python cost baseline")
     if not 1 <= workers <= design["limits"]["workers"]:
         raise ValueError("invalid verification worker count")
     started = time.perf_counter()

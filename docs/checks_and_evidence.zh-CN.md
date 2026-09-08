@@ -39,6 +39,11 @@ CI 可使用 `--omit-research` 避免与独立的必需研究任务重复；本�
 
 ## 远端执行范围
 
+R2 生产 CUDA 的真实硬件检查使用 `python scripts/check.py --profile cuda --tests-only`。
+它要求明确注册的 GPU 场景全部成功；CPU 环境的可选跳过不算硬件验收。
+在独立环境安装 `.[production-cpu,production-cuda]` 与 SciPy 1.18.1 后执行，
+普通研究 CI 继续实际检查 CPU 后端、回退、计时和隔离拥有者的预算终止。
+
 代码 PR 的必需状态为 `unit tests (ubuntu-latest, Python 3.12)`、
 `platform tests (windows-latest, Python 3.12)`、`research verification`、
 `static type check`。必须先确认状态实际出现且检查通过，再将新状态加入远端规则。
