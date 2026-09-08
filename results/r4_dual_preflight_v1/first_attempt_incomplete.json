@@ -1,0 +1,713 @@
+{
+  "budget_records": 130,
+  "config": {
+    "limits": {
+      "memory_bytes": 6442450944,
+      "output_bytes": 2147483648,
+      "wall_seconds": 3600,
+      "workers": 1
+    },
+    "method": {
+      "arithmetic": "integer",
+      "conditions": "all_greedy_prefixes_0_to_k",
+      "inner": 3,
+      "outer": 4,
+      "residual_budget": "full_k",
+      "sort": "descending_residual_size_then_original_index"
+    },
+    "phase": "preflight",
+    "r2_commit": null,
+    "reference_policy": "independent_enumeration",
+    "source_commit": null,
+    "source_design": {
+      "d_values": [
+        2,
+        3,
+        4
+      ],
+      "diagnostic_count": 0,
+      "diagnostics": {
+        "max_completions": 200000,
+        "max_two_swap_evaluations": 100000
+      },
+      "limits": {
+        "memory_bytes": 6442450944,
+        "output_bytes": 2147483648,
+        "wall_seconds": 43200,
+        "workers": 4
+      },
+      "model": {
+        "coupling_seed": null,
+        "family": "fixed_size",
+        "unique_sets": false
+      },
+      "n_values": [
+        12,
+        16,
+        20
+      ],
+      "phase": "preflight",
+      "repetitions": 2,
+      "statistics": {
+        "bootstrap_repetitions": 10000,
+        "confidence": 0.95
+      },
+      "tasks": [
+        {
+          "base_graph_id": "r2-preflight-n12-d2-r0000",
+          "budgets": [
+            1,
+            2,
+            3,
+            5,
+            6,
+            9,
+            12
+          ],
+          "d": 2,
+          "diagnostic_k": null,
+          "n": 12,
+          "repetition": 0,
+          "seed": 10397333436095016601
+        },
+        {
+          "base_graph_id": "r2-preflight-n12-d2-r0001",
+          "budgets": [
+            1,
+            2,
+            3,
+            5,
+            6,
+            9,
+            12
+          ],
+          "d": 2,
+          "diagnostic_k": null,
+          "n": 12,
+          "repetition": 1,
+          "seed": 4836528632736380686
+        },
+        {
+          "base_graph_id": "r2-preflight-n12-d3-r0000",
+          "budgets": [
+            1,
+            2,
+            3,
+            4,
+            6,
+            8,
+            12
+          ],
+          "d": 3,
+          "diagnostic_k": null,
+          "n": 12,
+          "repetition": 0,
+          "seed": 7912075846757259005
+        },
+        {
+          "base_graph_id": "r2-preflight-n12-d3-r0001",
+          "budgets": [
+            1,
+            2,
+            3,
+            4,
+            6,
+            8,
+            12
+          ],
+          "d": 3,
+          "diagnostic_k": null,
+          "n": 12,
+          "repetition": 1,
+          "seed": 3134406948355051344
+        },
+        {
+          "base_graph_id": "r2-preflight-n12-d4-r0000",
+          "budgets": [
+            1,
+            2,
+            3,
+            5,
+            6,
+            12
+          ],
+          "d": 4,
+          "diagnostic_k": null,
+          "n": 12,
+          "repetition": 0,
+          "seed": 15987186895418678955
+        },
+        {
+          "base_graph_id": "r2-preflight-n12-d4-r0001",
+          "budgets": [
+            1,
+            2,
+            3,
+            5,
+            6,
+            12
+          ],
+          "d": 4,
+          "diagnostic_k": null,
+          "n": 12,
+          "repetition": 1,
+          "seed": 561520672597139024
+        },
+        {
+          "base_graph_id": "r2-preflight-n16-d2-r0000",
+          "budgets": [
+            1,
+            2,
+            4,
+            6,
+            8,
+            12,
+            16
+          ],
+          "d": 2,
+          "diagnostic_k": null,
+          "n": 16,
+          "repetition": 0,
+          "seed": 2095993722132630070
+        },
+        {
+          "base_graph_id": "r2-preflight-n16-d2-r0001",
+          "budgets": [
+            1,
+            2,
+            4,
+            6,
+            8,
+            12,
+            16
+          ],
+          "d": 2,
+          "diagnostic_k": null,
+          "n": 16,
+          "repetition": 1,
+          "seed": 17068037524220052067
+        },
+        {
+          "base_graph_id": "r2-preflight-n16-d3-r0000",
+          "budgets": [
+            1,
+            2,
+            3,
+            4,
+            6,
+            8,
+            11,
+            16
+          ],
+          "d": 3,
+          "diagnostic_k": null,
+          "n": 16,
+          "repetition": 0,
+          "seed": 6951126940755588663
+        },
+        {
+          "base_graph_id": "r2-preflight-n16-d3-r0001",
+          "budgets": [
+            1,
+            2,
+            3,
+            4,
+            6,
+            8,
+            11,
+            16
+          ],
+          "d": 3,
+          "diagnostic_k": null,
+          "n": 16,
+          "repetition": 1,
+          "seed": 12116145594737321517
+        },
+        {
+          "base_graph_id": "r2-preflight-n16-d4-r0000",
+          "budgets": [
+            1,
+            2,
+            3,
+            4,
+            6,
+            8,
+            16
+          ],
+          "d": 4,
+          "diagnostic_k": null,
+          "n": 16,
+          "repetition": 0,
+          "seed": 2094559473939286101
+        },
+        {
+          "base_graph_id": "r2-preflight-n16-d4-r0001",
+          "budgets": [
+            1,
+            2,
+            3,
+            4,
+            6,
+            8,
+            16
+          ],
+          "d": 4,
+          "diagnostic_k": null,
+          "n": 16,
+          "repetition": 1,
+          "seed": 159160069218809356
+        },
+        {
+          "base_graph_id": "r2-preflight-n20-d2-r0000",
+          "budgets": [
+            1,
+            3,
+            5,
+            8,
+            10,
+            15,
+            20
+          ],
+          "d": 2,
+          "diagnostic_k": null,
+          "n": 20,
+          "repetition": 0,
+          "seed": 9156355975192014997
+        },
+        {
+          "base_graph_id": "r2-preflight-n20-d2-r0001",
+          "budgets": [
+            1,
+            3,
+            5,
+            8,
+            10,
+            15,
+            20
+          ],
+          "d": 2,
+          "diagnostic_k": null,
+          "n": 20,
+          "repetition": 1,
+          "seed": 7849562305288251006
+        },
+        {
+          "base_graph_id": "r2-preflight-n20-d3-r0000",
+          "budgets": [
+            1,
+            2,
+            4,
+            5,
+            7,
+            10,
+            14,
+            20
+          ],
+          "d": 3,
+          "diagnostic_k": null,
+          "n": 20,
+          "repetition": 0,
+          "seed": 14509602354175823470
+        },
+        {
+          "base_graph_id": "r2-preflight-n20-d3-r0001",
+          "budgets": [
+            1,
+            2,
+            4,
+            5,
+            7,
+            10,
+            14,
+            20
+          ],
+          "d": 3,
+          "diagnostic_k": null,
+          "n": 20,
+          "repetition": 1,
+          "seed": 17092567549481507430
+        },
+        {
+          "base_graph_id": "r2-preflight-n20-d4-r0000",
+          "budgets": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            8,
+            10,
+            20
+          ],
+          "d": 4,
+          "diagnostic_k": null,
+          "n": 20,
+          "repetition": 0,
+          "seed": 10663623172916737765
+        },
+        {
+          "base_graph_id": "r2-preflight-n20-d4-r0001",
+          "budgets": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            8,
+            10,
+            20
+          ],
+          "d": 4,
+          "diagnostic_k": null,
+          "n": 20,
+          "repetition": 1,
+          "seed": 14044848184736288492
+        }
+      ],
+      "version": "r2-budget-v1",
+      "witness": "exactly_k_sorted_lexicographically_smallest"
+    },
+    "statistics": {
+      "inference": "retrospective_descriptive",
+      "metrics": [
+        "tightening_initial",
+        "tightening_prefix",
+        "ratio_gain_initial",
+        "ratio_gain_prefix",
+        "dual_over_optimum",
+        "dual_ratio",
+        "prefix_ratio",
+        "initial_ratio"
+      ],
+      "summaries": [
+        "mean",
+        "median",
+        "p90_nearest_rank"
+      ],
+      "unit": "original_graph_with_paired_budgets",
+      "zero_denominator": null
+    },
+    "tasks": [
+      {
+        "base_graph_id": "r2-preflight-n12-d2-r0000",
+        "budgets": [
+          1,
+          2,
+          3,
+          5,
+          6,
+          9,
+          12
+        ],
+        "d": 2,
+        "diagnostic_k": null,
+        "n": 12,
+        "repetition": 0,
+        "seed": 10397333436095016601
+      },
+      {
+        "base_graph_id": "r2-preflight-n12-d2-r0001",
+        "budgets": [
+          1,
+          2,
+          3,
+          5,
+          6,
+          9,
+          12
+        ],
+        "d": 2,
+        "diagnostic_k": null,
+        "n": 12,
+        "repetition": 1,
+        "seed": 4836528632736380686
+      },
+      {
+        "base_graph_id": "r2-preflight-n12-d3-r0000",
+        "budgets": [
+          1,
+          2,
+          3,
+          4,
+          6,
+          8,
+          12
+        ],
+        "d": 3,
+        "diagnostic_k": null,
+        "n": 12,
+        "repetition": 0,
+        "seed": 7912075846757259005
+      },
+      {
+        "base_graph_id": "r2-preflight-n12-d3-r0001",
+        "budgets": [
+          1,
+          2,
+          3,
+          4,
+          6,
+          8,
+          12
+        ],
+        "d": 3,
+        "diagnostic_k": null,
+        "n": 12,
+        "repetition": 1,
+        "seed": 3134406948355051344
+      },
+      {
+        "base_graph_id": "r2-preflight-n12-d4-r0000",
+        "budgets": [
+          1,
+          2,
+          3,
+          5,
+          6,
+          12
+        ],
+        "d": 4,
+        "diagnostic_k": null,
+        "n": 12,
+        "repetition": 0,
+        "seed": 15987186895418678955
+      },
+      {
+        "base_graph_id": "r2-preflight-n12-d4-r0001",
+        "budgets": [
+          1,
+          2,
+          3,
+          5,
+          6,
+          12
+        ],
+        "d": 4,
+        "diagnostic_k": null,
+        "n": 12,
+        "repetition": 1,
+        "seed": 561520672597139024
+      },
+      {
+        "base_graph_id": "r2-preflight-n16-d2-r0000",
+        "budgets": [
+          1,
+          2,
+          4,
+          6,
+          8,
+          12,
+          16
+        ],
+        "d": 2,
+        "diagnostic_k": null,
+        "n": 16,
+        "repetition": 0,
+        "seed": 2095993722132630070
+      },
+      {
+        "base_graph_id": "r2-preflight-n16-d2-r0001",
+        "budgets": [
+          1,
+          2,
+          4,
+          6,
+          8,
+          12,
+          16
+        ],
+        "d": 2,
+        "diagnostic_k": null,
+        "n": 16,
+        "repetition": 1,
+        "seed": 17068037524220052067
+      },
+      {
+        "base_graph_id": "r2-preflight-n16-d3-r0000",
+        "budgets": [
+          1,
+          2,
+          3,
+          4,
+          6,
+          8,
+          11,
+          16
+        ],
+        "d": 3,
+        "diagnostic_k": null,
+        "n": 16,
+        "repetition": 0,
+        "seed": 6951126940755588663
+      },
+      {
+        "base_graph_id": "r2-preflight-n16-d3-r0001",
+        "budgets": [
+          1,
+          2,
+          3,
+          4,
+          6,
+          8,
+          11,
+          16
+        ],
+        "d": 3,
+        "diagnostic_k": null,
+        "n": 16,
+        "repetition": 1,
+        "seed": 12116145594737321517
+      },
+      {
+        "base_graph_id": "r2-preflight-n16-d4-r0000",
+        "budgets": [
+          1,
+          2,
+          3,
+          4,
+          6,
+          8,
+          16
+        ],
+        "d": 4,
+        "diagnostic_k": null,
+        "n": 16,
+        "repetition": 0,
+        "seed": 2094559473939286101
+      },
+      {
+        "base_graph_id": "r2-preflight-n16-d4-r0001",
+        "budgets": [
+          1,
+          2,
+          3,
+          4,
+          6,
+          8,
+          16
+        ],
+        "d": 4,
+        "diagnostic_k": null,
+        "n": 16,
+        "repetition": 1,
+        "seed": 159160069218809356
+      },
+      {
+        "base_graph_id": "r2-preflight-n20-d2-r0000",
+        "budgets": [
+          1,
+          3,
+          5,
+          8,
+          10,
+          15,
+          20
+        ],
+        "d": 2,
+        "diagnostic_k": null,
+        "n": 20,
+        "repetition": 0,
+        "seed": 9156355975192014997
+      },
+      {
+        "base_graph_id": "r2-preflight-n20-d2-r0001",
+        "budgets": [
+          1,
+          3,
+          5,
+          8,
+          10,
+          15,
+          20
+        ],
+        "d": 2,
+        "diagnostic_k": null,
+        "n": 20,
+        "repetition": 1,
+        "seed": 7849562305288251006
+      },
+      {
+        "base_graph_id": "r2-preflight-n20-d3-r0000",
+        "budgets": [
+          1,
+          2,
+          4,
+          5,
+          7,
+          10,
+          14,
+          20
+        ],
+        "d": 3,
+        "diagnostic_k": null,
+        "n": 20,
+        "repetition": 0,
+        "seed": 14509602354175823470
+      },
+      {
+        "base_graph_id": "r2-preflight-n20-d3-r0001",
+        "budgets": [
+          1,
+          2,
+          4,
+          5,
+          7,
+          10,
+          14,
+          20
+        ],
+        "d": 3,
+        "diagnostic_k": null,
+        "n": 20,
+        "repetition": 1,
+        "seed": 17092567549481507430
+      },
+      {
+        "base_graph_id": "r2-preflight-n20-d4-r0000",
+        "budgets": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          8,
+          10,
+          20
+        ],
+        "d": 4,
+        "diagnostic_k": null,
+        "n": 20,
+        "repetition": 0,
+        "seed": 10663623172916737765
+      },
+      {
+        "base_graph_id": "r2-preflight-n20-d4-r0001",
+        "budgets": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          8,
+          10,
+          20
+        ],
+        "d": 4,
+        "diagnostic_k": null,
+        "n": 20,
+        "repetition": 1,
+        "seed": 14044848184736288492
+      }
+    ],
+    "version": "r4-l5-dual-v1"
+  },
+  "finished_utc": "2026-09-08T05:14:17.931491+00:00",
+  "full_wall_seconds": 6.815823500000079,
+  "independent_of_formal_seeds": true,
+  "input_graphs": 18,
+  "interpreter": "D:\\test area\\greedy-failure\\greedy-failure-structures\\.venv\\Scripts\\python.exe",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "python": "3.12.14 (main, Aug 25 2026, 14:01:42) [MSC v.1944 64 bit (AMD64)]",
+  "started_utc": "2026-09-08T05:14:10.996821+00:00",
+  "status": "incomplete"
+}

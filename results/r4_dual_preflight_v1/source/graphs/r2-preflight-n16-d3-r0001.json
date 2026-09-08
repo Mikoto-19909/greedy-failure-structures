@@ -1,0 +1,462 @@
+{
+  "diagnostic": null,
+  "sets": [
+    [
+      0,
+      12,
+      15
+    ],
+    [
+      13,
+      14,
+      15
+    ],
+    [
+      1,
+      14,
+      15
+    ],
+    [
+      0,
+      2,
+      9
+    ],
+    [
+      3,
+      5,
+      7
+    ],
+    [
+      2,
+      4,
+      10
+    ],
+    [
+      2,
+      6,
+      8
+    ],
+    [
+      10,
+      12,
+      13
+    ],
+    [
+      1,
+      7,
+      9
+    ],
+    [
+      0,
+      6,
+      10
+    ],
+    [
+      2,
+      8,
+      9
+    ],
+    [
+      0,
+      3,
+      7
+    ],
+    [
+      6,
+      13,
+      15
+    ],
+    [
+      1,
+      5,
+      15
+    ],
+    [
+      3,
+      4,
+      14
+    ],
+    [
+      4,
+      13,
+      15
+    ]
+  ],
+  "status": "complete",
+  "structure": {
+    "actual_density": 0.1875,
+    "coverage_skew_gini": 0.21666666666666667,
+    "covered_element_count": 15,
+    "dominated_set_count": 0,
+    "dominated_set_ratio": 0.0,
+    "dominated_unique_ratio": 0.0,
+    "duplicate_set_count": 0,
+    "duplicate_set_ratio": 0.0,
+    "element_frequencies": [
+      4,
+      3,
+      4,
+      3,
+      3,
+      2,
+      3,
+      3,
+      2,
+      3,
+      3,
+      0,
+      2,
+      4,
+      3,
+      6
+    ],
+    "incidence_count": 48,
+    "mean_set_size": 3.0,
+    "pair_intersections": [
+      1,
+      1,
+      1,
+      0,
+      0,
+      0,
+      1,
+      0,
+      1,
+      0,
+      1,
+      1,
+      1,
+      0,
+      1,
+      2,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      2,
+      1,
+      1,
+      2,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      1,
+      2,
+      1,
+      1,
+      0,
+      1,
+      1,
+      0,
+      1,
+      1,
+      2,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      2,
+      0,
+      1,
+      1,
+      0,
+      1,
+      1,
+      0,
+      1,
+      1,
+      0,
+      0,
+      0,
+      1,
+      1,
+      0,
+      0,
+      1,
+      2,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+      1,
+      0,
+      1,
+      1,
+      0,
+      1,
+      0,
+      0,
+      0,
+      1,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      1,
+      0,
+      2,
+      0,
+      1,
+      1
+    ],
+    "pairwise_overlap_mean_jaccard": 0.10666666666666667,
+    "pairwise_overlap_total_pairs": 120,
+    "pairwise_overlap_valid_pairs": 120,
+    "preprocessed_set_count": 16,
+    "unique_set_count": 16
+  },
+  "subset_count": 65536,
+  "task": {
+    "base_graph_id": "r2-preflight-n16-d3-r0001",
+    "budgets": [
+      1,
+      2,
+      3,
+      4,
+      6,
+      8,
+      11,
+      16
+    ],
+    "d": 3,
+    "diagnostic_k": null,
+    "n": 16,
+    "repetition": 1,
+    "seed": 12116145594737321517
+  },
+  "timing": {
+    "base_seconds": 0.019799099999545433,
+    "diagnostic_seconds": 3.0000046535860747e-07,
+    "enumeration_seconds": 0.01910200000020268,
+    "generation_seconds": 8.009999964997405e-05,
+    "peak_memory_bytes": 36200448,
+    "total_seconds": 0.019922999999835156
+  },
+  "values": [
+    {
+      "greedy": 3,
+      "greedy_selected": [
+        0
+      ],
+      "instance_id": "21b469ea5748b9ee191d84be2325efc21a3d3f2acb87372a00e58ba467146e58",
+      "k": 1,
+      "optimum": 3,
+      "optimum_selected": [
+        0
+      ],
+      "reference_status": "optimal"
+    },
+    {
+      "greedy": 6,
+      "greedy_selected": [
+        0,
+        4
+      ],
+      "instance_id": "7925da56661f98fb03ffcf9623b77416ad65d34ca33a5bbcb875d5b1a9f19625",
+      "k": 2,
+      "optimum": 6,
+      "optimum_selected": [
+        0,
+        4
+      ],
+      "reference_status": "optimal"
+    },
+    {
+      "greedy": 9,
+      "greedy_selected": [
+        0,
+        4,
+        5
+      ],
+      "instance_id": "fb9e72916401f0b908a024b6665944cadf9104a0b8534e0fcfe0344bf7c1e50a",
+      "k": 3,
+      "optimum": 9,
+      "optimum_selected": [
+        0,
+        4,
+        5
+      ],
+      "reference_status": "optimal"
+    },
+    {
+      "greedy": 11,
+      "greedy_selected": [
+        0,
+        1,
+        4,
+        5
+      ],
+      "instance_id": "f0f4876caa19e8322a0a4314bfc36d20494e1c8f8e1116d452fe739d8c75ee27",
+      "k": 4,
+      "optimum": 12,
+      "optimum_selected": [
+        0,
+        6,
+        8,
+        14
+      ],
+      "reference_status": "optimal"
+    },
+    {
+      "greedy": 15,
+      "greedy_selected": [
+        0,
+        1,
+        4,
+        5,
+        6,
+        8
+      ],
+      "instance_id": "95359e9bdbf82de01db466b81a2a7c71fd622951d839116f8f8a10be3d122fd7",
+      "k": 6,
+      "optimum": 15,
+      "optimum_selected": [
+        0,
+        1,
+        4,
+        5,
+        6,
+        8
+      ],
+      "reference_status": "optimal"
+    },
+    {
+      "greedy": 15,
+      "greedy_selected": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        8
+      ],
+      "instance_id": "c15b7fc7974f81f05b2d444e0a21e45d07bec679d559b7f59584f911a9460826",
+      "k": 8,
+      "optimum": 15,
+      "optimum_selected": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "reference_status": "optimal"
+    },
+    {
+      "greedy": 15,
+      "greedy_selected": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "instance_id": "5660fbbeff7e82fe861e8acbe6fe4e78f957fde42b7bfc7f7c4a44705e4e29b1",
+      "k": 11,
+      "optimum": 15,
+      "optimum_selected": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "reference_status": "optimal"
+    },
+    {
+      "greedy": 15,
+      "greedy_selected": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "instance_id": "0893a3c40ef4e209b026baff33c96132c12936eb9fb6fcdef653e95b16e5ff90",
+      "k": 16,
+      "optimum": 15,
+      "optimum_selected": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "reference_status": "optimal"
+    }
+  ]
+}
