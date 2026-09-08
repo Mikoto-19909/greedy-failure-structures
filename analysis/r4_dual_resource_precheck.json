@@ -1,0 +1,67 @@
+{
+  "status": "passed",
+  "input_graphs": 18,
+  "budget_records": 130,
+  "independent_of_formal_seeds": true,
+  "source_preparation_wall_seconds": 1.9451269000001048,
+  "pipeline_wall_seconds": 4.870696599999974,
+  "pipeline_wall_measurement": "Recovered conservative upper bound: first invocation measured full wall minus durable source production wall; includes failed optional Git transport overhead. Individual stage walls come from durable execution logs.",
+  "stages": {
+    "analysis_wall_seconds": 2.0966644000000088,
+    "derived_verification_wall_seconds": 0.05670349999945756,
+    "production_wall_seconds": 0.31139730000086274,
+    "verification_wall_seconds": 2.284748600000057
+  },
+  "components": {
+    "analysis_certificate_seconds": 0.04968629999893892,
+    "analysis_reference_seconds": 1.9879651000028389,
+    "analysis_source_read_seconds": 0.013673000002199842,
+    "analysis_summary_seconds": 0.034824899996237946,
+    "analysis_table_io_seconds": 0.0037365999996836763,
+    "checkpoint_io_seconds": 0.029348799997933384,
+    "greedy_seconds": 0.007307899999432266,
+    "independent_certificate_seconds": 0.0497107999981381,
+    "independent_checkpoint_read_seconds": 0.16860529999576102,
+    "independent_reference_seconds": 1.99047309999969,
+    "independent_source_read_seconds": 0.01371259999996255,
+    "independent_source_setup_seconds": 0.00022179999996296829,
+    "production_seconds": 0.006368200002725644,
+    "resume_verification_seconds": 0.0,
+    "source_read_seconds": 0.16446329999871523
+  },
+  "all_attempts_measured_wall_seconds": 16.131171399999403,
+  "peak_python_process_memory_bytes": 47108096,
+  "dual_output_bytes": 328415,
+  "immutable_config_transport_setup_seconds": [
+    0.14152649999959976,
+    0.07101450000027398,
+    0.06562099999973725
+  ],
+  "resource_decision": {
+    "conservative_output_bytes": 65683000,
+    "conservative_peak_memory_bytes": 536870912,
+    "conservative_wall_seconds": 1576.1558671999883,
+    "directory_scan_allowance_seconds": 2.0165471999935107,
+    "fixed_allowance_seconds": 600,
+    "memory_floor_bytes": 536870912,
+    "pipeline_projection_seconds": 487.0696599999974,
+    "reference_enumeration_in_projection": true,
+    "safety_factor": 2,
+    "worst_cell_component_projection_seconds": 468.26703999922756
+  },
+  "timing_note": "Stage walls are components of pipeline wall; any recovered conservative bound is labeled separately. Components are never added again. Analysis source/certificate checks are real additional work. Preflight exact-reference enumeration is retained in the conservative projection although formal references are reused.",
+  "transport_note": "Preflight graph access uses local files. Optional fixed Git configuration reads test transport setup only. The fixed 600 s allowance also covers source transport and report overhead; formal graph access must be measured in the actual run.",
+  "memory_note": "Peak is the Python process lifetime including source preparation. The short Git configuration-read subprocess is excluded; the estimate reserves at least 512 MiB for formal summaries and source transport.",
+  "raw_report": "results/r4_dual_preflight_v1/resource_preflight.json",
+  "source_payload_audit": {
+    "graphs": 1800,
+    "additional_baseline_values_bytes": 7425778,
+    "cell_worst_projection_bytes": 7459000,
+    "scope": "immutable source association only; no formal DUAL production or exact re-enumeration",
+    "wall_seconds": 5.396
+  },
+  "known_failures": [
+    "Initial optional Git transport used main repository, which lacks evidence object; preserved failed attempt and completed only missing transport/report plus current-data independent verification."
+  ],
+  "code_timing_note": "Measured pipeline preceded final metadata lock and output-scan stabilization; full integration verifies final behavior. Original slower pipeline is retained as conservative projection, with independent full-population directory scan allowance."
+}
