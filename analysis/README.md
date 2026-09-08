@@ -51,7 +51,12 @@ accompany the findings. The [R1c new-sample design](r1c_confirmation_design.md)
 fixes 3,000 new seed pairs and a single primary contrast in tie-avoidable failure
 proportions. The [analysis and validation commands](r1c_confirmation_usage.md)
 are implemented and independently checked on the complete formal batch as well
-as the preflight and functional examples. R1c, R2 and R3 confirmation are complete; R4 remains future work.
+as the preflight and functional examples. R1c, R2 and R3 confirmation are complete.
+R4 has completed its offline tools, independent 18-graph preflight,
+[F4 design](r4_f4_design.zh-CN.md) and [full fixed-corpus calibration](r4_calibration_report.zh-CN.md).
+All 13,000 budget records were independently verified; prefix terms tightened one bound,
+without adding optimality certifications. Larger-instance work remains unexecuted.
+The [R4 commands](r4_usage.zh-CN.md) cover source checks, production and independent validation.
 
 The [workflow speed comparison](gate_speed_comparison_report.md) measures the
 same experiment commands and local research-delivery steps before and after

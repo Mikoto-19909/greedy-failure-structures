@@ -33,7 +33,8 @@ primary interval and stopping rules. The [R1c confirmation report](../analysis/r
 completes all 3,000 new seed pairs: its interval-width target is met, while the
 primary difference interval includes zero. The [new-sample adapter](../analysis/r1c_confirmation_usage.md)
 and independent validator have checked all 6,000 instances. R2 exploration is complete;
-R3 has completed its feasibility probe and independent confirmation; R4 remains unexecuted. The
+R3 has completed its feasibility probe and independent confirmation; R4 tools, preflight, F4
+and the full fixed-corpus calibration are complete, while larger-instance work remains unexecuted. The
 [workflow speed report](../analysis/gate_speed_comparison_report.md) separately
 measures experiment commands and local delivery steps after the gate removal.
 
@@ -67,7 +68,7 @@ revisits existing instance families. Both retain schema v1 for compatibility.
 
 - [`greedy_failure_research_plan.zh-CN.md`](greedy_failure_research_plan.zh-CN.md):
   literature-grounded next steps, staged experiments, and verification criteria
-  (Simplified Chinese; R1, R2 and R3 completed, R4 unexecuted)
+  (Simplified Chinese; R1, R2, R3 and the first R4 calibration completed, larger-instance work pending)
 - [`r2_r3_integrated_plan.zh-CN.md`](r2_r3_integrated_plan.zh-CN.md):
   R1 prerequisites, R2 preparation and exploration with an F2 design freeze,
   and conditional R3 feasibility probes leading to F3 and independent confirmation;
@@ -78,6 +79,17 @@ revisits existing instance families. Both retain schema v1 for compatibility.
   local-exposure protocols, independent sampling and prospective inference
 - [R3 confirmation report](../analysis/r3_confirmation_report.zh-CN.md): completed
   protocol comparison with 3,000 independent source graphs and 12,000 verified endpoints
+- [R4 preparation plan](r4_preparation_plan.zh-CN.md): integer prefix bounds, retrospective
+  calibration on the fixed R2 corpus and conditional larger-instance work
+- [R4 remaining-work plan](r4_remaining_work_plan.zh-CN.md): baseline closeout, selection
+  and small-instance comparison of one tighter bound, followed by a conditional scale-up decision
+- [R4 F4 design](../analysis/r4_f4_design.zh-CN.md): completed 18-graph independent preflight,
+  fixed 1,800-graph calibration design and measured resource decision
+- [R4 calibration report](../analysis/r4_calibration_report.zh-CN.md): complete independent
+  verification of 13,000 budget records; one tighter bound, unchanged optimality certification,
+  and measured costs separated from exhaustive-reference computation
+- [R4 usage](../analysis/r4_usage.zh-CN.md): source association, production, independent
+  verification, recovery and saved-data summaries
 - [`core_overlap_checkpoint_plan.zh-CN.md`](core_overlap_checkpoint_plan.zh-CN.md):
   fixed single-point comparison of Greedy failures under high overlap and a
   matched uniform control (Simplified Chinese; completed pilot and original design)
