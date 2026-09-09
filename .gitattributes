@@ -1,6 +1,9 @@
 * text=auto eol=lf
 *.ps1 text eol=crlf
 
+# Keep report PDFs byte-for-byte and use binary diffs.
+output/pdf/*.pdf binary
+
 # Preserve the published Matplotlib bytes, including generated line whitespace.
 analysis/overlap_pilot_v1.svg -text whitespace=-blank-at-eol,cr-at-eol
 experiments/r1_prefix_exchange_v1/r1_prefix_exchange.svg -text whitespace=-blank-at-eol,cr-at-eol

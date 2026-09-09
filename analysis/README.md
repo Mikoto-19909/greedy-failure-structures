@@ -51,7 +51,14 @@ accompany the findings. The [R1c new-sample design](r1c_confirmation_design.md)
 fixes 3,000 new seed pairs and a single primary contrast in tie-avoidable failure
 proportions. The [analysis and validation commands](r1c_confirmation_usage.md)
 are implemented and independently checked on the complete formal batch as well
-as the preflight and functional examples. R1c, R2 and R3 confirmation are complete; R4 remains future work.
+as the preflight and functional examples. R1c, R2 and R3 confirmation are complete.
+The [R4 final research report](r4_final_research_report.zh-CN.md)
+([PDF](../output/pdf/r4_final_research_report.zh-CN.pdf)) consolidates the simple,
+prefix and L5 DUAL certificates on the same 1,800 graphs and 13,000 budget records.
+It covers the proved certification boundary, independent validation, complete costs
+and the limited additional tightening. The [F4 report](r4_calibration_report.zh-CN.md)
+and [DUAL usage guide](r4_dual_usage.zh-CN.md) retain the original evidence and commands.
+Both evidence batches have verified remote snapshots; larger-instance work remains unexecuted.
 
 The [workflow speed comparison](gate_speed_comparison_report.md) measures the
 same experiment commands and local research-delivery steps before and after

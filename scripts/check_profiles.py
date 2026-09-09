@@ -69,6 +69,7 @@ def extended_group(test_id: str) -> str | None:
 
 GROUPS = {'artifacts', 'cartography', 'routing', 'cli', 'generators', 'dashboard'}
 RESEARCH_MODULES = {
+    'r4': ('test_r4_prefix_bounds', 'test_r4_dual'),
     'r3_counterexamples': ('test_r3_counterexamples',),
     'counterexample_workflow': ('test_counterexample_workflow',),
     'conjectures': ('test_conjectures',),
@@ -81,6 +82,14 @@ RESEARCH_MODULES = {
 }
 # Producer, verifier, and shared helper ownership; tools need no fake second solver.
 ANALYSIS_OWNERS = {
+    'r4_dual.py': 'r4',
+    'r4_dual_core.py': 'r4',
+    'r4_dual_io.py': 'r4',
+    'r4_dual_preflight.py': 'r4',
+    'validate_r4_dual.py': 'r4',
+    'r4_inputs.py': 'r4',
+    'r4_prefix_bounds.py': 'r4',
+    'validate_r4_prefix_bounds.py': 'r4',
     'r3_counterexamples.py': 'r3_counterexamples',
     'validate_r3_counterexamples.py': 'r3_counterexamples',
     'counterexample_workflow.py': 'counterexample_workflow',
@@ -150,6 +159,22 @@ def affected_groups(paths: list[str]) -> set[str]:
     return groups
 
 REQUIRED_RESEARCH = {
+    'r4': (
+        'test_r4_dual.R4DualTests.test_hand_examples_strict_tightening_and_unequal_size_certification',
+        'test_r4_dual.R4DualTests.test_all_tiny_set_systems_bound_exact_optimum_and_match_independent_checker',
+        'test_r4_dual.R4DualTests.test_nonmaximal_partition_and_reduced_residual_budget_are_rejected',
+        'test_r4_dual.R4DualTests.test_resume_rebuild_and_stale_pass_cannot_authorize_changed_data',
+        'test_r4_dual.R4DualTests.test_independent_record_validation_rejects_sources_references_and_completion',
+        'test_r4_dual.R4DualTests.test_cli_valid_invalid_and_resource_interruption',
+        'test_r4_dual.R4DualTests.test_runtime_accounting_rejects_live_resume_and_recovers_real_hard_exit',
+        'test_r4_dual.R4DualTests.test_simultaneous_hard_exit_recovery_has_exactly_one_owner',
+        'test_r4_dual.R4DualTests.test_frozen_code_revision_accepts_prose_and_rejects_code_changes',
+        'test_r4_dual.R4DualTests.test_preflight_report_recovery_rechecks_records_without_production',
+        'test_r4_prefix_bounds.R4PrefixTests.test_known_bounds_failed_prefix_endpoints_and_zero_union',
+        'test_r4_prefix_bounds.R4PrefixTests.test_independent_validation_rejects_bounds_references_sources_and_completion',
+        'test_r4_prefix_bounds.R4PrefixTests.test_resume_rebuild_and_stale_pass_cannot_authorize_changed_data',
+        'test_r4_prefix_bounds.R4PrefixTests.test_cli_valid_invalid_and_resource_interruption',
+    ),
     'r3': (
         'test_r3_feasibility.R3FeasibilityTests.test_valid_switches_and_damaged_endpoints',
         'test_r3_feasibility.R3FeasibilityTests.test_equal_column_degrees_cannot_change_exposure',
