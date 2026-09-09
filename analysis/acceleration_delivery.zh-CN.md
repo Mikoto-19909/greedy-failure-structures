@@ -33,6 +33,7 @@
 
 第一部分是[可选 CPU 验证入口](../docs/r2_fast_verification.zh-CN.md)。原冻结 R2 验证文件
 保持不变，新适配器独立处理加速诊断，因此旧 DUAL 的源码约束仍可检查。
-第二部分的可选 CPU/CUDA 生产后端另行交付，默认仍为 Python，不自动选用 GPU。
+第二部分提供[可选 CPU/CUDA 生产后端](../docs/r2_production_backends.zh-CN.md)，默认仍为 Python，
+`auto` 只在 CPU 后端之间选择，不自动选用 GPU。两部分分别提交，便于独立审阅和回退。
 本次验收侧重已知答案、失败拒绝、输入不变、恢复和数值输出一致性；不把历史耗时
 标为本次新代码的性能测量。

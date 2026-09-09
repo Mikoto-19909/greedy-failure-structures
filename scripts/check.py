@@ -11,7 +11,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts'))
-from check_profiles import ANALYSIS_OWNERS, GROUPS, RESEARCH_MODULES, REQUIRED_RESEARCH, OPTIONAL_CASES, affected_groups, extended_group, is_platform, is_research
+from check_profiles import ANALYSIS_OWNERS, GROUPS, RESEARCH_MODULES, REQUIRED_RESEARCH, OPTIONAL_CASES, CUDA_CASES, affected_groups, extended_group, is_platform, is_research
 
 REFERENCE_CONFIG_REVISION = 'cef5b92954571423b10a0c3b56947a4b26400d3c'
 REFERENCE_CONFIG_PATHS = ('analysis/r2_f2_config.json', 'analysis/r3_confirmation_config.json')
@@ -68,6 +68,7 @@ def selected(cases, profile, groups=(), omit_research=False):
     return [case for case in cases if (
         profile == 'full' or
         (profile == 'optional' and case.id() in OPTIONAL_CASES) or
+        (profile == 'cuda' and case.id() in CUDA_CASES) or
         (profile == 'research' and is_research(case.id())) or
         (profile == 'platform' and is_platform(case.id())) or
         (profile == 'core' and (extended_group(case.id()) is None or extended_group(case.id()) in groups))
@@ -97,12 +98,14 @@ def execution_succeeded(result, required):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--profile', choices=('core', 'platform', 'research', 'full', 'optional'), default='core')
+    parser.add_argument('--profile', choices=('core', 'platform', 'research', 'full', 'optional', 'cuda'), default='core')
     parser.add_argument('--tests-only', action='store_true')
     parser.add_argument('--omit-research', action='store_true', help='CI only: research has a separate required job')
     parser.add_argument('--ci', action='store_true', help='Add affected extended groups from the complete PR diff')
     parser.add_argument('--list', action='store_true')
     args = parser.parse_args(argv)
+    if args.profile == 'cuda':
+        os.environ['MAXCOVER_TEST_CUDA'] = '1'
     os.chdir(ROOT)
     os.environ['PYTHONDONTWRITEBYTECODE'] = '1'
     loader = unittest.TestLoader()
@@ -113,6 +116,8 @@ def main(argv=None):
         validate_research_registration(ROOT, cases)
         if args.profile == 'optional':
             validate_optional(cases)
+        if args.profile == 'cuda' and not CUDA_CASES <= {case.id() for case in cases}:
+            raise ValueError('missing required CUDA verification cases')
         groups = ci_groups() if args.ci else set()
         chosen = selected(cases, args.profile, groups, args.omit_research)
         if not chosen:
@@ -133,7 +138,8 @@ def main(argv=None):
     if restored:
         print(f'Restored missing local reference configs: {", ".join(restored)}', flush=True)
     result = unittest.TextTestRunner(verbosity=2, resultclass=ExecutionResult).run(unittest.TestSuite(chosen))
-    required = {case.id() for case in chosen if is_research(case.id()) or (args.profile == 'optional' and case.id() in OPTIONAL_CASES)}
+    required = {case.id() for case in chosen if is_research(case.id()) or (args.profile == 'optional' and case.id() in OPTIONAL_CASES)
+                or (args.profile == 'cuda' and case.id() in CUDA_CASES)}
     if not execution_succeeded(result, required):
         return 1
     if not args.tests_only:

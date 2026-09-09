@@ -69,12 +69,22 @@ def all_budget_optima(sets):
     return best, witnesses, visited
 
 
-def evaluate_task(task, diagnostic_limits):
+def evaluate_task(task, diagnostic_limits, *, production_backend="python"):
+    record, _ = _evaluate_task(task, diagnostic_limits, production_backend)
+    return record
+
+
+def _evaluate_task(task, diagnostic_limits, production_backend):
     started = time.perf_counter()
     instance = fixed_size(universe_size=task["n"], set_count=task["n"], k=1,
                           set_size=task["d"], unique_sets=False, seed=task["seed"])
     generated = time.perf_counter()
-    best, witnesses, visited = all_budget_optima(instance.sets)
+    event = None
+    if production_backend == "python":
+        best, witnesses, visited = all_budget_optima(instance.sets)
+    else:
+        from r2_production_backends import solve_optima
+        (best, witnesses, visited), event = solve_optima(instance.sets, production_backend, all_budget_optima)
     enumerated = time.perf_counter()
     values = []
     for k in task["budgets"]:
@@ -96,7 +106,7 @@ def evaluate_task(task, diagnostic_limits):
     structure["element_frequencies"] = [sum(a in s for s in elements) for a in range(task["n"])]
     structure["pair_intersections"] = [(left & right).bit_count() for i, left in enumerate(instance.sets)
                                         for right in instance.sets[i + 1:]]
-    return {"task": task, "status": "complete", "sets": elements, "values": values,
+    record = {"task": task, "status": "complete", "sets": elements, "values": values,
             "subset_count": visited, "structure": structure, "diagnostic": diagnostic,
             "timing": {"generation_seconds": generated - started,
                        "enumeration_seconds": enumerated - generated,
@@ -104,10 +114,34 @@ def evaluate_task(task, diagnostic_limits):
                        "diagnostic_seconds": diagnosed - base_done,
                        "total_seconds": time.perf_counter() - started,
                        "peak_memory_bytes": peak_memory()}}
+    return record, event
 
 
-def run(design, output, *, workers=4, resume=False, stop_after=None):
+def _evaluate_accelerated(task, diagnostic_limits, production_backend):
+    started = time.perf_counter()
+    try:
+        record, event = _evaluate_task(task, diagnostic_limits, production_backend)
+        return record, {**event, "status": "complete", "graph_id": task["base_graph_id"],
+                        "enumeration_seconds": record["timing"]["enumeration_seconds"],
+                        "wall_seconds": time.perf_counter() - started}
+    except Exception as error:
+        # Serialize errors instead of trying to pickle CUDA exception/context objects.
+        # The parent records this failure and aborts, never converts it to CPU success.
+        return None, {"requested_backend": production_backend, "actual_backend": None,
+                      "status": "failed", "graph_id": task["base_graph_id"],
+                      "error_type": type(error).__name__, "error": str(error),
+                      "wall_seconds": time.perf_counter() - started}
+
+
+def run(design, output, *, workers=4, resume=False, stop_after=None,
+        production_backend="python", cuda_cache_dir=None):
+    from r2_production_backends import validate_backend
+    validate_backend(production_backend)
     validate_design(design)
+    if design["phase"] == "preflight" and production_backend != "python":
+        raise ValueError("accelerated production is not supported for F2 preflight")
+    if cuda_cache_dir is not None and production_backend != "cuda":
+        raise ValueError("cuda_cache_dir requires CUDA production")
     if type(workers) is not int or not 1 <= workers <= design["limits"]["workers"]:
         raise ValueError("workers must be between 1 and the configured maximum")
     output = Path(output)
@@ -115,13 +149,19 @@ def run(design, output, *, workers=4, resume=False, stop_after=None):
         raise ValueError("output already exists; use resume with the same design")
     if output.exists() and read_json(output / "config.json") != design:
         raise ValueError("resume design differs from saved configuration")
-    output.mkdir(parents=True, exist_ok=True)
-    write_json(output / "config.json", design)
     completed = load_records(output, design, partial=True)
     done = {r["task"]["base_graph_id"] for r in completed}
     pending = [t for t in design["tasks"] if t["base_graph_id"] not in done]
     if stop_after is not None:
         pending = pending[:stop_after]
+    if pending and production_backend == "cuda":
+        if workers != 1:
+            raise ValueError("CUDA production v1 requires workers=1 (one isolated GPU owner)")
+        cuda_cache_dir = Path(cuda_cache_dir or output / ".cuda").resolve()
+        if not str(cuda_cache_dir).isascii():
+            raise ValueError("CUDA requires an ASCII --cuda-cache-dir")
+    output.mkdir(parents=True, exist_ok=True)
+    write_json(output / "config.json", design)
     started = time.perf_counter()
     size = sum(p.stat().st_size for p in output.rglob("*") if p.is_file())
 
@@ -138,9 +178,42 @@ def run(design, output, *, workers=4, resume=False, stop_after=None):
         if len(done) % 10 == 0 or len(done) == len(design["tasks"]):
             print(f"R2 computed {len(done)}/{len(design['tasks'])}", flush=True)
 
+    def backend_event(event):
+        with (output / "production_backend.jsonl").open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(event, ensure_ascii=False) + "\n")
+
+    if pending:
+        write_json(output / "run_status.json", {"computed": 0, "reused": len(completed), "complete": False,
+                                                "wall_seconds": 0.0, "workers": workers})
     with RuntimeBudget(output, design, "production") as budget:
-        for record in computed_results(evaluate_task, [(t, design["diagnostics"]) for t in pending], workers, budget):
-            save(record)
+        if production_backend == "python":
+            for record in computed_results(evaluate_task, [(t, design["diagnostics"]) for t in pending], workers, budget):
+                save(record)
+        elif pending:
+            backend_event({"status": "started", "requested_backend": production_backend,
+                           "pending": len(pending), "reused": len(completed), "workers": workers})
+            arguments = [(t, design["diagnostics"], production_backend) for t in pending]
+            try:
+                if production_backend == "cuda":
+                    from r2_cuda_backend import computed_cuda_results
+                    results = computed_cuda_results(_evaluate_accelerated, arguments, budget, cuda_cache_dir)
+                else:
+                    results = computed_results(_evaluate_accelerated, arguments, workers, budget)
+                try:
+                    for record, event in results:
+                        if record is None:
+                            backend_event(event)
+                            raise RuntimeError(f"{production_backend} production failed for {event['graph_id']}: "
+                                               f"{event['error_type']}: {event['error']}")
+                        save(record)
+                        backend_event(event)
+                finally:
+                    results.close()
+            except Exception as error:
+                backend_event({"status": "failed", "requested_backend": production_backend,
+                               "error_type": type(error).__name__, "error": str(error),
+                               "wall_seconds": time.perf_counter() - started})
+                raise
     entry = {"computed": len(pending), "reused": len(completed), "complete": len(done) == len(design["tasks"]),
              "wall_seconds": time.perf_counter() - started, "workers": workers}
     write_json(output / "run_status.json", entry)
@@ -318,6 +391,8 @@ def main():
     parser.add_argument("--config", type=Path)
     parser.add_argument("--preflight", type=Path)
     parser.add_argument("--workers", type=int, default=4)
+    parser.add_argument("--production-backend", choices=("python", "numba", "cuda", "auto"), default="python")
+    parser.add_argument("--cuda-cache-dir", type=Path, help="CUDA only: ASCII compiler temporary/cache directory")
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--no-plot", action="store_true", help="Rebuild validated tables without the optional plotting dependency")
     parser.add_argument("--verification-backend", choices=("python", "auto", "numba"), default="python",
@@ -325,6 +400,8 @@ def main():
     parser.add_argument("--verification-workers", type=int,
                         help="analyze only: verification processes, up to the saved design limit")
     args = parser.parse_args()
+    if args.command != "run" and (args.production_backend != "python" or args.cuda_cache_dir is not None):
+        parser.error("production backend options apply only to run")
     if args.command != "analyze" and (args.verification_backend != "python" or args.verification_workers is not None):
         parser.error("verification options apply only to analyze")
     if args.command == "freeze":
@@ -337,7 +414,8 @@ def main():
     else:
         design = (make_design("preflight", repetitions=8, diagnostic_count=8)
                   if args.command == "preflight" else read_json(args.config))
-        run(design, args.output, workers=args.workers, resume=args.resume)
+        run(design, args.output, workers=args.workers, resume=args.resume,
+            production_backend=args.production_backend, cuda_cache_dir=args.cuda_cache_dir)
 
 
 if __name__ == "__main__":
