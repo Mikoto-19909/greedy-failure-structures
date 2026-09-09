@@ -74,4 +74,7 @@ git restore --source=0bf8a588c22f8b0cf238ee879bc6377187a4c605 --worktree -- anal
 
 有意缩短前缀、将完整 k 换成 k−t、仅提供可行而非最大 q、改动来源或伪造完成状态都会
 被拒绝。资源耗尽会保留已保存图，不能通过更换目录或改预算偷偷继续原批。
-本轮结果留在本地，功能提交不等于实验数据已经远端备份。
+本轮完整证据已发布并完成远端回读，见
+[固定快照 b0c274f6](https://github.com/Mikoto-19909/greedy-failure-structures/tree/b0c274f6be0d810b873184f0e81af41039f1a300)
+及其中的[恢复说明](https://github.com/Mikoto-19909/greedy-failure-structures/blob/b0c274f6be0d810b873184f0e81af41039f1a300/results/r4_dual_backup_v1/RESTORE.md)。
+本机仍保留工作副本；功能提交本身不代替上述固定证据备份。
