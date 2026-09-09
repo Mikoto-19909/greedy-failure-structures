@@ -9,7 +9,7 @@ E0 非减协议的首步不可恢复事件为 4,165/6,000，非增协议为 76/6
 
 ## 设计与原始输入
 
-[F3 设计](r3_confirmation_design.zh-CN.md)和[确认配置](r3_confirmation_config.json)在正式样本生成前固定：
+[F3 设计](r3_confirmation_design.zh-CN.md)和[确认配置](https://github.com/Mikoto-19909/greedy-failure-structures/blob/8663e0dcf576ab156535ff7403bb7e4715091357/analysis/r3_confirmation_config.json)在正式样本生成前固定：
 N=M=12、d=3、k=4，允许重复候选集合，保持元素标签与集合索引；标准 Greedy 的首步恒选索引 0。
 每原图两方向各两条链，每链 2048 次提议，合法且满足 E0 方向时接受，等分交换允许。
 构造只读取结构，不读取 Greedy、O 或 O1 来决定接受；所有拒绝提议也计入链长。

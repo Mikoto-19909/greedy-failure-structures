@@ -2,6 +2,7 @@
 import importlib.util
 import io
 from pathlib import Path
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -17,6 +18,47 @@ class NamedCase:
     def id(self): return self.name
 
 class CheckProfilesTests(unittest.TestCase):
+    def test_reference_restore_preserves_existing_files_and_rejects_missing_history(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            def git(*args):
+                return subprocess.run(['git', '-C', str(root), *args], check=True,
+                                      capture_output=True, text=True).stdout.strip()
+            git('init', '-q')
+            git('config', 'core.autocrlf', 'false')
+            git('config', 'user.name', 'Config fixture')
+            git('config', 'user.email', 'fixture@example.invalid')
+            original = {name: f'{{"fixture": {index}}}\n'.encode()
+                        for index, name in enumerate(check.REFERENCE_CONFIG_PATHS)}
+            for name, data in original.items():
+                (root / name).parent.mkdir(parents=True, exist_ok=True)
+                (root / name).write_bytes(data)
+            git('add', '--', *original)
+            git('commit', '-qm', 'Store frozen fixture inputs')
+            revision = git('rev-parse', 'HEAD')
+            git('rm', '--', *original)
+            (root / '.gitignore').write_text('\n'.join(original) + '\n', encoding='utf-8')
+            git('add', '.gitignore')
+            git('commit', '-qm', 'Keep inputs outside the source tree')
+            with patch.object(check, 'REFERENCE_CONFIG_REVISION', revision):
+                self.assertEqual(check.restore_reference_configs(root), list(original))
+                for name, data in original.items():
+                    self.assertEqual((root / name).read_bytes(), data)
+                self.assertEqual(git('status', '--porcelain'), '')
+                first, second = [root / name for name in original]
+                first.write_bytes(b'locally modified; must not be overwritten\n')
+                second.unlink()
+                self.assertEqual(check.restore_reference_configs(root), [check.REFERENCE_CONFIG_PATHS[1]])
+                self.assertEqual(first.read_bytes(), b'locally modified; must not be overwritten\n')
+                self.assertEqual(check.restore_reference_configs(root), [])
+                second.unlink()
+                with patch.object(check, 'REFERENCE_CONFIG_REVISION', '0' * 40):
+                    with self.assertRaisesRegex(ValueError, 'complete clone'):
+                        check.restore_reference_configs(root)
+                self.assertFalse(second.exists())
+                self.assertEqual(first.read_bytes(), b'locally modified; must not be overwritten\n')
+                self.assertEqual(git('status', '--porcelain'), '')
+
     def test_new_research_tests_enter_core_without_allowlisting(self):
         for module in ('test_r4', 'test_cartography', 'test_cli_e2e', 'test_fault_injection'):
             case = NamedCase(f'{module}.FutureTests.test_dual_rejection')

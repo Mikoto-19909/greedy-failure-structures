@@ -7,6 +7,13 @@
 
 ## 预检与固定比较
 
+干净克隆先恢复 R2 固定设计，用于预检种子域与后续来源核对；它不包含正式原图。
+仅在该本地文件缺失时执行，已有配置不要覆盖：
+
+```powershell
+git restore --source=cef5b92954571423b10a0c3b56947a4b26400d3c --worktree -- analysis/r2_f2_config.json
+```
+
 先执行独立预检。参数、资源预测和实际通过状态保存在预检输出；它不启动正式比较。
 
 ```powershell

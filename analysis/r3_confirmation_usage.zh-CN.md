@@ -1,6 +1,6 @@
 # R3 正式确认：执行与验证
 
-按 [F3 设计](r3_confirmation_design.zh-CN.md)及[冻结配置](r3_confirmation_config.json)执行。
+按 [F3 设计](r3_confirmation_design.zh-CN.md)及[冻结配置](https://github.com/Mikoto-19909/greedy-failure-structures/blob/8663e0dcf576ab156535ff7403bb7e4715091357/analysis/r3_confirmation_config.json)执行。
 配置中的 `execution_status: not_run` 是 F3 定版时的历史状态，运行状态另存于结果目录；
 不得通过修改配置字段改变样本、协议或统计决定。
 
@@ -9,6 +9,14 @@
 使用 Python 3.12 和[仓库检查依赖](../CONTRIBUTING.md)，执行前核对解释器、版本及
 `maxcover.__file__` 指向的源码。先确认冻结的 15,000 个原图/链种子互不重复，并与
 R2、R3 探测及历史研究输入分离。正式入口不接受单元测试使用的独立 fixture 配置。
+
+完整配置保存在固定证据快照，源码不再重复跟踪展开的任务列表。仅在本地配置缺失时，
+从原提交恢复到已忽略的原路径；已有配置和批次不要覆盖。该命令不改索引，
+浅克隆须先取得原提交历史。
+
+```console
+git restore --source=cef5b92954571423b10a0c3b56947a4b26400d3c --worktree -- analysis/r3_confirmation_config.json
+```
 
 ```console
 python analysis/r3_confirmation.py run --config analysis/r3_confirmation_config.json --output results/r3_confirmation_v1 --workers 4

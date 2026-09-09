@@ -11,6 +11,16 @@ R2 用独立定长原图扫描多个预算，输出穷举参考、规范最优�
 独立验证器共享输入设计、种子、生成器及实例身份；覆盖、穷举、结构和统计均独立重算。
 诊断验证复用已有的独立 R1 验证器，不导入 R2 生产计算。
 
+完整配置已随固定证据发布，源码不再重复跟踪展开的任务列表。复现已完成的 F2 批次时，
+仅在本地配置缺失时从原提交恢复，然后从下面的 `run` 步骤开始；不重新定版或覆盖配置。
+恢复只写工作区的已忽略路径，不改索引；浅克隆须先取得原提交历史。
+
+```console
+git restore --source=cef5b92954571423b10a0c3b56947a4b26400d3c --worktree -- analysis/r2_f2_config.json
+```
+
+下面保留原预检、定版与运行顺序，供理解各阶段；已有批次按上文恢复原配置。
+
 ```console
 python analysis/r2_budget_grid.py preflight --output results/r2_preflight_v1 --workers 4
 python analysis/validate_r2_budget_grid.py --output results/r2_preflight_v1 --workers 4
