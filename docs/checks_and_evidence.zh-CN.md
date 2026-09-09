@@ -9,7 +9,7 @@
 CI 的研究任务固定为 Python 3.12。基础算法与非研究回归继续覆盖 Python 3.11。
 
 ```console
-python -m pip install -e ".[typecheck]" scipy==1.18.1 numpy==2.3.5
+python -m pip install -e ".[typecheck,fast-verification]" scipy==1.18.1
 python scripts/check.py
 python scripts/check.py --profile core --list
 python scripts/check.py --profile research --tests-only

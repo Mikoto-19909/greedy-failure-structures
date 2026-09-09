@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import asdict
+from functools import partial
 import csv
 import ctypes
 import json
@@ -244,15 +245,21 @@ def mechanism_summary(records):
     return result
 
 
-def _analyze(output, budget, plot):
+def _analyze(output, budget, plot, completion_backend="python", verification_workers=None):
     output = Path(output)
     design = validate_design(read_json(output / "config.json"))
     records = load_records(output, design)
     # A saved pass is historical. Validate exactly the records summarized below.
-    from validate_r2_budget_grid import verify_graph
-    workers = design["limits"]["workers"]
+    if completion_backend == "python":
+        from validate_r2_budget_grid import verify_graph
+    else:
+        from validate_r2_budget_grid_fast import verify_graph
+    workers = design["limits"]["workers"] if verification_workers is None else verification_workers
+    if type(workers) is not int or not 1 <= workers <= design["limits"]["workers"]:
+        raise ValueError("invalid verification worker count")
     arguments = [(record, task, design["diagnostics"]) for record, task in zip(records, design["tasks"])]
-    for timing in computed_results(verify_graph, arguments, workers, budget):
+    verify = verify_graph if completion_backend == "python" else partial(verify_graph, completion_backend=completion_backend)
+    for timing in computed_results(verify, arguments, workers, budget):
         if timing["peak_memory_bytes"] * (workers + 1) > design["limits"]["memory_bytes"]:
             raise RuntimeError("analysis verification memory budget exceeded")
     rows = summarize(records, design)
@@ -294,10 +301,14 @@ def _analyze(output, budget, plot):
     return rows
 
 
-def analyze(output, *, plot=True):
+def analyze(output, *, plot=True, completion_backend="python", verification_workers=None):
+    from verification_completion import validate_backend
+    validate_backend(completion_backend)
     design = validate_design(read_json(Path(output) / "config.json"))
+    if design["phase"] == "preflight" and completion_backend != "python":
+        raise ValueError("F2 preflight analysis keeps the original Python cost baseline")
     with RuntimeBudget(output, design, "analysis") as budget:
-        return _analyze(output, budget, plot)
+        return _analyze(output, budget, plot, completion_backend, verification_workers)
 
 
 def main():
@@ -309,13 +320,20 @@ def main():
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--no-plot", action="store_true", help="Rebuild validated tables without the optional plotting dependency")
+    parser.add_argument("--verification-backend", choices=("python", "auto", "numba"), default="python",
+                        help="analyze only: prefix completion verifier")
+    parser.add_argument("--verification-workers", type=int,
+                        help="analyze only: verification processes, up to the saved design limit")
     args = parser.parse_args()
+    if args.command != "analyze" and (args.verification_backend != "python" or args.verification_workers is not None):
+        parser.error("verification options apply only to analyze")
     if args.command == "freeze":
         if args.output.exists():
             raise ValueError("F2 output already exists")
         write_json(args.output, f2_from_preflight(args.preflight))
     elif args.command == "analyze":
-        analyze(args.output, plot=not args.no_plot)
+        analyze(args.output, plot=not args.no_plot, completion_backend=args.verification_backend,
+                verification_workers=args.verification_workers)
     else:
         design = (make_design("preflight", repetitions=8, diagnostic_count=8)
                   if args.command == "preflight" else read_json(args.config))
