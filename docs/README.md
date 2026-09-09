@@ -10,7 +10,7 @@ to try coverage cards, trace the first loss of optimal reachability, and preview
 one- or two-card exchanges. The self-contained Chinese page works offline and
 explains the R1c comparison using archived examples and a set-inclusion diagram.
 
-The completed checkpoint compares Greedy failures under `high_overlap` and a
+The original pilot checkpoint compares Greedy failures under `high_overlap` and a
 dimension- and expected-size-matched `uniform` control. The
 [execution plan in PR #23](https://github.com/Mikoto-19909/greedy-failure-structures/pull/23)
 specifies the fixed pilot and its prerequisites. The
@@ -33,8 +33,12 @@ primary interval and stopping rules. The [R1c confirmation report](../analysis/r
 completes all 3,000 new seed pairs: its interval-width target is met, while the
 primary difference interval includes zero. The [new-sample adapter](../analysis/r1c_confirmation_usage.md)
 and independent validator have checked all 6,000 instances. R2 exploration is complete;
-R3 has completed its feasibility probe and independent confirmation; R4 tools, preflight, F4
-and the full fixed-corpus calibration are complete, while larger-instance work remains unexecuted. The
+R3 has completed its feasibility probe and independent confirmation. R4's prefix and
+L5 DUAL implementations, full fixed-corpus comparison and published evidence are complete;
+see the [final R4 report](../analysis/r4_final_research_report.zh-CN.md). Larger-instance work remains unexecuted.
+The existing optional acceleration results are organized into
+[CPU verification PR #56](https://github.com/Mikoto-19909/greedy-failure-structures/pull/56) and
+[CPU/CUDA production PR #57](https://github.com/Mikoto-19909/greedy-failure-structures/pull/57), pending integration. The
 [workflow speed report](../analysis/gate_speed_comparison_report.md) separately
 measures experiment commands and local delivery steps after the gate removal.
 
