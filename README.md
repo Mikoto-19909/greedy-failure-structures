@@ -76,11 +76,11 @@ The optional validator recomputes results from the configuration and CSVs.
 Run the tests with:
 
 ```console
-python -m unittest discover -s tests -v
+python scripts/check.py --profile full --tests-only
 ```
 
 [CONTRIBUTING.md](CONTRIBUTING.md#verification) maintains the complete verification
-commands and actual mypy coverage.
+commands, direct unittest prerequisites, and actual mypy coverage.
 Windows users can also use `./project.ps1 test`, `./project.ps1 typecheck` and
 `./project.ps1 quick`.
 
