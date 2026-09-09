@@ -64,8 +64,8 @@ python scripts/check.py
 ```
 
 R2/R3 reference configurations live in their published snapshots rather than the
-source tree. The check entry restores missing local copies from the original
-merged commit, without network access or overwriting existing files; `--list`
+source tree. When research tests are selected, the check entry restores missing
+local copies from the original merged commit, without network access or overwriting existing files; `--list`
 does not restore files. Use a complete clone with that history. Before direct
 unittest discovery or research commands in a fresh clone, restore the missing
 configs explicitly (do not overwrite an existing local config):

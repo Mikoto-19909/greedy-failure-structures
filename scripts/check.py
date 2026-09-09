@@ -125,7 +125,8 @@ def main(argv=None):
         print('\n'.join(case.id() for case in chosen))
         return 0
     try:
-        restored = restore_reference_configs(ROOT)
+        restored = (restore_reference_configs(ROOT)
+                    if any(is_research(case.id()) for case in chosen) else [])
     except (OSError, ValueError) as error:
         print(error, file=sys.stderr)
         return 1
