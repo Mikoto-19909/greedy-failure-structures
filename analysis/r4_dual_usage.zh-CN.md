@@ -13,6 +13,11 @@
 & .\.venv\Scripts\python.exe analysis/r4_dual_preflight.py --output results/r4_dual_preflight_v1
 ```
 
+预检默认使用独立生成的本地输入，不需要已发布证据仓库。只有显式传入
+`--source-repository <本地证据仓库路径>` 时，才额外测量固定 Git 配置对象的读取成本；
+指定的仓库缺失或不含所需固定对象时仍会报错。省略此选项时，报告中的
+`immutable_config_transport_setup_seconds` 为空列表，不代表已测量 Git 传输成本。
+
 正式来源目录必须是包含固定提交 `1a8b1899d927cba202cf7931fe992ecd2b5a1807` 的本地 Git
 证据仓库。入口直接读取提交对象，不接受修改后的同名工作树文件替代旧输入/参考。
 独立配置 `analysis/r4_dual_config.json` 在预检通过并完成源码提交后定版。

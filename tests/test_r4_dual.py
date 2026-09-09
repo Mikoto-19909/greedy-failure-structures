@@ -435,7 +435,7 @@ class R4DualTests(unittest.TestCase):
     def test_preflight_report_recovery_rechecks_records_without_production(self):
         from r2_design import make_design, read_json, write_json
         from r4_dual_io import configuration
-        from r4_dual_preflight import preflight
+        from r4_dual_preflight import main, preflight
         # Exercise the complete recovery path cheaply with 18 independently
         # seeded tiny graphs; the actual resource preflight uses all nine cells.
         design = make_design("fixture", (6,), (2,), 18, 0)
@@ -445,14 +445,23 @@ class R4DualTests(unittest.TestCase):
                 patch("r4_dual_preflight.configuration", return_value=config), \
                 patch("r4_dual_preflight.directory_scale_probe", return_value={"conservative_allowance_seconds": 1.0}):
             output = Path(directory) / "preflight"
-            first = preflight(output)
+            main(["--output", str(output)])
+            first = read_json(output / "resource_preflight.json")
             self.assertEqual(first["status"], "passed")
+            self.assertEqual(first["immutable_config_transport_setup_seconds"], [])
             checkpoint = output / "dual/graphs" / (design["tasks"][0]["base_graph_id"] + ".json")
             saved = checkpoint.read_bytes()
             with patch("r4_dual_preflight.prepare_sources", side_effect=AssertionError("no source regeneration")), \
                     patch("r4_dual_preflight.run", side_effect=AssertionError("no certificate reproduction")):
-                resumed = preflight(output, resume=True)
+                with redirect_stderr(StringIO()), self.assertRaises(SystemExit) as error:
+                    main(["--output", str(output), "--resume", "--source-repository",
+                          str(Path(directory) / "missing-evidence")])
+                self.assertEqual(error.exception.code, 2)
+                self.assertEqual(read_json(output / "resource_preflight.json")["status"], "incomplete")
+                main(["--output", str(output), "--resume"])
+                resumed = read_json(output / "resource_preflight.json")
                 self.assertEqual(resumed["status"], "passed")
+                self.assertEqual(resumed["immutable_config_transport_setup_seconds"], [])
                 self.assertIn("recovery_check_seconds", resumed)
                 self.assertEqual(checkpoint.read_bytes(), saved)
                 for change in ("missing_budget", "reference", "completion"):

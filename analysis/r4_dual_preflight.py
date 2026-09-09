@@ -205,8 +205,8 @@ def preflight(output, *, source_repository=None, resume=False):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", required=True, type=Path)
-    parser.add_argument("--source-repository", type=Path, default=ROOT / "results/frozen-r4-calibration-v1",
-                        help="immutable-source Git configuration transport check")
+    parser.add_argument("--source-repository", type=Path,
+                        help="optional immutable-source Git configuration transport check (disabled by default)")
     parser.add_argument("--resume", action="store_true")
     args = parser.parse_args(argv)
     try:
