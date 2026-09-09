@@ -147,6 +147,7 @@ def analyze(output, source):
     check_source(source, config)
     from validate_r4_prefix_bounds import verify_record
     with RuntimeBudget(output, config, "analyze") as budget:
+        write_json(output / "summary_verification.json", {"status": "incomplete"})
         records = load_records(output, config)
         checks = {"source_read_seconds": 0.0, "certificate_seconds": 0.0, "reference_seconds": 0.0}
         for row in records:
@@ -160,10 +161,13 @@ def analyze(output, source):
         started = time.perf_counter()
         rows, cells = summarize(records)
         for name, values in (("budget_results.csv", rows), ("cell_summary.csv", cells)):
-            with (output / name).open("w", encoding="utf-8", newline="") as handle:
+            destination = output / name
+            temporary = destination.with_suffix(".csv.tmp")
+            with temporary.open("w", encoding="utf-8", newline="") as handle:
                 writer = csv.DictWriter(handle, fieldnames=list(values[0]))
                 writer.writeheader()
                 writer.writerows(values)
+            temporary.replace(destination)
         write_json(output / "analysis_timing.json", {**checks, "summary_seconds": time.perf_counter() - started})
         check_resources(output, config, memory_usage())
         budget.check()

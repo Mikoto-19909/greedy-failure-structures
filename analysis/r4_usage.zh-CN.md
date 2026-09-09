@@ -65,6 +65,9 @@ python analysis/validate_r4_prefix_bounds.py --output results/r4_calibration_v1 
 记录独立检查的证书时间和穷举参考时间。`analysis_timing.json` 分开记录汇总前重查的
 这两种时间与汇总时间；`execution.jsonl` 保存各阶段累计计算的批次内部墙钟时间。
 
+重建汇总前会将旧派生验证标为未完成，每张 CSV 写完后才替换原表；写入失败时不能沿用
+旧的 `passed`。重建后须重新执行派生验证，重复列名和与表头不一致的行宽都会被拒绝。
+
 `budget_results.csv` 每原图/预算一行；`cell_summary.csv` 按 `(N,d,k)` 给出均值、
 中位数和 nearest-rank P90、缺失比例数量及认证数量。分母为零的比例写空，保留原图。
 `--summaries-only` 只证明派生一致性；完整认证须另完成当前原图、证书与参考验证。
