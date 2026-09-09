@@ -38,7 +38,7 @@ L5 DUAL implementations, full fixed-corpus comparison and published evidence are
 see the [final R4 report](../analysis/r4_final_research_report.zh-CN.md). Larger-instance work remains unexecuted.
 The existing optional acceleration results are organized into
 [CPU verification PR #56](https://github.com/Mikoto-19909/greedy-failure-structures/pull/56) and
-[CPU/CUDA production PR #57](https://github.com/Mikoto-19909/greedy-failure-structures/pull/57), pending integration. The
+[CPU/CUDA production PR #57](https://github.com/Mikoto-19909/greedy-failure-structures/pull/57) for separate review and delivery. The
 [workflow speed report](../analysis/gate_speed_comparison_report.md) separately
 measures experiment commands and local delivery steps after the gate removal.
 

@@ -18,7 +18,7 @@ R4 的前缀基线和 L5 DUAL 均已完成实现、预检及全部 1,800 图/13,
 DUAL 比前缀界额外收紧 10 条记录，没有新增最优认证；本轮收尾，大实例阶段未启动。
 
 已有 CPU/Numba/CUDA 加速成果已整理为[独立快速验证 PR #56](https://github.com/Mikoto-19909/greedy-failure-structures/pull/56)
-和[生产后端 PR #57](https://github.com/Mikoto-19909/greedy-failure-structures/pull/57)，目前待审合入。
+和[生产后端 PR #57](https://github.com/Mikoto-19909/greedy-failure-structures/pull/57)，两部分分别审阅和交付。
 两者保留原始测量档案，以小范围源码交付避免重复携带大配置和 ZIP；不改变本计划的科学结论。
 本计划接续[已完成的高重叠 pilot](core_overlap_checkpoint_plan.zh-CN.md)，
 优先研究失效发生的步骤及交换修复难度，再研究预算与稀疏度的作用。
