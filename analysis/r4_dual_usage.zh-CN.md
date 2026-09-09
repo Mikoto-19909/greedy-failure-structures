@@ -60,6 +60,10 @@ git restore --source=0bf8a588c22f8b0cf238ee879bc6377187a4c605 --worktree -- anal
 记录当前数据重查、汇总和写表成本。`budget_results.csv` 为逐图/预算配对表，
 `cell_summary.csv` 为 `(N,d,k)` 单元汇总，`summary_verification.json` 只证明派生一致性。
 完整完成要求独立证书检查与派生核对同时通过，不能只看某个 passed。
+`summary_verification.json` 记录最近一次派生核验结果。之后若表被改动或分析重建失败，
+旧 `passed` 不是当前表有效的证明；分析完成状态以 `analysis_status.json` 为准，
+必须重新执行 `--summaries-only` 核验当前表。预检恢复也会重新核对派生数据，
+不会仅凭旧验证状态放行。保留该历史记录不表示失败的重建已经完成。
 `execution.jsonl` 保存累计入口时间；预检及外部进程墙钟另存，用于区分分量和总成本。
 `active_operation.json` 与操作系统独占锁保护正在运行的阶段。硬退出后仅在进程确已退出时
 恢复；已测 `wall_seconds` 和用于限制的 `charged_wall_seconds` 分开，未知尾段保守计费
