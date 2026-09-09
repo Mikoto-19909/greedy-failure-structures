@@ -119,9 +119,9 @@ Git 路径错误及修复记录保留。4.870697 秒是恢复得到的保守流�
 
 ## 数据、复现与收尾
 
-- [逐预算比较表](../results/r4_dual_comparison_v1/budget_results.csv)、[65 单元汇总](../results/r4_dual_comparison_v1/cell_summary.csv)、[原图证书](../results/r4_dual_comparison_v1/graphs/)。
-- [完整独立验证](../results/r4_dual_comparison_v1/verification.json)、[派生验证](../results/r4_dual_comparison_v1/summary_verification.json)、[命令墙钟与内存原始记录](../results/r4_dual_comparison_v1_commands/command_runs.jsonl)。
-- [独立数字审计](../results/r4_dual_comparison_v1_commands/independent_numeric_audit.json)、[预检原始结果](../results/r4_dual_preflight_v1/resource_preflight.json)、[执行源码副本](../results/r4_dual_execution_source.zip)。
+- [逐预算比较表](https://github.com/Mikoto-19909/greedy-failure-structures/blob/b0c274f6be0d810b873184f0e81af41039f1a300/results/r4_dual_comparison_v1/budget_results.csv)、[65 单元汇总](https://github.com/Mikoto-19909/greedy-failure-structures/blob/b0c274f6be0d810b873184f0e81af41039f1a300/results/r4_dual_comparison_v1/cell_summary.csv)、[原图证书](https://github.com/Mikoto-19909/greedy-failure-structures/tree/b0c274f6be0d810b873184f0e81af41039f1a300/results/r4_dual_comparison_v1/graphs/)。
+- [完整独立验证](https://github.com/Mikoto-19909/greedy-failure-structures/blob/b0c274f6be0d810b873184f0e81af41039f1a300/results/r4_dual_comparison_v1/verification.json)、[派生验证](https://github.com/Mikoto-19909/greedy-failure-structures/blob/b0c274f6be0d810b873184f0e81af41039f1a300/results/r4_dual_comparison_v1/summary_verification.json)、[命令墙钟与内存原始记录](https://github.com/Mikoto-19909/greedy-failure-structures/blob/b0c274f6be0d810b873184f0e81af41039f1a300/results/r4_dual_comparison_v1_commands/command_runs.jsonl)。
+- [独立数字审计](https://github.com/Mikoto-19909/greedy-failure-structures/blob/b0c274f6be0d810b873184f0e81af41039f1a300/results/r4_dual_comparison_v1_commands/independent_numeric_audit.json)、[预检原始结果](https://github.com/Mikoto-19909/greedy-failure-structures/blob/b0c274f6be0d810b873184f0e81af41039f1a300/results/r4_dual_preflight_v1/resource_preflight.json)、[执行源码副本](https://github.com/Mikoto-19909/greedy-failure-structures/blob/b0c274f6be0d810b873184f0e81af41039f1a300/results/r4_dual_execution_source.zip)。
 - 可执行的生产、恢复、重建及验证命令见[使用说明](r4_dual_usage.zh-CN.md)。正式批次已经完整完成，无待续算图；复查时使用保存配置和同一源码，完整检查来源与当前证书。
 
 新证书和命令证据保存在本机 `results/`，没有发布或远端备份；本地源码/设计/报告提交
