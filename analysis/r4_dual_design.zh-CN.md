@@ -84,7 +84,7 @@ analyze 再次独立核对当前来源和证书，成本计入完整流程，不
 
 2026-09-08 05:29:13 UTC 定版，正式计算源码为
 `d31cf2e62efb57fe939ce38cfe35a671314477d0`，配置为
-[r4_dual_config.json](r4_dual_config.json)，[预检摘要](r4_dual_resource_precheck.json)。
+[r4_dual_config.json](https://github.com/Mikoto-19909/greedy-failure-structures/blob/b0c274f6be0d810b873184f0e81af41039f1a300/analysis/r4_dual_config.json)，[预检摘要](r4_dual_resource_precheck.json)。
 该时刻距工作窗口目标还剩约 96.56 分钟，保守正式流程为 1,576.156 秒（26.27 分钟），
 另留 600 秒收尾，符合直接启动全量的约定。资源预期为 512 MiB 和 65,683,000 字节，
 分别低于 6 GiB 与 2 GiB 上限。

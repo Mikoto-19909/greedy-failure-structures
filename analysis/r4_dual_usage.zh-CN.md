@@ -22,6 +22,15 @@
 证据仓库。入口直接读取提交对象，不接受修改后的同名工作树文件替代旧输入/参考。
 独立配置 `analysis/r4_dual_config.json` 在预检通过并完成源码提交后定版。
 
+完整 [DUAL 配置](https://github.com/Mikoto-19909/greedy-failure-structures/blob/b0c274f6be0d810b873184f0e81af41039f1a300/analysis/r4_dual_config.json)
+已随固定证据发布，源码分支不再重复跟踪展开的任务列表。完整克隆保留原设计提交，
+仅在本地配置缺失时恢复到已忽略的原路径；已有配置和批次不要覆盖。
+该命令只恢复工作区文件，不改索引。浅克隆须先取得该完整提交历史。
+
+```powershell
+git restore --source=0bf8a588c22f8b0cf238ee879bc6377187a4c605 --worktree -- analysis/r4_dual_config.json
+```
+
 ```powershell
 & .\.venv\Scripts\python.exe analysis/r4_dual.py run --config analysis/r4_dual_config.json --source results/frozen-r4-calibration-v1 --output results/r4_dual_comparison_v1
 & .\.venv\Scripts\python.exe analysis/validate_r4_dual.py --source results/frozen-r4-calibration-v1 --output results/r4_dual_comparison_v1

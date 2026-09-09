@@ -12,7 +12,7 @@
 
 输入来自 R2 [固定证据提交 `4a419f3`](https://github.com/Mikoto-19909/greedy-failure-structures/tree/4a419f338d70068fa988fa97027734cdcda0a036)，
 采用 N=M=12/16/20、d=2/3/4 的定长模型，每单元 200 原图，跨预算复用原图。
-完整种子、预算和统计决定见 [F4 配置](r4_f4_config.json)。18 张预检图未并入正式校准。
+完整种子、预算和统计决定见 [F4 配置](https://github.com/Mikoto-19909/greedy-failure-structures/blob/1a8b1899d927cba202cf7931fe992ecd2b5a1807/analysis/r4_f4_config.json)。18 张预检图未并入正式校准。
 源数据按冻结种子核对；标准 Greedy 固定低索引平局裁决，零增益仍填满预算。
 
 `B=|⋃ᵢSᵢ|`，`U_initial=min(B,kΔ_0)`，

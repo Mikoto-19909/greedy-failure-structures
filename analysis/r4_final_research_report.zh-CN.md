@@ -262,7 +262,7 @@ F4 基线已发布并完成远端回读。DUAL 的本地 ZIP 包含 1,897 个成
 
 [3] [L5 可行性、公式、证明与人工反例](r4_next_question_and_l5_feasibility.zh-CN.md)。该方法说明在原工作树中保留为未跟踪文件，已原样纳入本地备份；其中执行前的状态叙述属于历史时点。
 
-[4] [DUAL 固定设计](r4_dual_design.zh-CN.md)、[配置](r4_dual_config.json)、[预检摘要](r4_dual_resource_precheck.json)和[原比较报告](r4_dual_comparison_report.zh-CN.md)。
+[4] [DUAL 固定设计](r4_dual_design.zh-CN.md)、[配置](https://github.com/Mikoto-19909/greedy-failure-structures/blob/b0c274f6be0d810b873184f0e81af41039f1a300/analysis/r4_dual_config.json)、[预检摘要](r4_dual_resource_precheck.json)和[原比较报告](r4_dual_comparison_report.zh-CN.md)。
 
 [5] [逐预算数据](https://github.com/Mikoto-19909/greedy-failure-structures/blob/b0c274f6be0d810b873184f0e81af41039f1a300/results/r4_dual_comparison_v1/budget_results.csv)、[单元汇总](https://github.com/Mikoto-19909/greedy-failure-structures/blob/b0c274f6be0d810b873184f0e81af41039f1a300/results/r4_dual_comparison_v1/cell_summary.csv)、[完整独立验证](https://github.com/Mikoto-19909/greedy-failure-structures/blob/b0c274f6be0d810b873184f0e81af41039f1a300/results/r4_dual_comparison_v1/verification.json)、[派生验证](https://github.com/Mikoto-19909/greedy-failure-structures/blob/b0c274f6be0d810b873184f0e81af41039f1a300/results/r4_dual_comparison_v1/summary_verification.json)、[独立数字审计](https://github.com/Mikoto-19909/greedy-failure-structures/blob/b0c274f6be0d810b873184f0e81af41039f1a300/results/r4_dual_comparison_v1_commands/independent_numeric_audit.json)。
 

@@ -37,6 +37,15 @@ python analysis/r4_prefix_bounds.py freeze --source results/r4_source/results/r2
 以下命令已用于完成 [首轮校准](r4_calibration_report.zh-CN.md)，也可用于独立复现。
 F4 设计定版与执行是不同操作，已有批次须遵循下述恢复规则。
 
+完整 [F4 配置](https://github.com/Mikoto-19909/greedy-failure-structures/blob/1a8b1899d927cba202cf7931fe992ecd2b5a1807/analysis/r4_f4_config.json)
+已随固定证据发布，源码分支不再重复跟踪其中展开的任务列表。完整克隆保留原设计提交，
+仅在本地配置缺失时执行以下命令，恢复到已忽略的原路径；已有配置和批次不要覆盖。
+该命令只恢复工作区文件，不改索引。浅克隆须先取得该完整提交历史。
+
+```console
+git restore --source=f435286598ca8582164e620fa80331256a254bd0 --worktree -- analysis/r4_f4_config.json
+```
+
 ```console
 python analysis/r4_prefix_bounds.py run --config analysis/r4_f4_config.json --source results/r4_source/results/r2_grid_v1 --output results/r4_calibration_v1
 python analysis/validate_r4_prefix_bounds.py --source results/r4_source/results/r2_grid_v1 --output results/r4_calibration_v1

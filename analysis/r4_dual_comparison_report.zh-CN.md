@@ -18,7 +18,7 @@ DUAL 相比现有前缀界，额外收紧 **10 条记录，来自 10 张原图**
 Greedy、残余、排序、累计并集及每轮所有索引的 max-min 最大值。
 证书排序不改变原始索引或 Greedy 选择顺序。
 
-[设计](r4_dual_design.zh-CN.md)和[配置](r4_dual_config.json)在正式生产前固定。
+[设计](r4_dual_design.zh-CN.md)和[配置](https://github.com/Mikoto-19909/greedy-failure-structures/blob/b0c274f6be0d810b873184f0e81af41039f1a300/analysis/r4_dual_config.json)在正式生产前固定。
 计算源码提交为 `d31cf2e62efb57fe939ce38cfe35a671314477d0`，设计提交为 `0bf8a58`。
 N=M∈{12,16,20}，d∈{2,3,4}，每个 `(N,d)` 200 图；完整沿用固定预算及身份。
 参考来自已发布证据 `1a8b1899d927cba202cf7931fe992ecd2b5a1807`，底层 R2 证据为

@@ -1,7 +1,7 @@
 # F4：固定 R2 语料上的整数前缀上界校准
 
 状态：2026-09-07，18 张独立预检原图完成后、全量 R4 证书生成前定版。
-正式设计为 [F4 配置](r4_f4_config.json)。**正式校准已完成**，见 [研究报告](r4_calibration_report.zh-CN.md)。
+正式设计为 [F4 配置](https://github.com/Mikoto-19909/greedy-failure-structures/blob/1a8b1899d927cba202cf7931fe992ecd2b5a1807/analysis/r4_f4_config.json)。**正式校准已完成**，见 [研究报告](r4_calibration_report.zh-CN.md)。
 本页保留 F4 定版内容与预检记录；不自动进入大实例研究。
 数学定义与最优认证能力限制见 [准备方案](../docs/r4_preparation_plan.zh-CN.md)，
 可运行命令见 [使用说明](r4_usage.zh-CN.md)。
