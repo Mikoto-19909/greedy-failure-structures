@@ -1,7 +1,7 @@
 # F3：局部交集总量导向的保度协议与首步不可恢复率
 
 状态：设计于 2026-09-07 在正式样本生成前定版；正式确认已按此设计完成，见[报告](r3_confirmation_report.zh-CN.md)。
-研究设计输入见 [确认配置](r3_confirmation_config.json)。正式执行已获授权，
+研究设计输入见 [确认配置](https://github.com/Mikoto-19909/greedy-failure-structures/blob/8663e0dcf576ab156535ff7403bb7e4715091357/analysis/r3_confirmation_config.json)。正式执行已获授权，
 按[执行说明](r3_confirmation_usage.zh-CN.md)推进，科学参数保持 F3 定版值。
 
 ## 结构假设与证据边界

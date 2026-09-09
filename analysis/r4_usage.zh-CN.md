@@ -18,6 +18,12 @@
 
 ## 18 图预检与 F4
 
+下面的原定版流程需要 R2 固定设计。干净克隆仅在该本地文件缺失时恢复：
+
+```console
+git restore --source=cef5b92954571423b10a0c3b56947a4b26400d3c --worktree -- analysis/r2_f2_config.json
+```
+
 ```console
 python analysis/r4_prefix_bounds.py preflight --source results/r4_source/results/r2_preflight_v1 --output results/r4_preflight_v1
 python analysis/validate_r4_prefix_bounds.py --source results/r4_source/results/r2_preflight_v1 --output results/r4_preflight_v1

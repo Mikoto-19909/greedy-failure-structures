@@ -67,6 +67,12 @@ if (-not $Python) {
 
 Push-Location $ProjectRoot
 try {
+    if ($Action -in @("test", "test-fast")) {
+        & $Python -c "import sys; sys.path.insert(0, 'scripts'); from check import ROOT, restore_reference_configs; restore_reference_configs(ROOT)"
+        if ($LASTEXITCODE -ne 0) {
+            throw "Could not restore missing research test configurations. Use a complete clone with the documented history."
+        }
+    }
     switch ($Action) {
         "quick" { & $Python run_project.py quick }
         "demo"  { & $Python run_project.py demo }

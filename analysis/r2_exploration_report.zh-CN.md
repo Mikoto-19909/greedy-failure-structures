@@ -7,7 +7,7 @@
 ## 方法与数据
 
 [F2 设计](r2_exploration_design.zh-CN.md)在正式输入生成前固定了模型、网格、种子、
-见证规则、诊断子集及统计方法。[F2 配置](r2_f2_config.json)列出全部种子与预算。
+见证规则、诊断子集及统计方法。[F2 配置](https://github.com/Mikoto-19909/greedy-failure-structures/blob/4a419f338d70068fa988fa97027734cdcda0a036/analysis/r2_f2_config.json)列出全部种子与预算。
 采用 `M=N∈{12,16,20}`、`d∈{2,3,4}`，每单元 200 张独立原图；每个集合独立均匀
 无放回抽取 d 个元素，集合之间允许重复，不使用生成器耦合种子。
 每张图跨预算复用，Greedy 固定低索引平局裁决，穷举参考保存字典序最小的恰好 k 个索引见证。

@@ -77,7 +77,7 @@ Greedy 在平局中首选 0，之后最大增益为 2，最终 `G=5`，但选择
 ### 3.1 准备输入和最小离线实现
 
 首轮目标输入为 [R2 固定证据](https://github.com/Mikoto-19909/greedy-failure-structures/tree/4a419f338d70068fa988fa97027734cdcda0a036/results/r2_grid_v1/graphs)
-及 [F2 配置](../analysis/r2_f2_config.json)：完整 1,800 张原图、13,000 条预算记录。
+及 [F2 配置](https://github.com/Mikoto-19909/greedy-failure-structures/blob/4a419f338d70068fa988fa97027734cdcda0a036/analysis/r2_f2_config.json)：完整 1,800 张原图、13,000 条预算记录。
 保留原图身份、集合顺序、各预算和规范最优见证，不重生成、不按失效或紧度筛图。
 已有 G/O 结果已被查看；这是固定旧样本上的回顾性校准，F4 不追溯成新样本预注册。
 R3 的变体、链与原图有嵌套关系，不混入首轮总体；人工反例只作功能验证。

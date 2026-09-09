@@ -19,7 +19,9 @@ python scripts/check.py --profile full
 
 默认命令执行核心（包含研究验证）和 mypy；`--tests-only` 仅省略 mypy。
 `--profile full` 执行所有发现的测试，原 `python -m unittest discover -s tests -v`
-仍可使用。完整测试允许已声明的可选依赖跳过；必需研究验证的跳过会导致检查失败。
+仍可使用，但干净克隆须先按 [CONTRIBUTING](../CONTRIBUTING.md#verification) 恢复缺失的
+R2/R3 配置；`scripts/check.py` 在选中研究测试时，以及 `project.ps1 test` / `test-fast`
+会自动准备缺失配置，保留已有文件。完整测试允许已声明的可选依赖跳过；必需研究验证的跳过会导致检查失败。
 在独立的可选依赖环境安装 `.[oracle]` 和 `matplotlib==3.11.1` 后，
 运行 `python scripts/check.py --profile optional --tests-only`，两项真实求解/绘图验证都必须成功。
 默认检查环境固定 NumPy 2.3.5，避免新版依赖类型声明与 Python 3.11 类型目标冲突；

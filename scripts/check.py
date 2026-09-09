@@ -13,6 +13,22 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from check_profiles import ANALYSIS_OWNERS, GROUPS, RESEARCH_MODULES, REQUIRED_RESEARCH, OPTIONAL_CASES, affected_groups, extended_group, is_platform, is_research
 
+REFERENCE_CONFIG_REVISION = 'cef5b92954571423b10a0c3b56947a4b26400d3c'
+REFERENCE_CONFIG_PATHS = ('analysis/r2_f2_config.json', 'analysis/r3_confirmation_config.json')
+
+def restore_reference_configs(root: Path) -> list[str]:
+    """Restore missing published test inputs without replacing local configs."""
+    missing = [name for name in REFERENCE_CONFIG_PATHS if not (root / name).exists()]
+    if missing:
+        result = subprocess.run(
+            ['git', '--no-replace-objects', '-C', str(root), 'restore',
+             f'--source={REFERENCE_CONFIG_REVISION}', '--worktree', '--', *missing],
+            capture_output=True, text=True)
+        if result.returncode:
+            raise ValueError('Cannot restore frozen reference configs; use a complete clone '
+                             f'containing {REFERENCE_CONFIG_REVISION}. {result.stderr.strip()}')
+    return missing
+
 def flatten(suite):
     for item in suite:
         if isinstance(item, unittest.TestSuite):
@@ -108,6 +124,14 @@ def main(argv=None):
     if args.list:
         print('\n'.join(case.id() for case in chosen))
         return 0
+    try:
+        restored = (restore_reference_configs(ROOT)
+                    if any(is_research(case.id()) for case in chosen) else [])
+    except (OSError, ValueError) as error:
+        print(error, file=sys.stderr)
+        return 1
+    if restored:
+        print(f'Restored missing local reference configs: {", ".join(restored)}', flush=True)
     result = unittest.TextTestRunner(verbosity=2, resultclass=ExecutionResult).run(unittest.TestSuite(chosen))
     required = {case.id() for case in chosen if is_research(case.id()) or (args.profile == 'optional' and case.id() in OPTIONAL_CASES)}
     if not execution_succeeded(result, required):

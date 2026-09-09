@@ -63,6 +63,17 @@ required research verification and mypy:
 python scripts/check.py
 ```
 
+R2/R3 reference configurations live in their published snapshots rather than the
+source tree. When research tests are selected, the check entry restores missing
+local copies from the original merged commit, without network access or overwriting existing files; `--list`
+does not restore files. Use a complete clone with that history. Before direct
+unittest discovery or research commands in a fresh clone, restore the missing
+configs explicitly (do not overwrite an existing local config):
+
+```console
+git restore --source=cef5b92954571423b10a0c3b56947a4b26400d3c --worktree -- analysis/r2_f2_config.json analysis/r3_confirmation_config.json
+```
+
 Install check dependencies with `pip install -e ".[typecheck]" scipy==1.18.1 numpy==2.3.5`.
 Before merging changes to the check system, run `python scripts/check.py --profile full`
 and obtain an independent review with valid and invalid inputs. All new tests default

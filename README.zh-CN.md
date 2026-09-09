@@ -66,10 +66,10 @@ python run_project.py dashboard
 运行测试：
 
 ```console
-python -m unittest discover -s tests -v
+python scripts/check.py --profile full --tests-only
 ```
 
-[CONTRIBUTING.md](CONTRIBUTING.md#verification)集中维护完整检查命令和实际 mypy
+[CONTRIBUTING.md](CONTRIBUTING.md#verification)集中维护完整检查命令、直接运行 unittest 的准备步骤和实际 mypy
 覆盖范围。Windows 用户也可使用 `./project.ps1 test`、
 `./project.ps1 typecheck` 和 `./project.ps1 quick`。
 
