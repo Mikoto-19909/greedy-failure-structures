@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import copy
+import csv
+from io import StringIO
 from itertools import product
 from pathlib import Path
 import sys
@@ -27,6 +29,61 @@ def fixture(directory, count=2):
 
 
 class R4PrefixTests(unittest.TestCase):
+    def test_analyze_write_failure_preserves_tables_and_invalidates_verification(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source, config = fixture(directory, 1)
+            output = Path(directory) / "output"
+            run(config, source, output)
+            analyze(output, source)
+            verify_summaries(output)
+            paths = [output / name for name in ("budget_results.csv", "cell_summary.csv")]
+            saved = [path.read_bytes() for path in paths]
+            original = csv.DictWriter.writerows
+            for fail_at in (1, 2):
+                calls = 0
+                def interrupted(writer, rows):
+                    nonlocal calls
+                    calls += 1
+                    if calls == fail_at:
+                        raise OSError("simulated table write failure")
+                    return original(writer, rows)
+                with self.subTest(fail_at=fail_at), patch.object(csv.DictWriter, "writerows", interrupted):
+                    with self.assertRaisesRegex(OSError, "simulated"):
+                        analyze(output, source)
+                self.assertEqual([path.read_bytes() for path in paths], saved)
+                self.assertEqual(read_json(output / "summary_verification.json")["status"], "incomplete")
+                analyze(output, source)
+                self.assertEqual(read_json(output / "summary_verification.json")["status"], "incomplete")
+                self.assertEqual(verify_summaries(output)["status"], "passed")
+
+    def test_derived_csv_rejects_duplicate_columns_and_wrong_row_width(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source, config = fixture(directory, 1)
+            output = Path(directory) / "output"
+            run(config, source, output)
+            analyze(output, source)
+            for name in ("budget_results.csv", "cell_summary.csv"):
+                path = output / name
+                saved = path.read_bytes()
+                rows = list(csv.reader(StringIO(saved.decode("utf-8"))))
+                for damage in ("duplicate", "extra", "missing"):
+                    broken = copy.deepcopy(rows)
+                    if damage == "duplicate":
+                        column = broken[0].index("n")
+                        for row in broken:
+                            row.append(row[column])
+                    elif damage == "extra":
+                        broken[1].append("unexpected")
+                    else:
+                        broken[1].pop()
+                    with path.open("w", encoding="utf-8", newline="") as handle:
+                        csv.writer(handle).writerows(broken)
+                    with self.subTest(name=name, damage=damage), self.assertRaises(ValueError):
+                        verify_summaries(output)
+                    self.assertEqual(read_json(output / "summary_verification.json")["status"], "incomplete")
+                    path.write_bytes(saved)
+            self.assertEqual(verify_summaries(output)["status"], "passed")
+
     def test_known_bounds_failed_prefix_endpoints_and_zero_union(self):
         masks = (7, 25, 38)  # S0={0,1,2}, S1={0,3,4}, S2={1,2,5}
         values = certificates(masks, [1, 2, 3])

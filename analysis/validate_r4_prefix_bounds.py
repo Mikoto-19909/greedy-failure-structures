@@ -154,9 +154,14 @@ def verify_summaries(output):
             cells.append(cell)
         for name, rows in (("budget_results.csv", expected), ("cell_summary.csv", cells)):
             with (output / name).open(encoding="utf-8", newline="") as handle:
-                actual = list(csv.DictReader(handle))
+                reader = csv.DictReader(handle)
+                if reader.fieldnames is None or len(reader.fieldnames) != len(set(reader.fieldnames)):
+                    raise ValueError("invalid or duplicate derived CSV columns")
+                actual = list(reader)
             same(len(actual), len(rows), "derived row count")
             for got, wanted in zip(actual, rows):
+                if None in got or any(value is None for value in got.values()):
+                    raise ValueError("derived CSV row width differs")
                 same(set(got), set(wanted), "derived columns")
                 if not all(numeric_equal(got[key], value) for key, value in wanted.items()):
                     raise ValueError("derived numeric value or identity differs")
