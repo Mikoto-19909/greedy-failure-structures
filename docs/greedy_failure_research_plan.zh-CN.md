@@ -4,7 +4,7 @@
 
 研读日期：2026-09-06。代码核对基线：`d392457`。
 
-状态：R1a/R1b 已完成离线工具、功能验证和原 pilot 的探索性重分析，见
+状态更新：2026-09-09。R1a/R1b 已完成离线工具、功能验证和原 pilot 的探索性重分析，见
 [R1 报告](../analysis/r1_prefix_exchange_report.md)及
 [轨迹与数据](../experiments/r1_prefix_exchange_v1/)。
 [R1c 新样本设计](../analysis/r1c_confirmation_design.md)已完成配置、精度核算和独立种子
@@ -13,9 +13,13 @@
 [R2 报告](../analysis/r2_exploration_report.zh-CN.md)已完成完整网格及独立验证，
 [R3 专项设计](../analysis/r3_confirmation_design.zh-CN.md)已完成独立探测与 F3 定版；
 [R3 正式报告](../analysis/r3_confirmation_report.zh-CN.md)已完成 3,000 原图与 12,000 端点的独立验证；
-R4 已完成[专项准备](r4_preparation_plan.zh-CN.md)、离线入口、18 图独立预检及
-[F4 定版](../analysis/r4_f4_design.zh-CN.md)；[首轮完整语料校准](../analysis/r4_calibration_report.zh-CN.md)
-已完成全部 1,800 图和 13,000 预算的独立验证，仅一条记录因前缀项收紧上界；后续扩规模未启动。
+R4 的前缀基线和 L5 DUAL 均已完成实现、预检及全部 1,800 图/13,000 预算的比较，
+源码与报告已合入主干，固定证据已发布并回读，见[R4 最终报告](../analysis/r4_final_research_report.zh-CN.md)。
+DUAL 比前缀界额外收紧 10 条记录，没有新增最优认证；本轮收尾，大实例阶段未启动。
+
+已有 CPU/Numba/CUDA 加速成果已整理为[独立快速验证 PR #56](https://github.com/Mikoto-19909/greedy-failure-structures/pull/56)
+和[生产后端 PR #57](https://github.com/Mikoto-19909/greedy-failure-structures/pull/57)，两部分分别审阅和交付。
+两者保留原始测量档案，以小范围源码交付避免重复携带大配置和 ZIP；不改变本计划的科学结论。
 本计划接续[已完成的高重叠 pilot](core_overlap_checkpoint_plan.zh-CN.md)，
 优先研究失效发生的步骤及交换修复难度，再研究预算与稀疏度的作用。
 原 pilot 的预定样本、检验和停止决定继续保留。后续分析不会回写原实验设计。
