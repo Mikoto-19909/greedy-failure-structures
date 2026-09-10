@@ -5,6 +5,20 @@
 使用 Python 3.12；此机器可执行文件为 `.venv\Scripts\python.exe`。不依赖 LP 求解器。
 生产器扫描交点，独立验证器显式重建每个残余并计算每轮最大值。
 
+## 维护版本与历史复现
+
+统计参考处理已在[首批结构整理](../docs/stabilization_plan.zh-CN.md)中迁移到独立模块。
+即使计算行为不变，`src/maxcover` 文件变化也会使维护工作树不匹配旧配置的 `code_revision`。
+恢复或复核已发布 DUAL 时，使用文末固定快照 `RESTORE.md` 恢复的原源码和基线 Git 证据；
+仅复制配置或结果到维护工作树不能代替源码恢复，不应修改版本标签或绕过检查。
+
+本次本地隔离源码位于代码工作树的 `results/statistics_reference_split/frozen-dual/`，
+其中 `results/frozen-r4-calibration-v1/` 是恢复的基线证据仓库。
+原源码 HEAD 应为 `f144418eb09bb61d9b9b28f866f8c91ededbe7ad`，
+基线 HEAD 应为 `1a8b1899d927cba202cf7931fe992ecd2b5a1807`。
+该目录只做源码与首图来源读取检查；历史生产、验证和计时没有重跑。
+其他机器按固定快照的恢复说明新建目录，不依赖这个本机路径。
+
 ## 预检与固定比较
 
 干净克隆先恢复 R2 固定设计，用于预检种子域与后续来源核对；它不包含正式原图。

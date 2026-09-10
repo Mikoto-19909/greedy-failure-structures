@@ -16,7 +16,9 @@ from maxcover.algorithms import ALGORITHMS, brute_force, greedy
 from maxcover.benchmark import (
     _instance_record,
     _instances_for_config,
+    _normalize_optima,
     _reference_status_records,
+    _validate_certificate_bound,
     run_benchmark,
 )
 from maxcover.config import parse_config
@@ -49,6 +51,57 @@ def _uniform_case() -> dict[str, object]:
 
 
 class ReferenceCoverageTests(unittest.TestCase):
+    def test_reference_conflicts_are_rejected_without_changing_inputs(self) -> None:
+        config = {
+            "schema_version": 3, "name": "reference conflict fixture",
+            "base_seed": 11, "repetitions": 1,
+            "algorithms": [{"name": "brute_force"}, {"name": "branch_and_bound"}],
+            "cases": [_uniform_case()],
+        }
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            result = run_benchmark(_write_config(root, config), root / "output")
+        left, right = result.rows
+        instance = result.instances[0]
+        optimum = left.coverage
+        assert optimum is not None
+        before = ([row.to_csv_row() for row in result.rows], instance.to_csv_row())
+        self.assertEqual(_normalize_optima(result.rows, result.instances), list(result.rows))
+        with self.assertRaisesRegex(ValueError, "optimal algorithms disagree"):
+            _normalize_optima(
+                [left, replace(right, coverage=optimum + 1, best_bound=optimum + 1,
+                               optimum=optimum + 1)], result.instances,
+            )
+        certified_config = parse_config({
+            **config,
+            "cases": [{"name": "certified", "family": "adversarial", "block_size": 4,
+                       "trap_count": 3, "distractor_count": 4, "construction_version": 2}],
+        })
+        certificate = _instance_record(_instances_for_config(certified_config)[0],
+                                       config_hash(certified_config))
+        assert certificate.known_optimum is not None
+        conflicting_value = certificate.known_optimum - 1
+        conflicting_row = replace(
+            left, instance_id=certificate.instance_id, universe_size=certificate.universe_size,
+            set_count=certificate.set_count, k=certificate.k, coverage=conflicting_value,
+            best_bound=conflicting_value, optimum=conflicting_value, optimality_gap=0.0,
+        )
+        with self.assertRaisesRegex(ValueError, "conflicts with certificate"):
+            _normalize_optima([conflicting_row], [certificate])
+        with self.assertRaisesRegex(ValueError, "coverage exceeds normalized optimum"):
+            _normalize_optima(
+                [left, replace(right, status=SolutionStatus.FEASIBLE, coverage=optimum + 1,
+                               best_bound=None, optimum=None, optimality_gap=None)],
+                result.instances,
+            )
+        with self.assertRaisesRegex(ValueError, "best bound conflicts with certificate"):
+            _validate_certificate_bound(optimum, optimum - 1, instance.instance_id)
+        with self.assertRaisesRegex(ValueError, "missing a completed run"):
+            _reference_status_records(result.config, [], result.instances)
+        self.assertEqual(
+            ([row.to_csv_row() for row in result.rows], instance.to_csv_row()), before,
+        )
+
     def test_reference_records_round_trip_through_the_public_contract(self) -> None:
         record_types = (
             ReferenceStatusRecord,

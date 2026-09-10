@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import ast
+import os
+import pickle
 import subprocess
 import sys
 import unittest
@@ -14,7 +16,9 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from maxcover import benchmark
 from maxcover import benchmark_artifacts, benchmark_planning
-from maxcover import benchmark_associations, benchmark_statistics
+from maxcover import benchmark_associations, benchmark_statistics, _benchmark_reference
+from maxcover import _benchmark_quality_associations, _benchmark_performance_associations
+from maxcover import _benchmark_quality
 
 
 PICKLE_CHECK = r"""
@@ -89,15 +93,113 @@ class BenchmarkModuleTests(unittest.TestCase):
         self.assertIn("PASS:", completed.stdout)
 
     def test_internal_modules_do_not_import_the_facade(self) -> None:
-        for path in (ROOT / "src/maxcover").glob("benchmark_*.py"):
+        leaf_names = ("_benchmark_reference.py", "_benchmark_quality_associations.py",
+                      "_benchmark_performance_associations.py", "_benchmark_quality.py")
+        paths = [*(ROOT / "src/maxcover").glob("benchmark_*.py"),
+                 *(ROOT / "src/maxcover" / name for name in leaf_names)]
+        for path in paths:
             with self.subTest(module=path.name):
+                forbidden = {"benchmark", "maxcover.benchmark"}
+                if path.name in leaf_names:
+                    forbidden.update({"benchmark_associations", "maxcover.benchmark_associations",
+                                      "benchmark_artifacts", "maxcover.benchmark_artifacts"})
+                if path.name in {"_benchmark_reference.py", "_benchmark_quality.py"}:
+                    forbidden.update({"benchmark_statistics", "maxcover.benchmark_statistics",
+                                      "benchmark_artifacts", "maxcover.benchmark_artifacts"})
                 for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
                     if isinstance(node, ast.ImportFrom):
-                        self.assertNotIn(node.module, {"benchmark", "maxcover.benchmark"})
+                        self.assertNotIn(node.module, forbidden)
                         if node.module in {None, "maxcover"}:
-                            self.assertNotIn("benchmark", [alias.name for alias in node.names])
+                            self.assertFalse({alias.name for alias in node.names} & forbidden)
                     elif isinstance(node, ast.Import):
-                        self.assertNotIn("maxcover.benchmark", [alias.name for alias in node.names])
+                        self.assertFalse({alias.name for alias in node.names} & forbidden)
+
+    def test_reference_exports_share_one_implementation(self) -> None:
+        for name in (
+            "_validate_certificate_bound", "_normalize_optima", "_reference_status_records",
+            "_reference_coverage_statistics", "_reference_censoring_bias_statistics",
+            "_reference_cutoff_sensitivity_statistics", "_REFERENCE_BIAS_METRICS",
+        ):
+            with self.subTest(name=name):
+                value = getattr(_benchmark_reference, name)
+                self.assertIs(getattr(benchmark_statistics, name), value)
+                self.assertIs(getattr(benchmark, name), value)
+        self.assertIs(_benchmark_reference.ALGORITHMS, benchmark_statistics.ALGORITHMS)
+
+    def test_association_exports_share_one_implementation(self) -> None:
+        for module, names in (
+            (_benchmark_quality_associations, ("_gap_density_association_statistics",
+                "_gap_overlap_association_statistics", "_gap_clustering_association_statistics")),
+            (_benchmark_performance_associations, ("_runtime_set_count_association_statistics",
+                "_runtime_k_association_statistics", "_search_nodes_dominated_ratio_association_statistics",
+                "_RuntimeKInstanceProjection")),
+        ):
+            for name in names:
+                with self.subTest(name=name):
+                    self.assertIs(getattr(benchmark_associations, name), getattr(module, name))
+                    self.assertIs(getattr(benchmark, name), getattr(module, name))
+            self.assertIs(module._ten_decimal, benchmark_statistics._ten_decimal)
+
+    def test_quality_exports_share_one_implementation(self) -> None:
+        for name in (
+            "_greedy_failure_statistics", "_LocalSearchPairAnalysis",
+            "_local_search_pair_analyses", "_local_search_recovery_statistics",
+            "_local_search_remaining_gap_statistics", "_deterministic_variant_units",
+            "_increment_heuristic_status",
+        ):
+            with self.subTest(name=name):
+                value = getattr(_benchmark_quality, name)
+                self.assertIs(getattr(benchmark_statistics, name), value)
+                self.assertIs(getattr(benchmark, name), value)
+        self.assertIs(_benchmark_quality.ALGORITHMS, benchmark_statistics.ALGORITHMS)
+
+    def test_pre_split_quality_pickle_remains_readable(self) -> None:
+        # Genuine protocol-4 object captured from 2c4c3de before the class moved.
+        from dataclasses import FrozenInstanceError
+
+        fixture = ROOT / "tests/fixtures/benchmark_quality/pair_protocol4.pickle"
+        restored = pickle.loads(fixture.read_bytes())
+        self.assertIs(type(restored), benchmark_statistics._LocalSearchPairAnalysis)
+        self.assertIs(type(restored), _benchmark_quality._LocalSearchPairAnalysis)
+        expected = _benchmark_quality._LocalSearchPairAnalysis(
+            config_hash="config", case_id="case", family="uniform",
+            greedy_algorithm_id="greedy", local_search_algorithm_id="local_search",
+            instance_count=8,
+            greedy_completed_count=6, greedy_timeout_count=1, greedy_error_count=1,
+            local_search_completed_count=6, local_search_timeout_count=1,
+            local_search_error_count=1, valid_exact_reference_count=7,
+            greedy_failure_count=4, recoveries=(0.5, 1.0, 0.0),
+            remaining_relative_gaps=(0.2, 0.0, 0.6), full_recovery_count=1,
+        )
+        self.assertEqual(restored, expected)
+        self.assertEqual(restored.recoveries, (0.5, 1.0, 0.0))
+        self.assertEqual(restored.remaining_relative_gaps, (0.2, 0.0, 0.6))
+        self.assertFalse(hasattr(restored, "__dict__"))
+        with self.assertRaises(FrozenInstanceError):
+            restored.case_id = "changed"
+        for protocol in (4, 5):
+            self.assertEqual(pickle.loads(pickle.dumps(restored, protocol=protocol)), restored)
+
+    def test_quality_pickle_supports_the_unittest_module_entrypoint(self) -> None:
+        completed = subprocess.run(
+            [sys.executable, "-m", "unittest",
+             "tests.test_benchmark_modules.BenchmarkModuleTests."
+             "test_pre_split_quality_pickle_remains_readable"],
+            cwd=ROOT, env={key: value for key, value in os.environ.items()
+                           if key != "PYTHONPATH"},
+            capture_output=True, text=True, encoding="utf-8", timeout=30,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+
+    def test_pre_split_projection_pickle_remains_readable(self) -> None:
+        # Genuine protocol-4 object captured from ad13f19 before the class moved.
+        fixture = ROOT / "tests/fixtures/benchmark_associations/projection_protocol4.pickle"
+        restored = pickle.loads(fixture.read_bytes())
+        self.assertIs(type(restored), benchmark_associations._RuntimeKInstanceProjection)
+        self.assertIs(type(restored), _benchmark_performance_associations._RuntimeKInstanceProjection)
+        self.assertEqual(restored, benchmark._RuntimeKInstanceProjection(
+            "config", "case", 2, "instance", "uniform", 3))
+        self.assertEqual(pickle.loads(pickle.dumps(restored)), restored)
 
     def test_facade_aliases_remain_correct(self) -> None:
         for module, names in (
