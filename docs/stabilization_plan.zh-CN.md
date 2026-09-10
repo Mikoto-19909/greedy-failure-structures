@@ -1,8 +1,8 @@
 # 统计模块职责拆分
 
 2026-09-10；源码基线 `0d37e6f`。本批独立于 `codex/stabilization-docs` 的通用文档整理。
-新功能和新研究实验仍暂停。首批只拆参考处理；经后续授权实施的关联拆分见末节。
-其他统计、报告和公共记录类保持原状。
+新功能和新研究实验仍暂停。首批只拆参考处理；后续授权的关联与质量统计拆分见末尾两节。
+其余统计、报告和公共记录类保持原状。
 
 ## 实现与兼容边界
 
@@ -97,3 +97,53 @@ SciPy 1.18.1、mypy 2.3.0 环境；没有安装或更改依赖。首次检查在
 可选跳过为 Matplotlib、OR-Tools 和两项显式 GPU 检查，使用与首批相同的既有环境。
 独立审阅另执行 18 项检查，并自行核对 AST、36 文件等价性、旧 pickle 和冻结入口，无遗留问题。
 本批仅形成本地提交，其他统计分组和报告模块未继续拆分。
+
+## 第三批：Greedy 失效与 Local Search 质量分析
+
+基线 `2c4c3de`，独立分支 `codex/quality-statistics-split`，接续前两批本地提交。
+本批将 Greedy 失效、Local Search 配对、恢复率和剩余差距四个函数，配对中间类型及其
+两个专用辅助函数机械迁移到[质量统计模块](../src/maxcover/_benchmark_quality.py)。保留统计入口及 benchmark 的
+全部旧名导出，不改函数正文、记录类、统计口径、异常消息、排序或舍入。
+其余描述统计、区间、删失运行时间、性能统计和关联模块留在原处。
+
+先从未修改源码保存固定输出及真实旧版配对对象 pickle，再搬迁实现。沿用已有
+75 个实例、750 条运行记录；两版独立进程读取同一配置路径，重建报告和完成态恢复时
+禁止执行算法。比较全部产物字节、函数/类型 AST、空输入、已知答案、无资格/零分母、
+算法注册表资格和错误拒绝，检查输入不变与旧 pickle 可读。
+
+验证脚本和输出保留在本工作树 `results/quality_statistics_split/`。复用相邻
+`statistics-reference-split` 中的冻结 DUAL 入口，核对旧源码可用且维护版仍拒绝旧标签。
+受影响测试通过后运行默认检查，记录实际结果；本批只形成本地提交，不推送或合并。
+
+迁移比较通过：六个函数和一个类型的正文及 AST 一致，留在统计模块中的导入和其他
+语句也完全一致。35 个生成产物与一份直接调用快照逐字节相同，summarize 与完成态恢复
+结果相同，原始输入不变，重建过程没有执行算法。
+已知答案使用八组人工记录，区分恢复率、剩余相对差距和各自分母；三个合法空资格场景、
+两种随机算法注册替换、33 次配对拒绝和四种 Greedy 拒绝均通过。
+
+私有 `_LocalSearchPairAnalysis` 的定义模块变为 `_benchmark_quality`，原统计模块和
+benchmark 路径仍指向同一类型；没有修改 `__module__`。迁移前保存的 209 字节
+[protocol-4 对象](../tests/fixtures/benchmark_quality/README.md)可以读取，全部字段、
+不可变/slots 行为及 protocol-4/5 往返通过。公共记录类及其 CSV/序列化路径保持原状。
+
+冻结 DUAL 源码检查及首图七个预算读取通过；维护版本仍拒绝旧计算标签。
+首次只读检查遇到沙箱账户与冻结仓库所有者不同，以仅限本进程、两条明确仓库路径的
+`safe.directory` 设置完成核对；未修改全局 Git 配置、冻结源码或证据。
+
+第三批本地验收完成：29 项相关测试通过；默认检查运行 480 项（126.555 秒），
+476 项通过、4 项明确可选跳过，mypy 的 42 个源码文件通过。四项跳过分别是
+Matplotlib、OR-Tools 和两项显式 CUDA 硬件检查。复用前两批的 Python 3.12.14、
+NumPy 2.3.5、Numba 0.67.0、SciPy 1.18.1、mypy 2.3.0 环境，未安装依赖。
+原统计模块从 1,705 行变为 1,293 行，新模块 441 行；主要差异为原文搬迁。
+
+复查命令在本工作树执行，Python 使用上述既有环境：
+
+```console
+python results/quality_statistics_split/check_parity.py compare
+python -m unittest discover -s tests -p test_benchmark_quality.py -v
+python scripts/check.py
+```
+
+两次重建快照、直接调用比较及检查日志分别保存在 `before/`、`after/`、
+`parity_result.json`、`targeted-check.log` 和 `default-check.log`。
+本批没有重跑正式语料或性能测量；未执行推送、合并或合并前的独立审阅。

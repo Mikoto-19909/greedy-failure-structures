@@ -17,6 +17,7 @@ from maxcover import benchmark
 from maxcover import benchmark_artifacts, benchmark_planning
 from maxcover import benchmark_associations, benchmark_statistics, _benchmark_reference
 from maxcover import _benchmark_quality_associations, _benchmark_performance_associations
+from maxcover import _benchmark_quality
 
 
 PICKLE_CHECK = r"""
@@ -92,7 +93,7 @@ class BenchmarkModuleTests(unittest.TestCase):
 
     def test_internal_modules_do_not_import_the_facade(self) -> None:
         leaf_names = ("_benchmark_reference.py", "_benchmark_quality_associations.py",
-                      "_benchmark_performance_associations.py")
+                      "_benchmark_performance_associations.py", "_benchmark_quality.py")
         paths = [*(ROOT / "src/maxcover").glob("benchmark_*.py"),
                  *(ROOT / "src/maxcover" / name for name in leaf_names)]
         for path in paths:
@@ -101,7 +102,7 @@ class BenchmarkModuleTests(unittest.TestCase):
                 if path.name in leaf_names:
                     forbidden.update({"benchmark_associations", "maxcover.benchmark_associations",
                                       "benchmark_artifacts", "maxcover.benchmark_artifacts"})
-                if path.name == "_benchmark_reference.py":
+                if path.name in {"_benchmark_reference.py", "_benchmark_quality.py"}:
                     forbidden.update({"benchmark_statistics", "maxcover.benchmark_statistics",
                                       "benchmark_artifacts", "maxcover.benchmark_artifacts"})
                 for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
@@ -137,6 +138,38 @@ class BenchmarkModuleTests(unittest.TestCase):
                     self.assertIs(getattr(benchmark_associations, name), getattr(module, name))
                     self.assertIs(getattr(benchmark, name), getattr(module, name))
             self.assertIs(module._ten_decimal, benchmark_statistics._ten_decimal)
+
+    def test_quality_exports_share_one_implementation(self) -> None:
+        for name in (
+            "_greedy_failure_statistics", "_LocalSearchPairAnalysis",
+            "_local_search_pair_analyses", "_local_search_recovery_statistics",
+            "_local_search_remaining_gap_statistics", "_deterministic_variant_units",
+            "_increment_heuristic_status",
+        ):
+            with self.subTest(name=name):
+                value = getattr(_benchmark_quality, name)
+                self.assertIs(getattr(benchmark_statistics, name), value)
+                self.assertIs(getattr(benchmark, name), value)
+        self.assertIs(_benchmark_quality.ALGORITHMS, benchmark_statistics.ALGORITHMS)
+
+    def test_pre_split_quality_pickle_remains_readable(self) -> None:
+        # Genuine protocol-4 object captured from 2c4c3de before the class moved.
+        from dataclasses import FrozenInstanceError
+        from test_benchmark_quality import known_rows
+
+        fixture = ROOT / "tests/fixtures/benchmark_quality/pair_protocol4.pickle"
+        restored = pickle.loads(fixture.read_bytes())
+        self.assertIs(type(restored), benchmark_statistics._LocalSearchPairAnalysis)
+        self.assertIs(type(restored), _benchmark_quality._LocalSearchPairAnalysis)
+        expected, = _benchmark_quality._local_search_pair_analyses(known_rows())
+        self.assertEqual(restored, expected)
+        self.assertEqual(restored.recoveries, (0.5, 1.0, 0.0))
+        self.assertEqual(restored.remaining_relative_gaps, (0.2, 0.0, 0.6))
+        self.assertFalse(hasattr(restored, "__dict__"))
+        with self.assertRaises(FrozenInstanceError):
+            restored.case_id = "changed"
+        for protocol in (4, 5):
+            self.assertEqual(pickle.loads(pickle.dumps(restored, protocol=protocol)), restored)
 
     def test_pre_split_projection_pickle_remains_readable(self) -> None:
         # Genuine protocol-4 object captured from ad13f19 before the class moved.
