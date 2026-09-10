@@ -159,3 +159,13 @@ python scripts/check.py
 并用基线重新生成的真实 pickle 验证当前读取；六函数、一类型和剩余语句的 AST 均一致。
 审阅记录位于 `results/quality_statistics_split/independent_review/review_report.md`。
 本轮只更新交付说明，源码、测试和输入沿用上述已验收版本；更新后再次独立复审再推送。
+
+PR #59 的 bot 随后发现一项有效 P2：通过 `python -m unittest tests.test_benchmark_modules`
+运行时，旧 pickle 测试对兄弟测试文件的导入依赖 discovery 添加的路径，导致
+`ModuleNotFoundError`。已改为在该测试中显式列出旧对象的全部预期字段，并增加清除
+`PYTHONPATH` 后仅运行目标方法的子进程回归；生产代码、固定 CSV 和旧 pickle 不变。
+模块入口与 discovery 入口各 9 项通过。独立复审重现了原错误，核对全部 17 个字段，
+并验证篡改实例数字段会使兼容断言失败、子进程只运行目标测试而不会递归。
+修复检查日志及独立复审材料保存在 `results/quality_statistics_split/bot_p2/`。
+修复后默认检查运行 481 项（133.226 秒），477 项通过、原四项可选检查跳过，
+mypy 的 42 个源码文件通过；推送后重新等待最新提交的 bot 审阅及远端 CI。

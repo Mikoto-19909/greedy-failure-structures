@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import os
 import pickle
 import subprocess
 import sys
@@ -155,13 +156,21 @@ class BenchmarkModuleTests(unittest.TestCase):
     def test_pre_split_quality_pickle_remains_readable(self) -> None:
         # Genuine protocol-4 object captured from 2c4c3de before the class moved.
         from dataclasses import FrozenInstanceError
-        from test_benchmark_quality import known_rows
 
         fixture = ROOT / "tests/fixtures/benchmark_quality/pair_protocol4.pickle"
         restored = pickle.loads(fixture.read_bytes())
         self.assertIs(type(restored), benchmark_statistics._LocalSearchPairAnalysis)
         self.assertIs(type(restored), _benchmark_quality._LocalSearchPairAnalysis)
-        expected, = _benchmark_quality._local_search_pair_analyses(known_rows())
+        expected = _benchmark_quality._LocalSearchPairAnalysis(
+            config_hash="config", case_id="case", family="uniform",
+            greedy_algorithm_id="greedy", local_search_algorithm_id="local_search",
+            instance_count=8,
+            greedy_completed_count=6, greedy_timeout_count=1, greedy_error_count=1,
+            local_search_completed_count=6, local_search_timeout_count=1,
+            local_search_error_count=1, valid_exact_reference_count=7,
+            greedy_failure_count=4, recoveries=(0.5, 1.0, 0.0),
+            remaining_relative_gaps=(0.2, 0.0, 0.6), full_recovery_count=1,
+        )
         self.assertEqual(restored, expected)
         self.assertEqual(restored.recoveries, (0.5, 1.0, 0.0))
         self.assertEqual(restored.remaining_relative_gaps, (0.2, 0.0, 0.6))
@@ -170,6 +179,17 @@ class BenchmarkModuleTests(unittest.TestCase):
             restored.case_id = "changed"
         for protocol in (4, 5):
             self.assertEqual(pickle.loads(pickle.dumps(restored, protocol=protocol)), restored)
+
+    def test_quality_pickle_supports_the_unittest_module_entrypoint(self) -> None:
+        completed = subprocess.run(
+            [sys.executable, "-m", "unittest",
+             "tests.test_benchmark_modules.BenchmarkModuleTests."
+             "test_pre_split_quality_pickle_remains_readable"],
+            cwd=ROOT, env={key: value for key, value in os.environ.items()
+                           if key != "PYTHONPATH"},
+            capture_output=True, text=True, encoding="utf-8", timeout=30,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
 
     def test_pre_split_projection_pickle_remains_readable(self) -> None:
         # Genuine protocol-4 object captured from ad13f19 before the class moved.
