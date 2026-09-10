@@ -14,7 +14,7 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from maxcover import benchmark
 from maxcover import benchmark_artifacts, benchmark_planning
-from maxcover import benchmark_associations, benchmark_statistics
+from maxcover import benchmark_associations, benchmark_statistics, _benchmark_reference
 
 
 PICKLE_CHECK = r"""
@@ -89,15 +89,33 @@ class BenchmarkModuleTests(unittest.TestCase):
         self.assertIn("PASS:", completed.stdout)
 
     def test_internal_modules_do_not_import_the_facade(self) -> None:
-        for path in (ROOT / "src/maxcover").glob("benchmark_*.py"):
+        paths = [*(ROOT / "src/maxcover").glob("benchmark_*.py"),
+                 ROOT / "src/maxcover/_benchmark_reference.py"]
+        for path in paths:
             with self.subTest(module=path.name):
+                forbidden = {"benchmark", "maxcover.benchmark"}
+                if path.name == "_benchmark_reference.py":
+                    forbidden.update({"benchmark_statistics", "maxcover.benchmark_statistics",
+                                      "benchmark_artifacts", "maxcover.benchmark_artifacts"})
                 for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
                     if isinstance(node, ast.ImportFrom):
-                        self.assertNotIn(node.module, {"benchmark", "maxcover.benchmark"})
+                        self.assertNotIn(node.module, forbidden)
                         if node.module in {None, "maxcover"}:
-                            self.assertNotIn("benchmark", [alias.name for alias in node.names])
+                            self.assertFalse({alias.name for alias in node.names} & forbidden)
                     elif isinstance(node, ast.Import):
-                        self.assertNotIn("maxcover.benchmark", [alias.name for alias in node.names])
+                        self.assertFalse({alias.name for alias in node.names} & forbidden)
+
+    def test_reference_exports_share_one_implementation(self) -> None:
+        for name in (
+            "_validate_certificate_bound", "_normalize_optima", "_reference_status_records",
+            "_reference_coverage_statistics", "_reference_censoring_bias_statistics",
+            "_reference_cutoff_sensitivity_statistics", "_REFERENCE_BIAS_METRICS",
+        ):
+            with self.subTest(name=name):
+                value = getattr(_benchmark_reference, name)
+                self.assertIs(getattr(benchmark_statistics, name), value)
+                self.assertIs(getattr(benchmark, name), value)
+        self.assertIs(_benchmark_reference.ALGORITHMS, benchmark_statistics.ALGORITHMS)
 
     def test_facade_aliases_remain_correct(self) -> None:
         for module, names in (
