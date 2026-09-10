@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import pickle
 import subprocess
 import sys
 import unittest
@@ -15,6 +16,7 @@ sys.path.insert(0, str(ROOT / "src"))
 from maxcover import benchmark
 from maxcover import benchmark_artifacts, benchmark_planning
 from maxcover import benchmark_associations, benchmark_statistics, _benchmark_reference
+from maxcover import _benchmark_quality_associations, _benchmark_performance_associations
 
 
 PICKLE_CHECK = r"""
@@ -89,11 +91,16 @@ class BenchmarkModuleTests(unittest.TestCase):
         self.assertIn("PASS:", completed.stdout)
 
     def test_internal_modules_do_not_import_the_facade(self) -> None:
+        leaf_names = ("_benchmark_reference.py", "_benchmark_quality_associations.py",
+                      "_benchmark_performance_associations.py")
         paths = [*(ROOT / "src/maxcover").glob("benchmark_*.py"),
-                 ROOT / "src/maxcover/_benchmark_reference.py"]
+                 *(ROOT / "src/maxcover" / name for name in leaf_names)]
         for path in paths:
             with self.subTest(module=path.name):
                 forbidden = {"benchmark", "maxcover.benchmark"}
+                if path.name in leaf_names:
+                    forbidden.update({"benchmark_associations", "maxcover.benchmark_associations",
+                                      "benchmark_artifacts", "maxcover.benchmark_artifacts"})
                 if path.name == "_benchmark_reference.py":
                     forbidden.update({"benchmark_statistics", "maxcover.benchmark_statistics",
                                       "benchmark_artifacts", "maxcover.benchmark_artifacts"})
@@ -116,6 +123,30 @@ class BenchmarkModuleTests(unittest.TestCase):
                 self.assertIs(getattr(benchmark_statistics, name), value)
                 self.assertIs(getattr(benchmark, name), value)
         self.assertIs(_benchmark_reference.ALGORITHMS, benchmark_statistics.ALGORITHMS)
+
+    def test_association_exports_share_one_implementation(self) -> None:
+        for module, names in (
+            (_benchmark_quality_associations, ("_gap_density_association_statistics",
+                "_gap_overlap_association_statistics", "_gap_clustering_association_statistics")),
+            (_benchmark_performance_associations, ("_runtime_set_count_association_statistics",
+                "_runtime_k_association_statistics", "_search_nodes_dominated_ratio_association_statistics",
+                "_RuntimeKInstanceProjection")),
+        ):
+            for name in names:
+                with self.subTest(name=name):
+                    self.assertIs(getattr(benchmark_associations, name), getattr(module, name))
+                    self.assertIs(getattr(benchmark, name), getattr(module, name))
+            self.assertIs(module._ten_decimal, benchmark_statistics._ten_decimal)
+
+    def test_pre_split_projection_pickle_remains_readable(self) -> None:
+        # Genuine protocol-4 object captured from ad13f19 before the class moved.
+        fixture = ROOT / "tests/fixtures/benchmark_associations/projection_protocol4.pickle"
+        restored = pickle.loads(fixture.read_bytes())
+        self.assertIs(type(restored), benchmark_associations._RuntimeKInstanceProjection)
+        self.assertIs(type(restored), _benchmark_performance_associations._RuntimeKInstanceProjection)
+        self.assertEqual(restored, benchmark._RuntimeKInstanceProjection(
+            "config", "case", 2, "instance", "uniform", 3))
+        self.assertEqual(pickle.loads(pickle.dumps(restored)), restored)
 
     def test_facade_aliases_remain_correct(self) -> None:
         for module, names in (
