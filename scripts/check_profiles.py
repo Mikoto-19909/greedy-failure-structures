@@ -77,7 +77,7 @@ RESEARCH_MODULES = {
     'pilot': ('test_core_overlap_pilot',),
     'r1': ('test_greedy_failure_paths', 'test_research_verification'),
     'r1c': ('test_r1c_confirmation', 'test_r1c_report'),
-    'r2': ('test_r2_budget_grid', 'test_verification_completion'),
+    'r2': ('test_r2_budget_grid', 'test_verification_completion', 'test_r2_production_backends'),
     'r3': ('test_r3_feasibility', 'test_r3_confirmation'),
 }
 # Producer, verifier, and shared helper ownership; tools need no fake second solver.
@@ -111,6 +111,9 @@ ANALYSIS_OWNERS = {
     'validate_r2_budget_grid.py': 'r2',
     'validate_r2_budget_grid_fast.py': 'r2',
     'verification_completion.py': 'r2',
+    'r2_production_backends.py': 'r2',
+    'r2_numba_backend.py': 'r2',
+    'r2_cuda_backend.py': 'r2',
     'r3_feasibility.py': 'r3',
     'validate_r3_feasibility.py': 'r3',
     'r3_confirmation_inputs.py': 'r3',
@@ -197,6 +200,9 @@ REQUIRED_RESEARCH = {
         'test_verification_completion.FastVerificationTests.test_compiled_completion_matches_independent_small_cases',
         'test_verification_completion.FastVerificationTests.test_fallback_is_explicit_and_does_not_hide_calculation_errors',
         'test_verification_completion.FastVerificationTests.test_cli_spawn_resume_and_corruption_rejection',
+        'test_r2_production_backends.ProductionBackendTests.test_numba_exactness_and_bounds',
+        'test_r2_production_backends.ProductionBackendTests.test_timing_includes_solver_and_failures_are_not_success',
+        'test_r2_production_backends.ProductionBackendTests.test_cpu_spawn_resume_csv_and_completed_cuda_without_device',
     ),
     'r3_counterexamples': (
         'test_r3_counterexamples.R3CounterexampleTests.test_same_e0_pair_has_equal_degrees_and_opposite_first_step_outcomes',
@@ -241,4 +247,10 @@ REQUIRED_RESEARCH = {
 OPTIONAL_CASES = {
     'test_p3_oracle.OptionalOracleTests.test_oracle_matches_branch_and_bound_on_200_random_instances',
     'test_core_overlap_pilot.PilotStatisticsTest.test_chart_displays_failure_fractions_on_fixed_zero_to_one_axis',
+}
+
+# Explicit hardware checks; ordinary CPU discovery keeps declared optional skips.
+CUDA_CASES = {
+    'test_r2_production_cuda.CudaProductionTests.test_real_kernel_counts_boundaries_and_runtime_failure',
+    'test_r2_production_cuda.CudaProductionTests.test_real_cuda_owner_checkpoint_and_csv',
 }

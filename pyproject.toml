@@ -17,6 +17,8 @@ oracle = ["ortools==9.15.6755"]
 typecheck = ["mypy==2.3.0"]
 test = ["pytest>=8.0", "pytest-xdist>=3.5"]
 fast-verification = ["numba==0.67.0", "numpy==2.3.5"]
+production-cpu = ["numba==0.67.0", "numpy==2.3.5"]
+production-cuda = ["cupy-cuda12x==14.2.0", "numpy==2.3.5", "nvidia-cuda-runtime-cu12==12.9.79", "nvidia-cuda-nvrtc-cu12==12.9.86"]
 
 [project.scripts]
 maxcover = "maxcover.cli:main"

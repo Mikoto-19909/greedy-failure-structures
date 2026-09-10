@@ -2,6 +2,7 @@
 
 可选 CPU 前缀补全验证见[快速验证指南](../docs/r2_fast_verification.zh-CN.md)。
 原 Python 验证入口和默认行为保持不变；加速入口与已冻结的 DUAL 依赖分开。
+可选 Python/Numba/CUDA 生产及其计时、恢复边界见[生产后端指南](../docs/r2_production_backends.zh-CN.md)。
 
 R2 用独立定长原图扫描多个预算，输出穷举参考、规范最优见证和机制诊断。
 研究边界见[一体化计划](../docs/r2_r3_integrated_plan.zh-CN.md)。R3 确认实验不属于此入口。
