@@ -178,9 +178,15 @@ def run(design, output, *, workers=4, resume=False, stop_after=None,
         if len(done) % 10 == 0 or len(done) == len(design["tasks"]):
             print(f"R2 computed {len(done)}/{len(design['tasks'])}", flush=True)
 
-    def backend_event(event):
-        with (output / "production_backend.jsonl").open("a", encoding="utf-8") as handle:
-            handle.write(json.dumps(event, ensure_ascii=False) + "\n")
+    def backend_event(event, *, error=None):
+        try:
+            with (output / "production_backend.jsonl").open("a", encoding="utf-8") as handle:
+                handle.write(json.dumps(event, ensure_ascii=False) + "\n")
+        except OSError as logging_error:
+            if error is None:
+                raise
+            error.add_note(f"Could not append production_backend.jsonl: "
+                           f"{type(logging_error).__name__}: {logging_error}")
 
     if pending:
         write_json(output / "run_status.json", {"computed": 0, "reused": len(completed), "complete": False,
@@ -202,9 +208,10 @@ def run(design, output, *, workers=4, resume=False, stop_after=None,
                 try:
                     for record, event in results:
                         if record is None:
-                            backend_event(event)
-                            raise RuntimeError(f"{production_backend} production failed for {event['graph_id']}: "
-                                               f"{event['error_type']}: {event['error']}")
+                            failure = RuntimeError(f"{production_backend} production failed for {event['graph_id']}: "
+                                                   f"{event['error_type']}: {event['error']}")
+                            backend_event(event, error=failure)
+                            raise failure
                         save(record)
                         backend_event(event)
                 finally:
@@ -212,7 +219,7 @@ def run(design, output, *, workers=4, resume=False, stop_after=None,
             except Exception as error:
                 backend_event({"status": "failed", "requested_backend": production_backend,
                                "error_type": type(error).__name__, "error": str(error),
-                               "wall_seconds": time.perf_counter() - started})
+                               "wall_seconds": time.perf_counter() - started}, error=error)
                 raise
     entry = {"computed": len(pending), "reused": len(completed), "complete": len(done) == len(design["tasks"]),
              "wall_seconds": time.perf_counter() - started, "workers": workers}

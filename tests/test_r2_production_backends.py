@@ -7,6 +7,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import traceback
 import types
 import unittest
 from unittest.mock import patch
@@ -75,6 +76,76 @@ class ProductionBackendTests(unittest.TestCase):
             events = [json.loads(s) for s in (output/'production_backend.jsonl').read_text().splitlines()]
             self.assertFalse(any(e['status']=='complete' for e in events))
             self.assertEqual(json.loads((output/'execution.jsonl').read_text().splitlines()[-1])['status'], 'interrupted')
+
+    def test_failure_logging_preserves_primary_error_and_resume(self):
+        design = make_design('fixture', (4,), (2,), 2, 0)
+        for failure in ('checkpoint', 'worker', 'completion_log'):
+            with self.subTest(failure=failure), tempfile.TemporaryDirectory() as tmp:
+                output = Path(tmp)/'run'
+                original_open, original_write = Path.open, production.write_json
+                primary = OSError('checkpoint replace failed')
+                logging_broken, calls, saved = False, 0, {}
+
+                def solve(masks, mode, original):
+                    nonlocal calls, logging_broken
+                    calls += 1
+                    if failure == 'worker' and calls == 2:
+                        logging_broken = True
+                        raise ValueError('worker solve failed')
+                    return original(masks), {'requested_backend':mode, 'actual_backend':'python'}
+
+                def write(path, value):
+                    nonlocal logging_broken
+                    graph = path.parent.name == 'graphs'
+                    second = graph and path.stem == design['tasks'][1]['base_graph_id']
+                    if second and failure == 'checkpoint':
+                        logging_broken = True
+                        raise primary
+                    original_write(path, value)
+                    if graph:
+                        saved[path.name] = path.read_bytes()
+                    if second and failure == 'completion_log':
+                        logging_broken = True
+
+                def opened(path, mode='r', *args, **kwargs):
+                    if logging_broken and path.name == 'production_backend.jsonl' and mode == 'a':
+                        raise PermissionError('backend log append denied')
+                    return original_open(path, mode, *args, **kwargs)
+
+                caught = None
+                with patch.object(backends, 'solve_optima', side_effect=solve), \
+                        patch.object(production, 'write_json', side_effect=write), \
+                        patch.object(Path, 'open', new=opened):
+                    try:
+                        production.run(design, output, workers=1, production_backend='numba')
+                    except Exception as error:
+                        caught = error
+                if failure == 'checkpoint':
+                    self.assertIs(caught, primary)
+                elif failure == 'worker':
+                    self.assertIsInstance(caught, RuntimeError)
+                    self.assertIn('ValueError: worker solve failed', str(caught))
+                else:
+                    self.assertIsInstance(caught, PermissionError)
+                self.assertTrue(any('PermissionError: backend log append denied' in note
+                                    for note in getattr(caught, '__notes__', ())))
+                self.assertIn('PermissionError: backend log append denied',
+                              ''.join(traceback.format_exception(caught)))
+                self.assertFalse(read_json(output/'run_status.json')['complete'])
+                events = [json.loads(line) for line in (output/'production_backend.jsonl').read_text().splitlines()]
+                self.assertEqual([event['status'] for event in events], ['started', 'complete'])
+                self.assertEqual(json.loads((output/'execution.jsonl').read_text().splitlines()[-1])['status'], 'interrupted')
+                expected_saved = 2 if failure == 'completion_log' else 1
+                self.assertEqual(len(saved), expected_saved)
+                with patch.object(production, 'evaluate_task', wraps=production.evaluate_task) as solver:
+                    resumed = production.run(design, output, workers=1, resume=True)
+                    self.assertEqual(solver.call_count, 2-expected_saved)
+                self.assertEqual((resumed['computed'], resumed['reused'], resumed['complete']),
+                                 (2-expected_saved, expected_saved, True))
+                for name, content in saved.items():
+                    self.assertEqual((output/'graphs'/name).read_bytes(), content)
+                for record in load_records(output, design):
+                    verify_graph(record, record['task'], design['diagnostics'])
 
     def test_cpu_fallback_only_covers_dependency_loading(self):
         with patch.object(backends, '_numba_backend', return_value=(None, 'missing dependency')):
