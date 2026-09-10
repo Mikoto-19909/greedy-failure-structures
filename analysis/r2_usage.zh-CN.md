@@ -7,7 +7,7 @@
 R2 用独立定长原图扫描多个预算，输出穷举参考、规范最优见证和机制诊断。
 研究边界见[一体化计划](../docs/r2_r3_integrated_plan.zh-CN.md)。R3 确认实验不属于此入口。
 
-## 环境与执行顺序
+## 环境与当前用法
 
 使用 Python 3.12、NumPy 2.3.5、SciPy 1.18.1、Matplotlib 3.11.1，以及仓库检查依赖。
 只重建与验证数据表时可用 `analyze --no-plot`，无需安装可选 Matplotlib；默认分析命令仍生成曲线。
@@ -23,7 +23,30 @@ R2 用独立定长原图扫描多个预算，输出穷举参考、规范最优�
 git restore --source=cef5b92954571423b10a0c3b56947a4b26400d3c --worktree -- analysis/r2_f2_config.json
 ```
 
-下面保留原预检、定版与运行顺序，供理解各阶段；已有批次按上文恢复原配置。
+当前处于[稳定化阶段](../docs/stabilization_plan.zh-CN.md)，以下保留操作说明，
+不表示要重跑已完成实验。读取报告与证据不需要执行生产或预检。
+
+确需从固定 F2 配置重新运行时，选择尚不存在的输出目录；下例使用 `results/r2_reproduction`。
+`analyze` 会独立核验当前原图并重建表，因此此路径不必先重复运行完整原图验证：
+
+```console
+python analysis/r2_budget_grid.py run --config analysis/r2_f2_config.json --output results/r2_reproduction --workers 4
+python analysis/r2_budget_grid.py analyze --output results/r2_reproduction --no-plot
+python analysis/validate_r2_budget_grid.py --output results/r2_reproduction --summaries-only
+```
+
+只检查已有原图、不重建表时，运行
+`python analysis/validate_r2_budget_grid.py --output <已有批次目录> --workers 4`。
+只重建表时，执行上述后两步并使用已有目录；恢复生产则给 `run` 增加 `--resume`。
+所有命令都遵守原累计预算；`analyze` 不写独立 `verification.json`，
+若流程需要单独保存该验证报告，再运行完整验证命令并计入其耗时。
+可选加速参数与安装步骤见文首两份指南；历史性能复现使用
+[加速档案](acceleration_delivery.zh-CN.md)指定的源码、环境及输入。
+
+## 历史预检与 F2 定版流程
+
+下面保留原阶段顺序，供理解和明确授权后的复现使用。已有 F2 批次直接使用原配置，
+无需重新预检或定版；不要对已有正式目录直接执行这组命令。
 
 ```console
 python analysis/r2_budget_grid.py preflight --output results/r2_preflight_v1 --workers 4
@@ -70,5 +93,5 @@ python analysis/r2_budget_grid.py run --config analysis/r2_f2_config.json --outp
 
 运行命令将检查点和结果写入本机 `results/`，不自动发布。已完成批次的远端证据见[R2 报告](r2_exploration_report.zh-CN.md)。
 
-上列命令保留原始阶段顺序。复现已完成批次时直接使用已提交的 F2 配置，从 `run` 开始，
+上列历史命令保留原始阶段顺序。复现已完成批次时直接恢复固定证据中的 F2 配置，从 `run` 开始，
 并选择新的结果目录；无需重新冻结已存在的配置。只重建汇总时，可先从证据快照恢复对应目录。

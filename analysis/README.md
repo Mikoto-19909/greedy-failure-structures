@@ -1,5 +1,9 @@
 # Research analysis
 
+New research experiments and features are paused during the
+[stabilization phase](../docs/stabilization_plan.zh-CN.md). Published results and
+their original designs remain the reference; the current work is maintenance.
+
 The [CPU/Numba/CUDA delivery summary](acceleration_delivery.zh-CN.md) links the
 existing measured results and complete archives without duplicating large data
 in the source tree. See the [optional CPU verification guide](../docs/r2_fast_verification.zh-CN.md).

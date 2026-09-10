@@ -3,6 +3,10 @@
 Use this index to distinguish the current research checkpoint from runnable
 examples, method checks, and broader exploratory workflows.
 
+Current maintenance work follows the [stabilization plan](stabilization_plan.zh-CN.md).
+New features and research experiments are paused; the first delivery covers a bounded
+structure review and documentation cleanup. Existing reproduction commands remain available.
+
 ## Current research
 
 Open the [interactive research showcase](greedy_failure_showcase.html) in a browser
@@ -38,7 +42,9 @@ L5 DUAL implementations, full fixed-corpus comparison and published evidence are
 see the [final R4 report](../analysis/r4_final_research_report.zh-CN.md). Larger-instance work remains unexecuted.
 The existing optional acceleration results are organized into
 [CPU verification PR #56](https://github.com/Mikoto-19909/greedy-failure-structures/pull/56) and
-[CPU/CUDA production PR #57](https://github.com/Mikoto-19909/greedy-failure-structures/pull/57) for separate review and delivery. The
+[CPU/CUDA production PR #57](https://github.com/Mikoto-19909/greedy-failure-structures/pull/57), both merged. Start with
+the [R2 usage guide](../analysis/r2_usage.zh-CN.md) for current run, resume and verification commands;
+the [DUAL guide](../analysis/r4_dual_usage.zh-CN.md) explains frozen-source reproduction. The
 [workflow speed report](../analysis/gate_speed_comparison_report.md) separately
 measures experiment commands and local delivery steps after the gate removal.
 
@@ -72,7 +78,8 @@ revisits existing instance families. Both retain schema v1 for compatibility.
 
 - [`greedy_failure_research_plan.zh-CN.md`](greedy_failure_research_plan.zh-CN.md):
   literature-grounded next steps, staged experiments, and verification criteria
-  (Simplified Chinese; R1, R2, R3 and the first R4 calibration completed, larger-instance work pending)
+  (Simplified Chinese; R1/R1c, R2/R3 and R4 prefix/DUAL work completed, larger-instance work unstarted;
+  new experiments are paused during stabilization)
 - [`r2_r3_integrated_plan.zh-CN.md`](r2_r3_integrated_plan.zh-CN.md):
   R1 prerequisites, R2 preparation and exploration with an F2 design freeze,
   and conditional R3 feasibility probes leading to F3 and independent confirmation;
