@@ -16,6 +16,7 @@ dependencies = []
 oracle = ["ortools==9.15.6755"]
 typecheck = ["mypy==2.3.0"]
 test = ["pytest>=8.0", "pytest-xdist>=3.5"]
+fast-verification = ["numba==0.67.0", "numpy==2.3.5"]
 
 [project.scripts]
 maxcover = "maxcover.cli:main"

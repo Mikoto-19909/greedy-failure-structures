@@ -152,17 +152,22 @@ def exchange(
                     "rounds": rounds}
 
 
-def expected_path(base: dict[str, Any], design: dict[str, Any]) -> dict[str, Any]:
+def expected_path(base: dict[str, Any], design: dict[str, Any], *,
+                  completion_backend: str = "python") -> dict[str, Any]:
+    solve = best_completion
+    if completion_backend != "python":
+        from verification_completion import get_completion_solver
+        solve = get_completion_solver(completion_backend)
     sets = [set(elements) for elements in base["sets"]]
     k = base["k"]
     limit = design["max_completions"]
-    optimum, witness, count, optimal_count = best_completion(sets, k, [], limit)
+    optimum, witness, count, optimal_count = solve(sets, k, [], limit)
     prefixes: list[dict[str, Any]] = []
     ties: list[dict[str, Any]] = []
     prefix: list[int] = []
     first_failure: int | None = None
     while True:
-        completed, completed_selection, completed_count, _ = best_completion(sets, k, prefix, limit)
+        completed, completed_selection, completed_count, _ = solve(sets, k, prefix, limit)
         prefixes.append({"step": len(prefix), "prefix": list(prefix),
                          "coverage": coverage(sets, prefix), "optimal_completion": completed,
                          "completion_selected": completed_selection,
@@ -177,7 +182,7 @@ def expected_path(base: dict[str, Any], design: dict[str, Any]) -> dict[str, Any
         candidates = sorted(index for index, gain in gains.items() if gain == maximum)
         chosen = candidates[0]
         for candidate in candidates:
-            value, selection, candidate_count, _ = best_completion(sets, k, prefix + [candidate], limit)
+            value, selection, candidate_count, _ = solve(sets, k, prefix + [candidate], limit)
             ties.append({"step": len(prefix) + 1, "candidate": candidate,
                          "marginal_gain": maximum, "chosen": candidate == chosen,
                          "optimal_completion": value, "completion_selected": selection,

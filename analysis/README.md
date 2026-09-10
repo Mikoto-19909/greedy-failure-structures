@@ -1,5 +1,9 @@
 # Research analysis
 
+The [CPU/Numba/CUDA delivery summary](acceleration_delivery.zh-CN.md) links the
+existing measured results and complete archives without duplicating large data
+in the source tree. See the [optional CPU verification guide](../docs/r2_fast_verification.zh-CN.md).
+
 The [R2 exploration report](r2_exploration_report.zh-CN.md) completes the fixed-size
 budget grid: 1,800 source graphs, 13,000 budget records and independent verification.
 The [F2 design](r2_exploration_design.zh-CN.md) and [usage guide](r2_usage.zh-CN.md)
