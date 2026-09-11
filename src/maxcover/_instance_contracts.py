@@ -338,6 +338,233 @@ def _validate_paired_uniform_record_parameters(
         )
 
 
+def _validate_instance_family(
+    record: InstanceRecord,
+    parameters: Mapping[str, object],
+    certificate_values: tuple[object, ...],
+) -> None:
+    """Check family rules after common validation and normalization."""
+    if record.family == "adversarial" and record.generator_version == 1:
+        if record.instance_origin != "constructed" or not record.is_adversarial:
+            raise ValueError("legacy adversarial instances must be constructed/adversarial")
+        if (
+            record.adversarial_severity is not None
+            or record.realized_trap_fraction is not None
+        ):
+            raise ValueError("legacy adversarial structure fields must remain unknown")
+        if any(value is not None for value in certificate_values):
+            raise ValueError("legacy adversarial certificate fields must remain unknown")
+        if "construction_version" in parameters:
+            raise ValueError("legacy adversarial parameters must omit construction_version")
+        if record.coupling_pair_id is not None or record.coupling_seed is not None:
+            raise ValueError("legacy adversarial coupling fields must remain unknown")
+    elif record.family == "adversarial" and record.generator_version == 2:
+        if record.instance_origin != "constructed":
+            raise ValueError("version-2 adversarial instances must be constructed")
+        required_parameters = (
+            "block_size",
+            "distractor_count",
+            "construction_version",
+            "trap_count",
+            "coupling_seed",
+        )
+        if any(name not in parameters for name in required_parameters):
+            raise ValueError("version-2 adversarial parameters are incomplete")
+        block_size = parameters["block_size"]
+        distractor_count = parameters["distractor_count"]
+        construction_version = parameters["construction_version"]
+        trap_count = parameters["trap_count"]
+        parameter_coupling_seed = parameters["coupling_seed"]
+        if (
+            isinstance(construction_version, bool)
+            or not isinstance(construction_version, int)
+            or construction_version != 2
+        ):
+            raise ValueError("version-2 construction_version must be integer 2")
+        if (
+            isinstance(block_size, bool)
+            or not isinstance(block_size, int)
+            or isinstance(distractor_count, bool)
+            or not isinstance(distractor_count, int)
+            or isinstance(trap_count, bool)
+            or not isinstance(trap_count, int)
+            or isinstance(parameter_coupling_seed, bool)
+            or not isinstance(parameter_coupling_seed, int)
+        ):
+            raise ValueError("version-2 adversarial parameters are invalid")
+        if block_size < 4 or distractor_count < 0:
+            raise ValueError("version-2 adversarial parameters are outside bounds")
+        if not block_size // 2 + 1 <= trap_count <= block_size:
+            raise ValueError("version-2 trap_count is outside the legal range")
+        if (
+            record.universe_size != 2 * block_size
+            or record.set_count != 3 + distractor_count
+            or record.k != 2
+        ):
+            raise ValueError("version-2 adversarial dimensions conflict with block_size")
+        expected_severity = (block_size - trap_count) / (2 * block_size)
+        expected_fraction = trap_count / block_size
+        if record.adversarial_severity is None or not math.isclose(
+            record.adversarial_severity,
+            expected_severity,
+            rel_tol=1e-12,
+            abs_tol=1e-15,
+        ):
+            raise ValueError("version-2 adversarial severity conflicts with parameters")
+        if record.realized_trap_fraction is None or not math.isclose(
+            record.realized_trap_fraction,
+            expected_fraction,
+            rel_tol=1e-12,
+            abs_tol=1e-15,
+        ):
+            raise ValueError("version-2 trap fraction conflicts with parameters")
+        if record.is_adversarial != (expected_severity > 0):
+            raise ValueError("version-2 adversarial classification conflicts with severity")
+        if record.coupling_pair_id is None or record.coupling_seed is None:
+            raise ValueError("version-2 adversarial coupling fields are required")
+        if parameters["coupling_seed"] != record.coupling_seed:
+            raise ValueError("version-2 coupling seed conflicts with parameters")
+        if record.research_question_id != "adversarial_severity":
+            raise ValueError("version-2 research question ID is invalid")
+        if (
+            record.known_optimum != record.universe_size
+            or record.optimum_source != "constructed_certificate"
+            or record.optimum_selected != (1, 2)
+            or record.proof_kind != "covers_universe"
+        ):
+            raise ValueError("version-2 adversarial certificate is invalid")
+    elif record.family == "adversarial":
+        raise ValueError("unsupported adversarial generator version")
+    elif record.family in P4_3_RESEARCH_QUESTION_IDS:
+        _validate_p4_3_record_parameters(record, parameters)
+        expected_origin = P4_3_INSTANCE_ORIGINS[record.family]
+        expected_question = P4_3_RESEARCH_QUESTION_IDS[record.family]
+        if record.generator_version != 1:
+            raise ValueError("P4.3 instance families require generator version 1")
+        if record.instance_origin != expected_origin:
+            raise ValueError(
+                f"{record.family} instances must have {expected_origin} origin"
+            )
+        if record.is_adversarial:
+            raise ValueError("P4.3 instance families are not adversarial")
+        if (
+            record.adversarial_severity is not None
+            or record.realized_trap_fraction is not None
+        ):
+            raise ValueError("P4.3 adversarial structure fields must remain unknown")
+        if record.research_question_id != expected_question:
+            raise ValueError(f"{record.family} research question ID is invalid")
+
+        if record.family in P4_3_COUPLED_FAMILIES:
+            if record.coupling_pair_id is None or record.coupling_seed is None:
+                raise ValueError(f"{record.family} coupling fields are required")
+            if parameters.get("coupling_seed") != record.coupling_seed:
+                raise ValueError(
+                    f"{record.family} coupling seed conflicts with parameters"
+                )
+        else:
+            parameter_seed = parameters.get("coupling_seed")
+            if parameter_seed is None:
+                if (
+                    record.coupling_pair_id is not None
+                    or record.coupling_seed is not None
+                ):
+                    raise ValueError(
+                        "unpaired fixed_size coupling fields must remain unknown"
+                    )
+            elif (
+                record.coupling_pair_id is None
+                or record.coupling_seed is None
+                or parameter_seed != record.coupling_seed
+            ):
+                raise ValueError(
+                    "fixed_size coupling seed conflicts with parameters"
+                )
+
+        if record.family == "dominated_heavy":
+            anchor_count = parameters.get("anchor_count")
+            anchor_size = parameters.get("anchor_size")
+            child_count = parameters.get("child_count")
+            if any(
+                isinstance(value, bool) or not isinstance(value, int)
+                for value in (anchor_count, anchor_size, child_count)
+            ):
+                raise ValueError("dominated_heavy certificate parameters are invalid")
+            assert isinstance(anchor_count, int)
+            assert isinstance(anchor_size, int)
+            assert isinstance(child_count, int)
+            if (
+                anchor_count <= 0
+                or anchor_size <= 0
+                or child_count < 0
+                or record.k > anchor_count
+            ):
+                raise ValueError("dominated_heavy certificate parameters are outside bounds")
+            if (
+                record.universe_size != anchor_count * anchor_size
+                or record.set_count != anchor_count * (child_count + 1)
+            ):
+                raise ValueError("dominated_heavy dimensions conflict with parameters")
+            if (
+                record.known_optimum != record.k * anchor_size
+                or record.optimum_source != "constructed_certificate"
+                or record.optimum_selected != tuple(range(record.k))
+                or record.proof_kind != "disjoint_anchors"
+            ):
+                raise ValueError("dominated_heavy certificate is invalid")
+        elif any(value is not None for value in certificate_values):
+            raise ValueError(
+                f"{record.family} known optimum certificate fields must remain unknown"
+            )
+    elif (
+        record.family == "uniform"
+        and (
+            "paired_set_size" in parameters
+            or record.research_question_id
+            == P4_3_RESEARCH_QUESTION_IDS["fixed_size"]
+        )
+    ):
+        _validate_paired_uniform_record_parameters(record, parameters)
+        if (
+            record.research_question_id
+            != P4_3_RESEARCH_QUESTION_IDS["fixed_size"]
+        ):
+            raise ValueError(
+                "paired uniform research question ID is required"
+            )
+        if record.generator_version != 1:
+            raise ValueError("paired uniform controls require generator version 1")
+        if record.instance_origin != "stochastic" or record.is_adversarial:
+            raise ValueError(
+                "paired uniform controls must be stochastic and non-adversarial"
+            )
+        if record.adversarial_severity is not None or record.realized_trap_fraction is not None:
+            raise ValueError(
+                "paired uniform adversarial structure fields must remain unknown"
+            )
+        if record.coupling_pair_id is None or record.coupling_seed is None:
+            raise ValueError("paired uniform coupling fields are required")
+        if parameters.get("coupling_seed") != record.coupling_seed:
+            raise ValueError(
+                "paired uniform coupling seed conflicts with parameters"
+            )
+        if any(value is not None for value in certificate_values):
+            raise ValueError(
+                "paired uniform certificate fields must remain unknown"
+            )
+    elif record.instance_origin == "stochastic":
+        if record.is_adversarial:
+            raise ValueError("stochastic instances cannot be adversarial")
+        if record.adversarial_severity is not None or record.realized_trap_fraction is not None:
+            raise ValueError("stochastic adversarial structure fields must remain unknown")
+        if record.coupling_pair_id is not None or record.coupling_seed is not None:
+            raise ValueError("stochastic coupling fields must remain unknown")
+        if record.research_question_id is not None:
+            raise ValueError("stochastic research question ID must remain unknown")
+        if any(value is not None for value in certificate_values):
+            raise ValueError("stochastic certificate fields must remain unknown")
+
+
 @dataclass(frozen=True, slots=True)
 class InstanceRecord:
     """One exact instance-level structure record shared by CSV and reporting."""
@@ -584,225 +811,7 @@ class InstanceRecord:
                 "disjoint_anchors proof requires a dominated_heavy instance"
             )
 
-        if self.family == "adversarial" and self.generator_version == 1:
-            if self.instance_origin != "constructed" or not self.is_adversarial:
-                raise ValueError("legacy adversarial instances must be constructed/adversarial")
-            if (
-                self.adversarial_severity is not None
-                or self.realized_trap_fraction is not None
-            ):
-                raise ValueError("legacy adversarial structure fields must remain unknown")
-            if any(value is not None for value in certificate_values):
-                raise ValueError("legacy adversarial certificate fields must remain unknown")
-            if "construction_version" in parameters:
-                raise ValueError("legacy adversarial parameters must omit construction_version")
-            if self.coupling_pair_id is not None or self.coupling_seed is not None:
-                raise ValueError("legacy adversarial coupling fields must remain unknown")
-        elif self.family == "adversarial" and self.generator_version == 2:
-            if self.instance_origin != "constructed":
-                raise ValueError("version-2 adversarial instances must be constructed")
-            required_parameters = (
-                "block_size",
-                "distractor_count",
-                "construction_version",
-                "trap_count",
-                "coupling_seed",
-            )
-            if any(name not in parameters for name in required_parameters):
-                raise ValueError("version-2 adversarial parameters are incomplete")
-            block_size = parameters["block_size"]
-            distractor_count = parameters["distractor_count"]
-            construction_version = parameters["construction_version"]
-            trap_count = parameters["trap_count"]
-            parameter_coupling_seed = parameters["coupling_seed"]
-            if (
-                isinstance(construction_version, bool)
-                or not isinstance(construction_version, int)
-                or construction_version != 2
-            ):
-                raise ValueError("version-2 construction_version must be integer 2")
-            if (
-                isinstance(block_size, bool)
-                or not isinstance(block_size, int)
-                or isinstance(distractor_count, bool)
-                or not isinstance(distractor_count, int)
-                or isinstance(trap_count, bool)
-                or not isinstance(trap_count, int)
-                or isinstance(parameter_coupling_seed, bool)
-                or not isinstance(parameter_coupling_seed, int)
-            ):
-                raise ValueError("version-2 adversarial parameters are invalid")
-            if block_size < 4 or distractor_count < 0:
-                raise ValueError("version-2 adversarial parameters are outside bounds")
-            if not block_size // 2 + 1 <= trap_count <= block_size:
-                raise ValueError("version-2 trap_count is outside the legal range")
-            if (
-                self.universe_size != 2 * block_size
-                or self.set_count != 3 + distractor_count
-                or self.k != 2
-            ):
-                raise ValueError("version-2 adversarial dimensions conflict with block_size")
-            expected_severity = (block_size - trap_count) / (2 * block_size)
-            expected_fraction = trap_count / block_size
-            if self.adversarial_severity is None or not math.isclose(
-                self.adversarial_severity,
-                expected_severity,
-                rel_tol=1e-12,
-                abs_tol=1e-15,
-            ):
-                raise ValueError("version-2 adversarial severity conflicts with parameters")
-            if self.realized_trap_fraction is None or not math.isclose(
-                self.realized_trap_fraction,
-                expected_fraction,
-                rel_tol=1e-12,
-                abs_tol=1e-15,
-            ):
-                raise ValueError("version-2 trap fraction conflicts with parameters")
-            if self.is_adversarial != (expected_severity > 0):
-                raise ValueError("version-2 adversarial classification conflicts with severity")
-            if self.coupling_pair_id is None or self.coupling_seed is None:
-                raise ValueError("version-2 adversarial coupling fields are required")
-            if parameters["coupling_seed"] != self.coupling_seed:
-                raise ValueError("version-2 coupling seed conflicts with parameters")
-            if self.research_question_id != "adversarial_severity":
-                raise ValueError("version-2 research question ID is invalid")
-            if (
-                self.known_optimum != self.universe_size
-                or self.optimum_source != "constructed_certificate"
-                or self.optimum_selected != (1, 2)
-                or self.proof_kind != "covers_universe"
-            ):
-                raise ValueError("version-2 adversarial certificate is invalid")
-        elif self.family == "adversarial":
-            raise ValueError("unsupported adversarial generator version")
-        elif self.family in P4_3_RESEARCH_QUESTION_IDS:
-            _validate_p4_3_record_parameters(self, parameters)
-            expected_origin = P4_3_INSTANCE_ORIGINS[self.family]
-            expected_question = P4_3_RESEARCH_QUESTION_IDS[self.family]
-            if self.generator_version != 1:
-                raise ValueError("P4.3 instance families require generator version 1")
-            if self.instance_origin != expected_origin:
-                raise ValueError(
-                    f"{self.family} instances must have {expected_origin} origin"
-                )
-            if self.is_adversarial:
-                raise ValueError("P4.3 instance families are not adversarial")
-            if (
-                self.adversarial_severity is not None
-                or self.realized_trap_fraction is not None
-            ):
-                raise ValueError("P4.3 adversarial structure fields must remain unknown")
-            if self.research_question_id != expected_question:
-                raise ValueError(f"{self.family} research question ID is invalid")
-
-            if self.family in P4_3_COUPLED_FAMILIES:
-                if self.coupling_pair_id is None or self.coupling_seed is None:
-                    raise ValueError(f"{self.family} coupling fields are required")
-                if parameters.get("coupling_seed") != self.coupling_seed:
-                    raise ValueError(
-                        f"{self.family} coupling seed conflicts with parameters"
-                    )
-            else:
-                parameter_seed = parameters.get("coupling_seed")
-                if parameter_seed is None:
-                    if (
-                        self.coupling_pair_id is not None
-                        or self.coupling_seed is not None
-                    ):
-                        raise ValueError(
-                            "unpaired fixed_size coupling fields must remain unknown"
-                        )
-                elif (
-                    self.coupling_pair_id is None
-                    or self.coupling_seed is None
-                    or parameter_seed != self.coupling_seed
-                ):
-                    raise ValueError(
-                        "fixed_size coupling seed conflicts with parameters"
-                    )
-
-            if self.family == "dominated_heavy":
-                anchor_count = parameters.get("anchor_count")
-                anchor_size = parameters.get("anchor_size")
-                child_count = parameters.get("child_count")
-                if any(
-                    isinstance(value, bool) or not isinstance(value, int)
-                    for value in (anchor_count, anchor_size, child_count)
-                ):
-                    raise ValueError("dominated_heavy certificate parameters are invalid")
-                assert isinstance(anchor_count, int)
-                assert isinstance(anchor_size, int)
-                assert isinstance(child_count, int)
-                if (
-                    anchor_count <= 0
-                    or anchor_size <= 0
-                    or child_count < 0
-                    or self.k > anchor_count
-                ):
-                    raise ValueError("dominated_heavy certificate parameters are outside bounds")
-                if (
-                    self.universe_size != anchor_count * anchor_size
-                    or self.set_count != anchor_count * (child_count + 1)
-                ):
-                    raise ValueError("dominated_heavy dimensions conflict with parameters")
-                if (
-                    self.known_optimum != self.k * anchor_size
-                    or self.optimum_source != "constructed_certificate"
-                    or self.optimum_selected != tuple(range(self.k))
-                    or self.proof_kind != "disjoint_anchors"
-                ):
-                    raise ValueError("dominated_heavy certificate is invalid")
-            elif any(value is not None for value in certificate_values):
-                raise ValueError(
-                    f"{self.family} known optimum certificate fields must remain unknown"
-                )
-        elif (
-            self.family == "uniform"
-            and (
-                "paired_set_size" in parameters
-                or self.research_question_id
-                == P4_3_RESEARCH_QUESTION_IDS["fixed_size"]
-            )
-        ):
-            _validate_paired_uniform_record_parameters(self, parameters)
-            if (
-                self.research_question_id
-                != P4_3_RESEARCH_QUESTION_IDS["fixed_size"]
-            ):
-                raise ValueError(
-                    "paired uniform research question ID is required"
-                )
-            if self.generator_version != 1:
-                raise ValueError("paired uniform controls require generator version 1")
-            if self.instance_origin != "stochastic" or self.is_adversarial:
-                raise ValueError(
-                    "paired uniform controls must be stochastic and non-adversarial"
-                )
-            if self.adversarial_severity is not None or self.realized_trap_fraction is not None:
-                raise ValueError(
-                    "paired uniform adversarial structure fields must remain unknown"
-                )
-            if self.coupling_pair_id is None or self.coupling_seed is None:
-                raise ValueError("paired uniform coupling fields are required")
-            if parameters.get("coupling_seed") != self.coupling_seed:
-                raise ValueError(
-                    "paired uniform coupling seed conflicts with parameters"
-                )
-            if any(value is not None for value in certificate_values):
-                raise ValueError(
-                    "paired uniform certificate fields must remain unknown"
-                )
-        elif self.instance_origin == "stochastic":
-            if self.is_adversarial:
-                raise ValueError("stochastic instances cannot be adversarial")
-            if self.adversarial_severity is not None or self.realized_trap_fraction is not None:
-                raise ValueError("stochastic adversarial structure fields must remain unknown")
-            if self.coupling_pair_id is not None or self.coupling_seed is not None:
-                raise ValueError("stochastic coupling fields must remain unknown")
-            if self.research_question_id is not None:
-                raise ValueError("stochastic research question ID must remain unknown")
-            if any(value is not None for value in certificate_values):
-                raise ValueError("stochastic certificate fields must remain unknown")
+        _validate_instance_family(self, parameters, certificate_values)
 
     def to_csv_row(self) -> dict[str, object]:
         optional = lambda value: "" if value is None else value

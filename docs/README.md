@@ -149,6 +149,8 @@ cleanup remains conditional.
   family modules with stable random draws, ordered instances, and coupling
 - [`contracts_split_plan.zh-CN.md`](contracts_split_plan.zh-CN.md): statistical
   record groups with preserved CSV, public exports, and pickle compatibility
+- [`instance_family_validation_plan.zh-CN.md`](instance_family_validation_plan.zh-CN.md):
+  same-file InstanceRecord family validation extraction and compatibility checks
 
 ## Project policy and history
 
