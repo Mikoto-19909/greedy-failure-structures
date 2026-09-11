@@ -44,6 +44,8 @@ measures experiment commands and local delivery steps after the gate removal.
 
 ## Examples and compatibility checks
 
+- [Static review preparation](prepare_review.zh-CN.md): committed diffs, bounded source
+  context and unexecuted check candidates, without running the reviewed project
 - [`README.md`](../README.md): installation and the shortest runnable workflow
 - [`README.zh-CN.md`](../README.zh-CN.md): Simplified Chinese project overview
 - [`cli.md`](cli.md): validation, execution, resume, summarize, replay, and
