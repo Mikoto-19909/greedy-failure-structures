@@ -84,6 +84,42 @@ class PrepareReviewTests(unittest.TestCase):
         self.prepare(head=self.base)
         self.assertEqual((self.output / 'diff.patch').read_bytes(), b'')
 
+    def test_subdirectory_and_relative_config_preserve_whole_repository_package(self):
+        self.write('README.md', 'A change outside src.\n')
+        head = self.commit('root document')
+        expected = self.prepare(head=head)
+        expected_report = expected.read_bytes()
+        expected_patch = (self.output / 'diff.patch').read_bytes()
+        for setting in ('false', 'true'):
+            with self.subTest(relative=setting):
+                self.git('config', 'diff.relative', setting)
+                output = self.root / f'from-subdirectory-{setting}'
+                actual = review.prepare(self.repo / 'src', self.base, head, output)
+                self.assertEqual(actual.read_bytes(), expected_report)
+                self.assertEqual((output / 'diff.patch').read_bytes(), expected_patch)
+
+    def test_submodule_log_config_still_emits_a_gitlink_patch(self):
+        self.git('update-index', '--add', '--cacheinfo', f'160000,{self.base},vendor')
+        self.git('commit', '-qm', 'old gitlink')
+        base = self.git('rev-parse', 'HEAD')
+        self.git('update-index', '--cacheinfo', f'160000,{self.head},vendor')
+        self.git('commit', '-qm', 'new gitlink')
+        head = self.git('rev-parse', 'HEAD')
+        self.git('config', 'diff.submodule', 'log')
+        self.prepare(base=base, head=head)
+        raw = (self.output / 'diff.patch').read_bytes()
+        self.assertIn(f'-Subproject commit {self.base}'.encode(), raw)
+        self.assertIn(f'+Subproject commit {self.head}'.encode(), raw)
+        self.assertIn('vendor', self.git('apply', '--stat', str(self.output / 'diff.patch')))
+
+    def test_bare_repository_retains_committed_snapshots(self):
+        bare = self.root / 'bare.git'
+        subprocess.run(['git', 'clone', '-q', '--bare', str(self.repo), str(bare)],
+                       check=True, capture_output=True)
+        expected = self.prepare().read_bytes()
+        actual = review.prepare(bare, self.base, self.head, self.root / 'bare-output')
+        self.assertEqual(actual.read_bytes(), expected)
+
     def test_advanced_base_uses_common_ancestor(self):
         original_tree = self.git('rev-parse', f'{self.base}^{{tree}}')
         advanced = self.git('commit-tree', original_tree, '-p', self.base, '-m', 'advanced base')

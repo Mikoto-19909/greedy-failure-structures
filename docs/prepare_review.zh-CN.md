@@ -17,6 +17,8 @@ python scripts/prepare_review.py --repo ../greedy-failure-structures --base 0d37
 ```
 
 也可把 `--repo`、两个版本和输出换成另一处本地仓库与提交。路径含空格时加引号。
+`--repo` 可以指向工作树根目录、其中的子目录或 bare 仓库；子目录输入会先归一到
+所属工作树根目录，差异始终覆盖整个仓库，不受 `diff.relative` 配置影响。
 每次使用新的输出目录；工具没有覆盖选项。成功退出码为 0，并打印 `review.md` 的位置；
 失败退出码为 1，错误写到标准错误。使用帮助用 `--help`。
 
@@ -29,6 +31,7 @@ python scripts/prepare_review.py --repo ../greedy-failure-structures --base 0d37
 - `review.md`：固定版本、按类型标注的差异、最大文件、定义位置、引用候选、
   静态测试 ID、已有检查入口及未核对事项。所有测试均未执行。
 - `diff.patch`：从实际比较起点到候选的完整 Git 差异，保留二进制变化，禁用外部 diff/textconv。
+  子模块固定以 gitlink 补丁表示，不受本地 `diff.submodule=log` 配置影响。
 - `snapshot/001.txt` 等：从 Git 对象直接读取的有限文本快照。
   报告给出原路径、base/head 标签和行号；base 标签指实际比较起点。
   编号文本文件避免创建目标源码中的链接、可执行文件、特殊路径和大小写冲突。

@@ -68,7 +68,7 @@ def tree(repo: Path, revision: str) -> dict[str, Entry]:
 
 def changes(repo: Path, start: str, head: str) -> tuple[list[Change], bytes]:
     options = ('--no-ext-diff', '--no-textconv', '--ignore-submodules=none',
-               '--find-renames', '--no-color')
+               '--find-renames', '--no-color', '--no-relative', '--submodule=short')
     names = git(repo, 'diff', *options, '--name-status', '-z', start, head, '--').split(b'\0')
     stats = iter(git(repo, 'diff', *options, '--numstat', '-z', start, head, '--').split(b'\0'))
     result = []
@@ -155,6 +155,9 @@ def imports(path: str, parsed: ast.Module) -> set[str]:
 
 def prepare(repo: Path, base: str, head: str, output: Path) -> Path:
     repo = repo.resolve(strict=True)
+    bare = git(repo, 'rev-parse', '--is-bare-repository').strip() == b'true'
+    root_option = '--absolute-git-dir' if bare else '--show-toplevel'
+    repo = Path(os.fsdecode(git(repo, 'rev-parse', root_option).rstrip(b'\n'))).resolve(strict=True)
     destination = output_path(repo, output)
     base_sha, head_sha = [git(repo, 'rev-parse', '--verify', '--end-of-options',
                                ref + '^{commit}').decode('ascii').strip() for ref in (base, head)]
