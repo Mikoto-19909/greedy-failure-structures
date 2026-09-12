@@ -1,5 +1,9 @@
 # 本地审查首版实施
 
+当前状态（2026-09-12）：PR #61 已合并为 `f4756aa9e746708e44b91b2371efd9280adf28ad`，
+合并后完整测试及复现矩阵通过。下文保留各轮历史记录；首版交付结束，三次真实 PR 效果
+试用留待使用阶段，见[开发收口说明](development_closeout.zh-CN.md)。
+
 2026-09-12，起点为 prepare 合并提交 `a31dd746891e1741c4876dbff63725c2fc1dc9e6`，
 实施工作树为 `wt-local-review`，分支 `codex/local-review`。
 依据工作区 `local-review-design-20260912/PLAN.zh-CN.md`；该原设计保留不改。
