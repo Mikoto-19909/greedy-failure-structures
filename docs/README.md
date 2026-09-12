@@ -46,6 +46,8 @@ measures experiment commands and local delivery steps after the gate removal.
 
 - [Static review preparation](prepare_review.zh-CN.md): committed diffs, bounded source
   context and unexecuted check candidates, without running the reviewed project
+- [Local checks and independent review](local_review.zh-CN.md): execute existing checks
+  in an isolated clone and collect a read-only model review before opening a PR
 - [`README.md`](../README.md): installation and the shortest runnable workflow
 - [`README.zh-CN.md`](../README.zh-CN.md): Simplified Chinese project overview
 - [`cli.md`](cli.md): validation, execution, resume, summarize, replay, and
