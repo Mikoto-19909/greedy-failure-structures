@@ -9,7 +9,11 @@
 指定给 `--python` 的解释器须安装 mypy、NumPy、Numba、SciPy；工具只核对依赖是否存在，
 不会安装或改用其他环境。版本要求以 CONTRIBUTING 和 pyproject.toml 为准。
 解释器路径转为绝对路径时保留符号链接，避免丢失虚拟环境的 pyvenv.cfg 与包环境。
-只应用于本人已授权运行的本地仓库。独立克隆避免影响活动工作树，本身不是不可信代码沙箱。
+必须已审阅并授权执行候选提交中的检查入口及其导入的代码。
+`--checks core/full` 执行的是候选提交里的 `scripts/check.py`，以当前用户权限运行；
+只有后续模型审阅步骤使用只读沙箱。独立克隆避免影响活动工作树，本身不是不可信代码沙箱。
+第三方 PR 即使已经下载为本地分支，运行检查仍等于执行第三方代码；未经信任核对时，
+应先只读查看改动，或在另行配置的受限环境中运行整个流程。
 
 从本工具工作树运行，例如：
 
@@ -20,6 +24,7 @@ python scripts/review_local.py --repo ../greedy-failure-structures --base main -
 `--base/--head` 可换成分支或完整提交；输出目录必须全新，父目录须已存在，
 且位于目标仓库及其登记工作树之外。未提交和暂存编辑不纳入审查。
 若需要精确比较区间，使用明确基线，不要默认本地 main 已同步远端。
+也可指定 `--base origin/main`；它使用本地保存的远端跟踪引用，不会更新远端状态。
 
 本机尚未把 Python 加入 PATH 时，可用解释器绝对路径启动；例如在 PowerShell 中：
 
@@ -36,13 +41,21 @@ Windows 会从 npm 的 Codex 启动器定位原生程序；非标准安装用 `-
 
 流程依次固定版本、检查登录、独立本地克隆、prepare、环境预检、现有检查、模型审阅。
 克隆不共享可写 Git 对象、索引或 worktree 元数据；禁用 clone/checkout 的钩子、全局配置和过滤器。
-目标必须有完整且本地可获取的历史；不自动 fetch。prepare 本身仍只读、不会执行目标代码。
+目标必须有完整且本地可获取的历史；不从网络远端 fetch。
+克隆后按固定 SHA 从本地源仓库补传请求的 base/head 及其历史，保存为克隆内的
+`refs/local-review/*` 引用，覆盖仅远端跟踪引用可达的提交。源仓库引用和索引不变。
+传递失败时在检查前返回 incomplete，详见 `transfer.log` / `transfer.stderr.log`。
+prepare 本身仍只读、不会执行目标代码。
 
 `--checks core` 为默认值，运行 `python -B scripts/check.py --profile core`。
 `--checks full` 运行原有 full profile。两者都不省略研究验证和 mypy。
+full 包含 CUDA 和可选用例，但不等于强制执行这些用例：当前检查入口仅在专用 cuda
+profile 中要求真实 CUDA，full 保留用例自身的条件跳过。缺 CUDA 不能直接推断 full 会失败。
 输出 `checks.log` / `checks.stderr.log`，保留实际退出码、命令和耗时。
 `summary.json` 中 `steps` 也保存预检与中断步骤。缺失安装包为 incomplete；
 已安装包的加载/运行错误仍可能表现为检查失败，需要阅读原始日志判定原因。
+`needs_attention` 只表示检查失败或模型提出问题，不区分环境故障与代码缺陷；
+尤其不要把 CUDA 驱动、动态库或可选依赖加载错误直接当成候选代码问题。
 原检查入口允许的可选跳过会保留在日志，不能据整体成功宣称这些检查已执行。
 
 检查时设置本次克隆的源码搜索路径并核对 `maxcover` 的解析位置，
@@ -57,7 +70,7 @@ Windows 会从 npm 的 Codex 启动器定位原生程序；非标准安装用 `-
 
 `--model` 可显式指定；否则只读取用户配置的 `model` 字段，不继承整个配置或主任务对话。
 首版使用现有 OpenAI/Codex 登录，不适配自定义提供商配置。
-报告记录请求模型；CLI 未给出实际模型信息时保持 unknown，不能据此宣称模型身份已核验。
+报告记录请求模型；当前实现的 `actual_model` 固定为 `unknown`，未提取或核验实际模型身份。
 可获取的用量来自 CLI 事件，不是费用估算。
 
 在 Windows 上显式使用已配置的 `windows.sandbox=elevated` 后端，并保持 read-only 权限。
@@ -82,7 +95,8 @@ Windows 会从 npm 的 Codex 启动器定位原生程序；非标准安装用 `-
 日志引用必须真实存在，程序只能验证定位，不能自动证明日志支持该问题。
 模型建议的新复现程序保持未执行状态，应由作者/审阅者随后核对和复现。
 即使 JSON 合法或 CLI 退出 0，缺失完成事件、上下文读取失败或阻断性缺口也不能记为成功。
-工具要求模型读取一次随机上下文标记，以识别基础读权限失败；该标记不能证明审阅完整或结论正确。
+工具要求模型读取一次随机上下文标记，以识别基础读权限失败；该标记只证明读过标记文件，
+不能证明读完 diff、审阅完整或结论正确。
 
 `--check-timeout` 默认 900 秒，`--review-timeout` 默认 600 秒，均可显式调整。
 超时或取消会终止该步骤的整个进程树；Windows 使用先挂起、加入 Job Object、再启动的方式，
@@ -101,4 +115,6 @@ python -m mypy --no-incremental scripts/review_local.py scripts/review_process.p
 
 合成仓库使用替代审阅进程验证调度与错误分类，不消耗真实模型用量。
 真实模型样例、平台限制与项目检查结果见[实施记录](local_review_plan.zh-CN.md)。
+POSIX symlink-venv 回归在 Windows 上跳过；只有 Linux 实际执行该用例的通过日志才是运行证据。
+Ubuntu CI 配置会选中该用例，但 Windows 检查通过及 Linux 平台视图 mypy 通过均不代表它已执行。
 后续真实 PR 试用应记录有效问题、误报、远端遗漏、耗时和用量；该效果评估尚未完成。

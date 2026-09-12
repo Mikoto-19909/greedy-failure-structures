@@ -247,6 +247,16 @@ def review_local(repo: Path, base: str, head: str, output: Path, python: str, co
                               'clone', '--no-local', '--no-hardlinks', '--no-checkout', '--', str(repo), str(checkout)], output)
         if clone['exit_code']:
             raise ValueError('local clone failed; see clone.stderr.log')
+        # Clone advertises heads/tags, which need not reach the requested commits.
+        # Transfer pinned objects from the local source, never its network remotes.
+        transfer = step('transfer', ['git', '-c', f'core.hooksPath={os.devnull}',
+                                    '-c', 'protocol.allow=never', '-c', 'protocol.file.allow=always',
+                                    '-C', str(checkout), 'fetch', '--no-tags', '--no-recurse-submodules',
+                                    '--no-auto-maintenance', '--no-write-fetch-head', '--', str(repo),
+                                    f"{target['requested_base_sha']}:refs/local-review/requested-base",
+                                    f"{target['head']}:refs/local-review/head"], output)
+        if transfer['exit_code']:
+            raise ValueError('pinned local revision transfer failed; see transfer.stderr.log')
         git(checkout, 'checkout', '--detach', target['head'])
         git(checkout, 'cat-file', '-e', target['base'] + '^{commit}')
         if (checkout / '.git/objects/info/alternates').exists():

@@ -149,6 +149,56 @@ class LocalReviewTests(unittest.TestCase):
         self.assertEqual(result['reviewer']['exit_code'], 0)
         self.assertEqual(result['checks']['argv'][-1], 'full')
 
+    def test_remote_tracking_only_revisions_are_transferred_with_their_history(self):
+        tree = local.git(self.repo, 'rev-parse', self.head + '^{tree}').decode().strip()
+        remote_base = local.git(self.repo, 'commit-tree', tree, '-p', self.base,
+                                '-m', 'remote base').decode().strip()
+        remote_head = local.git(self.repo, 'commit-tree', tree, '-p', self.base,
+                                '-m', 'remote head').decode().strip()
+        local.git(self.repo, 'update-ref', 'refs/remotes/origin/main', remote_base)
+        local.git(self.repo, 'update-ref', 'refs/remotes/origin/candidate', remote_head)
+        for oid in (remote_base, remote_head):
+            self.assertEqual(local.git(self.repo, 'for-each-ref', '--contains', oid,
+                                       'refs/heads', 'refs/tags'), b'')
+        refs = local.git(self.repo, 'show-ref')
+        index = (self.repo / '.git/index').read_bytes()
+        for name, base, head in (('base-only', 'origin/main', self.head),
+                                 ('head-only', self.base, 'origin/candidate'),
+                                 ('refs', 'origin/main', 'origin/candidate'),
+                                 ('shas', remote_base, remote_head)):
+            with self.subTest(name=name):
+                output = self.root / name
+                result = local.review_local(self.repo, base, head, output, sys.executable,
+                                             [sys.executable, str(self.stub)], 'test-model')
+                self.assertEqual(result['exit_code'], 0, result)
+                self.assertEqual(result['target']['requested_base_sha'], local.revision(self.repo, base))
+                self.assertEqual(result['target']['base'], self.base)
+                self.assertEqual(result['target']['head'], local.revision(self.repo, head))
+                for oid in (local.revision(self.repo, base), local.revision(self.repo, head), self.base):
+                    self.assertEqual(local.revision(output / 'checkout', oid), oid)
+                self.assertTrue((output / 'package/review.md').is_file())
+                self.assertFalse((output / 'checkout/.git/objects/info/alternates').exists())
+        self.assertEqual(local.git(self.repo, 'show-ref'), refs)
+        self.assertEqual((self.repo / '.git/index').read_bytes(), index)
+
+    def test_failed_pinned_transfer_stops_before_checks_and_review(self):
+        original = local.run_step
+
+        def missing_object(argv, *args, **kwargs):
+            if 'fetch' in argv:
+                argv = [arg if not arg.endswith(':refs/local-review/head')
+                        else '0' * 40 + ':refs/local-review/head' for arg in argv]
+            return original(argv, *args, **kwargs)
+
+        with patch.object(local, 'run_step', missing_object):
+            result = self.run_review()
+        self.assertEqual((result['state'], result['exit_code']), ('incomplete', 1))
+        self.assertNotEqual(result['steps']['transfer']['exit_code'], 0)
+        self.assertIn('transfer.stderr.log', ' '.join(result['reasons']))
+        self.assertIsNone(result['checks'])
+        self.assertIsNone(result['reviewer'])
+        self.assertFalse((self.output / 'package').exists())
+
     def test_invalid_reviewer_outputs_never_produce_success(self):
         for mode in ({'malformed': True}, {'no_read': True}, {'incomplete': True},
                      {'failed_event': True}, {'bad_event': True}, {'gap': True}, {'mutate': True}):
