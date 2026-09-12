@@ -199,7 +199,10 @@ def review_local(repo: Path, base: str, head: str, output: Path, python: str, co
                  review_timeout: float = 600) -> dict[str, Any]:
     if checks not in {'core', 'full'} or any(not math.isfinite(n) or n <= 0 for n in (check_timeout, review_timeout)):
         raise ValueError('invalid check profile or timeout')
-    python = str(Path(shutil.which(python) or python).resolve(strict=True))
+    # Dereferencing a venv's executable symlink selects the base environment.
+    python = os.path.abspath(shutil.which(python) or python)
+    if not Path(python).is_file():
+        raise ValueError('the selected Python executable does not exist')
     repo = repo.resolve(strict=True)
     bare = git(repo, 'rev-parse', '--is-bare-repository').strip() == b'true'
     repo = Path(os.fsdecode(git(repo, 'rev-parse', '--absolute-git-dir' if bare else '--show-toplevel').rstrip(b'\n')))

@@ -7,6 +7,7 @@ import sys
 import tempfile
 import time
 import unittest
+import venv
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -86,7 +87,30 @@ class LocalReviewTests(unittest.TestCase):
         finally:
             os.chdir(previous)
         self.assertEqual(result['exit_code'], 0, result)
-        self.assertEqual(Path(result['checks']['argv'][0]), Path(sys.executable).resolve())
+        self.assertEqual(Path(result['checks']['argv'][0]), Path(os.path.abspath(sys.executable)))
+
+    def test_interpreter_directory_alias_is_preserved(self):
+        alias = self.root / 'interpreter-alias'
+        if os.name == 'nt':
+            import _winapi
+            _winapi.CreateJunction(str(Path(sys.executable).parent), str(alias))
+            self.addCleanup(alias.rmdir)
+        else:
+            alias.symlink_to(Path(sys.executable).parent, target_is_directory=True)
+        supplied = alias / Path(sys.executable).name
+        result = self.run_review(python=str(supplied))
+        # A launcher may require a pyvenv.cfg beside this alias. Even on failure,
+        # the controller must not silently substitute another executable path.
+        self.assertEqual(Path(result['steps']['python-version']['argv'][0]), supplied)
+
+    @unittest.skipIf(os.name == 'nt', 'POSIX symlink-venv runtime regression')
+    def test_posix_symlink_venv_remains_the_check_environment(self):
+        selected = self.root / 'selected-venv'
+        venv.EnvBuilder(with_pip=False, symlinks=True).create(selected)
+        self.write('scripts/check.py', f'import sys\nassert sys.prefix == {str(selected)!r}, sys.prefix\n')
+        self.commit('assert selected interpreter environment')
+        result = self.run_review(python=str(selected / 'bin/python'))
+        self.assertEqual(result['exit_code'], 0, result)
 
     def finding(self, **changes):
         finding = {'title': 'Incorrect constant', 'priority': 2, 'side': 'head',
