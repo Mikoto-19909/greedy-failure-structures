@@ -88,8 +88,8 @@ full 因测试错误未进入内置 mypy；另行对同一快照运行 mypy，42
 `full/checks.stderr.log`、`full/summary.json`、`http-recheck.log` 和 `source-mypy.log`。
 上述验收快照不在工作分支提交历史中；后续本段记录更新只修改文档。
 
-仍未完成：full 整轮成功验收及 HTTP 错误原因核对、Linux 原生 symlink-venv 运行验收，
-以及后续三次真实 PR 的效果试用。
+截至本节记录，尚未完成 full 整轮成功验收及 HTTP 错误原因核对、Linux 原生 symlink-venv
+运行验收和三次真实 PR 效果试用；前两类后续结果见下节。
 Windows 全绿或 Linux 视图 mypy 通过不能替代 Linux 运行记录；full 成功也不能代表跳过项已执行。
 
 ## 合并前验收跟进（2026-09-12）
@@ -117,5 +117,14 @@ CI/Linux 回归与审阅反馈。三次真实 PR 效果试用仍另行进行。
 独立复核整个待发布差异未发现需修正的问题；工具测试 13 项通过、1 项 POSIX 跳过。
 HTTP 类另独立实跑 9 项全通过，四类拒绝路径的 body 解析及业务派发调用均为零，
 合法 JSON 路径真实解析一次。Windows full 与 HTTP 错误诊断已完成。
-发布后仍须核实 Ubuntu 日志中 POSIX symlink-venv 回归实际通过，以及当前 head 的
-必需检查和未解决审阅意见；三次真实 PR 效果试用尚未进行。
+已建立 [Draft PR #61](https://github.com/Mikoto-19909/greedy-failure-structures/pull/61)，
+基线为远端 main 的 `a31dd74`。提交 `a606a0d` 的四个必需检查全部通过：Ubuntu 单元测试、
+Windows 平台测试、研究验证和类型检查。
+[Ubuntu job 日志](https://github.com/Mikoto-19909/greedy-failure-structures/actions/runs/34686411202/job/103534065531)
+实际记录 POSIX symlink-venv、仅远端跟踪引用补传、失败传递和 HTTP 用例均为 ok；
+该 job 共 419 项、4 项条件跳过，POSIX 专用项没有跳过。这补齐了本次 Linux 原生运行证据。
+本地日志副本为 `local-review-acceptance-20260912/ubuntu-a606a0d.log`。
+
+核对时没有未解决审阅线程，也没有远端 review；独立本地审阅已完成，二者不能混同。
+本段验收记录更新不改变已验证的代码；记录提交后的当前 head 仍须以 PR 必需检查结果为准。
+PR 保持 Draft，未自动合并。三次真实 PR 效果试用仍未进行。
