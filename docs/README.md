@@ -3,6 +3,11 @@
 Use this index to distinguish the current research checkpoint from runnable
 examples, method checks, and broader exploratory workflows.
 
+The current development phase ends with the R2 failure-reporting fix;
+see the [closeout scope and maintenance status](development_closeout.zh-CN.md).
+Research results and existing tools remain available. New experiments, features
+and further structural splits are paused.
+
 ## Current research
 
 Open the [interactive research showcase](greedy_failure_showcase.html) in a browser
