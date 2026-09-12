@@ -108,5 +108,14 @@ CI/Linux 回归与审阅反馈。三次真实 PR 效果试用仍另行进行。
 不等待 body；合法 JSON 测试继续发送完整 body。不增加重试、延时或跳过，不改变生产端策略。
 诊断与对照日志保留在工作区 `local-review-acceptance-20260912/`。
 
-后续按固定提交运行 full，结果记录后提交并创建 Draft PR；核实 Ubuntu 日志中
-POSIX symlink-venv 回归实际通过，以及当前 head 的必需检查和未解决审阅意见。
+修正版提交 `81f4fe0facd441d3d0c7ec61b5085debf3f46fac` 的 full 已实际通过：570 项中
+565 项通过、5 项条件跳过，测试耗时 249 秒；42 个源码文件的 mypy 通过。
+五项跳过仍为 Matplotlib、OR-Tools、两项真实 CUDA 和 POSIX venv，不能算作这些项已执行。
+调度器返回 no_findings / 0；本轮模型环节仍使用替代进程，只验收真实检查和调度链路。
+结果见工作区 `local-review-acceptance-20260912/full-acceptance.json` 与 `full/` 日志。
+
+独立复核整个待发布差异未发现需修正的问题；工具测试 13 项通过、1 项 POSIX 跳过。
+HTTP 类另独立实跑 9 项全通过，四类拒绝路径的 body 解析及业务派发调用均为零，
+合法 JSON 路径真实解析一次。Windows full 与 HTTP 错误诊断已完成。
+发布后仍须核实 Ubuntu 日志中 POSIX symlink-venv 回归实际通过，以及当前 head 的
+必需检查和未解决审阅意见；三次真实 PR 效果试用尚未进行。
