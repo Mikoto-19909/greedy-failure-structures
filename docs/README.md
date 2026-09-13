@@ -3,6 +3,11 @@
 Use this index to distinguish the current research checkpoint from runnable
 examples, method checks, and broader exploratory workflows.
 
+The current development phase ends with the R2 failure-reporting fix;
+see the [closeout scope and maintenance status](development_closeout.zh-CN.md).
+Research results and existing tools remain available. New experiments, features
+and further structural splits are paused.
+
 ## Current research
 
 Open the [interactive research showcase](greedy_failure_showcase.html) in a browser
@@ -44,6 +49,10 @@ measures experiment commands and local delivery steps after the gate removal.
 
 ## Examples and compatibility checks
 
+- [Static review preparation](prepare_review.zh-CN.md): committed diffs, bounded source
+  context and unexecuted check candidates, without running the reviewed project
+- [Local checks and independent review](local_review.zh-CN.md): execute existing checks
+  in an isolated clone and collect a read-only model review before opening a PR
 - [`README.md`](../README.md): installation and the shortest runnable workflow
 - [`README.zh-CN.md`](../README.zh-CN.md): Simplified Chinese project overview
 - [`cli.md`](cli.md): validation, execution, resume, summarize, replay, and

@@ -187,17 +187,24 @@ class DashboardHttpSecurityTests(unittest.TestCase):
         self.temporary.cleanup()
 
     def _post(
-        self, path: str, payload: object, *, origin: str | None, content_type: str
+        self, path: str, payload: object, *, origin: str | None, content_type: str,
+        headers_only: bool = False,
     ) -> tuple[int, dict[str, object]]:
-        connection = http.client.HTTPConnection("127.0.0.1", self.port)
+        connection = http.client.HTTPConnection("127.0.0.1", self.port, timeout=5)
         headers = {"Content-Type": content_type}
         if origin is not None:
             headers["Origin"] = origin
-        connection.request("POST", path, json.dumps(payload), headers)
-        response = connection.getresponse()
-        body = json.loads(response.read().decode("utf-8"))
-        connection.close()
-        return response.status, body
+        if headers_only:
+            # Require rejection before reading a body. Sending it after the
+            # server rejects/closes can reset the connection on Windows.
+            headers["Content-Length"] = "100"
+        try:
+            connection.request("POST", path, None if headers_only else json.dumps(payload), headers)
+            response = connection.getresponse()
+            body = json.loads(response.read().decode("utf-8"))
+            return response.status, body
+        finally:
+            connection.close()
 
     def test_cross_origin_simple_post_is_rejected_before_run_dispatch(self) -> None:
         status, body = self._post(
@@ -205,6 +212,7 @@ class DashboardHttpSecurityTests(unittest.TestCase):
             {"config": "test.json", "output": "attacker-triggered", "force": True},
             origin="https://attacker.example",
             content_type="text/plain",
+            headers_only=True,
         )
         self.assertEqual(status, 403)
         self.assertIn("same-origin", body["error"])
@@ -226,20 +234,23 @@ class DashboardHttpSecurityTests(unittest.TestCase):
             {"config": "test.json"},
             origin=f"http://127.0.0.1:{self.port}",
             content_type="text/plain",
+            headers_only=True,
         )
         self.assertEqual(status, 415)
         self.assertIn("application/json", body["error"])
+        self.assertEqual(self.server.service.list_jobs(), {"jobs": []})
 
     def test_non_loopback_host_is_rejected_even_when_origin_matches_it(self) -> None:
-        connection = http.client.HTTPConnection("127.0.0.1", self.port)
+        connection = http.client.HTTPConnection("127.0.0.1", self.port, timeout=5)
         connection.request(
             "POST",
             "/api/run",
-            json.dumps({"config": "test.json"}),
+            None,
             {
                 "Host": f"attacker.example:{self.port}",
                 "Origin": f"http://attacker.example:{self.port}",
                 "Content-Type": "application/json",
+                "Content-Length": "100",
             },
         )
         response = connection.getresponse()
@@ -267,15 +278,16 @@ class DashboardHttpSecurityTests(unittest.TestCase):
         self.assertTrue(body["valid"])
 
     def test_different_port_is_rejected_even_when_both_are_loopback(self) -> None:
-        connection = http.client.HTTPConnection("127.0.0.1", self.port)
+        connection = http.client.HTTPConnection("127.0.0.1", self.port, timeout=5)
         connection.request(
             "POST",
             "/api/validate",
-            json.dumps({"config": "test.json"}),
+            None,
             {
                 "Host": f"localhost:{self.port}",
                 "Origin": f"http://localhost:{self.port + 1}",
                 "Content-Type": "application/json",
+                "Content-Length": "100",
             },
         )
         response = connection.getresponse()
