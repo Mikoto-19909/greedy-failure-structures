@@ -372,6 +372,8 @@ class DashboardService:
                     continue
                 summary_path = _safe_child(path, "summary.csv")
                 raw_path = _safe_child(path, "raw_results.csv")
+                if not summary_path.is_file() and not raw_path.is_file():
+                    continue
                 failure_dir = path / "failures"
                 results.append(
                     {

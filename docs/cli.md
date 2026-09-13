@@ -243,6 +243,21 @@ bindings are rejected. The dashboard reads `configs/`, writes under `results/`,
 and calls the same validation, benchmark, report, and replay functions as the
 CLI. It provides no accounts, remote queue, or hosted execution.
 
+On your first visit, choose **Use introductory example**, check the planned size,
+then **Run experiment**. Selecting the example does not start calculations.
+Use **View saved results** to read existing output. Results show the algorithm
+comparison and metric explanations before charts and a full Markdown report link.
+The initial result prefers quick; a manual selection or newly completed run is retained.
+Compatible runs in the same folder reuse checkpoints. **Recompute all tasks** under
+Advanced options ignores checkpoints and rebuilds results; leave it unchecked initially.
+The introductory example teaches the workflow and is not a formal research conclusion.
+
+Start by purpose: understand algorithm differences (quick), compare ordinary and lazy
+greedy (p3_lazy_greedy), or explore long-tail structure (p4_long_tail). Cards only select
+a plan. The preview reads its current configuration for instance counts, run counts,
+and algorithms before you run it. Other configurations and larger scans remain under
+Choose another configuration with the same preview and validation.
+
 ## Output validation
 
 For paired-seed analysis, pass the configuration for each input directory. The

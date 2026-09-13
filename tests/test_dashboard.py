@@ -86,6 +86,33 @@ class DashboardServiceTests(unittest.TestCase):
             with self.subTest(path=path), self.assertRaises(DashboardRequestError):
                 self.service.inspect_config(path)
 
+    def test_result_index_excludes_directories_without_canonical_csv(self) -> None:
+        results = self.root / "results"
+        for name in ("empty", "logs-only", "failures-only", "csv-directory",
+                     "summary-only", "raw-only", "both"):
+            (results / name).mkdir(parents=True)
+        (results / "logs-only" / "checks.log").write_text("ok", encoding="utf-8")
+        (results / "failures-only" / "failures").mkdir()
+        (results / "csv-directory" / "summary.csv").mkdir()
+        for name in ("summary-only", "both"):
+            (results / name / "summary.csv").write_text(
+                "case,algorithm\nexample,greedy\n", encoding="utf-8"
+            )
+        for name in ("raw-only", "both"):
+            (results / name / "raw_results.csv").write_text(
+                "case,algorithm\nexample,greedy\n", encoding="utf-8"
+            )
+
+        listed = self.service.list_results()["results"]
+        self.assertEqual([item["name"] for item in listed],
+                         ["both", "raw-only", "summary-only"])
+        self.assertEqual([(item["has_summary"], item["has_raw_results"]) for item in listed],
+                         [(True, True), (False, True), (True, False)])
+        for item in listed:
+            self.assertEqual(self.service.get_result(item["name"])["name"], item["name"])
+        with self.assertRaisesRegex(DashboardRequestError, "no canonical CSV"):
+            self.service.get_result("logs-only")
+
     def test_result_and_replay_indexes_read_local_artifacts(self) -> None:
         result = self.root / "results" / "test-run"
         failures = result / "failures"
