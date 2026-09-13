@@ -46,7 +46,28 @@
       </header>
 
       <main class="stage">
+        <section class="welcome-panel" aria-labelledby="welcome-title">
+          <div>
+            <p class="section-kicker" data-i18n="welcome.kicker">第一次使用</p>
+            <h2 id="welcome-title" data-i18n="welcome.title">同样的选择次数，哪种算法覆盖更多？</h2>
+            <p class="lede" data-i18n="welcome.lede">从候选集合中选出少数几个，让它们覆盖尽可能多的元素。这里可以比较贪心、局部搜索和精确算法的结果。</p>
+          </div>
+          <details class="welcome-guide">
+          <summary data-i18n="welcome.steps">查看三步操作流程</summary>
+          <ol class="welcome-steps">
+            <li><strong data-i18n="welcome.step1">选一个小例子</strong><span data-i18n="welcome.detail1">入门示例已配好参数，无需编辑文件。</span></li>
+            <li><strong data-i18n="welcome.step2">运行并等待完成</strong><span data-i18n="welcome.detail2">先确认运行规模，再点击“运行实验”。</span></li>
+            <li><strong data-i18n="welcome.step3">比较覆盖与差距</strong><span data-i18n="welcome.detail3">结果自动选中；先看算法对照，再看图表。</span></li>
+          </ol>
+          </details>
+          <div class="welcome-actions">
+            <button class="button button-primary" id="use-quick" disabled data-i18n="welcome.useQuick">选用入门示例</button>
+            <button class="button button-secondary" id="view-results" disabled data-i18n="welcome.viewResults">查看已有结果</button>
+          </div>
+          <p class="help-text" data-i18n="welcome.note">选择示例不会立即运行；查看已有结果也不会重新计算。</p>
+        </section>
         <section
+          id="experiment-entry"
           class="entry-band"
           aria-label="实验入口"
           data-i18n-aria="entry.ariaLabel"
@@ -56,13 +77,32 @@
               <p class="section-kicker" data-i18n="entry.kicker">
                 ENTRY · 入口
               </p>
-              <h2 data-i18n="entry.title">启动一个实验</h2>
+              <h2 data-i18n="entry.title">你这次想看什么？</h2>
               <p class="lede" data-i18n="entry.lede">
-                选择配置，一键在本机运行。完成后，成果会挂上这面展墙。
+                不确定就选第一个。选择方案后，先看说明和运行规模，再决定是否开始。
               </p>
             </div>
           </div>
-          <div class="entry-controls">
+          <div class="scenario-grid" role="group" aria-label="按目的选择方案" data-i18n-aria="scenario.group">
+            <button type="button" class="scenario-card" data-scenario="quick.json" aria-pressed="false" disabled>
+              <span class="scenario-badge" data-i18n="scenario.quick.badge">第一次用 · 推荐</span>
+              <strong data-i18n="scenario.quick.title">先看懂算法差别</strong>
+              <span data-i18n="scenario.quick.description">用几种小型实例比较贪心、局部搜索与精确算法，认识覆盖量和差距。</span>
+            </button>
+            <button type="button" class="scenario-card" data-scenario="p3_lazy_greedy.json" aria-pressed="false" disabled>
+              <span class="scenario-badge" data-i18n="scenario.lazy.badge">下一步 · 算法比较</span>
+              <strong data-i18n="scenario.lazy.title">比较普通与惰性贪心</strong>
+              <span data-i18n="scenario.lazy.description">对照两种贪心实现的覆盖结果与耗时，并用精确算法作为参考。</span>
+            </button>
+            <button type="button" class="scenario-card" data-scenario="p4_long_tail.json" aria-pressed="false" disabled>
+              <span class="scenario-badge" data-i18n="scenario.tail.badge">进一步 · 结构探索</span>
+              <strong data-i18n="scenario.tail.title">观察长尾结构的影响</strong>
+              <span data-i18n="scenario.tail.description">改变元素被集合覆盖的偏斜程度，观察贪心差距与局部搜索恢复情况。</span>
+            </button>
+          </div>
+          <details class="custom-config" id="custom-config">
+            <summary data-i18n="scenario.custom">自选方案：查看其他配置</summary>
+            <p class="help-text" data-i18n="scenario.customHelp">已有配置包括方法检查和更大规模扫描。请选择与你的问题匹配的配置，并核对下方预览；名称中的 full 不代表已完成研究的全套复现。</p>
             <label class="field-group config-field">
               <span class="field-label" data-i18n="fields.configFile"
                 >配置文件</span
@@ -71,32 +111,13 @@
                 <option value="">加载中…</option>
               </select>
             </label>
-            <label class="field-group output-field">
-              <span class="field-label" data-i18n="fields.outputName"
-                >结果文件夹名称</span
-              >
-              <input
-                class="field"
-                id="output-name"
-                data-i18n-placeholder="fields.outputPlaceholder"
-                placeholder="例如 quick-dashboard"
-                maxlength="81"
-              />
-            </label>
-            <label class="check-control"
-              ><input id="force-run" type="checkbox" /><span
-                data-i18n="fields.forceRun"
-                >清除后重跑</span
-              ></label
-            >
-            <button
-              class="button button-primary run-button"
-              id="run-button"
-              disabled
-            >
-              <span data-i18n="actions.runBenchmark">启动 benchmark</span>
-              <span>↗</span>
-            </button>
+          </details>
+          <div class="selection-preview" id="selection-preview" aria-live="polite">
+            <p class="section-kicker" data-i18n="scenario.selected">当前方案</p>
+            <h3 id="selection-title">—</h3>
+            <p class="help-text" id="selection-goal"></p>
+            <p class="help-text" id="selection-status"></p>
+            <code id="selection-file"></code>
           </div>
           <div class="plan-strip hidden" id="plan-strip" aria-live="polite">
             <span class="plan-chip" id="plan-name">—</span>
@@ -106,7 +127,7 @@
             >
             <span class="plan-stat"
               ><strong id="plan-repetitions">—</strong
-              ><small data-i18n="plan.repetitions">每个实例重复</small></span
+              ><small data-i18n="plan.repetitions">每个案例重复数</small></span
             >
             <span class="plan-stat"
               ><strong id="plan-runs">—</strong
@@ -114,11 +135,76 @@
             >
             <span class="plan-algorithms" id="algorithm-plan"></span>
           </div>
+          <div class="entry-controls">
+            <label class="field-group output-field">
+              <span class="field-label" data-i18n="fields.outputName"
+                >结果文件夹名称</span
+              >
+              <input
+                class="field"
+                id="output-name"
+                data-i18n-placeholder="fields.outputPlaceholder"
+                placeholder="例如 quick-dashboard"
+                aria-describedby="output-rule output-error"
+              />
+            </label>
+            <button
+              class="button button-primary run-button"
+              id="run-button"
+              disabled
+            >
+              <span data-i18n="actions.runBenchmark">运行实验</span>
+              <span>↗</span>
+            </button>
+          </div>
+          <p class="help-text" id="output-rule" data-i18n="fields.nameRule"></p>
+          <div id="output-error" class="message hidden" role="alert"></div>
+          <p class="help-text" data-i18n="fields.outputHelp">结果保存在本机 results/ 下。同名且配置兼容时复用已完成计算；换个文件夹名称可保留独立的一次运行。</p>
+          <details class="advanced-options">
+            <summary data-i18n="fields.advanced">高级选项</summary>
+            <label class="check-control"><input id="force-run" type="checkbox" /><span data-i18n="fields.forceRun">重新计算全部任务</span></label>
+            <p class="help-text" data-i18n="fields.forceHelp">忽略已有检查点并重建该目录的结果。首次使用无需勾选。</p>
+          </details>
           <div class="job-line" id="job-line" aria-live="polite">
             <span class="job-dot idle"></span>
-            <span data-i18n="run.idle">空闲 · 任务状态会显示在这里。</span>
+            <span data-i18n="run.idle">准备就绪后，点击“运行实验”；进度会显示在这里。</span>
           </div>
           <div id="run-message" class="message hidden"></div>
+        </section>
+
+        <section id="results-section" class="result-controls" aria-label="结果选择" tabindex="-1">
+          <div class="section-heading split">
+            <div>
+              <p class="section-kicker" data-i18n="gallery.kicker">
+                GALLERY · 成果
+              </p>
+              <h2 data-i18n="gallery.title">查看实验结果</h2>
+              <p class="lede" data-i18n="gallery.lede">
+                选择一次实验，先比较算法，再查看图表与完整报告。可以直接阅读已有结果。
+              </p>
+            </div>
+            <div class="result-picker">
+              <select class="field" id="result-select" aria-label="查看哪次实验" data-i18n-aria="results.selectLabel">
+                <option value="">暂无结果</option>
+              </select>
+              <button
+                class="button button-secondary"
+                id="refresh-results"
+                data-i18n="actions.refreshResults"
+              >
+                刷新
+              </button>
+            </div>
+          </div>
+          <div class="result-meta" id="result-meta"></div>
+          <div id="result-notice" class="message hidden" role="status"></div>
+          <div id="result-message" class="message hidden" role="status"></div>
+
+          <nav class="result-nav" aria-label="结果内容导航" data-i18n-aria="nav.label">
+            <a href="#comparison" data-i18n="nav.summary">算法对照</a>
+            <a href="#gallery-grid" data-i18n="nav.charts">图表与报告</a>
+            <a href="#replay-section" data-i18n="nav.replay">案例回放</a>
+          </nav>
         </section>
 
         <section
@@ -133,7 +219,7 @@
               </p>
               <h2 data-i18n="gap.title">贪心在哪里失败</h2>
               <p class="lede" data-i18n="gap.lede">
-                每条光带对应一个案例族，长度是该族上贪心算法与最优解的平均差距。光带越长，结构越会诱导贪心犯错。
+                比较本次样本中贪心算法相对最优值的覆盖差距。数值越大，说明这批样本上损失的覆盖越多；不代表所有同类实例。
               </p>
             </div>
             <span
@@ -145,7 +231,7 @@
           </div>
           <div class="spectrum" id="gap-spectrum">
             <div class="spectrum-empty" data-i18n="gap.empty">
-              运行一个 benchmark 之后，光谱会从这里长出来。
+              还没有可展示的差距。请先选择已有结果，或运行入门示例；缺少最优参考时也不显示差距。
             </div>
           </div>
         </section>
@@ -155,41 +241,7 @@
           aria-label="成果画廊"
           data-i18n-aria="gallery.ariaLabel"
         >
-          <div class="section-heading split">
-            <div>
-              <p class="section-kicker" data-i18n="gallery.kicker">
-                GALLERY · 成果
-              </p>
-              <h2 data-i18n="gallery.title">结果画廊</h2>
-              <p class="lede" data-i18n="gallery.lede">
-                每张图是当前结果集的一份报告，装裱成作品挂在墙上。
-              </p>
-            </div>
-            <div class="result-picker">
-              <select class="field" id="result-select">
-                <option value="">暂无结果</option>
-              </select>
-              <button
-                class="button button-secondary"
-                id="refresh-results"
-                data-i18n="actions.refreshResults"
-              >
-                刷新
-              </button>
-            </div>
-          </div>
-          <div class="result-meta" id="result-meta"></div>
-          <div id="result-message" class="message hidden"></div>
-          <div class="gallery-grid" id="gallery-grid">
-            <div
-              class="frame frame-empty empty-state"
-              data-i18n="gallery.empty"
-            >
-              运行完成后，报告图表会挂上这面墙。先在上方启动一个实验。
-            </div>
-          </div>
-
-          <article class="panel summary-panel">
+          <article id="comparison" class="panel summary-panel" tabindex="-1">
             <div class="panel-heading">
               <div>
                 <p class="section-kicker" data-i18n="gallery.summaryKicker">
@@ -198,6 +250,12 @@
                 <h3 data-i18n="gallery.summaryTitle">算法对照</h3>
               </div>
             </div>
+            <dl class="metric-guide">
+              <div><dt data-i18n="table.coverage">平均覆盖</dt><dd data-i18n="guide.coverage">覆盖的元素数，越多越好。</dd></div>
+              <div><dt data-i18n="table.gap">平均差距</dt><dd data-i18n="guide.gap">相对已证最优值的覆盖损失，越小越好；0% 表示达到最优，— 表示缺少参考。</dd></div>
+              <div><dt data-i18n="table.runtime">平均耗时</dt><dd data-i18n="guide.runtime">同一实例上越短越快，受本机和实例规模影响。</dd></div>
+            </dl>
+            <p class="help-text" data-i18n="guide.scope">这些数值描述当前样本，不能直接推广到所有实例；入门示例用于熟悉操作。</p>
             <div class="table-wrap">
               <table id="summary-table">
                 <thead>
@@ -216,7 +274,12 @@
             </div>
           </article>
 
+          <div class="gallery-grid" id="gallery-grid" tabindex="-1">
+            <div class="frame frame-empty empty-state" data-i18n="gallery.empty">还没有实验结果。先选用入门示例，再运行实验。</div>
+          </div>
+
           <div
+            id="replay-section" tabindex="-1"
             class="replay-strip"
             aria-label="失败案例回放"
             data-i18n-aria="replay.ariaLabel"
@@ -225,22 +288,29 @@
               <p class="section-kicker" data-i18n="replay.kicker">
                 REPLAY · 回放
               </p>
-              <strong data-i18n="replay.title">失败案例回放</strong>
+              <strong data-i18n="replay.title">已保存案例回放</strong>
               <small data-i18n="replay.lede"
                 >用记录的算法重现失败，核对结果。</small
               >
             </div>
-            <select class="field" id="replay-select">
+            <label class="field-group replay-scope">
+              <span data-i18n="replay.scope">案例来源</span>
+              <select class="field" id="replay-scope">
+                <option value="current" data-i18n="replay.current">当前结果的案例</option>
+                <option value="others" data-i18n="replay.others">其他已保存案例（包括没有报告的目录）</option>
+              </select>
+            </label>
+            <select class="field" id="replay-select" aria-label="选择案例文件" data-i18n-aria="replay.file">
               <option value="" data-i18n="replay.noFiles">
                 暂无失败案例文件
               </option>
             </select>
-            <select class="field" id="replay-algorithm">
+            <select class="field" id="replay-algorithm" aria-label="回放算法" data-i18n-aria="replay.algorithmLabel">
               <option value="" data-i18n="replay.recordedAlgorithm">
                 使用记录算法
               </option>
             </select>
-            <button class="button button-secondary" id="replay-button">
+            <button class="button button-secondary" id="replay-button" disabled>
               <span data-i18n="actions.runReplay">运行回放</span> <span>↗</span>
             </button>
             <div id="replay-message" class="message hidden"></div>
@@ -249,7 +319,7 @@
               class="replay-output empty-state"
               data-i18n="replay.outputEmpty"
             >
-              运行后显示结果和匹配状态。
+              有案例文件时可重现计算并核对结果；没有文件不影响查看报告。
             </div>
           </div>
         </section>
@@ -259,6 +329,16 @@
         Maximum Coverage · 本地成果展板 · CLI 仍可使用
       </footer>
     </div>
+    <dialog id="report-dialog" aria-labelledby="report-title">
+      <header class="report-toolbar">
+        <h2 id="report-title"></h2>
+        <button class="button button-secondary" id="report-close" data-i18n="report.close">返回结果</button>
+      </header>
+      <p class="help-text" data-i18n="report.language"></p>
+      <a id="report-source" class="text-link" download data-i18n="report.source">下载原始 Markdown</a>
+      <div id="report-content" aria-live="polite"></div>
+    </dialog>
+    <script src="/report.js"></script>
     <script src="/app.js"></script>
   </body>
 </html>

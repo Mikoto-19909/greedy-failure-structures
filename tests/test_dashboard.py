@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import http.client
 import json
+import os
 import socket
 import sys
 import tempfile
@@ -11,6 +12,7 @@ import threading
 import time
 import unittest
 from pathlib import Path
+from datetime import datetime, timezone
 from unittest.mock import patch
 
 
@@ -85,6 +87,49 @@ class DashboardServiceTests(unittest.TestCase):
         for path in ("../test.json", "../../etc/passwd", "", "C:/outside.json"):
             with self.subTest(path=path), self.assertRaises(DashboardRequestError):
                 self.service.inspect_config(path)
+
+    def test_result_index_excludes_directories_without_canonical_csv(self) -> None:
+        results = self.root / "results"
+        for name in ("empty", "logs-only", "failures-only", "csv-directory",
+                     "summary-only", "raw-only", "both"):
+            (results / name).mkdir(parents=True)
+        (results / "logs-only" / "checks.log").write_text("ok", encoding="utf-8")
+        (results / "failures-only" / "failures").mkdir()
+        (results / "csv-directory" / "summary.csv").mkdir()
+        for name in ("summary-only", "both"):
+            (results / name / "summary.csv").write_text(
+                "case,algorithm\nexample,greedy\n", encoding="utf-8"
+            )
+        for name in ("raw-only", "both"):
+            (results / name / "raw_results.csv").write_text(
+                "case,algorithm\nexample,greedy\n", encoding="utf-8"
+            )
+
+        listed = self.service.list_results()["results"]
+        self.assertEqual([item["name"] for item in listed],
+                         ["both", "raw-only", "summary-only"])
+        self.assertEqual([(item["has_summary"], item["has_raw_results"]) for item in listed],
+                         [(True, True), (False, True), (True, False)])
+        for item in listed:
+            self.assertEqual(self.service.get_result(item["name"])["name"], item["name"])
+        with self.assertRaisesRegex(DashboardRequestError, "no canonical CSV"):
+            self.service.get_result("logs-only")
+
+    def test_result_timestamp_tracks_csv_updates_not_directory_changes(self) -> None:
+        directory = self.root / "results" / "example"
+        directory.mkdir(parents=True)
+        summary = directory / "summary.csv"
+        raw = directory / "raw_results.csv"
+        summary.write_text("case\nexample\n", encoding="utf-8")
+        raw.write_text("case\nexample\n", encoding="utf-8")
+        os.utime(summary, (1000, 1000))
+        os.utime(raw, (2000, 2000))
+        os.utime(directory, (9000, 9000))
+        row = self.service.list_results()["results"][0]
+        self.assertEqual(row["modified_at"], datetime.fromtimestamp(2000, timezone.utc).isoformat(timespec="seconds"))
+        os.utime(summary, (3000, 3000))
+        row = self.service.list_results()["results"][0]
+        self.assertEqual(row["modified_at"], datetime.fromtimestamp(3000, timezone.utc).isoformat(timespec="seconds"))
 
     def test_result_and_replay_indexes_read_local_artifacts(self) -> None:
         result = self.root / "results" / "test-run"
