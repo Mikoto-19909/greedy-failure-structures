@@ -16,6 +16,7 @@
     configRequestId: 0,
     configLoading: false,
     resultRequestId: 0,
+    resultSelectionId: 0,
     refreshRequestId: 0,
     resultNotice: null,
     replayRequestId: 0,
@@ -134,6 +135,7 @@
       },
       artifact: {
         "results_summary.md": "Report summary",
+        "reference_coverage_by_case.svg": "Optimal-reference coverage by case",
         "gap_by_family.svg": "Coverage gap by family",
         "runtime_by_algorithm.svg": "Runtime by algorithm",
         "gap_by_case.svg": "Coverage gap by case",
@@ -719,9 +721,13 @@
     }
     state.pollingJobId = jobId;
     $("#run-button").disabled = true;
+    let ticking = false;
     const tick = async () => {
+      if (ticking || state.pollingJobId !== jobId) return false;
+      ticking = true;
       try {
         const job = await api(`/api/jobs/${jobId}`);
+        if (state.pollingJobId !== jobId) return false;
         state.jobs = [job, ...state.jobs.filter((item) => item.id !== job.id)];
         renderJobLine();
         if (["completed", "failed"].includes(job.status)) {
@@ -741,12 +747,15 @@
         }
         return true;
       } catch (error) {
+        if (state.pollingJobId !== jobId) return false;
         if (state.pollTimer) clearInterval(state.pollTimer);
         state.pollTimer = null;
         state.pollingJobId = null;
         setMessage("#run-message", error.message, true);
         $("#run-button").disabled = !state.currentConfig?.valid;
         return false;
+      } finally {
+        ticking = false;
       }
     };
     if (await tick()) state.pollTimer = setInterval(tick, 1000);
@@ -962,7 +971,7 @@
     frame.setAttribute("aria-haspopup", "dialog");
     frame.setAttribute(
       "aria-label",
-      `${FRIENDLY_LABELS[state.language].artifact[artifact.name] || artifact.name} · ${t("gallery.zoomHint")}`,
+      `${friendlyLabel(artifact.name, "artifact")} · ${t("gallery.zoomHint")}`,
     );
     frame.addEventListener("click", () => openLightbox(artifact, frame));
     frame.addEventListener("keydown", (event) => {
@@ -975,7 +984,7 @@
     mat.className = "frame-mat";
     const image = document.createElement("img");
     image.src = artifact.url;
-    image.alt = `${FRIENDLY_LABELS[state.language].artifact[artifact.name] || artifact.name} (${artifact.name})`;
+    image.alt = `${friendlyLabel(artifact.name, "artifact")} (${artifact.name})`;
     image.loading = "lazy";
     const hint = document.createElement("span");
     hint.className = "frame-zoom-hint";
@@ -1197,6 +1206,7 @@
 
   async function refreshAll(preferredResult = null) {
     const refreshId = ++state.refreshRequestId;
+    const selectionAtStart = state.resultSelectionId;
     try {
       const [configs, algorithms, results, jobs, replays] = await Promise.all([
         api("/api/configs"),
@@ -1260,7 +1270,8 @@
       } else await loadConfig("");
       if (refreshId !== state.refreshRequestId) return;
       // Read the latest user selection after awaits, never the one at refresh start.
-      const preferred = (typeof preferredResult === "string" && preferredResult)
+      const preferred = (selectionAtStart === state.resultSelectionId
+        && typeof preferredResult === "string" && preferredResult)
         || $("#result-select").value || state.currentResult || savedResult();
       setSelect(
         "#result-select",
@@ -1327,9 +1338,10 @@
     state.outputEdited = true;
     validateOutput();
   });
-  $("#result-select").addEventListener("change", (event) =>
-    loadResult(event.target.value),
-  );
+  $("#result-select").addEventListener("change", (event) => {
+    ++state.resultSelectionId;
+    loadResult(event.target.value);
+  });
   $("#refresh-results").addEventListener("click", refreshAll);
   $("#replay-select").addEventListener("change", (event) => {
     resetReplay();
