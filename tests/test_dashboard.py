@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import http.client
 import json
+import os
 import socket
 import sys
 import tempfile
@@ -11,6 +12,7 @@ import threading
 import time
 import unittest
 from pathlib import Path
+from datetime import datetime, timezone
 from unittest.mock import patch
 
 
@@ -112,6 +114,22 @@ class DashboardServiceTests(unittest.TestCase):
             self.assertEqual(self.service.get_result(item["name"])["name"], item["name"])
         with self.assertRaisesRegex(DashboardRequestError, "no canonical CSV"):
             self.service.get_result("logs-only")
+
+    def test_result_timestamp_tracks_csv_updates_not_directory_changes(self) -> None:
+        directory = self.root / "results" / "example"
+        directory.mkdir(parents=True)
+        summary = directory / "summary.csv"
+        raw = directory / "raw_results.csv"
+        summary.write_text("case\nexample\n", encoding="utf-8")
+        raw.write_text("case\nexample\n", encoding="utf-8")
+        os.utime(summary, (1000, 1000))
+        os.utime(raw, (2000, 2000))
+        os.utime(directory, (9000, 9000))
+        row = self.service.list_results()["results"][0]
+        self.assertEqual(row["modified_at"], datetime.fromtimestamp(2000, timezone.utc).isoformat(timespec="seconds"))
+        os.utime(summary, (3000, 3000))
+        row = self.service.list_results()["results"][0]
+        self.assertEqual(row["modified_at"], datetime.fromtimestamp(3000, timezone.utc).isoformat(timespec="seconds"))
 
     def test_result_and_replay_indexes_read_local_artifacts(self) -> None:
         result = self.root / "results" / "test-run"
