@@ -381,7 +381,8 @@ class DashboardService:
                         "has_summary": summary_path.is_file(),
                         "has_raw_results": raw_path.is_file(),
                         "modified_at": datetime.fromtimestamp(
-                            path.stat().st_mtime, timezone.utc
+                            max(artifact.stat().st_mtime for artifact in (summary_path, raw_path)
+                                if artifact.is_file()), timezone.utc
                         ).isoformat(timespec="seconds"),
                         "failure_count": len(
                             [
@@ -503,6 +504,7 @@ class _DashboardRequestHandler(BaseHTTPRequestHandler):
         "": ("index.html", "text/html; charset=utf-8"),
         "index.html": ("index.html", "text/html; charset=utf-8"),
         "app.js": ("app.js", "text/javascript; charset=utf-8"),
+        "report.js": ("report.js", "text/javascript; charset=utf-8"),
         "styles.css": ("styles.css", "text/css; charset=utf-8"),
         "favicon.svg": ("favicon.svg", "image/svg+xml; charset=utf-8"),
         "fonts/space-grotesk-latin-600-normal.woff2": ("fonts/space-grotesk-latin-600-normal.woff2", "font/woff2"),

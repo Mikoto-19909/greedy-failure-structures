@@ -1090,6 +1090,31 @@ tbody tr:last-child td {
   }
 }
 
+.button { white-space: nowrap; }
+.result-nav { display: flex; flex-wrap: wrap; gap: 12px 24px; margin-top: 18px; }
+.result-nav a { color: var(--accent); padding: 8px 0; }
+.result-controls, #comparison, #gallery-grid, #replay-section { scroll-margin-top: 90px; }
+.replay-scope { grid-column: 1 / -1; }
+.replay-scope .field { max-width: 100%; }
+[aria-invalid="true"] { outline: 2px solid #ef9a9a; outline-offset: 2px; }
+#report-dialog { width: min(1100px, calc(100vw - 36px)); max-height: 88vh; padding: 24px;
+  background: var(--panel); color: var(--ink); border: 1px solid var(--border); border-radius: 12px; }
+#report-dialog::backdrop { background: rgba(0, 0, 0, .65); }
+.report-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.report-toolbar h2 { font-size: 20px; overflow-wrap: anywhere; }
+.report-body { font: 15px/1.7 "Segoe UI", "Microsoft YaHei", sans-serif; overflow-wrap: anywhere; }
+.report-body h2, .report-body h3 { font-size: 19px; margin: 24px 0 12px; }
+.report-body h4, .report-body h5, .report-body h6 { font-size: 17px; }
+.report-body li { margin: 8px 0; }
+.report-body ul, .report-body ol { padding-left: 24px; }
+.report-body code { font-size: .9em; white-space: normal; }
+.report-body pre { white-space: pre-wrap; }
+.report-body a { color: var(--accent); }
+.report-body th, .report-body td { min-width: 90px; white-space: normal; }
+.report-body .table-wrap { margin: 20px 0; }
+.report-summary { padding: 16px 20px; }
+.report-summary .report-body { font-size: 14px; }
+
 /* ── Motion ─────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   .spectrum-bar {

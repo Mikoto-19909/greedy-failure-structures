@@ -16,6 +16,11 @@
     configRequestId: 0,
     configLoading: false,
     resultRequestId: 0,
+    refreshRequestId: 0,
+    resultNotice: null,
+    replayRequestId: 0,
+    replayBusy: false,
+    reportRequestId: 0,
     outputEdited: false,
   };
   const STATUS_LABELS = {
@@ -77,6 +82,7 @@
         adversarial: "对抗结构",
       },
       artifact: {
+        "reference_coverage_by_case.svg": "各案例最优参考覆盖情况",
         "results_summary.md": "报告摘要",
         "gap_by_family.svg": "按案例族查看覆盖差距",
         "runtime_by_algorithm.svg": "按算法查看运行耗时",
@@ -190,8 +196,11 @@
       "gallery.zoomHint": "点击放大",
       "lightbox.close": "关闭",
       "lightbox.escHint": "Esc 关闭",
-      "results.updated": "更新时间 {time}",
-      "results.failureCount": "运行异常记录 {count} 个",
+      "results.updated": "结果文件更新时间 {time}",
+      "results.loading": "正在加载 {name}…",
+      "results.failed": "无法读取 {name}。请重试或选择其他结果。",
+      "results.fallback": "原选择 {name} 已不存在或无法读取，已尝试其他结果。",
+      "results.failureCount": "已保存异常案例文件 {count} 个",
       "results.noResult": "暂无结果",
       "results.noSummary": "没有汇总记录。",
       "table.case": "案例",
@@ -204,8 +213,8 @@
       "replay.ariaLabel": "失败案例回放",
       "replay.kicker": "回放 · 重现失败",
       "replay.title": "已保存案例回放",
-      "replay.lede": "用记录的算法重现失败，核对结果。",
-      "replay.noFiles": "暂无失败案例文件",
+      "replay.lede": "运行超时或错误时会自动保存案例文件；贪心未达最优不一定生成文件。",
+      "replay.noFiles": "此范围暂无可回放文件",
       "replay.recordedAlgorithm": "使用记录算法",
       "replay.outputEmpty": "有案例文件时可重现计算并核对结果；没有文件不影响查看报告。",
       "replay.running": "正在运行回放…",
@@ -256,6 +265,27 @@
       "guide.gap": "相对已证最优值的覆盖损失，越小越好；0% 表示达到最优，— 表示缺少参考。",
       "guide.runtime": "同一实例上越短越快，受本机和实例规模影响。",
       "guide.scope": "这些数值描述当前样本，不能直接推广到所有实例；入门示例用于熟悉操作。",
+      "fields.nameRule": "1–81 个字符，以英文字母或数字开头；其余可用英文字母、数字、点、下划线、短横线。",
+      "fields.nameInvalid": "本次未启动：请按上方规则填写结果名称。",
+      "run.lastJob": "最近任务",
+      "run.notStarted": "本次未启动：{error}",
+      "replay.scope": "案例来源",
+      "replay.current": "当前结果的案例",
+      "replay.others": "其他已保存案例（包括没有报告的目录）",
+      "replay.file": "选择案例文件",
+      "replay.algorithmLabel": "回放算法",
+      "replay.emptyHelp": "此范围没有案例文件，无法运行回放。可切换“其他已保存案例”；正常完成的实验没有异常文件也能查看报告。",
+      "replay.failed": "案例无法回放，请检查文件或改选其他案例。详情：{error}",
+      "report.open": "阅读完整报告",
+      "report.close": "返回结果",
+      "report.source": "下载原始 Markdown",
+      "report.language": "报告保留原文语言；项目生成正文以英文为主，不随界面语言切换。",
+      "report.loading": "正在读取报告…",
+      "report.failed": "报告无法读取，请刷新结果后重试。",
+      "nav.summary": "算法对照",
+      "nav.charts": "图表与报告",
+      "nav.replay": "案例回放",
+      "nav.label": "结果内容导航",
       footer: "Maximum Coverage · 本地成果展板 · CLI 仍可使用",
     },
     en: {
@@ -309,8 +339,11 @@
       "gallery.zoomHint": "Click to enlarge",
       "lightbox.close": "Close",
       "lightbox.escHint": "Esc to close",
-      "results.updated": "Updated {time}",
-      "results.failureCount": "{count} execution issue records",
+      "results.updated": "Result files updated {time}",
+      "results.loading": "Loading {name}…",
+      "results.failed": "Cannot read {name}. Retry or select another result.",
+      "results.fallback": "Previous selection {name} is missing or unreadable; other results were tried.",
+      "results.failureCount": "{count} saved execution-issue files",
       "results.noResult": "No results",
       "results.noSummary": "No summary records.",
       "table.case": "Case",
@@ -323,8 +356,8 @@
       "replay.ariaLabel": "Failure replay",
       "replay.kicker": "REPLAY · REPRODUCE FAILURE",
       "replay.title": "Saved case replay",
-      "replay.lede": "Reproduce a recorded failure and verify the result.",
-      "replay.noFiles": "No failure files",
+      "replay.lede": "Timeouts and execution errors save case files automatically; a greedy optimality gap does not necessarily create a file.",
+      "replay.noFiles": "No replay files in this scope",
       "replay.recordedAlgorithm": "Use recorded algorithm",
       "replay.outputEmpty": "Replay saved cases to check their results. No case files are needed to read the reports.",
       "replay.running": "Running replay…",
@@ -375,6 +408,27 @@
       "guide.gap": "Coverage lost relative to a proven optimum. Lower is better: 0% is optimal; — means no reference.",
       "guide.runtime": "Lower is faster on the same instance. Depends on this machine and instance size.",
       "guide.scope": "These values describe this sample, not every possible instance. The introductory example helps you learn the workflow.",
+      "fields.nameRule": "1–81 characters. Start with an ASCII letter or digit; then use letters, digits, dots, underscores or hyphens.",
+      "fields.nameInvalid": "Not started: enter a result name following the rule above.",
+      "run.lastJob": "Latest job",
+      "run.notStarted": "Not started: {error}",
+      "replay.scope": "Case source",
+      "replay.current": "Cases from the current result",
+      "replay.others": "Other saved cases (including folders without reports)",
+      "replay.file": "Choose a case file",
+      "replay.algorithmLabel": "Replay algorithm",
+      "replay.emptyHelp": "No case files in this scope, so replay is unavailable. Try Other saved cases. Completed experiments can have reports without execution-issue files.",
+      "replay.failed": "Cannot replay this case. Check the file or choose another case. Details: {error}",
+      "report.open": "Read full report",
+      "report.close": "Back to results",
+      "report.source": "Download original Markdown",
+      "report.language": "Original report language, mainly English for generated reports; changing the interface language does not translate the report.",
+      "report.loading": "Loading report…",
+      "report.failed": "Cannot read the report. Refresh results and retry.",
+      "nav.summary": "Algorithm comparison",
+      "nav.charts": "Charts and report",
+      "nav.replay": "Case replay",
+      "nav.label": "Result navigation",
       footer: "Maximum Coverage · local result wall · CLI remains available",
     },
   };
@@ -408,6 +462,16 @@
     }
   }
 
+  function savedResult() {
+    try { return localStorage.getItem("maxcover-result"); }
+    catch (_error) { return null; }
+  }
+
+  function rememberResult(name) {
+    try { localStorage.setItem("maxcover-result", name); }
+    catch (_error) { /* The current session still works without storage. */ }
+  }
+
   function applyLanguage(language) {
     state.language = language === "en" ? "en" : "zh";
     try {
@@ -431,6 +495,7 @@
     $$("[data-i18n-aria]").forEach((element) => {
       element.setAttribute("aria-label", t(element.dataset.i18nAria));
     });
+    if (state.outputEdited) validateOutput();
   }
 
   function friendlyLabel(value, kind) {
@@ -531,7 +596,7 @@
       loading || configInfo.valid ? "" : configInfo.error || "",
       !loading && !configInfo.valid,
     );
-    $("#run-button").disabled = loading || !configInfo.valid;
+    $("#run-button").disabled = loading || !configInfo.valid || Boolean(state.pollingJobId);
     const strip = $("#plan-strip");
     strip.classList.toggle("hidden", loading || !configInfo.valid);
     if (loading || !configInfo.valid) return;
@@ -554,6 +619,7 @@
     const output = $("#output-name");
     if (!state.outputEdited)
       output.value = configInfo.path.replace(/\.json$/i, "");
+    if (state.outputEdited) validateOutput();
   }
 
   async function loadConfig(path) {
@@ -601,12 +667,21 @@
     line.replaceChildren(
       dot,
       document.createTextNode(
-        `${STATUS_LABELS[state.language][job.status] || job.status} · ${job.config} → results/${job.output}`,
+        `${t("run.lastJob")} · ${STATUS_LABELS[state.language][job.status] || job.status} · ${job.config} → results/${job.output}`,
       ),
     );
   }
 
+  function validateOutput() {
+    const input = $("#output-name");
+    const valid = /^[A-Za-z0-9][A-Za-z0-9._-]{0,80}$/.test(input.value);
+    input.setAttribute("aria-invalid", String(!valid));
+    setMessage("#output-error", valid ? "" : t("fields.nameInvalid"), !valid);
+    return valid;
+  }
+
   async function runBenchmark() {
+    if (!validateOutput()) { $("#output-name").focus(); return; }
     const selectedConfigPath = $("#config-select").value;
     if (
       state.configLoading ||
@@ -632,7 +707,7 @@
       await pollJob(job.id);
     } catch (error) {
       button.disabled = !state.currentConfig?.valid;
-      setMessage("#run-message", error.message, true);
+      setMessage("#run-message", t("run.notStarted", { error: error.message }), true);
     }
   }
 
@@ -661,9 +736,7 @@
               : t("run.failed", { error: job.error }),
             job.status === "failed",
           );
-          if (job.status === "completed" && job.result_name)
-            state.currentResult = job.result_name;
-          await refreshAll();
+          await refreshAll(job.status === "completed" ? job.result_name : null);
           return false;
         }
         return true;
@@ -764,17 +837,53 @@
     frame.className = hero
       ? "frame frame-summary frame-hero"
       : "frame frame-summary";
-    const description = document.createElement("p");
-    description.className = "help-text";
-    description.textContent = t("gallery.reportDescription");
-    const link = document.createElement("a");
-    link.className = "text-link";
-    link.href = artifact.url;
-    link.target = "_blank";
-    link.rel = "noreferrer";
-    link.textContent = t("gallery.openReport");
-    frame.append(frameCaption(artifact), description, link);
+    const description = document.createElement("div");
+    description.className = "report-summary";
+    description.textContent = t("report.loading");
+    const language = document.createElement("p");
+    language.className = "help-text";
+    language.textContent = t("report.language");
+    const button = document.createElement("button");
+    button.className = "button button-secondary";
+    button.textContent = t("report.open");
+    button.addEventListener("click", () => openReport(artifact));
+    frame.append(frameCaption(artifact), language, description, button);
+    const resultRequest = state.resultRequestId;
+    readReport(artifact).then((text) => {
+      if (!frame.isConnected || resultRequest !== state.resultRequestId) return;
+      const summary = window.MaxcoverReport.headline(text);
+      if (summary) description.replaceChildren(window.MaxcoverReport.render(summary));
+      else description.textContent = t("gallery.reportDescription");
+    }).catch(() => {
+      if (frame.isConnected && resultRequest === state.resultRequestId)
+        description.textContent = t("report.failed");
+    });
     return frame;
+  }
+
+  async function readReport(artifact) {
+    const response = await fetch(artifact.url);
+    if (!response.ok) throw new Error("Report unavailable");
+    return response.text();
+  }
+
+  async function openReport(artifact) {
+    const requestId = ++state.reportRequestId;
+    const resultRequest = state.resultRequestId;
+    const dialog = $("#report-dialog");
+    $("#report-title").textContent = `${state.currentResult} · ${t("report.open")}`;
+    $("#report-source").href = artifact.url;
+    $("#report-content").textContent = t("report.loading");
+    dialog.showModal();
+    try {
+      const text = await readReport(artifact);
+      if (requestId !== state.reportRequestId || resultRequest !== state.resultRequestId || !dialog.open) return;
+      $("#report-content").replaceChildren(window.MaxcoverReport.render(text));
+      dialog.scrollTop = 0;
+    } catch (_error) {
+      if (requestId === state.reportRequestId && resultRequest === state.resultRequestId && dialog.open)
+        $("#report-content").textContent = t("report.failed");
+    }
   }
 
   let lightbox = null;
@@ -940,62 +1049,91 @@
       : "";
   }
 
-  async function loadResult(name) {
+  function clearResult() {
+    state.currentResult = null;
+    ++state.reportRequestId;
+    $("#report-dialog").close();
+    $("#report-content").replaceChildren();
+    closeLightbox();
+    $("#spectrum-source").textContent = t("gap.noSource");
+    renderSpectrum([]);
+    renderGallery({ artifacts: [] });
+    renderSummary([]);
+    renderResultMeta("");
+    resetReplay();
+    renderReplays();
+  }
+
+  async function loadResult(name, notice = null) {
     const requestId = ++state.resultRequestId;
-    if (!name) {
-      setMessage("#result-message", "");
-      $("#spectrum-source").textContent = t("gap.noSource");
-      renderSpectrum([]);
-      renderGallery({ artifacts: [] });
-      renderSummary([]);
-      renderResultMeta("");
-      return;
-    }
+    state.resultNotice = notice;
+    clearResult();
+    setMessage("#result-message", name ? t("results.loading", { name }) : "");
+    setMessage("#result-notice", notice ? t("results.fallback", { name: notice }) : "");
+    if (!name) return false;
     try {
       const data = await api(`/api/result?name=${encodeURIComponent(name)}`);
       if (
         requestId !== state.resultRequestId ||
         $("#result-select").value !== name
       )
-        return;
+        return null;
       state.currentResult = name;
+      rememberResult(name);
       setMessage("#result-message", "");
       $("#spectrum-source").textContent = name;
       renderSummary(data.summary);
       renderSpectrum(data.summary);
       renderGallery(data);
       renderResultMeta(name);
+      renderReplays();
+      return true;
     } catch (error) {
       if (
         requestId !== state.resultRequestId ||
         $("#result-select").value !== name
       )
-        return;
-      setMessage("#result-message", error.message, true);
+        return null;
+      setMessage("#result-message", t("results.failed", { name }), true);
+      return false;
     }
   }
 
   /* ── Replay ────────────────────────────────────────── */
 
   function renderReplays() {
-    $("#replay-button").disabled = !state.replays.length;
-    const selectedReplayPath = state.currentReplay || $("#replay-select").value;
+    const others = $("#replay-scope").value === "others";
+    const visible = state.replays.filter((item) => others
+      ? item.result !== state.currentResult : item.result === state.currentResult);
+    const selectedReplayPath = state.currentReplay;
     setSelect(
       "#replay-select",
-      state.replays.map((item) => ({
-        label: `${friendlyLabel(item.result, "case")} · ${friendlyLabel(item.algorithm_id || item.algorithm, "algorithm")}`,
+      visible.map((item) => ({
+        label: `${item.result} · ${friendlyLabel(item.algorithm_id || item.algorithm, "algorithm")} · ${item.run_id || item.path}`,
         value: item.path,
       })),
       t("replay.noFiles"),
     );
-    if (state.replays.length) {
-      state.currentReplay = state.replays.some(
+    if (visible.length) {
+      state.currentReplay = visible.some(
         (item) => item.path === selectedReplayPath,
       )
         ? selectedReplayPath
-        : state.replays[0].path;
+        : visible[0].path;
       $("#replay-select").value = state.currentReplay;
     } else state.currentReplay = null;
+    $("#replay-button").disabled = !visible.length || state.replayBusy;
+    $("#replay-algorithm").disabled = !visible.length || state.replayBusy;
+    if ($("#replay-output").classList.contains("empty-state"))
+      $("#replay-output").textContent = t(visible.length ? "replay.outputEmpty" : "replay.emptyHelp");
+  }
+
+  function resetReplay() {
+    ++state.replayRequestId;
+    state.currentReplay = null;
+    $("#replay-output").className = "replay-output empty-state";
+    $("#replay-output").textContent = t("replay.outputEmpty");
+    setMessage("#replay-message", "");
   }
 
   function renderReplayOutput(data) {
@@ -1030,9 +1168,12 @@
 
   async function replay() {
     const instance = $("#replay-select").value;
-    if (!instance) return;
-    const button = $("#replay-button");
-    button.disabled = true;
+    if (!instance || state.replayBusy) return;
+    resetReplay();
+    state.currentReplay = instance;
+    const requestId = state.replayRequestId;
+    state.replayBusy = true;
+    renderReplays();
     setMessage("#replay-message", t("replay.running"));
     try {
       const algorithm = $("#replay-algorithm").value;
@@ -1040,18 +1181,22 @@
         method: "POST",
         body: JSON.stringify({ instance, ...(algorithm ? { algorithm } : {}) }),
       });
+      if (requestId !== state.replayRequestId) return;
       setMessage("#replay-message", "");
       renderReplayOutput(data);
     } catch (error) {
-      setMessage("#replay-message", error.message, true);
+      if (requestId === state.replayRequestId)
+        setMessage("#replay-message", t("replay.failed", { error: error.message }), true);
     } finally {
-      button.disabled = false;
+      state.replayBusy = false;
+      renderReplays();
     }
   }
 
   /* ── Refresh ───────────────────────────────────────── */
 
-  async function refreshAll() {
+  async function refreshAll(preferredResult = null) {
+    const refreshId = ++state.refreshRequestId;
     try {
       const [configs, algorithms, results, jobs, replays] = await Promise.all([
         api("/api/configs"),
@@ -1060,9 +1205,11 @@
         api("/api/jobs"),
         api("/api/replay-files"),
       ]);
+      if (refreshId !== state.refreshRequestId) return;
       state.configs = configs.configs;
       state.algorithms = algorithms.algorithms;
-      state.results = results.results;
+      state.results = [...results.results].sort((a, b) =>
+        b.modified_at.localeCompare(a.modified_at) || a.name.localeCompare(b.name));
       $("#use-quick").disabled = !state.configs.some((item) => item.path === "quick.json");
       $$('[data-scenario]').forEach((button) => {
         button.disabled = !state.configs.some((item) => item.path === button.dataset.scenario);
@@ -1111,21 +1258,32 @@
         // single configuration there is no change event to trigger a reload.
         await loadConfig(nextConfigPath);
       } else await loadConfig("");
+      if (refreshId !== state.refreshRequestId) return;
+      // Read the latest user selection after awaits, never the one at refresh start.
+      const preferred = (typeof preferredResult === "string" && preferredResult)
+        || $("#result-select").value || state.currentResult || savedResult();
       setSelect(
         "#result-select",
         state.results.map((item) => ({ label: item.name, value: item.name })),
         t("results.noResult"),
       );
       const select = $("#result-select");
-      if (state.results.length) {
-        select.value =
-          state.currentResult &&
-          state.results.some((item) => item.name === state.currentResult)
-            ? state.currentResult
-            : (state.results.find((item) => item.name === "quick") || state.results[0]).name;
-        loadResult(select.value);
-      } else loadResult("");
+      const candidates = state.results.map((item) => item.name);
+      if (candidates.includes(preferred)) {
+        candidates.splice(candidates.indexOf(preferred), 1);
+        candidates.unshift(preferred);
+      }
+      let notice = preferred && !candidates.includes(preferred) ? preferred : null;
+      if (!candidates.length) await loadResult("", notice);
+      for (const name of candidates) {
+        if (refreshId !== state.refreshRequestId) return;
+        select.value = name;
+        const loaded = await loadResult(name, notice);
+        if (loaded !== false) break; // Success or superseded by a user action.
+        notice ||= name;
+      }
     } catch (error) {
+      if (refreshId !== state.refreshRequestId) return;
       $("#api-status").textContent =
         `${t("topbar.offline")} · ${error.message}`;
       $("#api-status").style.color = "var(--red)";
@@ -1154,21 +1312,41 @@
     $("#result-select").focus({ preventScroll: true });
   });
 
+  $$(".result-nav a").forEach((link) => link.addEventListener("click", (event) => {
+    event.preventDefault();
+    const target = $(link.getAttribute("href"));
+    target.scrollIntoView({ block: "start" });
+    target.focus({ preventScroll: true });
+  }));
+
   $("#config-select").addEventListener("change", (event) =>
     loadConfig(event.target.value),
   );
   $("#run-button").addEventListener("click", runBenchmark);
   $("#output-name").addEventListener("input", () => {
-    state.outputEdited = $("#output-name").value !== "";
+    state.outputEdited = true;
+    validateOutput();
   });
   $("#result-select").addEventListener("change", (event) =>
     loadResult(event.target.value),
   );
   $("#refresh-results").addEventListener("click", refreshAll);
   $("#replay-select").addEventListener("change", (event) => {
+    resetReplay();
     state.currentReplay = event.target.value || null;
   });
+  $("#replay-scope").addEventListener("change", () => {
+    resetReplay();
+    renderReplays();
+  });
+  $("#replay-algorithm").addEventListener("change", () => {
+    const selected = state.currentReplay;
+    resetReplay();
+    state.currentReplay = selected;
+  });
   $("#replay-button").addEventListener("click", replay);
+  $("#report-close").addEventListener("click", () => $("#report-dialog").close());
+  $("#report-dialog").addEventListener("close", () => { ++state.reportRequestId; });
   $$("[data-language]").forEach((button) =>
     button.addEventListener("click", () => {
       applyLanguage(button.dataset.language);

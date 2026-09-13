@@ -145,7 +145,7 @@
                 id="output-name"
                 data-i18n-placeholder="fields.outputPlaceholder"
                 placeholder="例如 quick-dashboard"
-                maxlength="81"
+                aria-describedby="output-rule output-error"
               />
             </label>
             <button
@@ -157,6 +157,8 @@
               <span>↗</span>
             </button>
           </div>
+          <p class="help-text" id="output-rule" data-i18n="fields.nameRule"></p>
+          <div id="output-error" class="message hidden" role="alert"></div>
           <p class="help-text" data-i18n="fields.outputHelp">结果保存在本机 results/ 下。同名且配置兼容时复用已完成计算；换个文件夹名称可保留独立的一次运行。</p>
           <details class="advanced-options">
             <summary data-i18n="fields.advanced">高级选项</summary>
@@ -168,6 +170,41 @@
             <span data-i18n="run.idle">准备就绪后，点击“运行实验”；进度会显示在这里。</span>
           </div>
           <div id="run-message" class="message hidden"></div>
+        </section>
+
+        <section id="results-section" class="result-controls" aria-label="结果选择" tabindex="-1">
+          <div class="section-heading split">
+            <div>
+              <p class="section-kicker" data-i18n="gallery.kicker">
+                GALLERY · 成果
+              </p>
+              <h2 data-i18n="gallery.title">查看实验结果</h2>
+              <p class="lede" data-i18n="gallery.lede">
+                选择一次实验，先比较算法，再查看图表与完整报告。可以直接阅读已有结果。
+              </p>
+            </div>
+            <div class="result-picker">
+              <select class="field" id="result-select" aria-label="查看哪次实验" data-i18n-aria="results.selectLabel">
+                <option value="">暂无结果</option>
+              </select>
+              <button
+                class="button button-secondary"
+                id="refresh-results"
+                data-i18n="actions.refreshResults"
+              >
+                刷新
+              </button>
+            </div>
+          </div>
+          <div class="result-meta" id="result-meta"></div>
+          <div id="result-notice" class="message hidden" role="status"></div>
+          <div id="result-message" class="message hidden" role="status"></div>
+
+          <nav class="result-nav" aria-label="结果内容导航" data-i18n-aria="nav.label">
+            <a href="#comparison" data-i18n="nav.summary">算法对照</a>
+            <a href="#gallery-grid" data-i18n="nav.charts">图表与报告</a>
+            <a href="#replay-section" data-i18n="nav.replay">案例回放</a>
+          </nav>
         </section>
 
         <section
@@ -200,38 +237,11 @@
         </section>
 
         <section
-          id="results-section"
           class="gallery-section"
           aria-label="成果画廊"
           data-i18n-aria="gallery.ariaLabel"
         >
-          <div class="section-heading split">
-            <div>
-              <p class="section-kicker" data-i18n="gallery.kicker">
-                GALLERY · 成果
-              </p>
-              <h2 data-i18n="gallery.title">查看实验结果</h2>
-              <p class="lede" data-i18n="gallery.lede">
-                选择一次实验，先比较算法，再查看图表与完整报告。可以直接阅读已有结果。
-              </p>
-            </div>
-            <div class="result-picker">
-              <select class="field" id="result-select" aria-label="查看哪次实验" data-i18n-aria="results.selectLabel">
-                <option value="">暂无结果</option>
-              </select>
-              <button
-                class="button button-secondary"
-                id="refresh-results"
-                data-i18n="actions.refreshResults"
-              >
-                刷新
-              </button>
-            </div>
-          </div>
-          <div class="result-meta" id="result-meta"></div>
-          <div id="result-message" class="message hidden" role="status"></div>
-
-          <article class="panel summary-panel">
+          <article id="comparison" class="panel summary-panel" tabindex="-1">
             <div class="panel-heading">
               <div>
                 <p class="section-kicker" data-i18n="gallery.summaryKicker">
@@ -264,11 +274,12 @@
             </div>
           </article>
 
-          <div class="gallery-grid" id="gallery-grid">
+          <div class="gallery-grid" id="gallery-grid" tabindex="-1">
             <div class="frame frame-empty empty-state" data-i18n="gallery.empty">还没有实验结果。先选用入门示例，再运行实验。</div>
           </div>
 
           <div
+            id="replay-section" tabindex="-1"
             class="replay-strip"
             aria-label="失败案例回放"
             data-i18n-aria="replay.ariaLabel"
@@ -282,12 +293,19 @@
                 >用记录的算法重现失败，核对结果。</small
               >
             </div>
-            <select class="field" id="replay-select">
+            <label class="field-group replay-scope">
+              <span data-i18n="replay.scope">案例来源</span>
+              <select class="field" id="replay-scope">
+                <option value="current" data-i18n="replay.current">当前结果的案例</option>
+                <option value="others" data-i18n="replay.others">其他已保存案例（包括没有报告的目录）</option>
+              </select>
+            </label>
+            <select class="field" id="replay-select" aria-label="选择案例文件" data-i18n-aria="replay.file">
               <option value="" data-i18n="replay.noFiles">
                 暂无失败案例文件
               </option>
             </select>
-            <select class="field" id="replay-algorithm">
+            <select class="field" id="replay-algorithm" aria-label="回放算法" data-i18n-aria="replay.algorithmLabel">
               <option value="" data-i18n="replay.recordedAlgorithm">
                 使用记录算法
               </option>
@@ -311,6 +329,16 @@
         Maximum Coverage · 本地成果展板 · CLI 仍可使用
       </footer>
     </div>
+    <dialog id="report-dialog" aria-labelledby="report-title">
+      <header class="report-toolbar">
+        <h2 id="report-title"></h2>
+        <button class="button button-secondary" id="report-close" data-i18n="report.close">返回结果</button>
+      </header>
+      <p class="help-text" data-i18n="report.language"></p>
+      <a id="report-source" class="text-link" download data-i18n="report.source">下载原始 Markdown</a>
+      <div id="report-content" aria-live="polite"></div>
+    </dialog>
+    <script src="/report.js"></script>
     <script src="/app.js"></script>
   </body>
 </html>
