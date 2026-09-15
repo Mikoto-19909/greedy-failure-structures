@@ -1,0 +1,110 @@
+{
+  "baseline_commit": "2c4c3de",
+  "representatives": 13,
+  "cases_per_variant": 8790,
+  "accepted": 979,
+  "rejected": 7811,
+  "variants": {
+    "inplace": {
+      "differences": 0,
+      "first_difference": null,
+      "public_shape_equal": true,
+      "old_pickles_equal": true,
+      "source_lines": 958,
+      "leaf_lines": 0,
+      "private_type_hints": {
+        "_validate_p4_3_record_parameters": "passed",
+        "_validate_paired_uniform_record_parameters": "passed"
+      },
+      "existing_tests": {
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "success": true
+      }
+    },
+    "stage1": {
+      "differences": 0,
+      "first_difference": null,
+      "public_shape_equal": true,
+      "old_pickles_equal": true,
+      "source_lines": 654,
+      "leaf_lines": 318,
+      "private_type_hints": {
+        "_validate_p4_3_record_parameters": "NameError: name 'InstanceRecord' is not defined",
+        "_validate_paired_uniform_record_parameters": "NameError: name 'InstanceRecord' is not defined"
+      }
+    },
+    "stage2": {
+      "differences": 0,
+      "first_difference": null,
+      "public_shape_equal": true,
+      "old_pickles_equal": true,
+      "source_lines": 437,
+      "leaf_lines": 540,
+      "private_type_hints": {
+        "_validate_p4_3_record_parameters": "NameError: name 'InstanceRecord' is not defined",
+        "_validate_paired_uniform_record_parameters": "NameError: name 'InstanceRecord' is not defined"
+      },
+      "existing_tests": {
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "success": true
+      }
+    },
+    "reordered": {
+      "differences": 13,
+      "first_difference": "uniform/multi/0",
+      "public_shape_equal": true,
+      "old_pickles_equal": true,
+      "source_lines": 952,
+      "leaf_lines": 0,
+      "private_type_hints": {
+        "_validate_p4_3_record_parameters": "passed",
+        "_validate_paired_uniform_record_parameters": "passed"
+      }
+    }
+  },
+  "negative_example": {
+    "original": [
+      "rejected",
+      "ValueError",
+      "unsupported instance record schema version 99; expected 2"
+    ],
+    "reordered": [
+      "rejected",
+      "ValueError",
+      "config_hash must be a non-empty string"
+    ]
+  },
+  "schema_2_float_constructor": {
+    "accepted": true,
+    "stored_type": "float"
+  },
+  "schema_2_float_csv": [
+    "ValueError",
+    "CSV field 'schema_version' must be an integer"
+  ],
+  "error_types": {
+    "ValueError": 5536,
+    "TypeError": 2275
+  },
+  "entry_categories": {
+    "valid": 13,
+    "csv-valid": 13,
+    "ctor": 4940,
+    "csv": 3458,
+    "parameter": 273,
+    "multi": 78,
+    "normalization-json": 13,
+    "normalization-selected": 2
+  },
+  "pickle_revalidates": false,
+  "replace_revalidates": true,
+  "flattened_post_init_ast_equal": true,
+  "post_init_original_lines": 381,
+  "post_init_candidate_lines": 163
+}
