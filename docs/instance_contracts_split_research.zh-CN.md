@@ -137,9 +137,11 @@ C 中的新模块可命名为 `_instance_family_validation.py`，包含家族元
 
 ## 10. 证据来源与复查入口
 
-代码来源均按本地 `2c4c3de` 核对；这是本地未发布的实现基线，不把它标为远端已发布版本。研究原型、输入与完整观测保存在 `results/instance_contracts_research/`，摘要为 `summary.json`。输入和变异由确定规则产生，复查时使用 Python 3.12.14，并设置 `PYTHONHASHSEED=0` 比较 hash；此设置只服务本地比较，不改变项目默认行为。
+研究源码基线固定为 [`2c4c3de`](https://github.com/Mikoto-19909/greedy-failure-structures/commit/2c4c3dec4beb3e6c1f9abe07de6a644c6e4bf49c)。原始输入、脚本、完整观测、旧 pickle 和复现所需源码已补充归档到受保护的 `codex/evidence/instance-contracts-study-v1` 分支，固定提交 [`0709c32`](https://github.com/Mikoto-19909/greedy-failure-structures/tree/0709c321153a257e26de278514b22db70748e2a7)。2026-09-15 发布时已回读远端提交与文件树；所有链接使用完整提交 ID，复查不依赖本地 ignored 目录。
 
-`probe.py` 的 baseline、inplace、stage1、stage2 模式分别对应原实现和三个提取原型；reordered 为负对照。它只在进程中替换模块加载内容。`run_checks.py` 执行选取的现有测试；这里的原型结果不等同于生产文件已修改或整套 CI 已完成。正式代码实施应从本节固定输入构建新旧对照，不覆盖原始观测。
+按 [复现说明](https://github.com/Mikoto-19909/greedy-failure-structures/blob/0709c321153a257e26de278514b22db70748e2a7/results/instance_contracts_research/README.md) 使用 Python 3.12.14 运行 `reproduce.py`，入口在新目录恢复源码和输入，自动设置 `PYTHONHASHSEED=0`，不覆盖归档。2026-09-15 已重现五个版本各 8,790 项调用、A/B/C 零差异、负对照 13 项差异，以及基线/A/C 各 15 项现有测试。旧负对照观测缺少两项后来增加的类型注解诊断；比较只允许这两个新增字段，其余历史字段全部核对。
+
+`probe.py` 的 baseline、inplace、stage1、stage2 模式分别对应原实现和三个提取原型；reordered 为负对照。它只在进程中替换模块加载内容。`run_checks.py` 执行选取的现有测试；这里的原型结果不等同于生产文件已修改或整套 CI 已完成。早期漏改裸 self 的失败观测一并归档，但该中间原型源码未保留，不能据此重放该次失败；本次也未重新执行所有历史人工 AST 核对。正式代码实施应从本节固定输入构建新旧对照，不覆盖原始观测。
 
 [^1]: greedy-failure-structures，[_instance_contracts.py](../src/maxcover/_instance_contracts.py)，本地 `2c4c3de`；重点为 22-43、54-338、341-805、807-952 行。提供职责、顺序、规范化、类型与 CSV 的一手实现证据。
 [^2]: greedy-failure-structures，[contracts.py](../src/maxcover/contracts.py) 与 [包入口](../src/maxcover/__init__.py)，本地 `2c4c3de`；提供公开导出及类型身份路径。
@@ -149,7 +151,7 @@ C 中的新模块可命名为 `_instance_family_validation.py`，包含家族元
 [^6]: greedy-failure-structures，[test_p4_new_families.py](../tests/test_p4_new_families.py)，本地 `2c4c3de`；重点为 983-1269 行的记录、配对、参数和证书行为。
 [^7]: greedy-failure-structures，[test_p4_adversarial.py](../tests/test_p4_adversarial.py)，本地 `2c4c3de`；legacy/v2、证书和 construction_version 的行为案例。
 [^8]: greedy-failure-structures，[r4_dual_io.py](../analysis/r4_dual_io.py) 与 [DUAL 使用说明](../analysis/r4_dual_usage.zh-CN.md)，本地 `2c4c3de`；提供冻结源码检查和历史复现入口。
-[^9]: 本次本地验证材料，[summary.json](../results/instance_contracts_research/summary.json)、[probe.py](../results/instance_contracts_research/probe.py)、[现有测试入口](../results/instance_contracts_research/run_checks.py)，2026-09-10。包含输入、各版本完整观测、失败原型和负对照；未发布到远端。
+[^9]: 2026-09-10 原始研究材料，2026-09-15 补充远端归档：[summary.json](https://github.com/Mikoto-19909/greedy-failure-structures/blob/0709c321153a257e26de278514b22db70748e2a7/results/instance_contracts_research/summary.json)、[probe.py](https://github.com/Mikoto-19909/greedy-failure-structures/blob/0709c321153a257e26de278514b22db70748e2a7/results/instance_contracts_research/probe.py)、[现有测试入口](https://github.com/Mikoto-19909/greedy-failure-structures/blob/0709c321153a257e26de278514b22db70748e2a7/results/instance_contracts_research/run_checks.py)。同一固定提交包含输入、各版本完整观测、失败观测和负对照，以及基线源码包和新目录复现入口。
 [^10]: Python Software Foundation，[dataclasses - Python 3.12.14 documentation](https://docs.python.org/3.12/library/dataclasses.html)，访问于 2026-09-10；字段顺序、frozen/slots、post-init 和 replace。同步核对本地 Python 3.12.14 的 `Lib/dataclasses.py`。
 [^11]: Python Software Foundation，[pickle - Pickling Class Instances](https://docs.python.org/3.12/library/pickle.html#pickling-class-instances)，访问于 2026-09-10；类定位和恢复对象状态的语义。
 [^12]: Python Software Foundation，[typing - TYPE_CHECKING](https://docs.python.org/3.12/library/typing.html#typing.TYPE_CHECKING)，访问于 2026-09-10；运行时与静态类型检查的区别。本地另核对 `get_type_hints` 的命名空间行为。
