@@ -15,9 +15,10 @@
 
 ## 固定资料位置
 
-完整资料保留在现有加速分支的
+完整资料保留在原加速工作的
 [固定提交 e1d865b](https://github.com/Mikoto-19909/greedy-failure-structures/tree/e1d865bd90ebd13530515f31c01115fe515df26a)。
-它是已推送的普通 Git 历史，不冒称已经发布到受保护证据分支；原分支与本地工作树保留。
+该固定历史已接入主线祖先，仍属于普通 Git 历史，不冒称已发布到受保护证据分支。
+当前源码树沿用 PR #56／#57 的交付布局及后续修复；原本地工作树和可选环境保留。
 
 - [CPU 验证测量与限制](https://github.com/Mikoto-19909/greedy-failure-structures/blob/e1d865bd90ebd13530515f31c01115fe515df26a/experiments/acceleration_v1/e2e_ab/REPORT.zh-CN.md)
   及[配对时间表](https://github.com/Mikoto-19909/greedy-failure-structures/blob/e1d865bd90ebd13530515f31c01115fe515df26a/experiments/acceleration_v1/e2e_ab/paired_comparison.csv)。
