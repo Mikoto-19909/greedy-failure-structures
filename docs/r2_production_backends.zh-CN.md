@@ -7,6 +7,7 @@
 ## CPU
 
 先按 [R2 使用说明](../analysis/r2_usage.zh-CN.md)恢复本地缺失的 F2 配置。
+该指南同时说明基础分析依赖和已有批次的恢复方式；以下输出目录须尚不存在，续跑添加 `--resume`。
 代码只在显式选择后端时使用对应依赖，固定配置的值与原样本不变。
 
 ```console
@@ -53,14 +54,18 @@ CUDA 内存池上限为 64 MiB，额外保留至少 128 MiB 空闲显存余量�
 混合恢复不是单一后端性能样本。CUDA 预算失败/中断会终止并有界回收拥有者，保留完整
 检查点，未完成图不写成功。加速生产和 F2 预检验证不得改变原 Python 成本基线。
 
+生产完成后，先安装 [快速验证指南](r2_fast_verification.zh-CN.md)所需依赖及 R2 分析依赖，
+再核验当前原图、重建表和核对派生结果；CUDA 生产结果也可使用独立 CPU 验证：
+
 ```console
-python analysis/validate_r2_budget_grid_fast.py --output results/r2_cpu --workers 4 --verification-backend numba
 python analysis/r2_budget_grid.py analyze --output results/r2_cpu --no-plot --verification-backend numba --verification-workers 4
 python analysis/validate_r2_budget_grid.py --output results/r2_cpu --summaries-only
 ```
 
 生产与验证后端独立，验证器不使用生产器缓存或内核取得答案。完整计时可用
 `run → analyze --no-plot → --summaries-only`，因为 analyze 已重算图，无需重复单独验证。
+检查 CUDA 输出时将上述目录替换为 `results/r2_cuda`。只检查原图或需要单独的
+`verification.json`，使用[快速验证指南](r2_fast_verification.zh-CN.md)中的独立命令。
 
 CPU 研究检查实际执行 NumBa 与回退。真实 GPU 检查在安装了生产 CPU/CUDA extra、
 SciPy 1.18.1 的独立环境运行：

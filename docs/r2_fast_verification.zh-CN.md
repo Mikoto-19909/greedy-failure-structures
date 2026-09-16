@@ -7,11 +7,20 @@
 
 ## 使用
 
+先按 [R2 环境与当前用法](../analysis/r2_usage.zh-CN.md#环境与当前用法)准备基础环境及已有批次；
+下面的 extra 安装可选验证依赖，分析仍需要该指南列出的 SciPy。
+若要验证当前原图并重建表，使用以下路径；analyze 内部已执行原图验证：
+
 ```console
 python -m pip install ".[fast-verification]"
-python analysis/validate_r2_budget_grid_fast.py --output results/r2_grid_v1 --workers 4 --verification-backend numba
 python analysis/r2_budget_grid.py analyze --output results/r2_grid_v1 --no-plot --verification-backend numba --verification-workers 4
 python analysis/validate_r2_budget_grid.py --output results/r2_grid_v1 --summaries-only
+```
+
+只检查原图、不重建表，或需要单独写入 `verification.json` 时，改用：
+
+```console
+python analysis/validate_r2_budget_grid_fast.py --output results/r2_grid_v1 --workers 4 --verification-backend numba
 ```
 
 输出目录必须已经含原批次的 `config.json` 和图检查点，准备与恢复方法见
