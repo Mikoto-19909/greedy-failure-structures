@@ -2,7 +2,8 @@
   "use strict";
   const $ = (id) => document.getElementById(id);
   const state = { library: [], selected: new Set(), view: "library", request: 0,
-    comparison: null, detail: null, step: 0, timer: null, page: 0 };
+    comparison: null, detail: null, step: 0, timer: null, page: 0,
+    saveBusy: false, outputRequest: 0, savedListRequest: 0, savedSelectionVersion: 0, saved: null };
   const percent = (value) => value == null ? "—" : `${(100 * value).toFixed(2)}%`;
   const number = (value, digits = 2) => value == null ? "—" : Number(value).toLocaleString("zh-CN", { maximumFractionDigits: digits });
   const population = (value) => ({ pilot: "pilot 实验样本", confirmation: "确认实验样本", experiment: "实验样本", fixture: "功能夹具" })[value] || value;
@@ -157,6 +158,7 @@
     if (!data.rows.length) empty("records-body", "当前明细筛选没有匹配记录。可调整筛选条件。", 7);
     $("page-info").textContent = `第 ${data.page + 1} / ${data.pages} 页 · 明细 ${data.total} 条 · 汇总 ${data.filtered_records} / 输入 ${data.input_records} 条`;
     $("page-prev").disabled = data.page === 0; $("page-next").disabled = data.page + 1 >= data.pages;
+    $("save-view").disabled = state.saveBusy;
   }
   async function compare(reset = false) {
     if (!state.selected.size) return;
@@ -166,6 +168,7 @@
     empty("summary-body", "正在读取…", 9); empty("records-body", "正在读取…", 7);
     $("comparison-chart").replaceChildren(); $("page-info").textContent = "";
     $("page-prev").disabled = true; $("page-next").disabled = true;
+    $("save-view").disabled = true; state.comparison = null;
     try { const data = await api("compare", compareParams()); if (request !== state.request) return;
       renderComparison(data); message();
     } catch (error) { if (request === state.request) { empty("summary-body", "无法读取当前比较。", 9); empty("records-body", "修正来源或筛选后重试。", 7); message(error.message, true); } }
@@ -266,6 +269,86 @@
       renderDetail(data); message();
     } catch (error) { if (request === state.request) message(error.message, true); }
   }
+  async function savedList(selectId = "") {
+    const current = selectId || $("saved-select").value;
+    const request = ++state.savedListRequest, selectionVersion = state.savedSelectionVersion;
+    $("refresh-saved").disabled = true; $("open-saved").disabled = true;
+    try {
+      const data = await api("views");
+      if (request !== state.savedListRequest) return;
+      const selection = selectionVersion === state.savedSelectionVersion ? current : $("saved-select").value;
+      $("saved-select").replaceChildren(new Option("选择已保存分析", ""));
+      for (const view of data.views) {
+        const option = new Option(view.error ? `无法读取 · ${view.id}` : `${view.title} · ${view.saved_at} · ${view.total} 条`, view.id);
+        option.disabled = Boolean(view.error); $("saved-select").append(option);
+      }
+      $("saved-select").value = selection;
+      $("open-saved").disabled = !$("saved-select").value;
+      const invalid = data.views.filter((view) => view.error).length;
+      $("saved-message").textContent = data.views.length ? `共 ${data.views.length} 份保存的分析${invalid ? `，${invalid} 份无法读取` : ""}。` : "尚未保存分析。进入比较页后，可保存筛选、备注和当时的完整数据。";
+    } catch (error) { if (request === state.savedListRequest) $("saved-message").textContent = error.message; }
+    finally { if (request === state.savedListRequest) $("refresh-saved").disabled = false; }
+  }
+  async function openSaved(viewId) {
+    if (!viewId) return;
+    const request = ++state.outputRequest;
+    state.saved = null; $("saved-title").textContent = "正在读取保存的分析…";
+    $("saved-info").textContent = ""; $("saved-report").replaceChildren(); $("saved-downloads").replaceChildren();
+    $("reload-saved-filter").disabled = true;
+    if (!$("saved-dialog").open) $("saved-dialog").showModal();
+    try {
+      const data = await api(`views/${viewId}`);
+      const response = await fetch(`/api/workbench/views/${viewId}/artifact?format=md`);
+      if (!response.ok) throw new Error("无法读取保存的摘要");
+      const report = await response.text();
+      if (request !== state.outputRequest || !$("saved-dialog").open) return;
+      state.saved = data; $("saved-title").textContent = data.title;
+      $("saved-info").textContent = `${data.saved_at} · 导出 ${data.comparison.total} 条明细 · 汇总 ${data.comparison.filtered_records} 条`;
+      for (const [format, label] of [["csv", "筛选记录 CSV"], ["md", "研究摘要 Markdown"], ["svg", "均值图 SVG"], ["json", "完整分析 JSON"]]) {
+        if (format === "svg" && !data.comparison.summaries.some((row) => row.mean_gap != null)) continue;
+        const link = el("a", label, "button button-secondary");
+        link.href = `/api/workbench/views/${viewId}/artifact?format=${format}`; link.download = `comparison.${format}`;
+        $("saved-downloads").append(link);
+      }
+      $("saved-report").replaceChildren(window.MaxcoverReport.render(report));
+      $("reload-saved-filter").disabled = false;
+    } catch (error) { if (request === state.outputRequest) $("saved-info").textContent = error.message; }
+  }
+  $("save-comparison").addEventListener("submit", async (event) => {
+    event.preventDefault(); if (state.saveBusy || !state.comparison) return;
+    state.saveBusy = true; $("save-view").disabled = true;
+    const contextRequest = state.request, outputRequest = state.outputRequest;
+    const filters = Object.fromEntries(["case", "algorithm", "population", "outcome"].map((name) => [name, $(`compare-${name}`).value]));
+    const payload = { title: $("save-title").value, note: $("save-note").value, sources: [...state.selected], filters };
+    message("正在保存完整筛选数据…");
+    try {
+      const response = await fetch("/api/workbench/views", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      const data = await response.json(); if (!response.ok) throw new Error(data.error || "保存失败");
+      await savedList(data.id);
+      if (contextRequest === state.request && state.view === "compare" && outputRequest === state.outputRequest) {
+        message("分析已保存；下载使用保存时的内容。"); await openSaved(data.id);
+      }
+    } catch (error) {
+      if (contextRequest === state.request) message(error.message, true);
+      else $("saved-message").textContent = `保存失败：${error.message}`;
+    }
+    finally { state.saveBusy = false; $("save-view").disabled = !state.comparison; }
+  });
+  $("refresh-saved").addEventListener("click", () => savedList());
+  $("saved-select").addEventListener("change", () => { ++state.savedSelectionVersion; $("open-saved").disabled = !$("saved-select").value; });
+  $("open-saved").addEventListener("click", () => openSaved($("saved-select").value));
+  $("close-saved").addEventListener("click", () => $("saved-dialog").close());
+  $("saved-dialog").addEventListener("close", () => { ++state.outputRequest; });
+  $("reload-saved-filter").addEventListener("click", () => {
+    if (!state.saved) return;
+    state.selected = new Set(state.saved.comparison.sources); saveSelection(); renderLibrary();
+    for (const [name, value] of Object.entries(state.saved.filters)) {
+      const select = $(`compare-${name}`); if (!select) continue;
+      if (![...select.options].some((option) => option.value === value)) select.add(new Option(value, value));
+      select.value = value;
+    }
+    $("saved-dialog").close(); compare(true);
+  });
   $("refresh-library").addEventListener("click", library);
   for (const id of ["library-search", "library-kind"]) $(id).addEventListener("input", renderLibrary);
   $("compare-selected").addEventListener("click", () => {
@@ -295,4 +378,5 @@
     if (Array.isArray(saved)) state.selected = new Set(saved.filter((source) => typeof source === "string").slice(0, 4));
   } catch (_) { /* A fresh library remains usable without stored selections. */ }
   library();
+  savedList();
 })();

@@ -13,7 +13,8 @@
     <div class="brand-lockup"><div class="brand-mark" aria-hidden="true">MC</div><div>
       <p class="eyebrow">MAXIMUM COVERAGE</p><h1>研究工作台</h1>
     </div></div>
-    <a href="/" class="button button-secondary">运行实验与阅读报告 ↗</a>
+    <div class="wb-actions"><a href="/research" class="button button-primary">专题、反例与运行中心 ↗</a>
+    <a href="/" class="button button-secondary">运行实验与阅读报告 ↗</a></div>
   </header>
   <main class="wb-shell">
     <nav class="wb-nav" aria-label="研究步骤">
@@ -22,6 +23,13 @@
       <button id="nav-detail" disabled>03 实例详情</button>
     </nav>
     <p id="wb-message" role="status" aria-live="polite"></p>
+    <details id="saved-analyses" class="wb-saved">
+      <summary>已保存分析与研究输出</summary>
+      <div class="wb-toolbar"><label>选择保存的分析<select id="saved-select" class="field"><option value="">正在读取…</option></select></label>
+        <button id="open-saved" class="button button-secondary" disabled>打开保存时的摘要</button>
+        <button id="refresh-saved" class="button button-secondary">刷新列表</button></div>
+      <p id="saved-message" class="help-text" role="status"></p>
+    </details>
 
     <section id="view-library" aria-labelledby="library-title">
       <div class="wb-heading"><div><p class="section-kicker">从已有数据开始</p>
@@ -47,6 +55,13 @@
         <label>样本范围<select id="compare-population" class="field"><option value="research">实验样本（排除功能夹具）</option><option value="fixture">仅功能夹具</option><option value="all">全部，分别汇总</option></select></label>
       </div>
       <div class="wb-note">以下是各来源的描述性汇总，未做配对推断。相同种子不自动构成配对；同一实例出现在多份数据中时，各来源分别统计。损失率分母为有可用最优参考和损失值的记录数。</div>
+      <details class="wb-saved"><summary>保存此筛选与研究备注，导出 CSV / Markdown / SVG</summary>
+        <form id="save-comparison" class="wb-toolbar">
+          <label>分析标题<input id="save-title" class="field" required maxlength="120" placeholder="例如 overlap 的失效实例比较" /></label>
+          <label class="wb-note-field">研究备注<textarea id="save-note" class="field" rows="2" maxlength="4000" placeholder="记录观察与解释边界，不自动生成研究结论"></textarea></label>
+          <button id="save-view" class="button button-primary" disabled>保存并打开输出</button>
+        </form><p class="help-text">保存时读取当前筛选的完整数据；之后下载使用这份固定内容。明细筛选不改变汇总分母。</p>
+      </details>
       <div id="comparison-chart" class="wb-comparison" aria-label="各组平均相对损失"></div>
       <div class="wb-table-wrap"><table class="wb-table"><thead><tr><th scope="col">来源 / 案例 / 规模</th><th scope="col">算法 / 样本</th><th scope="col">记录</th><th scope="col">可用损失 / 缺失</th><th scope="col">失效数 / 比例</th><th scope="col">平均 / 最大损失</th><th scope="col">平均覆盖</th><th scope="col">平均秒数</th><th scope="col">错误 / 超时</th></tr></thead><tbody id="summary-body"></tbody></table></div>
       <div class="wb-heading wb-subheading"><div><h3>实例明细</h3><p class="help-text">按相对损失从高到低排列。明细筛选不改变上方汇总的分母。R1 每个实例展示一条 Greedy 记录。</p></div>
@@ -72,6 +87,15 @@
       </div>
     </section>
   </main>
+  <dialog id="saved-dialog" class="wb-output-dialog">
+    <div class="wb-heading"><div><h2 id="saved-title">已保存分析</h2><p id="saved-info" class="help-text"></p></div>
+      <button id="close-saved" class="button button-secondary">关闭</button></div>
+    <div id="saved-downloads" class="wb-actions"></div>
+    <p class="help-text">下载使用保存时的内容；“按当前文件重新比较”会重新读取原来源，结果可能变化。</p>
+    <button id="reload-saved-filter" class="button button-secondary">按当前文件重新比较</button>
+    <article id="saved-report" class="report-body"></article>
+  </dialog>
+  <script src="/report.js"></script>
   <script src="/workbench.js"></script>
 </body>
 </html>

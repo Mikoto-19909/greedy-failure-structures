@@ -27,6 +27,9 @@ from urllib.parse import parse_qs, unquote, urlparse
 from .algorithms import ALGORITHMS
 from .benchmark import REPORT_FILENAMES, plan_benchmark, replay_instance_file, run_benchmark
 from .config import load_config
+from .dashboard_exports import ComparisonExports
+from .dashboard_jobs import JobConflictError, JobService
+from .dashboard_studies import StudiesService
 from .dashboard_workbench import WorkbenchService
 from .reproducibility import config_hash
 
@@ -87,6 +90,17 @@ class DashboardUnsupportedMediaTypeError(DashboardRequestError):
 
 def _iso_now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+def _research_browser_numbers(value: object) -> object:
+    """Keep seeds and exact search-space counts beyond JavaScript's integer range."""
+    if type(value) is int and abs(value) > 9_007_199_254_740_991:
+        return str(value)
+    if isinstance(value, dict):
+        return {key: _research_browser_numbers(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_research_browser_numbers(item) for item in value]
+    return value
 
 
 def _safe_child(root: Path, relative: str) -> Path:
@@ -205,6 +219,26 @@ class DashboardService:
         self._jobs: dict[str, _Job] = {}
         self._lock = threading.RLock()
         self.workbench = WorkbenchService(self.project_root)
+        self.exports = ComparisonExports(self.project_root)
+        self.studies = StudiesService(self.project_root)
+        self._research_jobs: JobService | None = None
+        self._closed = False
+
+    @property
+    def research_jobs(self) -> JobService:
+        with self._lock:
+            if self._closed:
+                raise DashboardConflictError("dashboard service is closed")
+            if self._research_jobs is None:
+                self._research_jobs = JobService(self.project_root)
+            return self._research_jobs
+
+    def close(self) -> None:
+        with self._lock:
+            self._closed = True
+            jobs = self._research_jobs
+        if jobs is not None:
+            jobs.close()
 
     def list_configs(self) -> dict[str, object]:
         configs = []
@@ -497,6 +531,12 @@ class _DashboardHTTPServer(ThreadingHTTPServer):
         self.service = service
         super().__init__(address, _DashboardRequestHandler)
 
+    def server_close(self) -> None:
+        try:
+            super().server_close()
+        finally:
+            self.service.close()
+
 
 class _DashboardRequestHandler(BaseHTTPRequestHandler):
     """Translate HTTP requests into :class:`DashboardService` operations."""
@@ -510,6 +550,9 @@ class _DashboardRequestHandler(BaseHTTPRequestHandler):
         "workbench": ("workbench.html", "text/html; charset=utf-8"),
         "workbench.js": ("workbench.js", "text/javascript; charset=utf-8"),
         "workbench.css": ("workbench.css", "text/css; charset=utf-8"),
+        "research": ("research.html", "text/html; charset=utf-8"),
+        "research.js": ("research.js", "text/javascript; charset=utf-8"),
+        "research.css": ("research.css", "text/css; charset=utf-8"),
         "styles.css": ("styles.css", "text/css; charset=utf-8"),
         "favicon.svg": ("favicon.svg", "image/svg+xml; charset=utf-8"),
         "fonts/space-grotesk-latin-600-normal.woff2": ("fonts/space-grotesk-latin-600-normal.woff2", "font/woff2"),
@@ -532,6 +575,8 @@ class _DashboardRequestHandler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def _send_json(self, payload: object, status: HTTPStatus = HTTPStatus.OK) -> None:
+        if self.path.startswith(("/api/studies/", "/api/research/")):
+            payload = _research_browser_numbers(payload)
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         self._send_bytes(body, "application/json; charset=utf-8", status)
 
@@ -608,8 +653,40 @@ class _DashboardRequestHandler(BaseHTTPRequestHandler):
                 self._send_json(service.get_job(path.rsplit("/", 1)[1]))
             elif path == "/api/results":
                 self._send_json(service.list_results())
+            elif path == "/api/studies/library":
+                self._send_json(service.studies.library())
+            elif path == "/api/studies/detail":
+                self._send_json(service.studies.detail(_one_query(query, "source")))
+            elif path == "/api/studies/artifact":
+                filename = _one_query(query, "file")
+                body, content_type = service.studies.artifact(_one_query(query, "source"), filename)
+                self._send_download(body, content_type, filename)
+            elif path == "/api/research/jobs":
+                self._send_json(service.research_jobs.list_jobs())
+            elif path.startswith("/api/research/jobs/"):
+                parts = path.split("/")
+                if len(parts) == 5:
+                    self._send_json(service.research_jobs.get_job(parts[4]))
+                elif len(parts) == 6 and parts[5] == "result":
+                    self._send_json(service.research_jobs.result(parts[4]))
+                elif len(parts) == 7 and parts[5] == "files":
+                    body, content_type = service.research_jobs.result_asset(parts[4], parts[6])
+                    self._send_download(body, content_type, parts[6])
+                else:
+                    raise DashboardRequestError("unknown research job endpoint")
             elif path == "/api/workbench/library":
                 self._send_json(service.workbench.library())
+            elif path == "/api/workbench/views":
+                self._send_json(service.exports.list_views())
+            elif path.startswith("/api/workbench/views/"):
+                parts = path.split("/")
+                if len(parts) == 6 and parts[5] == "artifact":
+                    body, content_type, filename = service.exports.artifact(parts[4], _one_query(query, "format"))
+                    self._send_download(body, content_type, filename)
+                elif len(parts) == 5:
+                    self._send_json(service.exports.get(parts[4]))
+                else:
+                    raise DashboardRequestError("unknown saved comparison endpoint")
             elif path == "/api/workbench/compare":
                 try:
                     page = int(_one_query(query, "page")) if "page" in query else 0
@@ -638,7 +715,11 @@ class _DashboardRequestHandler(BaseHTTPRequestHandler):
             else:
                 self._serve_static(path)
         except (DashboardRequestError, DashboardConflictError, OSError, ValueError) as error:
-            self._error(error)
+            if self.path.startswith("/api/research/") and isinstance(error, ValueError):
+                self._error(DashboardConflictError(str(error)) if isinstance(error, JobConflictError)
+                            else DashboardRequestError(str(error)))
+            else:
+                self._error(error)
 
     def do_POST(self) -> None:  # noqa: N802
         try:
@@ -651,10 +732,29 @@ class _DashboardRequestHandler(BaseHTTPRequestHandler):
                 self._send_json(service.start_run(payload), HTTPStatus.ACCEPTED)
             elif self.path == "/api/replay":
                 self._send_json(service.replay(payload))
+            elif self.path == "/api/workbench/views":
+                self._send_json(service.exports.save(payload), HTTPStatus.CREATED)
+            elif self.path == "/api/research/jobs":
+                self._send_json(service.research_jobs.submit(payload), HTTPStatus.ACCEPTED)
+            elif self.path.startswith("/api/research/jobs/"):
+                parts = self.path.split("/")
+                if len(parts) == 6 and parts[5] == "retry" and not payload:
+                    self._send_json(service.research_jobs.retry(parts[4]), HTTPStatus.ACCEPTED)
+                else:
+                    raise DashboardRequestError("unknown research operation or nonempty retry payload")
             else:
                 raise DashboardRequestError("unknown API endpoint")
         except (DashboardRequestError, DashboardConflictError, OSError, ValueError) as error:
-            self._error(error)
+            if self.path.startswith("/api/research/") and isinstance(error, ValueError):
+                # Preserve Origin/media-type errors; map the CLI adapter's
+                # validation and queue-conflict exceptions to client responses.
+                if isinstance(error, DashboardRequestError):
+                    self._error(error)
+                else:
+                    self._error(DashboardConflictError(str(error)) if isinstance(error, JobConflictError)
+                                else DashboardRequestError(str(error)))
+            else:
+                self._error(error)
 
     def _serve_static(self, request_path: str) -> None:
         key = request_path.lstrip("/")
@@ -663,6 +763,15 @@ class _DashboardRequestHandler(BaseHTTPRequestHandler):
         filename, content_type = self._STATIC_FILES[key]
         path = STATIC_ROOT / filename
         self._send_bytes(path.read_bytes(), content_type)
+
+    def _send_download(self, body: bytes, content_type: str, filename: str) -> None:
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Content-Disposition", f'attachment; filename="{filename}"')
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(body)
 
 
 def _one_query(query: Mapping[str, list[str]], key: str) -> str:

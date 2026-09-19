@@ -6,7 +6,9 @@ examples, method checks, and broader exploratory workflows.
 The current development phase ends with the R2 failure-reporting fix;
 see the [closeout scope and maintenance status](development_closeout.zh-CN.md).
 Research results and existing tools remain available. New experiments, features
-and further structural splits are paused.
+and further structural splits are paused except for explicitly requested work.
+The separately requested [local workbench expansion](dashboard_expansion_plan.zh-CN.md)
+connects existing artifacts and bounded tools; cloud deployment is outside its scope.
 
 ## Current research
 
@@ -51,6 +53,8 @@ measures experiment commands and local delivery steps after the gate removal.
 
 - [Research workbench](dashboard_workbench_layer1.zh-CN.md): browse saved experiments,
   compare complete inputs and inspect/export R1 trajectories in the local Dashboard
+- [Local research modules](dashboard_expansion_plan.zh-CN.md): saved R2–R4 studies,
+  bounded counterexample jobs, persistent local history and saved analysis exports
 - [Static review preparation](prepare_review.zh-CN.md): committed diffs, bounded source
   context and unexecuted check candidates, without running the reviewed project
 - [Local checks and independent review](local_review.zh-CN.md): execute existing checks

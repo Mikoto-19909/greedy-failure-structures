@@ -166,7 +166,7 @@ class WorkbenchService:
 
     def compare(self, sources: list[str], *, case: str = "", algorithm: str = "",
                 population: str = "research", outcome: str = "all", page: int = 0,
-                page_size: int = 50) -> dict[str, Any]:
+                page_size: int = 50, include_all: bool = False) -> dict[str, Any]:
         if not 1 <= len(sources) <= 4 or len(set(sources)) != len(sources):
             raise WorkbenchError("select one to four distinct sources")
         if population not in {"research", "fixture", "all"} or outcome not in {"all", "loss", "zero", "missing"}:
@@ -218,7 +218,8 @@ class WorkbenchService:
                 "total": len(selected), "page": page, "pages": pages, "page_size": page_size,
                 "cases": sorted({row["case_id"] for row in all_rows}),
                 "algorithms": sorted({row["algorithm_id"] for row in all_rows}),
-                "summaries": summaries, "rows": selected[page * page_size:(page + 1) * page_size]}
+                "summaries": summaries,
+                "rows": selected if include_all else selected[page * page_size:(page + 1) * page_size]}
 
     def detail(self, source: str, key: str) -> dict[str, Any]:
         kind, rows, raw = self._read(source)
