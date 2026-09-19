@@ -49,6 +49,8 @@ measures experiment commands and local delivery steps after the gate removal.
 
 ## Examples and compatibility checks
 
+- [Research workbench](dashboard_workbench_layer1.zh-CN.md): browse saved experiments,
+  compare complete inputs and inspect/export R1 trajectories in the local Dashboard
 - [Static review preparation](prepare_review.zh-CN.md): committed diffs, bounded source
   context and unexecuted check candidates, without running the reviewed project
 - [Local checks and independent review](local_review.zh-CN.md): execute existing checks

@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Greedy · 研究工作台</title>
+  <link rel="icon" href="/favicon.svg" />
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/workbench.css" />
+</head>
+<body>
+  <header class="topbar wb-topbar">
+    <div class="brand-lockup"><div class="brand-mark" aria-hidden="true">MC</div><div>
+      <p class="eyebrow">MAXIMUM COVERAGE</p><h1>研究工作台</h1>
+    </div></div>
+    <a href="/" class="button button-secondary">运行实验与阅读报告 ↗</a>
+  </header>
+  <main class="wb-shell">
+    <nav class="wb-nav" aria-label="研究步骤">
+      <button id="nav-library" aria-current="page">01 实验库</button>
+      <button id="nav-compare" disabled>02 比较分析</button>
+      <button id="nav-detail" disabled>03 实例详情</button>
+    </nav>
+    <p id="wb-message" role="status" aria-live="polite"></p>
+
+    <section id="view-library" aria-labelledby="library-title">
+      <div class="wb-heading"><div><p class="section-kicker">从已有数据开始</p>
+        <h2 id="library-title" tabindex="-1">把值得比较的实验放在一起</h2>
+        <p class="lede">选择最多四份数据，查看描述性差异，再进入具体实例。读取已有结果不会启动实验。</p>
+      </div><button id="refresh-library" class="button button-secondary">刷新实验库</button></div>
+      <div class="wb-toolbar">
+        <label>搜索名称、路径、案例或算法<input id="library-search" class="field" type="search" placeholder="例如 overlap、R1、greedy" /></label>
+        <label>数据类型<select id="library-kind" class="field"><option value="">全部类型</option><option value="benchmark">Benchmark</option><option value="r1">R1 轨迹</option></select></label>
+        <button id="compare-selected" class="button button-primary" disabled>比较所选实验（0）</button>
+      </div>
+      <p id="library-count" class="help-text"></p>
+      <div class="wb-table-wrap"><table class="wb-table"><thead><tr><th scope="col">选择</th><th scope="col">数据来源</th><th scope="col">类型 / 样本</th><th scope="col">案例</th><th scope="col">算法</th><th scope="col">记录 / 实例</th></tr></thead><tbody id="library-body"></tbody></table></div>
+      <p class="wb-note">实验库读取本项目 results/ 与 experiments/ 中的原始 CSV 或 R1 paths.jsonl。文件可读不代表实验完整或独立验证通过；数据来源始终保留。</p>
+    </section>
+
+    <section id="view-compare" aria-labelledby="compare-title" hidden>
+      <div class="wb-heading"><div><p class="section-kicker">比较 → 定位 → 解释</p><h2 id="compare-title" tabindex="-1">哪些实例值得进一步查看？</h2>
+        <p id="compare-sources" class="help-text"></p></div><button id="change-sources" class="button button-secondary">重新选择实验</button></div>
+      <div class="wb-toolbar">
+        <label>案例<select id="compare-case" class="field"><option value="">全部案例</option></select></label>
+        <label>算法<select id="compare-algorithm" class="field"><option value="">全部算法</option></select></label>
+        <label>样本范围<select id="compare-population" class="field"><option value="research">实验样本（排除功能夹具）</option><option value="fixture">仅功能夹具</option><option value="all">全部，分别汇总</option></select></label>
+      </div>
+      <div class="wb-note">以下是各来源的描述性汇总，未做配对推断。相同种子不自动构成配对；同一实例出现在多份数据中时，各来源分别统计。损失率分母为有可用最优参考和损失值的记录数。</div>
+      <div id="comparison-chart" class="wb-comparison" aria-label="各组平均相对损失"></div>
+      <div class="wb-table-wrap"><table class="wb-table"><thead><tr><th scope="col">来源 / 案例 / 规模</th><th scope="col">算法 / 样本</th><th scope="col">记录</th><th scope="col">可用损失 / 缺失</th><th scope="col">失效数 / 比例</th><th scope="col">平均 / 最大损失</th><th scope="col">平均覆盖</th><th scope="col">平均秒数</th><th scope="col">错误 / 超时</th></tr></thead><tbody id="summary-body"></tbody></table></div>
+      <div class="wb-heading wb-subheading"><div><h3>实例明细</h3><p class="help-text">按相对损失从高到低排列。明细筛选不改变上方汇总的分母。R1 每个实例展示一条 Greedy 记录。</p></div>
+        <label>明细筛选<select id="compare-outcome" class="field"><option value="all">全部结果</option><option value="loss">有损失</option><option value="zero">损失为零</option><option value="missing">损失不可用</option></select></label></div>
+      <div class="wb-table-wrap"><table class="wb-table"><thead><tr><th scope="col">来源 / 案例</th><th scope="col">重复 / 种子</th><th scope="col">算法</th><th scope="col">覆盖 / 最优参考</th><th scope="col">相对损失</th><th scope="col">状态</th><th scope="col">查看</th></tr></thead><tbody id="records-body"></tbody></table></div>
+      <div class="wb-pagination"><button id="page-prev" class="button button-secondary">上一页</button><span id="page-info" aria-live="polite"></span><button id="page-next" class="button button-secondary">下一页</button></div>
+    </section>
+
+    <section id="view-detail" aria-labelledby="detail-title" hidden>
+      <div class="wb-heading"><div><p class="section-kicker">回到具体选择</p><h2 id="detail-title" tabindex="-1">实例详情</h2><p id="detail-source" class="help-text"></p></div>
+        <div class="wb-actions"><button id="back-compare" class="button button-secondary">返回比较</button><a id="export-case" class="button button-primary" download="greedy-case.json" hidden>导出 Greedy 案例 JSON</a></div></div>
+      <dl id="record-metadata" class="wb-metadata"></dl>
+      <p id="trace-message" class="wb-note"></p>
+      <div id="trace-view" hidden>
+        <div class="wb-heading wb-subheading"><div><h3>Greedy 选择轨迹</h3><p class="help-text">平局选择最小集合索引。矩阵每行为集合、每列为元素；高亮标明当前已选集合与已覆盖元素。</p></div><p id="trace-outcome"></p></div>
+        <div class="wb-controls"><button id="step-reset" class="button button-secondary">重置</button><button id="step-prev" class="button button-secondary">上一步</button><button id="step-play" class="button button-secondary">播放</button><button id="step-next" class="button button-primary">下一步</button>
+          <label for="step-range">选择步数</label><input id="step-range" type="range" min="0" value="0" /><output id="step-label" for="step-range"></output></div>
+        <div id="step-summary" class="wb-step-summary" aria-live="polite"></div>
+        <div class="wb-trace-grid"><div><div class="wb-matrix-wrap" tabindex="0" aria-label="集合与元素关系，可横向滚动"><svg id="instance-matrix" role="img" aria-label="集合与元素关系矩阵"></svg></div>
+          <p class="help-text">● 集合包含此元素　蓝色行：已选　橙色行：下一步选择　绿色列：已覆盖</p></div>
+          <div><h4>下一步边际收益</h4><div id="gain-list"></div><h4>覆盖与最优可达性</h4><svg id="trajectory-chart" role="img" aria-label="选择步数与覆盖元素数"></svg><p class="help-text">横轴：选择步数；纵轴：覆盖元素数。蓝线为已覆盖，橙线为保存的最优补全值，虚线为保存的全局最优值。</p></div></div>
+        <div class="wb-witness"><h3>最优见证与交换诊断</h3><p id="optimum-witness"></p><p id="tie-witness"></p><div id="swap-summary"></div></div>
+      </div>
+    </section>
+  </main>
+  <script src="/workbench.js"></script>
+</body>
+</html>
