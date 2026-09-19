@@ -27,6 +27,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 from .algorithms import ALGORITHMS
 from .benchmark import REPORT_FILENAMES, plan_benchmark, replay_instance_file, run_benchmark
 from .config import load_config
+from .dashboard_workbench import WorkbenchService
 from .reproducibility import config_hash
 
 
@@ -203,6 +204,7 @@ class DashboardService:
         self.results_root = self.project_root / "results"
         self._jobs: dict[str, _Job] = {}
         self._lock = threading.RLock()
+        self.workbench = WorkbenchService(self.project_root)
 
     def list_configs(self) -> dict[str, object]:
         configs = []
@@ -505,6 +507,9 @@ class _DashboardRequestHandler(BaseHTTPRequestHandler):
         "index.html": ("index.html", "text/html; charset=utf-8"),
         "app.js": ("app.js", "text/javascript; charset=utf-8"),
         "report.js": ("report.js", "text/javascript; charset=utf-8"),
+        "workbench": ("workbench.html", "text/html; charset=utf-8"),
+        "workbench.js": ("workbench.js", "text/javascript; charset=utf-8"),
+        "workbench.css": ("workbench.css", "text/css; charset=utf-8"),
         "styles.css": ("styles.css", "text/css; charset=utf-8"),
         "favicon.svg": ("favicon.svg", "image/svg+xml; charset=utf-8"),
         "fonts/space-grotesk-latin-600-normal.woff2": ("fonts/space-grotesk-latin-600-normal.woff2", "font/woff2"),
@@ -603,6 +608,24 @@ class _DashboardRequestHandler(BaseHTTPRequestHandler):
                 self._send_json(service.get_job(path.rsplit("/", 1)[1]))
             elif path == "/api/results":
                 self._send_json(service.list_results())
+            elif path == "/api/workbench/library":
+                self._send_json(service.workbench.library())
+            elif path == "/api/workbench/compare":
+                try:
+                    page = int(_one_query(query, "page")) if "page" in query else 0
+                except ValueError as error:
+                    raise DashboardRequestError("page must be a non-negative integer") from error
+                self._send_json(service.workbench.compare(
+                    query.get("source", []),
+                    case=_one_query(query, "case") if "case" in query else "",
+                    algorithm=_one_query(query, "algorithm") if "algorithm" in query else "",
+                    population=_one_query(query, "population") if "population" in query else "research",
+                    outcome=_one_query(query, "outcome") if "outcome" in query else "all",
+                    page=page,
+                ))
+            elif path in {"/api/workbench/detail", "/api/workbench/export"}:
+                action = service.workbench.export if path.endswith("/export") else service.workbench.detail
+                self._send_json(action(_one_query(query, "source"), _one_query(query, "key")))
             elif path == "/api/result":
                 self._send_json(service.get_result(_one_query(query, "name")))
             elif path == "/api/replay-files":

@@ -1,0 +1,85 @@
+# Dashboard 第一层研究工作台
+
+## 目标与范围
+
+从现有本地 Dashboard 进入实验库、比较分析、实例详情，完成“选择已有实验 → 筛选比较 → 查看 R1 轨迹 → 导出可回放案例”。基线 `076198f`；实施分支 `codex/dashboard-workbench-layer1-20260919`。
+
+第一层读取当前项目 `results/` 下的 benchmark/R1 产物，以及 `experiments/` 中保存的 benchmark 和 R1 数据。R1c 已保存的兼容轨迹格式也可读取，确认样本与 pilot/功能夹具分别汇总。原实验入口继续可用。原始数据、算法、种子、实验身份与恢复行为保持原样。
+
+- 实验库：搜索名称/路径，区分 benchmark 与 R1，显示案例、算法、记录数、数据来源；独立显示不可读来源。
+- 比较分析：选择最多四份来源；按案例、算法、实验样本/功能夹具筛选；完整读取数据后计算描述性汇总，分页浏览明细，按损失排序并进入实例。
+- 实例详情：显示记录身份和参数；R1 显示集合与元素、逐步选择、新增覆盖、平局候选、最优见证、最优可达性以及交换诊断；支持前后步、播放和重置。
+- 导出：R1 案例导出为现有 replay 支持的实例 JSON，保留来源和诊断。没有实际集合的普通 benchmark 记录只显示记录详情；只在完整身份匹配时关联 R1，不根据 seed 猜测。
+
+比较是描述性并列展示，不做跨实验配对推断或自动计算显著性。夹具与实验样本分开。计算完成、文件可读和独立验证不是同一状态。本轮不增加任务队列、猜想搜索入口或新的实验。
+
+## 实施与验收
+
+1. 增加只读数据接口，限制访问项目数据目录；复用 typed CSV 契约，保留大整数种子的精度。统计覆盖完整输入，不沿用旧展示接口的 2,000 行截断。
+2. 沿用现有视觉样式增加 `/workbench`，提供三个相连视图及返回原实验入口的链接。
+3. 核对真实 R1/pilot 数据的记录数、失效计数、关联身份及导出回放。测试损坏输入、非法路径、缺少诊断、超过 2,000 行、空筛选、请求乱序和窄屏。
+4. 运行相关服务测试、JavaScript 检查、真实浏览器操作及项目日常检查；记录实际结果和限制。
+
+## 完成记录
+
+2026-09-19 完成三视图及只读接口。新增 `dashboard_workbench.py` 负责 typed CSV/R1 读取、完整输入汇总、分页、身份关联和导出；`workbench.html/js/css` 沿用本地页面的样式。原 Dashboard 仅增加工作台入口和服务路由。没有新增运行依赖、统计推断或实验。
+
+### 使用
+
+在项目根目录使用现有环境启动：
+
+```powershell
+python run_project.py dashboard
+```
+
+打开终端给出的本地地址，点击“研究工作台”，或访问同一地址的 `/workbench`。
+本机独立实施工作树可以复用已有解释器：
+
+```powershell
+Set-Location 'D:\test area\greedy-failure\wt-dashboard-workbench'
+& '..\wt-fast-verification\.venv\Scripts\python.exe' run_project.py dashboard
+```
+
+1. 在实验库选择 `experiments/core_rq/overlap_pilot_v1` 和 `experiments/r1_prefix_exchange_v1`。搜索时保留选择，页面刷新后恢复本次浏览器会话的选择。
+2. 点击比较，选择 `greedy`，查看两份数据分别汇总的 30 个 overlap 和 30 个 control 实例；R1 的六个功能夹具默认排除。两份来源重复包含同一 pilot，不能将它们合并为 120 个独立样本。
+3. 将明细筛选设为“有损失”，点击“查看实例”。上方汇总保持原有分母；当前筛选只影响明细。页面每页 50 条，汇总读取全部输入。
+4. 使用上一步、下一步、步数滑块或播放查看集合—元素矩阵、边际收益、保存的最优补全值和交换结果。
+5. 点击“导出 Greedy 案例 JSON”。下载文件包含实际集合、回放期望和来源，不写回原数据。可用现有入口核对：
+
+```powershell
+python run_project.py replay --instance '实际下载路径/greedy-case.json'
+```
+
+工作台当前使用中文。原实验入口保留中英文切换。每个服务读取它所启动项目的数据目录；独立工作树不会自动读取另一个工作树中未提交的 `results/`。
+
+### 验证结果
+
+- Dashboard 服务与 HTTP 检查：28 项通过，包含 11 项新增研究工作台测试。
+- 新工作台真实 Chrome 检查：11 个场景通过。覆盖实验选择与刷新、完整数据汇总、样本/夹具区分、轨迹所有控制、真实下载并回放、390px 布局、分页、空筛选、加载失败恢复、迟到响应和存储禁用。
+- 既有 Dashboard 真实 Chrome 回归：23 个场景通过，包含原实验、报告、回放和三个视口。
+- `python scripts/check.py`：531 项测试，526 项通过，5 项按既有可选/平台条件跳过；必需研究检查均成功。mypy 检查 43 个源码文件通过。
+- R1 的全部 66 个保存实例（60 个 pilot 加 6 个夹具）通过显示一致性检查；逐例导出后由原 replay 引擎核对覆盖值和最终选择。另对一个失效实例用独立集合枚举检查最优值与各前缀补全值。
+- 2,005 行回归数据中，仅最后一行失效：它正确进入筛选明细，统计分母仍是 2,005。缺失参考不会被计成零损失，大整数种子保持原值。
+- 本地 R1c 的 6,000 条兼容记录可读取；抽查一例轨迹可展示。这不是重新执行或重新验证 R1c 正式实验。
+
+复验浏览器时沿用项目既有 Playwright 设置：
+
+```powershell
+$env:NODE_PATH = 'C:\Users\梁道\AppData\Local\npm-cache\_npx\e41f203b7505f1fb\node_modules'
+$env:DASHBOARD_PYTHON = 'D:\test area\greedy-failure\wt-fast-verification\.venv\Scripts\python.exe'
+$env:DASHBOARD_BROWSER_CHANNEL = 'chrome'
+node tests/workbench_browser.cjs
+node tests/dashboard_browser.cjs
+```
+
+缓存和解释器路径是本机设置，其他机器需换成已有安装。浏览器测试在独立临时目录复制已有数据，并只为既有回归运行小型测试实验；不覆盖正式结果。
+
+本地检查记录为 `output/verification/workbench-check.log`、`output/playwright/workbench-browser-checks.json` 与 `output/playwright/browser-checks.json`；截图同在 `output/playwright/`。这些忽略的输出未随源码发布。
+
+首次项目检查因新工作树缺少已忽略的 R2/R3 参考配置且沙箱禁止 Git 锁文件写入而退出；按项目约定恢复这两个缺失文件后重跑通过。浏览器曾发现工作台矩阵和原页面新增链接的窄屏溢出，修正布局及入口位置后对应回归全部通过。
+
+### 边界
+
+读取时检查数据格式与 R1 展示一致性，不自动证明保存的最优值，不替代既有独立验证器。普通 benchmark 缺少实际集合且没有完整身份匹配的 R1 时，仅显示记录详情并禁用案例导出。格式不支持或损坏的来源在实验库中单独报错，比较不会悄悄跳过它。
+
+现阶段每次查询直接读取所选文件，无数据库索引、任务持久化或大规模性能保证；没有开展额外科学实验、远程发布或分支合并。

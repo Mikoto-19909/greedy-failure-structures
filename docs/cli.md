@@ -232,6 +232,12 @@ and do not regenerate their instances from a generator.
 
 ### `dashboard`
 
+The **Research workbench** link opens `/workbench` on the same local service.
+It browses saved benchmark/R1 inputs under `results/` and `experiments/`, compares
+complete inputs with paginated details, and displays/exports saved R1 trajectories.
+Its summaries are descriptive; matching seeds do not imply paired observations.
+See the [workbench scope, usage and verification](dashboard_workbench_layer1.zh-CN.md).
+
 Start the local browser frontend:
 
 ```console
