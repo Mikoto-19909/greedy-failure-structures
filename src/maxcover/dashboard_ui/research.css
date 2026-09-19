@@ -1,0 +1,60 @@
+/* Focused additions for saved studies, bounded experiments and persistent jobs. */
+#research-message { min-height: 22px; color: var(--muted-strong); overflow-wrap: anywhere; }
+#research-message.error, .research-error { color: var(--red); }
+.research-shell h3 { font-size: 19px; line-height: 1.5; }
+.research-shell h4 { font-size: 14px; line-height: 1.6; }
+.research-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 270px), 1fr)); gap: 16px; }
+.research-card, .research-panel { min-width: 0; padding: 22px; border: 1px solid var(--border); border-radius: 10px; background: var(--panel); }
+.research-card h3, .research-panel h3 { margin: 0 0 14px; }
+.research-card p { line-height: 1.75; font-size: 13px; overflow-wrap: anywhere; }
+.research-card .button { margin-top: 8px; }
+.research-card.active { border-color: var(--accent); }
+.research-card .research-kind { color: var(--amber); font-size: 12px; letter-spacing: .06em; }
+.research-detail { margin-top: 36px; padding-top: 12px; border-top: 1px solid var(--border); }
+.research-detail .wb-heading h3 { margin: 0; }
+.research-mode { display: flex; flex-wrap: wrap; gap: 12px; margin: 24px 0; }
+.research-form { max-width: 1040px; display: grid; gap: 20px; }
+.research-form > .button { justify-self: start; }
+.research-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.research-fields label { display: grid; gap: 10px; font-size: 13px; color: var(--muted-strong); align-content: start; }
+.research-fields .wide { grid-column: 1 / -1; }
+.research-fields .field { width: 100%; min-width: 0; }
+.research-fields label.research-check { display: flex; align-items: center; align-self: end; min-height: 44px; }
+.research-check input { width: 18px; height: 18px; accent-color: var(--accent); }
+.research-panel .help-text { margin-top: 18px; line-height: 1.9; }
+.research-shell details { border: 1px solid var(--border); border-radius: 8px; margin: 18px 0; padding: 15px 18px; min-width: 0; }
+.research-shell details summary { cursor: pointer; font-size: 13px; color: var(--muted-strong); overflow-wrap: anywhere; line-height: 1.7; }
+.research-shell details > .research-panel { border: 0; margin-top: 12px; padding: 8px 0; background: transparent; }
+.research-log { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 340px; overflow: auto; font-size: 12px; line-height: 1.8; color: var(--muted-strong); }
+.research-values { display: grid; grid-template-columns: minmax(110px, 1fr) minmax(0, 2fr); gap: 8px 18px; font-size: 13px; line-height: 1.7; margin: 0; }
+.research-values dt { color: var(--muted); overflow-wrap: anywhere; }
+.research-values dd { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+.research-table { margin: 28px 0; }
+.research-table .wb-heading { margin-bottom: 12px; }
+.research-table .wb-table td { min-width: 95px; max-width: 390px; }
+.research-state { display: inline-block; border: 1px solid var(--border); border-radius: 5px; padding: 4px 8px; font-size: 12px; white-space: nowrap; }
+.research-state.completed { color: var(--green); }
+.research-state.failed, .research-state.interrupted { color: var(--red); }
+.research-state.running, .research-state.queued { color: var(--amber); }
+.research-case { margin-top: 28px; border-top: 1px solid var(--border); padding-top: 12px; }
+.research-case-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.research-set { color: var(--muted-strong); font-size: 12px; line-height: 1.85; overflow-wrap: anywhere; margin: 5px 0; }
+.research-empty { padding: 28px; border: 1px dashed var(--border); color: var(--muted); line-height: 1.9; }
+.research-subfield { margin: 20px 0 8px; }
+.research-shell .wb-table td:first-child { min-width: 150px; }
+#jobs-body td:first-child { min-width: 190px; }
+#jobs-body td:nth-child(3) { min-width: 190px; }
+#jobs-body td:nth-child(4) { min-width: 170px; }
+#jobs-body td:last-child { min-width: 105px; }
+.research-shell a { overflow-wrap: anywhere; }
+@media (max-width: 800px) {
+  .research-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .research-case-grid { grid-template-columns: minmax(0, 1fr); }
+  .research-card, .research-panel { padding: 18px; }
+  .research-values { grid-template-columns: minmax(95px, 1fr) minmax(0, 1.7fr); gap: 8px 12px; }
+}
+@media (max-width: 470px) {
+  .research-fields { grid-template-columns: minmax(0, 1fr); }
+  .research-mode .button { width: 100%; }
+  .research-shell details { padding: 12px; }
+}

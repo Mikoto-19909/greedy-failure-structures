@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Greedy · 专题与研究实验</title>
+  <link rel="icon" href="/favicon.svg" />
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/workbench.css" />
+  <link rel="stylesheet" href="/research.css" />
+</head>
+<body>
+  <header class="topbar wb-topbar">
+    <div class="brand-lockup"><div class="brand-mark" aria-hidden="true">MC</div><div><p class="eyebrow">MAXIMUM COVERAGE</p><h1>专题与研究实验</h1></div></div>
+    <div class="wb-actions"><a href="/workbench" class="button button-secondary">实验库与实例分析 ↗</a><a href="/" class="button button-secondary">Benchmark 运行 ↗</a></div>
+  </header>
+  <main class="wb-shell research-shell">
+    <nav class="wb-nav" aria-label="研究模块"><button id="nav-studies" aria-current="page">04 专题研究</button><button id="nav-experiments">05 反例与猜想</button><button id="nav-jobs">06 运行中心</button></nav>
+    <p id="research-message" role="status" aria-live="polite"></p>
+
+    <section id="view-studies" aria-labelledby="studies-title">
+      <div class="wb-heading"><div><p class="section-kicker">读取已有产物</p><h2 id="studies-title" tabindex="-1">把结果放回研究问题中</h2><p class="lede">R2 预算扫描、R3 配对差异、R4 上界与认证各自保留统计单位和历史验证状态。</p></div><button id="refresh-studies" class="button button-secondary">刷新专题库</button></div>
+      <div class="wb-toolbar"><label>搜索来源<input id="study-search" class="field" type="search" placeholder="名称、路径或专题" /></label><label>研究专题<select id="study-kind" class="field"><option value="">全部专题</option><option value="r2">R2 预算扫描</option><option value="r3">R3 配对差异</option><option value="r4">R4 上界校准</option><option value="r4_dual">R4 上界对照</option></select></label></div>
+      <p id="study-count" class="help-text"></p><div id="study-library" class="research-cards"></div><p id="study-notice" class="wb-note"></p>
+      <article id="study-detail" class="research-detail" hidden><div class="wb-heading"><div><p id="study-source" class="help-text"></p><h3 id="study-title" tabindex="-1"></h3><p id="study-unit"></p></div></div><div id="study-statuses" class="research-cards"></div><div id="study-notes"></div><div id="study-documents"></div><div id="study-tables"></div></article>
+    </section>
+
+    <section id="view-experiments" aria-labelledby="experiments-title" hidden>
+      <div class="wb-heading"><div><p class="section-kicker">从现象到可以检查的猜想</p><h2 id="experiments-title" tabindex="-1">运行一项有明确边界的小实验</h2><p class="lede">输入与参数随任务保留，结果调用已有独立验证器。完成后到运行中心检查原始案例、缩小案例和搜索范围。</p></div></div>
+      <div class="research-mode" role="group" aria-label="实验类型"><button id="mode-mine" class="button button-primary" aria-pressed="true">已有实例 → 反例挖掘</button><button id="mode-refute" class="button button-secondary" aria-pressed="false">结构条件 → 猜想检验</button></div>
+      <form id="mine-form" class="research-form">
+        <div class="research-panel"><h3>选择输入与样本范围</h3><div class="research-fields"><label class="wide">已有 R1 数据<select id="mine-source" class="field"><option value="">手动输入项目内路径</option></select></label><label class="wide">输入文件<input id="mine-input" class="field" required placeholder="experiments/…/paths.jsonl 或单实例 JSON" /></label><label>来源 population<input id="mine-population" class="field" value="all" list="population-options" required /><datalist id="population-options"><option value="all"></option><option value="pilot"></option><option value="fixture"></option></datalist></label><label>选取反例数<input id="mine-top" class="field" type="number" min="1" max="10" value="3" required /></label></div><p class="help-text">all 处理全部输入；pilot / fixture 按原始标签筛选。无 population 标签的单实例使用 all。筛选后的案例只用于解释，不能估计总体失效率。</p><p class="wb-note">交互任务输入上限为 4 MB、500 条实例，每例最多 256 个元素、64 个集合。完整 R1c 数据超出此范围，请先在实例分析中导出单例，或准备保留来源的小批次。</p></div>
+        <div class="research-panel"><h3>计算预算</h3><div class="research-fields"><label>每实例最优组合上限<input id="mine-combinations" class="field" type="number" min="1" max="200000" value="20000" required /></label><label>每案例删减评估上限<input id="mine-evaluations" class="field" type="number" min="0" max="10000" value="500" required /></label><label>任务时限（秒）<input id="mine-timeout" class="field" type="number" min="1" max="600" value="120" required /></label></div><p class="help-text">删减预算为 0 时只选例。缩小保持 k 与 G &lt; O，可能改变等长、频数或生成家族；不能直接沿用原猜想前提。组合超限的实例单独报告。</p></div>
+        <button id="submit-mine" type="submit" class="button button-primary">提交反例挖掘</button>
+      </form>
+      <form id="refute-form" class="research-form" hidden>
+        <div class="research-panel"><h3>所有候选都必须满足的条件</h3><div class="research-fields"><label>全集大小 n<input id="refute-n" class="field" type="number" min="1" max="12" value="4" required /></label><label>集合数 m<input id="refute-m" class="field" type="number" min="1" max="16" value="3" required /></label><label>选择预算 k<input id="refute-k" class="field" type="number" min="1" max="16" value="2" required /></label><label>每集合大小（留空不限）<input id="refute-size" class="field" type="number" min="0" max="12" value="2" /></label><label>元素最大频数（留空不限）<input id="refute-frequency" class="field" type="number" min="0" max="16" /></label><label class="research-check"><input id="refute-unique" type="checkbox" checked />禁止重复集合</label></div><p class="help-text">最大频数 2 表示“至多两次”。集合索引顺序保留；Greedy 平局时选择最小索引。</p></div>
+        <div class="research-panel"><h3>需要检验的覆盖要求与搜索预算</h3><div class="research-fields"><label>最低比例分子 p<input id="refute-p" class="field" type="number" min="0" value="1" required /></label><label>最低比例分母 q<input id="refute-q" class="field" type="number" min="1" value="1" required /></label><label>候选枚举上限<input id="refute-budget" class="field" type="number" min="0" max="10000" value="1000" required /></label><label>每候选最优组合上限<input id="refute-combinations" class="field" type="number" min="1" max="200000" value="20000" required /></label><label>任务时限（秒）<input id="refute-timeout" class="field" type="number" min="1" max="600" value="120" required /></label></div><p id="claim-preview" class="wb-note"></p><p class="help-text">用整数判定 G × q ≥ O × p，等于阈值满足要求。未找到反例时区分有限域穷尽与预算耗尽；结果不自动推广到其他尺寸或条件。</p></div>
+        <button id="submit-refute" type="submit" class="button button-primary">提交猜想检验</button>
+      </form>
+    </section>
+
+    <section id="view-jobs" aria-labelledby="jobs-title" hidden>
+      <div class="wb-heading"><div><p class="section-kicker">参数、进度、结果在同一处</p><h2 id="jobs-title" tabindex="-1">运行中心</h2><p class="lede">反例与猜想任务串行执行，记录保存在项目中。失败或中断后可按冻结输入新建任务，从头重新计算。</p></div><button id="refresh-jobs" class="button button-secondary">刷新任务</button></div>
+      <p id="queue-state" class="help-text"></p><div class="wb-toolbar"><label>任务状态<select id="job-filter" class="field"><option value="">全部状态</option><option value="queued">排队中</option><option value="running">运行中</option><option value="completed">计算完成</option><option value="failed">失败</option><option value="interrupted">中断</option></select></label></div>
+      <div class="wb-table-wrap"><table class="wb-table"><thead><tr><th scope="col">任务 / 类型</th><th scope="col">状态</th><th scope="col">创建时间</th><th scope="col">结果摘要</th><th scope="col">查看</th></tr></thead><tbody id="jobs-body"></tbody></table></div>
+      <article id="job-detail" class="research-detail" hidden><div class="wb-heading"><div><p id="job-id" class="help-text"></p><h3 id="job-title" tabindex="-1">任务详情</h3></div><button id="retry-job" class="button button-secondary" hidden>按原参数重新运行</button></div><dl id="job-metadata" class="wb-metadata"></dl><div id="job-error" class="wb-note" hidden></div><details><summary>实际参数与输出位置</summary><div id="job-params" class="research-panel"></div></details><details open><summary>运行日志</summary><pre id="job-log" class="research-log"></pre></details><div id="job-result" hidden><h3>结果与独立验证</h3><div id="job-summary"></div><div id="job-artifacts" class="wb-actions"></div><div id="job-cases"></div><details><summary>完整结果字段</summary><div id="job-document" class="research-panel"></div></details></div></article>
+    </section>
+  </main>
+  <script src="/research.js"></script>
+</body>
+</html>

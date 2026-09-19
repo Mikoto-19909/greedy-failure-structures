@@ -238,6 +238,12 @@ complete inputs with paginated details, and displays/exports saved R1 trajectori
 Its summaries are descriptive; matching seeds do not imply paired observations.
 See the [workbench scope, usage and verification](dashboard_workbench_layer1.zh-CN.md).
 
+`/research` adds saved R2–R4 study readers, bounded counterexample/conjecture forms,
+and persistent local mine/refute jobs. Benchmark keeps its existing runner and
+checkpoint semantics. Comparisons can be saved with complete selected records
+and exported as CSV, Markdown, SVG or JSON. All data and task history stay local;
+see the [module scope, limits and verification](dashboard_expansion_plan.zh-CN.md).
+
 Start the local browser frontend:
 
 ```console

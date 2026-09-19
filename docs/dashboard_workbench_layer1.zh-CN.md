@@ -1,5 +1,7 @@
 # Dashboard 第一层研究工作台
 
+后续本地专题、任务和研究输出模块见[模块拓展计划与完成记录](dashboard_expansion_plan.zh-CN.md)；下文保留第一层的范围与验收结果。
+
 ## 目标与范围
 
 从现有本地 Dashboard 进入实验库、比较分析、实例详情，完成“选择已有实验 → 筛选比较 → 查看 R1 轨迹 → 导出可回放案例”。基线 `076198f`；实施分支 `codex/dashboard-workbench-layer1-20260919`。
