@@ -23,11 +23,17 @@
       <button id="nav-detail" disabled>03 实例详情</button>
     </nav>
     <p id="wb-message" role="status" aria-live="polite"></p>
+    <details class="wb-saved" id="local-index"><summary>本地数据索引与读取状态</summary>
+      <p id="index-status" class="help-text" role="status">正在读取索引状态…</p>
+      <div class="wb-actions"><button id="refresh-index" class="button button-secondary">刷新状态</button><button id="rebuild-index" class="button button-secondary">重建数据索引</button></div>
+      <p class="help-text">索引只加快已有数据的读取，可以重建；CSV、JSON 始终保留原样。重建会重新读取文件，不运行实验，也不删除任务或保存分析。</p>
+    </details>
     <details id="saved-analyses" class="wb-saved">
       <summary>已保存分析与研究输出</summary>
       <div class="wb-toolbar"><label>选择保存的分析<select id="saved-select" class="field"><option value="">正在读取…</option></select></label>
         <button id="open-saved" class="button button-secondary" disabled>打开保存时的摘要</button>
         <button id="refresh-saved" class="button button-secondary">刷新列表</button></div>
+      <label><input id="show-archived-views" type="checkbox" />包含已归档分析</label>
       <p id="saved-message" class="help-text" role="status"></p>
     </details>
 
@@ -93,6 +99,7 @@
     <div id="saved-downloads" class="wb-actions"></div>
     <p class="help-text">下载使用保存时的内容；“按当前文件重新比较”会重新读取原来源，结果可能变化。</p>
     <button id="reload-saved-filter" class="button button-secondary">按当前文件重新比较</button>
+    <button id="archive-saved" class="button button-secondary" disabled>归档此分析</button>
     <article id="saved-report" class="report-body"></article>
   </dialog>
   <script src="/report.js"></script>

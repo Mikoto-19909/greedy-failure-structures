@@ -29,6 +29,7 @@ from .benchmark import REPORT_FILENAMES, plan_benchmark, replay_instance_file, r
 from .config import load_config
 from .dashboard_exports import ComparisonExports
 from .dashboard_jobs import JobConflictError, JobService
+from .dashboard_local import LocalCatalog
 from .dashboard_studies import StudiesService
 from .dashboard_workbench import WorkbenchService
 from .reproducibility import config_hash
@@ -221,6 +222,8 @@ class DashboardService:
         self.workbench = WorkbenchService(self.project_root)
         self.exports = ComparisonExports(self.project_root)
         self.studies = StudiesService(self.project_root)
+        self.local_catalog = LocalCatalog(self.project_root)
+        self._index_rebuild_lock = threading.Lock()
         self._research_jobs: JobService | None = None
         self._closed = False
 
@@ -239,6 +242,29 @@ class DashboardService:
             jobs = self._research_jobs
         if jobs is not None:
             jobs.close()
+
+    def local_index_status(self) -> dict[str, object]:
+        return {"workbench": self.workbench.index.status(), "studies": self.studies.index.status()}
+
+    def rebuild_local_index(self) -> dict[str, object]:
+        if not self._index_rebuild_lock.acquire(blocking=False):
+            raise DashboardConflictError("the local index is already being rebuilt")
+        try:
+            self.studies.index.clear()
+            result = self.workbench.rebuild_index()
+            sources = self.studies.library()["sources"]
+            study_errors = []
+            for source in sources:
+                try:
+                    detail = self.studies.detail(source["source"])
+                    if detail["errors"]:
+                        study_errors.append({"source": source["source"], "errors": detail["errors"]})
+                except ValueError as error:
+                    study_errors.append({"source": source["source"], "error": str(error)})
+            return {"index": self.local_index_status(), "workbench_sources": result["sources"],
+                    "study_sources": len(sources), "errors": [*result["errors"], *study_errors]}
+        finally:
+            self._index_rebuild_lock.release()
 
     def list_configs(self) -> dict[str, object]:
         configs = []
@@ -653,6 +679,11 @@ class _DashboardRequestHandler(BaseHTTPRequestHandler):
                 self._send_json(service.get_job(path.rsplit("/", 1)[1]))
             elif path == "/api/results":
                 self._send_json(service.list_results())
+            elif path == "/api/local/index":
+                self._send_json(service.local_index_status())
+            elif path == "/api/local/archive":
+                self._send_json({"entries": service.local_catalog.list(_one_query(query, "kind")),
+                                 **service.local_catalog.status()})
             elif path == "/api/studies/library":
                 self._send_json(service.studies.library())
             elif path == "/api/studies/detail":
@@ -734,6 +765,15 @@ class _DashboardRequestHandler(BaseHTTPRequestHandler):
                 self._send_json(service.replay(payload))
             elif self.path == "/api/workbench/views":
                 self._send_json(service.exports.save(payload), HTTPStatus.CREATED)
+            elif self.path == "/api/local/index/rebuild":
+                if payload:
+                    raise DashboardRequestError("index rebuild accepts an empty object")
+                self._send_json(service.rebuild_local_index())
+            elif self.path == "/api/local/archive":
+                if set(payload) != {"kind", "id", "archived"} or type(payload["archived"]) is not bool:
+                    raise DashboardRequestError("archive requires kind, id and a boolean archived flag")
+                self._send_json(service.local_catalog.set_archived(_required_string(payload, "kind"),
+                    _required_string(payload, "id"), cast(bool, payload["archived"])))
             elif self.path == "/api/research/jobs":
                 self._send_json(service.research_jobs.submit(payload), HTTPStatus.ACCEPTED)
             elif self.path.startswith("/api/research/jobs/"):
