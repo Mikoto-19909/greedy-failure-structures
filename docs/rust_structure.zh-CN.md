@@ -78,7 +78,8 @@ python scripts/benchmark_algorithms_rust.py --output results/rust_large --large
 
 2026-09-19 的 24 实例配对加速中位数为 2.824 倍，加入四个较大实例的混合批次为
 8.124 倍；稀疏 `(65537,160,40)` 的 Lazy 慢约 3.37 倍。有限语料观察不作为默认切换依据。
-后续性能剖析分别测转换、内核、结果包装和峰值内存。
+性能剖析已分别测转换、内核、结果包装和峰值内存，结论见
+[Rust 性能归因](rust_performance.zh-CN.md)。诊断原型未接入生产路径。
 
 旧入口已归档到本机 `results/rust_closeout_20260920/history/pre_closeout_tools.zip`，
 按原 `scripts/` 路径恢复后可重放历史命令。既有输入、答案、日志、源码快照和报告均保留；

@@ -44,3 +44,13 @@ jobs:
         run: cargo clippy --manifest-path native/structure/Cargo.toml --locked -- -D warnings
       - name: Execute native parity and rejection tests without skips
         run: python scripts/check_rust.py
+      - name: Build profiling diagnostics
+        run: python -m maturin build --release --locked --manifest-path experiments/rust_profile/Cargo.toml --out diagnostic-wheels
+      - name: Install profiling diagnostics
+        run: python -c "import glob,subprocess,sys; subprocess.check_call([sys.executable,'-m','pip','install','--no-deps',*glob.glob('diagnostic-wheels/*.whl')])"
+      - name: Check diagnostic formatting
+        run: cargo fmt --manifest-path experiments/rust_profile/Cargo.toml --check
+      - name: Check diagnostic static warnings
+        run: cargo clippy --manifest-path experiments/rust_profile/Cargo.toml --locked -- -D warnings
+      - name: Verify diagnostic controls without performance claims
+        run: python scripts/profile_rust.py --verify-only
