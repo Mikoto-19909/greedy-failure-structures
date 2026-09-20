@@ -89,6 +89,12 @@ checking is useful, rather than a prerequisite for exploratory analysis.
 Report actual failures, skips, and unavailable checks. Do not replace behavior
 tests with tests that merely search documentation for particular wording.
 
+For optional Rust kernel changes, build/install `./native/structure` and run
+`python scripts/check_rust.py`. This requires the native implementation and
+fails on missing kernels, empty discovery or skipped tests. The separate Rust
+workflow builds and checks the extension on Ubuntu and Windows; regular Python
+use still does not require it. See [native usage and validation](docs/rust_structure.zh-CN.md).
+
 ## Collaboration and licensing
 
 Use a focused branch and pull request for publication. Do not push directly to

@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import math
+from importlib import import_module
 from dataclasses import dataclass
+from typing import cast
 
 from .model import MaximumCoverageInstance
 
@@ -51,31 +53,46 @@ def _coverage_gini(frequencies: list[int], incidence_count: int) -> float:
     return numerator / ((len(ordered) - 1) * incidence_count)
 
 
-def analyze_instance(instance: MaximumCoverageInstance) -> InstanceStructureMetrics:
+def analyze_instance(
+    instance: MaximumCoverageInstance, *, backend: str = "python"
+) -> InstanceStructureMetrics:
     """Compute the frozen P4.1 metric contract without sampling or side effects."""
 
+    if backend not in {"python", "rust"}:
+        raise ValueError(f"unknown structure backend: {backend!r}")
     sizes = [mask.bit_count() for mask in instance.sets]
     incidence_count = sum(sizes)
     set_count = instance.set_count
     universe_size = instance.universe_size
-    frequencies = _coverage_frequencies(instance)
-
     total_pairs = set_count * (set_count - 1) // 2
-    jaccards: list[float] = []
-    for left_index, left in enumerate(instance.sets):
-        for right in instance.sets[left_index + 1 :]:
-            union = left | right
-            if union == 0:
-                continue
-            jaccards.append((left & right).bit_count() / union.bit_count())
+    unique_masks = tuple(dict.fromkeys(instance.sets))
+    if backend == "rust":
+        native = import_module("maxcover_structure_native")
+        width = (universe_size + 7) // 8
+        frequencies, pairs, dominated = cast(
+            tuple[list[int], list[tuple[int, int]], int],
+            native.counts(
+                [mask.to_bytes(width, "little") for mask in instance.sets],
+                universe_size,
+            ),
+        )
+        jaccards = [intersection / union for intersection, union in pairs]
+    else:
+        frequencies = _coverage_frequencies(instance)
+        jaccards = []
+        for left_index, left in enumerate(instance.sets):
+            for right in instance.sets[left_index + 1 :]:
+                union = left | right
+                if union == 0:
+                    continue
+                jaccards.append((left & right).bit_count() / union.bit_count())
+        dominated = sum(
+            any(mask != other and mask & other == mask for other in unique_masks)
+            for mask in unique_masks
+        )
     valid_pairs = len(jaccards)
     mean_jaccard = None if valid_pairs == 0 else math.fsum(jaccards) / valid_pairs
 
-    unique_masks = tuple(dict.fromkeys(instance.sets))
-    dominated = sum(
-        any(mask != other and mask & other == mask for other in unique_masks)
-        for mask in unique_masks
-    )
     unique_count = len(unique_masks)
     duplicate_count = set_count - unique_count
 

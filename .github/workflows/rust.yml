@@ -1,0 +1,46 @@
+name: optional Rust kernels
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: rust-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  native-contracts:
+    name: Rust contracts (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    env:
+      PYTHONUTF8: "1"
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYO3_PYTHON: python
+      RUSTUP_TOOLCHAIN: "1.95.0"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12"
+      - name: Install the tested Rust toolchain
+        run: rustup toolchain install 1.95.0 --profile minimal --component rustfmt --component clippy
+      - name: Install the wheel builder
+        run: python -m pip install maturin==1.15.0
+      - name: Build the optional extension
+        run: python -m maturin build --release --locked --manifest-path native/structure/Cargo.toml --out native-wheels
+      - name: Install the built wheel
+        run: python -c "import glob,subprocess,sys; subprocess.check_call([sys.executable,'-m','pip','install','--no-deps',*glob.glob('native-wheels/*.whl')])"
+      - name: Check Rust formatting
+        run: cargo fmt --manifest-path native/structure/Cargo.toml --check
+      - name: Check Rust static warnings
+        run: cargo clippy --manifest-path native/structure/Cargo.toml --locked -- -D warnings
+      - name: Execute native parity and rejection tests without skips
+        run: python scripts/check_rust.py
