@@ -3,7 +3,8 @@
   const $ = (id) => document.getElementById(id);
   const state = { library: [], selected: new Set(), view: "library", request: 0,
     comparison: null, detail: null, step: 0, timer: null, page: 0,
-    saveBusy: false, outputRequest: 0, savedListRequest: 0, savedSelectionVersion: 0, saved: null };
+    saveBusy: false, outputRequest: 0, savedListRequest: 0, savedSelectionVersion: 0, saved: null,
+    archivedViews: {}, archiveAvailable: false, indexRequest: 0 };
   const percent = (value) => value == null ? "—" : `${(100 * value).toFixed(2)}%`;
   const number = (value, digits = 2) => value == null ? "—" : Number(value).toLocaleString("zh-CN", { maximumFractionDigits: digits });
   const population = (value) => ({ pilot: "pilot 实验样本", confirmation: "确认实验样本", experiment: "实验样本", fixture: "功能夹具" })[value] || value;
@@ -95,7 +96,7 @@
       state.selected = new Set([...state.selected].filter((source) => available.has(source)).slice(0, 4));
       renderLibrary(); message();
     } catch (error) { if (request === state.request) { empty("library-body", "读取失败，可点击刷新重试。", 6); message(error.message, true); } }
-    finally { $("refresh-library").disabled = false; }
+    finally { $("refresh-library").disabled = false; loadIndex(); }
   }
   function options(id, values, caption) {
     const selected = $(id).value;
@@ -274,18 +275,29 @@
     const request = ++state.savedListRequest, selectionVersion = state.savedSelectionVersion;
     $("refresh-saved").disabled = true; $("open-saved").disabled = true;
     try {
-      const data = await api("views");
+      const archiveRequest = fetch("/api/local/archive?kind=view").then(async (response) => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "无法读取本地归档状态");
+        return data;
+      }).catch((error) => ({ entries: {}, unavailable: true,
+        warnings: [`归档状态不可用，暂时显示全部原分析并停用归档操作：${error.message}`] }));
+      const [data, archive] = await Promise.all([api("views"), archiveRequest]);
       if (request !== state.savedListRequest) return;
+      state.archivedViews = archive.entries;
+      state.archiveAvailable = !archive.unavailable;
+      if (state.saved) $("archive-saved").disabled = !state.archiveAvailable;
       const selection = selectionVersion === state.savedSelectionVersion ? current : $("saved-select").value;
       $("saved-select").replaceChildren(new Option("选择已保存分析", ""));
       for (const view of data.views) {
-        const option = new Option(view.error ? `无法读取 · ${view.id}` : `${view.title} · ${view.saved_at} · ${view.total} 条`, view.id);
+        const archived = Boolean(state.archivedViews[view.id]?.archived);
+        if (archived && !$("show-archived-views").checked) continue;
+        const option = new Option(view.error ? `无法读取 · ${view.id}` : `${archived ? "[已归档] " : ""}${view.title} · ${view.saved_at} · ${view.total} 条`, view.id);
         option.disabled = Boolean(view.error); $("saved-select").append(option);
       }
       $("saved-select").value = selection;
       $("open-saved").disabled = !$("saved-select").value;
       const invalid = data.views.filter((view) => view.error).length;
-      $("saved-message").textContent = data.views.length ? `共 ${data.views.length} 份保存的分析${invalid ? `，${invalid} 份无法读取` : ""}。` : "尚未保存分析。进入比较页后，可保存筛选、备注和当时的完整数据。";
+      $("saved-message").textContent = (data.views.length ? `显示 ${$("saved-select").options.length - 1} / 共 ${data.views.length} 份保存的分析${invalid ? `，${invalid} 份无法读取` : ""}。归档仅改变列表显示。` : "尚未保存分析。进入比较页后，可保存筛选、备注和当时的完整数据。") + (archive.warnings || []).join(" ");
     } catch (error) { if (request === state.savedListRequest) $("saved-message").textContent = error.message; }
     finally { if (request === state.savedListRequest) $("refresh-saved").disabled = false; }
   }
@@ -295,6 +307,7 @@
     state.saved = null; $("saved-title").textContent = "正在读取保存的分析…";
     $("saved-info").textContent = ""; $("saved-report").replaceChildren(); $("saved-downloads").replaceChildren();
     $("reload-saved-filter").disabled = true;
+    $("archive-saved").disabled = true;
     if (!$("saved-dialog").open) $("saved-dialog").showModal();
     try {
       const data = await api(`views/${viewId}`);
@@ -312,6 +325,8 @@
       }
       $("saved-report").replaceChildren(window.MaxcoverReport.render(report));
       $("reload-saved-filter").disabled = false;
+      $("archive-saved").disabled = !state.archiveAvailable;
+      $("archive-saved").textContent = state.archivedViews[viewId]?.archived ? "还原此分析" : "归档此分析";
     } catch (error) { if (request === state.outputRequest) $("saved-info").textContent = error.message; }
   }
   $("save-comparison").addEventListener("submit", async (event) => {
@@ -335,6 +350,42 @@
     finally { state.saveBusy = false; $("save-view").disabled = !state.comparison; }
   });
   $("refresh-saved").addEventListener("click", () => savedList());
+  $("show-archived-views").addEventListener("change", () => { ++state.savedSelectionVersion; savedList(); });
+  $("archive-saved").addEventListener("click", async () => {
+    if (!state.saved || !state.archiveAvailable) return;
+    const id = state.saved.id, archived = !state.archivedViews[id]?.archived;
+    $("archive-saved").disabled = true;
+    try {
+      const response = await fetch("/api/local/archive", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind: "view", id, archived }) });
+      const data = await response.json(); if (!response.ok) throw new Error(data.error || "无法更改归档状态");
+      await savedList();
+      if (state.saved?.id === id) $("archive-saved").textContent = archived ? "还原此分析" : "归档此分析";
+    } catch (error) { if (state.saved?.id === id) $("saved-info").textContent = error.message; }
+    finally { if (state.saved?.id === id) $("archive-saved").disabled = !state.archiveAvailable; }
+  });
+  async function loadIndex() {
+    const request = ++state.indexRequest;
+    try {
+      const response = await fetch("/api/local/index"); const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "无法读取索引状态");
+      if (request !== state.indexRequest) return;
+      const indexes = [data.workbench, data.studies], index = data.workbench;
+      const errors = [...new Set(indexes.filter((item) => item.degraded).map((item) => item.last_error))];
+      $("index-status").textContent = `${index.indexed_sources} 个源文件 · ${index.indexed_records} 条规范化记录 · ${(index.database_bytes / 1024 / 1024).toFixed(1)} MiB 本地缓存。${errors.length ? `已降级为直接读取：${errors.join("；")}，可重建恢复。` : "文件变化后自动更新；首次读取需要建立索引。"}`;
+    } catch (error) { if (request === state.indexRequest) $("index-status").textContent = error.message; }
+  }
+  $("refresh-index").addEventListener("click", loadIndex);
+  $("rebuild-index").addEventListener("click", async () => {
+    $("rebuild-index").disabled = true; ++state.indexRequest;
+    $("index-status").textContent = "正在重新读取现有文件并重建本地索引…";
+    try {
+      const response = await fetch("/api/local/index/rebuild", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+      const data = await response.json(); if (!response.ok) throw new Error(data.error || "重建失败");
+      await loadIndex();
+      if (data.errors.length) $("index-status").textContent += ` ${data.errors.length} 份来源未能读取，请在实验库或专题页查看原因。`;
+    } catch (error) { $("index-status").textContent = error.message; }
+    finally { $("rebuild-index").disabled = false; }
+  });
   $("saved-select").addEventListener("change", () => { ++state.savedSelectionVersion; $("open-saved").disabled = !$("saved-select").value; });
   $("open-saved").addEventListener("click", () => openSaved($("saved-select").value));
   $("close-saved").addEventListener("click", () => $("saved-dialog").close());

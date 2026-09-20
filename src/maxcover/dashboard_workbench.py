@@ -10,13 +10,15 @@ import csv
 import json
 import math
 import os
-from collections import defaultdict
+from collections import OrderedDict, defaultdict
 from http import HTTPStatus
 from pathlib import Path
 from statistics import fmean
-from typing import Any
+import threading
+from typing import Any, cast
 
 from ._run_contracts import RunRecord
+from .dashboard_index import DashboardIndex, IndexedDocument
 from .reproducibility import instance_from_payload, instance_payload
 
 
@@ -92,6 +94,18 @@ def _benchmark_rows(path: Path, source: str) -> list[dict[str, Any]]:
 class WorkbenchService:
     def __init__(self, project_root: Path) -> None:
         self.root = project_root.resolve()
+        self.index = DashboardIndex(self.root)
+        self._comparisons: OrderedDict[str, str] = OrderedDict()
+        self._comparison_lock = threading.RLock()
+
+    def _source_path(self, source: str) -> Path:
+        paths = self._file(source, "paths.jsonl")
+        return paths if paths.is_file() else self._file(source, "raw_results.csv")
+
+    @staticmethod
+    def _parser(source: str) -> str:
+        # Source spelling is part of the public record, including on Windows.
+        return "workbench-v1:" + source
 
     def _file(self, source: str, filename: str) -> Path:
         relative = Path(source)
@@ -127,7 +141,7 @@ class WorkbenchService:
                     children[:] = []
         return sorted(sources)
 
-    def _read(self, source: str) -> tuple[str, list[dict[str, Any]], list[dict[str, Any]]]:
+    def _load(self, source: str) -> IndexedDocument:
         try:
             paths = self._file(source, "paths.jsonl")
             raw = []
@@ -145,24 +159,45 @@ class WorkbenchService:
             keys = [row["key"] for row in rows]
             if len(set(keys)) != len(keys):
                 raise WorkbenchError("duplicate record identities in source")
-            return kind, rows, raw
+            metadata = {"source": source, "kind": kind, "records": len(rows),
+                        "instances": len({_identity(row) for row in rows}),
+                        "cases": sorted({row["case_id"] for row in rows}),
+                        "algorithms": sorted({row["algorithm_id"] for row in rows}),
+                        "populations": sorted({row["population"] for row in rows}), "error": None}
+            return IndexedDocument(kind, rows, raw, metadata)
         except (OSError, ValueError, TypeError, KeyError, AttributeError) as error:
+            raise WorkbenchError(f"{source}: {error}") from error
+
+    def _read(self, source: str, *, include_raw: bool = True) -> tuple[str, list[dict[str, Any]], list[dict[str, Any]]]:
+        try:
+            document = self.index.read(self._source_path(source), self._parser(source),
+                                       lambda: self._load(source), include_raw=include_raw)
+            return document.kind, document.rows, document.raw
+        except OSError as error:
             raise WorkbenchError(f"{source}: {error}") from error
 
     def library(self) -> dict[str, Any]:
         items = []
         for source in self._sources():
             try:
-                kind, rows, _ = self._read(source)
-                items.append({"source": source, "kind": kind, "records": len(rows),
-                              "instances": len({_identity(row) for row in rows}),
-                              "cases": sorted({row["case_id"] for row in rows}),
-                              "algorithms": sorted({row["algorithm_id"] for row in rows}),
-                              "populations": sorted({row["population"] for row in rows}),
-                              "error": None})
-            except WorkbenchError as error:
+                items.append(self.index.metadata(self._source_path(source), self._parser(source), lambda: self._load(source)))
+            except (WorkbenchError, OSError) as error:
                 items.append({"source": source, "error": str(error)})
         return {"sources": items}
+
+    def rebuild_index(self) -> dict[str, Any]:
+        with self._comparison_lock:
+            self._comparisons.clear()
+        self.index.clear()
+        library = self.library()
+        return {"index": self.index.status(), "sources": len(library["sources"]),
+                "errors": [item for item in library["sources"] if item.get("error")]}
+
+    def _source_signatures(self, sources: list[str]) -> list[Any]:
+        try:
+            return [(source, self.index.signature(self._source_path(source))) for source in sources]
+        except OSError as error:
+            raise WorkbenchError(str(error)) from error
 
     def compare(self, sources: list[str], *, case: str = "", algorithm: str = "",
                 population: str = "research", outcome: str = "all", page: int = 0,
@@ -174,7 +209,18 @@ class WorkbenchService:
         _integer(page, "page")
         if type(page_size) is not int or not 1 <= page_size <= 100:
             raise WorkbenchError("page_size must be between 1 and 100")
-        all_rows = [row for source in sources for row in self._read(source)[1]]
+        signatures = self._source_signatures(sources)
+        cache_key = json.dumps([signatures, case, algorithm, population, outcome, page, page_size])
+        if not include_all:
+            with self._comparison_lock:
+                cached = self._comparisons.get(cache_key)
+                if cached is not None:
+                    self._comparisons.move_to_end(cache_key)
+            if cached is not None:
+                if self._source_signatures(sources) != signatures:
+                    raise WorkbenchError("source changed during comparison; refresh and retry")
+                return cast(dict[str, Any], json.loads(cached))
+        all_rows = [row for source in sources for row in self._read(source, include_raw=False)[1]]
         rows = [row for row in all_rows
                 if (not case or row["case_id"] == case)
                 and (not algorithm or row["algorithm_id"] == algorithm)
@@ -214,22 +260,37 @@ class WorkbenchService:
                                        row["source"], row["key"]))
         pages = max(1, math.ceil(len(selected) / page_size))
         page = min(page, pages - 1)
-        return {"sources": sources, "input_records": len(all_rows), "filtered_records": len(rows),
+        result = {"sources": sources, "input_records": len(all_rows), "filtered_records": len(rows),
                 "total": len(selected), "page": page, "pages": pages, "page_size": page_size,
                 "cases": sorted({row["case_id"] for row in all_rows}),
                 "algorithms": sorted({row["algorithm_id"] for row in all_rows}),
                 "summaries": summaries,
                 "rows": selected if include_all else selected[page * page_size:(page + 1) * page_size]}
+        if self._source_signatures(sources) != signatures:
+            raise WorkbenchError("source changed during comparison; refresh and retry")
+        if not include_all:
+            payload = json.dumps(result, ensure_ascii=True, allow_nan=False)
+            if len(payload) <= 1_000_000:
+                with self._comparison_lock:
+                    self._comparisons[cache_key] = payload
+                    self._comparisons.move_to_end(cache_key)
+                    while len(self._comparisons) > 32 or sum(map(len, self._comparisons.values())) > 8_000_000:
+                        self._comparisons.popitem(last=False)
+        return result
 
     def detail(self, source: str, key: str) -> dict[str, Any]:
-        kind, rows, raw = self._read(source)
-        index = next((i for i, row in enumerate(rows) if row["key"] == key), None)
-        if index is None:
+        try:
+            record = self.index.record(self._source_path(source), self._parser(source), lambda: self._load(source), key=key)
+        except OSError as error:
+            raise WorkbenchError(str(error)) from error
+        if record is None:
             raise WorkbenchError("record is no longer present in this source")
-        row = rows[index]
+        kind, row, original_record = record
         trace, trace_source, warnings = None, None, []
         if kind == "r1":
-            trace, trace_source = self._trace(raw[index]), source
+            if original_record is None:
+                raise WorkbenchError("saved R1 record has no trajectory")
+            trace, trace_source = self._trace(original_record), source
         else:
             # Join all identity components, never seed alone. Non-Greedy records
             # keep their own selection; the linked trace is explicitly Greedy's.
@@ -238,11 +299,13 @@ class WorkbenchService:
                 if not self._file(candidate, "paths.jsonl").is_file():
                     continue
                 try:
-                    _, candidates, originals = self._read(candidate)
-                    for item, original in zip(candidates, originals):
+                    candidates = self.index.matches(self._source_path(candidate), self._parser(candidate),
+                        lambda: self._load(candidate), identity=cast(tuple[Any, Any, Any, Any], _identity(row)))
+                    for _, item, original in candidates:
                         if item.get("config_hash") and _identity(item) == _identity(row):
-                            matches.append((candidate, original))
-                except WorkbenchError as error:
+                            if original is not None:
+                                matches.append((candidate, original))
+                except (WorkbenchError, OSError) as error:
                     warnings.append(str(error))
             if matches:
                 candidate, original = matches[0]

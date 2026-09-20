@@ -1,7 +1,7 @@
 /* Saved study readers and bounded research jobs; computations stay in Python. */
 'use strict';
 const $ = (id) => document.getElementById(id);
-const state = { view: 'studies', epoch: 0, studies: [], jobs: [], source: null, job: null,
+const state = { view: 'studies', epoch: 0, studies: [], jobs: [], archivedJobs: {}, archiveAvailable: false, source: null, job: null,
   studyRequest: 0, libraryRequest: 0, jobRequest: 0, jobsRequest: 0, resultKey: null, timer: null };
 const labels = {
   r2: 'R2 · 预算扫描', r3: 'R3 · 配对差异', r4: 'R4 · 上界校准', r4_dual: 'R4 · 上界对照',
@@ -184,26 +184,49 @@ async function submit(kind, event) {
 }
 
 function renderJobs() {
-  const filter = $('job-filter').value, jobs = state.jobs.filter((job) => !filter || job.status === filter); $('jobs-body').replaceChildren();
+  const filter = $('job-filter').value, jobs = state.jobs.filter((job) => (!filter || job.status === filter)
+    && ($('show-archived-jobs').checked || !state.archivedJobs[job.id]?.archived)); $('jobs-body').replaceChildren();
   if (!jobs.length) { const row = el('tr'), td = el('td', '暂无匹配任务。提交一项反例挖掘或猜想检验后，记录会保留在这里。'); td.colSpan = 5; row.append(td); $('jobs-body').append(row); }
   for (const job of jobs) {
     const row = el('tr'), id = el('td', label(job.kind)); id.append(el('small', job.id));
+    if (state.archivedJobs[job.id]?.archived) id.append(el('small', '已归档'));
     const status = el('td'); status.append(statusBadge(job.status));
     const summary = el('td', job.summary?.status ? label(job.summary.status) : job.error || '等待结果');
     if (job.summary?.validated !== undefined) summary.append(el('small', `独立验证：${job.summary.validated ? '通过' : '未通过'}`));
     const action = el('td'), button = el('button', '查看任务', 'button button-secondary');
     button.addEventListener('click', () => { state.job = job.id; state.resultKey = null; $('job-detail').hidden = true; loadJob(job.id); });
-    action.append(button); row.append(id, status, el('td', job.created_at), summary, action); $('jobs-body').append(row);
+    action.append(button);
+    if (state.archiveAvailable && !job.corrupt_record && ['completed', 'failed', 'interrupted'].includes(job.status)) {
+      const archived = Boolean(state.archivedJobs[job.id]?.archived);
+      const archive = el('button', archived ? '还原' : '归档', 'button button-secondary');
+      archive.setAttribute('aria-label', `${archived ? '还原' : '归档'}任务 ${job.id}`);
+      archive.addEventListener('click', async () => {
+        archive.disabled = true; const epoch = state.epoch;
+        try {
+          await api('/api/local/archive', { kind: 'job', id: job.id, archived: !archived });
+          if (epoch === state.epoch) await loadJobs();
+        } catch (error) { if (epoch === state.epoch) message(error.message, true); }
+        finally { archive.disabled = false; }
+      });
+      action.append(archive);
+    }
+    row.append(id, status, el('td', job.created_at), summary, action); $('jobs-body').append(row);
   }
 }
 async function loadJobs() {
   clearTimeout(state.timer); const request = ++state.jobsRequest, epoch = state.epoch;
   try {
-    const data = await api('/api/research/jobs'); if (request !== state.jobsRequest || epoch !== state.epoch) return;
-    state.jobs = data.jobs; renderJobs();
+    const archiveRequest = api('/api/local/archive?kind=job').catch((error) => ({ entries: {}, unavailable: true,
+      warnings: [`归档状态不可用，暂时显示全部原任务并停用归档操作：${error.message}`] }));
+    const [data, archives] = await Promise.all([api('/api/research/jobs'), archiveRequest]);
+    if (request !== state.jobsRequest || epoch !== state.epoch) return;
+    state.jobs = data.jobs; state.archivedJobs = archives.entries; state.archiveAvailable = !archives.unavailable; renderJobs();
     const running = data.jobs.filter((job) => job.status === 'running').length, queued = data.jobs.filter((job) => job.status === 'queued').length;
     $('queue-state').textContent = `${data.queue_state === 'recovering' ? '正在恢复任务记录' : '队列可用'} · ${running} 项运行中 · ${queued} 项排队 · ${data.jobs.length} 项历史记录。页面每 2 秒刷新；离开此页不影响已提交任务。`;
-    message(); if (state.job) await loadJob(state.job, false);
+    if (state.job && state.archivedJobs[state.job]?.archived && !$('show-archived-jobs').checked) {
+      state.job = null; ++state.jobRequest; state.resultKey = null; $('job-detail').hidden = true;
+    }
+    message((archives.warnings || []).join(' '), Boolean(archives.unavailable)); if (state.job) await loadJob(state.job, false);
   } catch (error) { if (request === state.jobsRequest && epoch === state.epoch) message(error.message, true); }
   finally { if (request === state.jobsRequest && epoch === state.epoch && state.view === 'jobs') state.timer = setTimeout(loadJobs, 2000); }
 }
@@ -270,6 +293,7 @@ for (const view of ['studies', 'experiments', 'jobs']) $(`nav-${view}`).addEvent
 $('refresh-studies').addEventListener('click', loadLibrary);
 $('study-search').addEventListener('input', renderLibrary); $('study-kind').addEventListener('change', renderLibrary);
 $('refresh-jobs').addEventListener('click', loadJobs); $('job-filter').addEventListener('change', renderJobs); $('retry-job').addEventListener('click', retryJob);
+$('show-archived-jobs').addEventListener('change', () => loadJobs());
 for (const kind of ['mine', 'refute']) {
   $(`mode-${kind}`).addEventListener('click', () => {
     for (const mode of ['mine', 'refute']) { $(`${mode}-form`).hidden = mode !== kind; $(`mode-${mode}`).className = `button button-${mode === kind ? 'primary' : 'secondary'}`; $(`mode-${mode}`).setAttribute('aria-pressed', String(mode === kind)); }

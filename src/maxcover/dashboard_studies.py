@@ -8,11 +8,14 @@ from __future__ import annotations
 
 import csv
 import json
+import math
 import os
 import stat
 from http import HTTPStatus
 from pathlib import Path
 from typing import Any
+
+from .dashboard_index import DashboardIndex, IndexedDocument
 
 
 PREVIEW_LIMIT = 200
@@ -63,11 +66,18 @@ def _reject_constant(value: str) -> Any:
     raise ValueError(f"non-finite JSON number: {value}")
 
 
+def _finite_float(value: str) -> float:
+    number = float(value)
+    if not math.isfinite(number):
+        raise ValueError("JSON number exceeds the finite display range")
+    return number
+
+
 def _json(path: Path) -> dict[str, Any]:
     if path.stat().st_size > 16 * 1024 * 1024:
         raise StudiesError("JSON exceeds the 16 MiB display limit; download the original file")
     with path.open(encoding="utf-8-sig") as handle:
-        value = json.load(handle, parse_constant=_reject_constant)
+        value = json.load(handle, parse_constant=_reject_constant, parse_float=_finite_float)
     if not isinstance(value, dict):
         raise StudiesError("expected a JSON object")
     return value
@@ -84,6 +94,7 @@ def _columns(path: Path) -> list[str]:
 class StudiesService:
     def __init__(self, project_root: Path) -> None:
         self.root = project_root.resolve()
+        self.index = DashboardIndex(self.root)
 
     def _path(self, source: str, filename: str | None = None) -> Path:
         if not isinstance(source, str) or "\x00" in source or ":" in source or "\\" in source:
@@ -123,7 +134,10 @@ class StudiesService:
         kind = "unknown"
         if "config.json" in files:
             try:
-                version = _json(self._path(source, "config.json")).get("version", "")
+                config = self._document(source, "config.json")
+                if config["error"]:
+                    raise StudiesError(config["error"])
+                version = (config["data"] or {}).get("version", "")
                 if isinstance(version, str):
                     kind = _VERSIONS.get(version.removesuffix("-fixture"), "unknown")
             except (OSError, ValueError) as error:
@@ -172,7 +186,7 @@ class StudiesService:
                                     "error": str(error)})
         return {"sources": sorted(sources, key=lambda item: item["source"]), "notice": NOTICE}
 
-    def _table(self, source: str, filename: str) -> dict[str, Any]:
+    def _load_table(self, source: str, filename: str) -> dict[str, Any]:
         result: dict[str, Any] = {"name": filename, "columns": [], "rows": [], "total": None,
                                   "shown": 0, "truncated": False, "limit": PREVIEW_LIMIT, "error": None}
         try:
@@ -194,7 +208,19 @@ class StudiesService:
             result["error"] = str(error)
         return result
 
-    def _document(self, source: str, filename: str) -> dict[str, Any]:
+    def _table(self, source: str, filename: str) -> dict[str, Any]:
+        def load() -> IndexedDocument:
+            result = self._load_table(source, filename)
+            if result["error"]:
+                raise StudiesError(result["error"])
+            return IndexedDocument("study-table", [], [], result)
+        try:
+            return self.index.metadata(self._path(source, filename), "study-table-v1", load)
+        except (OSError, ValueError) as error:
+            return {"name": filename, "columns": [], "rows": [], "total": None,
+                    "shown": 0, "truncated": False, "limit": PREVIEW_LIMIT, "error": str(error)}
+
+    def _load_document(self, source: str, filename: str) -> dict[str, Any]:
         result: dict[str, Any] = {"name": filename, "present": False, "data": None,
                                   "error": None, "omitted_fields": []}
         try:
@@ -210,6 +236,23 @@ class StudiesService:
         except (OSError, ValueError) as error:
             result["error"] = str(error)
         return result
+
+    def _document(self, source: str, filename: str) -> dict[str, Any]:
+        def load() -> IndexedDocument:
+            result = self._load_document(source, filename)
+            if result["error"]:
+                raise StudiesError(result["error"])
+            return IndexedDocument("study-document", [], [], result)
+        present = False
+        try:
+            path = self._path(source, filename)
+            if not path.is_file():
+                return self._load_document(source, filename)
+            present = True
+            return self.index.metadata(path, "study-document-v1", load)
+        except (OSError, ValueError) as error:
+            return {"name": filename, "present": present, "data": None,
+                    "error": str(error), "omitted_fields": []}
 
     def detail(self, source: str) -> dict[str, Any]:
         result = self._description(source)

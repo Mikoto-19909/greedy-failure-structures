@@ -244,6 +244,12 @@ checkpoint semantics. Comparisons can be saved with complete selected records
 and exported as CSV, Markdown, SVG or JSON. All data and task history stay local;
 see the [module scope, limits and verification](dashboard_expansion_plan.zh-CN.md).
 
+Local derived indexes are built on demand and invalidated when source files
+change. The workbench exposes status and rebuild controls. Archive/restore flags
+hide or reveal completed task history and saved comparisons without moving or
+deleting the underlying files. Initial indexing adds time and disk usage; see
+the module record for measured tradeoffs and recovery behavior.
+
 Start the local browser frontend:
 
 ```console
