@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 import math
+import struct
+from importlib import import_module
 from dataclasses import dataclass
+from typing import cast
 
 from .model import MaximumCoverageInstance
 
@@ -51,31 +55,53 @@ def _coverage_gini(frequencies: list[int], incidence_count: int) -> float:
     return numerator / ((len(ordered) - 1) * incidence_count)
 
 
-def analyze_instance(instance: MaximumCoverageInstance) -> InstanceStructureMetrics:
+def analyze_instance(
+    instance: MaximumCoverageInstance, *, backend: str = "python"
+) -> InstanceStructureMetrics:
     """Compute the frozen P4.1 metric contract without sampling or side effects."""
 
+    if backend not in {"python", "rust"}:
+        raise ValueError(f"unknown structure backend: {backend!r}")
     sizes = [mask.bit_count() for mask in instance.sets]
     incidence_count = sum(sizes)
     set_count = instance.set_count
     universe_size = instance.universe_size
-    frequencies = _coverage_frequencies(instance)
-
     total_pairs = set_count * (set_count - 1) // 2
-    jaccards: list[float] = []
-    for left_index, left in enumerate(instance.sets):
-        for right in instance.sets[left_index + 1 :]:
-            union = left | right
-            if union == 0:
-                continue
-            jaccards.append((left & right).bit_count() / union.bit_count())
-    valid_pairs = len(jaccards)
+    unique_masks = tuple(dict.fromkeys(instance.sets))
+    jaccards: Iterable[float]
+    if backend == "rust":
+        native = import_module("maxcover_structure_native")
+        if not callable(getattr(native, "counts_packed", None)):
+            raise ImportError("Rust structure needs counts_packed; rebuild/install ./native/structure (0.3.0+)")
+        width = (universe_size + 7) // 8
+        frequencies, payload, dominated = cast(
+            tuple[list[int], bytes, int],
+            native.counts_packed(
+                [mask.to_bytes(width, "little") for mask in instance.sets],
+                universe_size,
+            ),
+        )
+        if len(payload) % 16 or len(payload) // 16 > total_pairs:
+            raise ValueError("invalid packed pair payload length or record count")
+        valid_pairs = len(payload) // 16
+        jaccards = (intersection / union for intersection, union in struct.iter_unpack("<QQ", payload))
+    else:
+        frequencies = _coverage_frequencies(instance)
+        python_jaccards = []
+        for left_index, left in enumerate(instance.sets):
+            for right in instance.sets[left_index + 1 :]:
+                union = left | right
+                if union == 0:
+                    continue
+                python_jaccards.append((left & right).bit_count() / union.bit_count())
+        dominated = sum(
+            any(mask != other and mask & other == mask for other in unique_masks)
+            for mask in unique_masks
+        )
+        valid_pairs = len(python_jaccards)
+        jaccards = python_jaccards
     mean_jaccard = None if valid_pairs == 0 else math.fsum(jaccards) / valid_pairs
 
-    unique_masks = tuple(dict.fromkeys(instance.sets))
-    dominated = sum(
-        any(mask != other and mask & other == mask for other in unique_masks)
-        for mask in unique_masks
-    )
     unique_count = len(unique_masks)
     duplicate_count = set_count - unique_count
 
