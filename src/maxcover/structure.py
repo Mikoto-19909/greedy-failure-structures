@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 import math
+import struct
 from importlib import import_module
 from dataclasses import dataclass
 from typing import cast
@@ -66,31 +68,38 @@ def analyze_instance(
     universe_size = instance.universe_size
     total_pairs = set_count * (set_count - 1) // 2
     unique_masks = tuple(dict.fromkeys(instance.sets))
+    jaccards: Iterable[float]
     if backend == "rust":
         native = import_module("maxcover_structure_native")
+        if not callable(getattr(native, "counts_packed", None)):
+            raise ImportError("Rust structure needs counts_packed; rebuild/install ./native/structure (0.3.0+)")
         width = (universe_size + 7) // 8
-        frequencies, pairs, dominated = cast(
-            tuple[list[int], list[tuple[int, int]], int],
-            native.counts(
+        frequencies, payload, dominated = cast(
+            tuple[list[int], bytes, int],
+            native.counts_packed(
                 [mask.to_bytes(width, "little") for mask in instance.sets],
                 universe_size,
             ),
         )
-        jaccards = [intersection / union for intersection, union in pairs]
+        if len(payload) % 16 or len(payload) // 16 > total_pairs:
+            raise ValueError("invalid packed pair payload length or record count")
+        valid_pairs = len(payload) // 16
+        jaccards = (intersection / union for intersection, union in struct.iter_unpack("<QQ", payload))
     else:
         frequencies = _coverage_frequencies(instance)
-        jaccards = []
+        python_jaccards = []
         for left_index, left in enumerate(instance.sets):
             for right in instance.sets[left_index + 1 :]:
                 union = left | right
                 if union == 0:
                     continue
-                jaccards.append((left & right).bit_count() / union.bit_count())
+                python_jaccards.append((left & right).bit_count() / union.bit_count())
         dominated = sum(
             any(mask != other and mask & other == mask for other in unique_masks)
             for mask in unique_masks
         )
-    valid_pairs = len(jaccards)
+        valid_pairs = len(python_jaccards)
+        jaccards = python_jaccards
     mean_jaccard = None if valid_pairs == 0 else math.fsum(jaccards) / valid_pairs
 
     unique_count = len(unique_masks)

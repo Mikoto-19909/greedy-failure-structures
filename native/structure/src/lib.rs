@@ -11,6 +11,30 @@ type Counts = (Vec<usize>, Vec<(usize, usize)>, usize);
 /// order, and the number of distinct masks strictly contained in another.
 #[pyfunction]
 fn counts(masks: Vec<Vec<u8>>, universe_size: usize) -> PyResult<Counts> {
+    let mut pairs = Vec::new();
+    let (frequencies, dominated) = count_into(masks, universe_size, |a, b| pairs.push((a, b)))?;
+    Ok((frequencies, pairs, dominated))
+}
+
+/// Same counts and order as `counts`, encoded as consecutive little-endian u64 pairs.
+#[pyfunction]
+fn counts_packed(
+    masks: Vec<Vec<u8>>,
+    universe_size: usize,
+) -> PyResult<(Vec<usize>, Vec<u8>, usize)> {
+    let mut pairs = Vec::new();
+    let (frequencies, dominated) = count_into(masks, universe_size, |a, b| {
+        pairs.extend_from_slice(&(a as u64).to_le_bytes());
+        pairs.extend_from_slice(&(b as u64).to_le_bytes());
+    })?;
+    Ok((frequencies, pairs, dominated))
+}
+
+fn count_into(
+    masks: Vec<Vec<u8>>,
+    universe_size: usize,
+    mut emit_pair: impl FnMut(usize, usize),
+) -> PyResult<(Vec<usize>, usize)> {
     let words = bitsets::decode_masks(&masks, universe_size)?;
     let mut frequencies = vec![0usize; universe_size];
     for mask in &words {
@@ -22,7 +46,6 @@ fn counts(masks: Vec<Vec<u8>>, universe_size: usize) -> PyResult<Counts> {
             }
         }
     }
-    let mut pairs = Vec::new();
     for (index, left) in words.iter().enumerate() {
         for right in &words[index + 1..] {
             let mut intersection = 0usize;
@@ -32,7 +55,7 @@ fn counts(masks: Vec<Vec<u8>>, universe_size: usize) -> PyResult<Counts> {
                 union += (a | b).count_ones() as usize;
             }
             if union != 0 {
-                pairs.push((intersection, union));
+                emit_pair(intersection, union);
             }
         }
     }
@@ -46,12 +69,13 @@ fn counts(masks: Vec<Vec<u8>>, universe_size: usize) -> PyResult<Counts> {
                 .any(|&other| mask != other && mask.iter().zip(other).all(|(&a, &b)| a & b == a))
         })
         .count();
-    Ok((frequencies, pairs, dominated))
+    Ok((frequencies, dominated))
 }
 
 #[pymodule]
 fn maxcover_structure_native(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_function(wrap_pyfunction!(counts, module)?)?;
+    module.add_function(wrap_pyfunction!(counts_packed, module)?)?;
     module.add_function(wrap_pyfunction!(algorithms::greedy, module)?)?;
     module.add_function(wrap_pyfunction!(algorithms::lazy_greedy, module)?)?;
     Ok(())

@@ -29,14 +29,20 @@ class RustAcceptanceTests(unittest.TestCase):
         with contextlib.redirect_stderr(io.StringIO()), patch.object(check, "import_module", return_value=fake):
             self.assertEqual(check.main(), 1)
             fake.greedy = fake.lazy_greedy = lambda: None
-            with patch.object(unittest.defaultTestLoader, "discover", return_value=unittest.TestSuite()):
+            self.assertEqual(check.main(), 1)
+            fake.counts_packed = None
+            self.assertEqual(check.main(), 1)
+            fake.counts_packed = lambda: None
+            with patch.object(unittest.defaultTestLoader, "discover", return_value=unittest.TestSuite()) as discover:
                 self.assertEqual(check.main(), 1)
+                discover.assert_called_once()
             class Skipped(unittest.TestCase):
                 @unittest.skip("deliberate missing execution")
                 def runTest(self):
                     pass
-            with patch.object(unittest.defaultTestLoader, "discover", return_value=unittest.TestSuite([Skipped()])):
+            with patch.object(unittest.defaultTestLoader, "discover", return_value=unittest.TestSuite([Skipped()])) as discover:
                 self.assertEqual(check.main(), 1)
+                discover.assert_called_once()
 
 
 if __name__ == "__main__":

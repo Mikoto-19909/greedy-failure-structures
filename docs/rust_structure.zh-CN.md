@@ -7,7 +7,7 @@ Rust 扩展提供结构原始计数、Greedy 和 Lazy Greedy。默认后端仍�
 ## 构建与调用
 
 需要 Python 3.11+、Rust 和平台链接器。当前本机验收为 Windows x64、Python 3.12.14、
-Rust 1.95.0，扩展版本 0.2.0；远端工作流使用 Python 3.12。
+Rust 1.95.0，扩展版本 0.3.0；远端工作流使用 Python 3.12。
 
 ```console
 python -m pip install ./native/structure
@@ -33,11 +33,14 @@ assert dense.selected == greedy(instance).selected == lazy.selected
 
 - 固定宽度小端掩码在 Rust 中使用多字 `u64`，支持超过 64 位的全集并拒绝非法尾位。
 - 结构计数按输入顺序枚举非空并集的集合对。重复集合参与频数和 Jaccard；支配计数先去重，仅计严格包含。
+- 原始 `counts` 接口保留。结构适配器使用 `counts_packed` 的 little-endian `<QQ>` bytes，
+  每条16字节，记录交/并计数。Rust 直接写缓冲区，Python 按原顺序流式送入 `math.fsum`，
+  不再保留完整 Rust 配对元组向量或 Python Jaccard 列表。旧 wheel 缺新接口时明确提示重建。
 - Greedy 平局选择较小索引，覆盖饱和后仍选满预算；返回结果继续按索引排序。
 - Lazy 保持选择轨迹、刷新/弹出次数、工作量和全部非计时字段，Python 生成标准 `Solution`。
 - 算法注册表、默认调度、配置、CSV、身份、随机种子和续跑规则未改变。
 
-当前结构计算保留二次复杂度和全部集合对列表，不启用原生线程并行。
+当前结构计算仍保留二次复杂度和全部非空集合对的编码字节，不启用原生线程并行。
 固定宽度转换和结果分配有成本，不保证每种输入都更快。
 
 ## 验证
@@ -57,8 +60,8 @@ cargo clippy --manifest-path native/structure/Cargo.toml --locked -- -D warnings
 ```
 
 `.github/workflows/rust.yml` 在 Ubuntu/Windows 构建 release wheel 后严格验收。
-本地补强检查共 598 项：593 通过、5 项可选跳过；mypy 42 个文件通过。
-19 项 Rust 专项在现有及仅安装 wheel 的干净环境均通过，覆盖独立定义、非法输入、
+紧凑候选本地检查共 603 项：598 通过、5 项可选跳过；mypy 42 个文件通过。
+24 项 Rust 专项在现有及仅安装 wheel 的干净环境均通过，覆盖独立定义、非法输入、
 Windows spawn、CSV 身份和续跑。独立复核另检查 12,288 个穷举实例、225 个宽位实例、
 48 个非法调用。远端执行状态以 PR 对应提交的 CI 为准。
 
@@ -78,8 +81,8 @@ python scripts/benchmark_algorithms_rust.py --output results/rust_large --large
 
 2026-09-19 的 24 实例配对加速中位数为 2.824 倍，加入四个较大实例的混合批次为
 8.124 倍；稀疏 `(65537,160,40)` 的 Lazy 慢约 3.37 倍。有限语料观察不作为默认切换依据。
-性能剖析已分别测转换、内核、结果包装和峰值内存，结论见
-[Rust 性能归因](rust_performance.zh-CN.md)。诊断原型未接入生产路径。
+历史归因见 [Rust 性能归因](rust_performance.zh-CN.md)。紧凑通道及流式求和现已形成生产候选，
+保持默认 Python；测试方向、两阶段验收和局限见 [紧凑候选验收](rust_packed_acceptance.zh-CN.md)。
 
 旧入口已归档到本机 `results/rust_closeout_20260920/history/pre_closeout_tools.zip`，
 按原 `scripts/` 路径恢复后可重放历史命令。既有输入、答案、日志、源码快照和报告均保留；

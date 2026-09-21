@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 def main() -> int:
     try:
         native = import_module("maxcover_structure_native")
-        for name in ("counts", "greedy", "lazy_greedy"):
+        for name in ("counts", "counts_packed", "greedy", "lazy_greedy"):
             if not callable(getattr(native, name, None)):
                 raise ImportError(f"installed native extension lacks {name}; rebuild ./native/structure")
     except ImportError as error:

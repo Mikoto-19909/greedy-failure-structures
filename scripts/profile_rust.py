@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import cProfile
 import csv
+from functools import lru_cache
 import importlib.metadata
 import json
 from pathlib import Path
@@ -16,6 +17,7 @@ import subprocess
 import sys
 import time
 import tracemalloc
+from types import ModuleType
 from unittest.mock import patch
 
 from benchmark_algorithms_rust import (ROOT, answers, instance_record, larger_inputs,
@@ -23,6 +25,18 @@ from benchmark_algorithms_rust import (ROOT, answers, instance_record, larger_in
 from maxcover.algorithms import greedy, lazy_greedy
 from maxcover.model import MaximumCoverageInstance
 from maxcover.structure import analyze_instance
+
+LEGACY_STRUCTURE_REF = "7387f43d2133ebdbd8dfdf724c9f4e47af10eaad"
+
+
+@lru_cache(maxsize=1)
+def legacy_structure():
+    """Freeze the old adapter so a new production entry cannot invalidate the control."""
+    source = subprocess.check_output(["git", "show", f"{LEGACY_STRUCTURE_REF}:src/maxcover/structure.py"], cwd=ROOT)
+    module = ModuleType("maxcover._profile_legacy_structure")
+    sys.modules[module.__name__] = module
+    exec(compile(source, f"{LEGACY_STRUCTURE_REF}/structure.py", "exec"), module.__dict__)
+    return module.analyze_instance
 
 
 def save(path, value):
@@ -62,12 +76,15 @@ def memory_worker(inputs, index, backend, tracker):
     import maxcover_structure_native as native
     if backend == "packed":
         __import__("maxcover_profile_native")
+    function = legacy_structure() if backend in ("legacy", "packed") else analyze_instance
     before = process_peak()
     if tracker == "python":
         tracemalloc.start()
     if backend == "packed":
         with patch.object(native, "counts", new=packed_counts):
-            result = analyze_instance(item, backend="rust")
+            result = function(item, backend="rust")
+    elif backend == "legacy":
+        result = function(item, backend="rust")
     else:
         result = analyze_instance(item, backend=backend)
     retained, peak = tracemalloc.get_traced_memory() if tracker == "python" else (None, None)
@@ -113,7 +130,7 @@ def main():
     parser.add_argument("--inputs", type=Path)
     parser.add_argument("--repeats", type=int, default=10)
     parser.add_argument("--memory-case", type=int)
-    parser.add_argument("--backend", choices=("python", "rust", "packed"))
+    parser.add_argument("--backend", choices=("python", "rust", "legacy", "packed"))
     parser.add_argument("--memory-tracker", choices=("python", "process"), default="python")
     parser.add_argument("--confirm-packed", action="store_true", help="Paired public-adapter comparison and separate memory trackers")
     parser.add_argument("--verify-only", action="store_true", help="Short diagnostic parity check, without timing or Git reference inputs")
@@ -155,6 +172,7 @@ def main():
         confirm_packed(args.output, instances, expected, args.repeats)
         return
     save(args.output / "config.json", {"python": sys.version, "platform": platform.platform(),
+         "legacy_structure_ref": LEGACY_STRUCTURE_REF,
          "source_head": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
          "native_version": importlib.metadata.version("maxcover-structure-native"),
          "diagnostic_version": importlib.metadata.version("maxcover-profile-native"),
@@ -182,7 +200,7 @@ def main():
             "profile_lazy": lambda: diagnostic.lazy_profile(buffers, item.universe_size, item.k),
             "prepared_lazy": lambda: prepared.lazy(item.k),
         }
-        for name, function in (("structure", analyze_instance), ("greedy", greedy), ("lazy_greedy", lazy_greedy)):
+        for name, function in (("structure", legacy_structure()), ("greedy", greedy), ("lazy_greedy", lazy_greedy)):
             for backend in ("python", "rust"):
                 operations[f"{name}_{backend}"] = lambda f=function, b=backend: f(item, backend=b)
         def verify(name, result):
@@ -238,7 +256,7 @@ def main():
     save(args.output / "summary.json", summary)
     memory = []
     for index in (13, 24, 25, 26, 27):
-        for backend in ("python", "rust"):
+        for backend in ("python", "legacy"):
             for tracker in ("python", "process"):
                 command = [sys.executable, str(Path(__file__).resolve()), "--inputs", str((args.output / "inputs.json").resolve()),
                            "--memory-case", str(index), "--backend", backend, "--memory-tracker", tracker]
@@ -250,7 +268,7 @@ def main():
     for index in (25, 26):
         for backend in ("python", "rust"):
             profile = cProfile.Profile()
-            profile.runcall(analyze_instance, instances[index], backend=backend)
+            profile.runcall(legacy_structure(), instances[index], backend=backend)
             stats = pstats.Stats(profile)
             top = sorted(stats.stats.items(), key=lambda pair: pair[1][2], reverse=True)[:12]
             profiles.append({"instance": index, "backend": backend, "top_self_seconds": [
@@ -265,6 +283,7 @@ def confirm_packed(output, instances, expected, repeats):
     import maxcover_structure_native as native
     import maxcover_profile_native as diagnostic
     save(output / "config.json", {"repeats": repeats, "python": sys.version, "platform": platform.platform(),
+         "legacy_structure_ref": LEGACY_STRUCTURE_REF,
          "native_version": importlib.metadata.version("maxcover-structure-native"),
          "source_head": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
          "change": "diagnostic packed pair transport; existing public Python assembly and fsum order unchanged",
@@ -281,7 +300,7 @@ def confirm_packed(output, instances, expected, repeats):
             for position, variant in enumerate(order):
                 with patch.object(native, "counts", new=packed_counts if variant == "packed" else native.counts):
                     started = time.perf_counter_ns()
-                    result = analyze_instance(item, backend="rust")
+                    result = legacy_structure()(item, backend="rust")
                     elapsed = (time.perf_counter_ns() - started) / 1e9
                 assert asdict(result) == expected[index]["structure"], (index, variant)
                 if repeat >= 0:
@@ -304,7 +323,7 @@ def confirm_packed(output, instances, expected, repeats):
     save(output / "summary.json", summary)
     memory = []
     for index in (13, 24, 25, 26, 27):
-        for backend in ("python", "rust", "packed"):
+        for backend in ("python", "legacy", "packed"):
             for tracker in ("python", "process"):
                 command = [sys.executable, str(Path(__file__).resolve()), "--inputs", str((output / "inputs.json").resolve()),
                            "--memory-case", str(index), "--backend", backend, "--memory-tracker", tracker]
