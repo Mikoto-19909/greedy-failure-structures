@@ -7,6 +7,7 @@ import itertools
 import math
 import random
 import time
+from importlib import import_module
 from importlib.util import find_spec
 from typing import Any, cast
 
@@ -41,10 +42,31 @@ def _finish(
     )
 
 
-def greedy(instance: MaximumCoverageInstance) -> Solution:
+def greedy(instance: MaximumCoverageInstance, *, backend: str = "python") -> Solution:
     """Select the set with the largest marginal gain at each step."""
 
+    if backend not in {"python", "rust"}:
+        raise ValueError(f"unknown algorithm backend: {backend!r}")
     started = time.perf_counter()
+    if backend == "rust":
+        native = import_module("maxcover_structure_native")
+        width = (instance.universe_size + 7) // 8
+        indices, work = cast(
+            tuple[list[int], int],
+            native.greedy(
+                [mask.to_bytes(width, "little") for mask in instance.sets],
+                instance.universe_size,
+                instance.k,
+            ),
+        )
+        return _finish(
+            "greedy",
+            instance,
+            tuple(indices),
+            started,
+            status=SolutionStatus.FEASIBLE,
+            work=work,
+        )
     selected: list[int] = []
     covered = 0
     available = set(range(instance.set_count))
@@ -73,7 +95,7 @@ def greedy(instance: MaximumCoverageInstance) -> Solution:
     )
 
 
-def lazy_greedy(instance: MaximumCoverageInstance) -> Solution:
+def lazy_greedy(instance: MaximumCoverageInstance, *, backend: str = "python") -> Solution:
     """Select the same sets as :func:`greedy` with lazy marginal evaluation.
 
     The priority queue stores previously evaluated marginal gains as upper
@@ -83,38 +105,59 @@ def lazy_greedy(instance: MaximumCoverageInstance) -> Solution:
     tie-breaking rule.
     """
 
+    if backend not in {"python", "rust"}:
+        raise ValueError(f"unknown algorithm backend: {backend!r}")
     started = time.perf_counter()
-    queue = [(-mask.bit_count(), index) for index, mask in enumerate(instance.sets)]
-    heapq.heapify(queue)
     selected: list[int] = []
-    covered = 0
-    # Building the initial upper-bound queue evaluates every candidate's
-    # marginal gain at empty coverage. Count those evaluations so this metric
-    # is comparable with dense Greedy's full candidate scan.
-    marginal_evaluations = instance.set_count
-    priority_queue_pops = 0
     trajectory: list[dict[str, int]] = []
-
-    for iteration in range(instance.k):
-        while True:
-            _, index = heapq.heappop(queue)
-            priority_queue_pops += 1
-            gain = (instance.sets[index] & ~covered).bit_count()
-            marginal_evaluations += 1
-            refreshed = (-gain, index)
-            if not queue or refreshed <= queue[0]:
-                selected.append(index)
-                covered |= instance.sets[index]
-                trajectory.append(
-                    {
-                        "iteration": iteration + 1,
-                        "selected_index": index,
-                        "marginal_gain": gain,
-                        "marginal_evaluations": marginal_evaluations,
-                    }
-                )
-                break
-            heapq.heappush(queue, refreshed)
+    if backend == "rust":
+        native = import_module("maxcover_structure_native")
+        width = (instance.universe_size + 7) // 8
+        trace, marginal_evaluations, priority_queue_pops = cast(
+            tuple[list[tuple[int, int, int]], int, int],
+            native.lazy_greedy(
+                [mask.to_bytes(width, "little") for mask in instance.sets],
+                instance.universe_size,
+                instance.k,
+            ),
+        )
+        selected = [index for index, _, _ in trace]
+        trajectory = [
+            {
+                "iteration": step,
+                "selected_index": index,
+                "marginal_gain": gain,
+                "marginal_evaluations": evaluations,
+            }
+            for step, (index, gain, evaluations) in enumerate(trace, start=1)
+        ]
+    else:
+        queue = [(-mask.bit_count(), index) for index, mask in enumerate(instance.sets)]
+        heapq.heapify(queue)
+        covered = 0
+        # The initial upper bounds evaluate every candidate at empty coverage.
+        marginal_evaluations = instance.set_count
+        priority_queue_pops = 0
+        for iteration in range(instance.k):
+            while True:
+                _, index = heapq.heappop(queue)
+                priority_queue_pops += 1
+                gain = (instance.sets[index] & ~covered).bit_count()
+                marginal_evaluations += 1
+                refreshed = (-gain, index)
+                if not queue or refreshed <= queue[0]:
+                    selected.append(index)
+                    covered |= instance.sets[index]
+                    trajectory.append(
+                        {
+                            "iteration": iteration + 1,
+                            "selected_index": index,
+                            "marginal_gain": gain,
+                            "marginal_evaluations": marginal_evaluations,
+                        }
+                    )
+                    break
+                heapq.heappush(queue, refreshed)
 
     return _finish(
         "lazy_greedy",
