@@ -9,6 +9,9 @@ Research results and existing tools remain available. New experiments, features
 and further structural splits are paused except for explicitly requested work.
 The separately requested [local workbench expansion](dashboard_expansion_plan.zh-CN.md)
 connects existing artifacts and bounded tools; cloud deployment is outside its scope.
+The [current selected scope](dashboard_selected_scope_20260921.zh-CN.md) integrates
+main, local configuration organization, unified Benchmark control and study analysis;
+backup and further scale optimization remain deferred.
 
 ## Current research
 

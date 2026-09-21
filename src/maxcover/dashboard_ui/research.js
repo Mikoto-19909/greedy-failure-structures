@@ -2,10 +2,12 @@
 'use strict';
 const $ = (id) => document.getElementById(id);
 const state = { view: 'studies', epoch: 0, studies: [], jobs: [], archivedJobs: {}, archiveAvailable: false, source: null, job: null,
-  studyRequest: 0, libraryRequest: 0, jobRequest: 0, jobsRequest: 0, resultKey: null, timer: null };
+  studyRequest: 0, libraryRequest: 0, jobRequest: 0, jobsRequest: 0, resultKey: null, timer: null,
+  benchmarkConfig: null, benchmarkRequest: 0 };
 const labels = {
   r2: 'R2 · 预算扫描', r3: 'R3 · 配对差异', r4: 'R4 · 上界校准', r4_dual: 'R4 · 上界对照',
   mine: '反例挖掘', refute: '猜想检验', queued: '排队中', running: '运行中', completed: '计算完成',
+  benchmark: 'Benchmark 实验', benchmark_completed: 'Benchmark 计算完成', paused: '已暂停', cancelled: '已取消',
   failed: '失败', interrupted: '中断', counterexample_found: '找到反例', domain_exhausted: '指定有限域已穷尽',
   no_counterexample_in_input: '本次已评估输入中未找到反例',
   budget_exhausted: '预算耗尽', deletion_minimal: '已完成单步删减检查',
@@ -112,6 +114,9 @@ async function loadStudy(source) {
     const data = await api('/api/studies/detail?' + new URLSearchParams({ source }));
     if (request !== state.studyRequest || epoch !== state.epoch) return;
     $('study-title').textContent = data.title || data.label; $('study-source').textContent = data.source;
+    const analysisLink = el('a', '打开曲线、分布、配对与原图 →', 'button button-primary');
+    analysisLink.href = '/research-analysis?' + new URLSearchParams({ source });
+    $('study-title').append(document.createTextNode(' '), analysisLink);
     $('study-unit').textContent = `统计单位：${data.statistical_unit}`; $('study-statuses').replaceChildren();
     for (const [key, record] of Object.entries(data.statuses || {})) {
       const card = el('div', undefined, 'research-card'); card.append(el('h4', label(key)));
@@ -192,11 +197,13 @@ function renderJobs() {
     if (state.archivedJobs[job.id]?.archived) id.append(el('small', '已归档'));
     const status = el('td'); status.append(statusBadge(job.status));
     const summary = el('td', job.summary?.status ? label(job.summary.status) : job.error || '等待结果');
-    if (job.summary?.validated !== undefined) summary.append(el('small', `独立验证：${job.summary.validated ? '通过' : '未通过'}`));
+    if (job.kind === 'benchmark') {
+      summary.append(el('small', `检查点：${job.progress?.saved_runs ?? 0} / ${job.progress?.total_runs ?? '—'}；独立验证未执行`));
+    } else if (job.summary?.validated !== undefined) summary.append(el('small', `独立验证：${job.summary.validated ? '通过' : '未通过'}`));
     const action = el('td'), button = el('button', '查看任务', 'button button-secondary');
     button.addEventListener('click', () => { state.job = job.id; state.resultKey = null; $('job-detail').hidden = true; loadJob(job.id); });
     action.append(button);
-    if (state.archiveAvailable && !job.corrupt_record && ['completed', 'failed', 'interrupted'].includes(job.status)) {
+    if (state.archiveAvailable && !job.corrupt_record && ['completed', 'failed', 'interrupted', 'paused', 'cancelled'].includes(job.status)) {
       const archived = Boolean(state.archivedJobs[job.id]?.archived);
       const archive = el('button', archived ? '还原' : '归档', 'button button-secondary');
       archive.setAttribute('aria-label', `${archived ? '还原' : '归档'}任务 ${job.id}`);
@@ -237,18 +244,36 @@ async function loadJob(id, focus = true) {
     if (request !== state.jobRequest || epoch !== state.epoch || state.job !== id) return;
     $('job-id').textContent = job.id; $('job-title').textContent = `${label(job.kind)} · ${label(job.status)}`;
     $('job-metadata').replaceChildren();
-    for (const [key, value] of [['创建时间', job.created_at], ['开始时间', job.started_at], ['结束时间', job.finished_at], ['输出目录', job.output_dir], ['重新运行来源', job.retry_of]]) {
+    for (const [key, value] of [['创建时间', job.created_at], ['开始时间', job.started_at], ['结束时间', job.finished_at], ['输出目录', job.output_dir], ['重新运行来源', job.retry_of], ['续跑来源', job.resume_of]]) {
       $('job-metadata').append(el('dt', key), el('dd', value || '—'));
     }
-    $('retry-job').hidden = Boolean(job.corrupt_record) || !['failed', 'interrupted'].includes(job.status); $('job-error').hidden = !job.error; $('job-error').textContent = job.error || '';
+    $('retry-job').hidden = job.kind === 'benchmark' || Boolean(job.corrupt_record) || !['failed', 'interrupted'].includes(job.status);
+    $('resume-job').hidden = job.kind !== 'benchmark' || !job.can_resume || Boolean(job.corrupt_record);
+    for (const name of ['pause', 'cancel']) {
+      $(`${name}-job`).hidden = job.kind !== 'benchmark' || !['queued', 'running'].includes(job.status);
+      $(`${name}-job`).disabled = Boolean(job.control_requested);
+    }
+    $('job-progress').hidden = job.kind !== 'benchmark';
+    if (job.kind === 'benchmark') {
+      const p = job.progress || {}, counts = p.counts || {};
+      $('job-progress').textContent = `已写入检查点 ${p.saved_runs ?? 0} / ${p.total_runs ?? '—'}；算法错误 ${counts.error || 0}，超时 ${counts.timeout || 0}。${job.control_requested ? `已请求${job.control_requested === 'pause' ? '暂停' : '取消'}，等待当前计算和工作进程收尾。` : '运行期间不读取正在写入的结果文件，停止后可以浏览。'}${p.error ? ` 进度诊断：${p.error}` : ''}`;
+    }
+    $('job-error').hidden = !job.error; $('job-error').textContent = job.error || '';
     $('job-params').replaceChildren(values(job.params, 0, 'params')); $('job-log').textContent = Array.isArray(job.log_tail) ? job.log_tail.join('\n') : job.log_tail || '暂无日志。';
     if (state.resultKey !== `${id}:${job.finished_at}`) $('job-result').hidden = true;
     $('job-detail').hidden = false; if (focus) $('job-title').focus();
     if (job.status !== 'completed') { $('job-result').hidden = true; state.resultKey = null; }
     else if (state.resultKey !== `${id}:${job.finished_at}`) {
-      const result = await api(`/api/research/jobs/${encodeURIComponent(id)}/result`);
-      if (request !== state.jobRequest || epoch !== state.epoch || state.job !== id) return;
-      renderResult(id, result); state.resultKey = `${id}:${job.finished_at}`;
+      try {
+        const result = await api(`/api/research/jobs/${encodeURIComponent(id)}/result`);
+        if (request !== state.jobRequest || epoch !== state.epoch || state.job !== id) return;
+        renderResult(id, result); state.resultKey = `${id}:${job.finished_at}`;
+      } catch (error) {
+        if (request === state.jobRequest && epoch === state.epoch && state.job === id) {
+          $('job-result').hidden = true; state.resultKey = null;
+          message(`任务记录已加载；当前产物不可用：${error.message}`, true);
+        }
+      }
     }
   } catch (error) { if (request === state.jobRequest && epoch === state.epoch) { $('job-detail').hidden = true; message(error.message, true); } }
 }
@@ -263,7 +288,18 @@ function casePanel(title, data) {
   return panel;
 }
 function renderResult(id, result) {
-  const summary = result.summary || {}, { cases = [], ...overview } = summary; $('job-summary').replaceChildren(values(overview));
+  const summary = result.summary || {}, { cases = [], ...overview } = summary;
+  if (result.job?.kind === 'benchmark') delete overview.validated;
+  $('job-summary').replaceChildren(values(overview));
+  if (result.job?.kind === 'benchmark') {
+    $('job-summary').append(el('p', '此状态表示计算及报告生成完成，没有自动执行独立科研验证。错误和超时记录保留在计数中；续跑跳过所有已有 run_id，不自动重算已记录的错误行。', 'wb-note'));
+    if (result.artifact_notice) $('job-summary').append(el('p', result.artifact_notice, 'wb-note'));
+    $('job-artifacts').replaceChildren();
+    for (const artifact of result.artifacts || []) $('job-artifacts').append(link(`下载 ${artifact.name}`, `/api/research/jobs/${encodeURIComponent(id)}/files/${encodeURIComponent(artifact.name)}`));
+    const browse = el('a', '打开已有结果页面 →', 'button button-primary'); browse.href = '/';
+    $('job-artifacts').append(browse); $('job-cases').replaceChildren();
+    $('job-document').replaceChildren(values(result.document)); $('job-result').hidden = false; return;
+  }
   const interpretation = result.job?.kind === 'mine' ? '挖掘结果来自筛选后的输入；案例数量与缩小结果不用于估计总体失效率。' : summary.status === 'domain_exhausted' ? '搜索已覆盖本次指定的有限域。请同时检查满足前提的实例数；结论不推广到其他域。' : summary.status === 'budget_exhausted' ? '预算用完，搜索未完成。未找到反例不能确认该有限域内猜想成立。' : summary.status === 'counterexample_found' ? '已找到满足本次结构条件、违反覆盖要求的反例。请阅读实际集合与最优见证。' : '请结合本次输入、停止状态和可用精确参考读取结果。';
   $('job-summary').append(el('p', interpretation, 'wb-note'));
   $('job-artifacts').replaceChildren();
@@ -289,19 +325,79 @@ async function retryJob() {
   } catch (error) { if (epoch === state.epoch) message(error.message, true); }
   finally { $('retry-job').disabled = false; }
 }
+function experimentMode(kind) {
+  for (const mode of ['mine', 'refute', 'benchmark']) {
+    $(`${mode}-form`).hidden = mode !== kind;
+    $(`mode-${mode}`).className = `button button-${mode === kind ? 'primary' : 'secondary'}`;
+    $(`mode-${mode}`).setAttribute('aria-pressed', String(mode === kind));
+  }
+  message();
+}
+async function inspectBenchmark() {
+  const request = ++state.benchmarkRequest, path = $('benchmark-config').value;
+  state.benchmarkConfig = null; $('submit-benchmark').disabled = true;
+  $('benchmark-preview').textContent = path ? '正在校验配置与计算规模…' : '请先选择配置。';
+  if (!path) return;
+  try {
+    const data = await api('/api/config?' + new URLSearchParams({ path }));
+    if (request !== state.benchmarkRequest) return;
+    if (!data.valid) throw new Error(data.error || '配置不可用');
+    state.benchmarkConfig = data;
+    const plan = data.plan;
+    $('benchmark-preview').textContent = `${plan.name} · ${plan.instance_count} 个实例 · ${plan.algorithm_run_count} 次算法计算 · ${plan.runs_by_algorithm.map((row) => `${row.algorithm}: ${row.runs}`).join('；')}${data.warnings?.length ? `。${data.warnings.join(' ')}` : ''}`;
+    $('submit-benchmark').disabled = false;
+    if (!$('benchmark-output').value) $('benchmark-output').value = `benchmark-${Date.now()}`;
+  } catch (error) { if (request === state.benchmarkRequest) $('benchmark-preview').textContent = error.message; }
+}
+async function loadBenchmarkConfigs() {
+  const requested = new URLSearchParams(location.search).get('config');
+  try {
+    const data = await api('/api/configs');
+    $('benchmark-config').replaceChildren(new Option('选择配置', ''), ...data.configs.map((config) => new Option(config.path, config.path)));
+    if (requested) {
+      showView('experiments'); experimentMode('benchmark');
+      if (!data.configs.some((config) => config.path === requested)) throw new Error('指定配置不存在，请在配置管理中重新选择。');
+      $('benchmark-config').value = requested; await inspectBenchmark();
+    }
+  } catch (error) { $('benchmark-preview').textContent = error.message; }
+}
+async function submitBenchmark(event) {
+  event.preventDefault(); const config = state.benchmarkConfig, epoch = state.epoch;
+  if (!config?.valid || config.path !== $('benchmark-config').value) return;
+  $('submit-benchmark').disabled = true;
+  try {
+    const job = await api('/api/research/jobs', { kind: 'benchmark', config: config.path,
+      config_hash: config.config_hash, output: $('benchmark-output').value,
+      workers: Number($('benchmark-workers').value), checkpoint_interval: Number($('benchmark-checkpoint').value),
+      force: $('benchmark-force').checked });
+    if (epoch !== state.epoch) return;
+    state.job = job.id; state.resultKey = null; $('job-detail').hidden = true; showView('jobs');
+  } catch (error) { if (epoch === state.epoch) message(error.message, true); }
+  finally { $('submit-benchmark').disabled = !state.benchmarkConfig?.valid; }
+}
+async function benchmarkControl(action) {
+  const id = state.job, epoch = state.epoch, button = $(`${action}-job`);
+  button.disabled = true;
+  try {
+    const job = await api(`/api/research/jobs/${encodeURIComponent(id)}/${action}`, {});
+    if (epoch !== state.epoch || state.job !== id) return;
+    state.job = job.id; state.resultKey = null; await loadJobs();
+  } catch (error) { if (epoch === state.epoch && state.job === id) message(error.message, true); }
+  finally { button.disabled = false; }
+}
 for (const view of ['studies', 'experiments', 'jobs']) $(`nav-${view}`).addEventListener('click', () => showView(view));
 $('refresh-studies').addEventListener('click', loadLibrary);
 $('study-search').addEventListener('input', renderLibrary); $('study-kind').addEventListener('change', renderLibrary);
 $('refresh-jobs').addEventListener('click', loadJobs); $('job-filter').addEventListener('change', renderJobs); $('retry-job').addEventListener('click', retryJob);
 $('show-archived-jobs').addEventListener('change', () => loadJobs());
+for (const kind of ['mine', 'refute', 'benchmark']) $(`mode-${kind}`).addEventListener('click', () => experimentMode(kind));
 for (const kind of ['mine', 'refute']) {
-  $(`mode-${kind}`).addEventListener('click', () => {
-    for (const mode of ['mine', 'refute']) { $(`${mode}-form`).hidden = mode !== kind; $(`mode-${mode}`).className = `button button-${mode === kind ? 'primary' : 'secondary'}`; $(`mode-${mode}`).setAttribute('aria-pressed', String(mode === kind)); }
-    message();
-  });
   $(`${kind}-form`).addEventListener('submit', (event) => submit(kind, event));
 }
+for (const action of ['resume', 'pause', 'cancel']) $(`${action}-job`).addEventListener('click', () => benchmarkControl(action));
+$('benchmark-config').addEventListener('change', inspectBenchmark);
+$('benchmark-form').addEventListener('submit', submitBenchmark);
 $('mine-source').addEventListener('change', () => { if ($('mine-source').value) $('mine-input').value = $('mine-source').value; });
 $('mine-input').addEventListener('input', () => { if ($('mine-source').value !== $('mine-input').value) $('mine-source').value = ''; });
 $('refute-form').addEventListener('input', previewClaim);
-previewClaim(); loadLibrary(); loadMineSources();
+previewClaim(); loadLibrary(); loadMineSources(); loadBenchmarkConfigs();

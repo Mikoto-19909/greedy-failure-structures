@@ -7,13 +7,14 @@
   <link rel="icon" href="/favicon.svg" />
   <link rel="stylesheet" href="/styles.css" />
   <link rel="stylesheet" href="/workbench.css" />
+  <link rel="stylesheet" href="/experiments.css" />
 </head>
 <body>
   <header class="topbar wb-topbar">
     <div class="brand-lockup"><div class="brand-mark" aria-hidden="true">MC</div><div>
       <p class="eyebrow">MAXIMUM COVERAGE</p><h1>研究工作台</h1>
     </div></div>
-    <div class="wb-actions"><a href="/research" class="button button-primary">专题、反例与运行中心 ↗</a>
+    <div class="wb-actions"><a href="/experiments" class="button button-secondary">配置实验 ↗</a><a href="/research" class="button button-primary">专题、反例与运行中心 ↗</a>
     <a href="/" class="button button-secondary">运行实验与阅读报告 ↗</a></div>
   </header>
   <main class="wb-shell">
@@ -45,10 +46,13 @@
       <div class="wb-toolbar">
         <label>搜索名称、路径、案例或算法<input id="library-search" class="field" type="search" placeholder="例如 overlap、R1、greedy" /></label>
         <label>数据类型<select id="library-kind" class="field"><option value="">全部类型</option><option value="benchmark">Benchmark</option><option value="r1">R1 轨迹</option></select></label>
+        <label>研究主题<select id="library-theme" class="field"><option value="">全部主题</option></select></label>
+        <label>实验标签<select id="library-tag" class="field"><option value="">全部标签</option></select></label>
+        <label class="wb-group-toggle"><input id="library-group" type="checkbox" />按研究主题分组</label>
         <button id="compare-selected" class="button button-primary" disabled>比较所选实验（0）</button>
       </div>
       <p id="library-count" class="help-text"></p>
-      <div class="wb-table-wrap"><table class="wb-table"><thead><tr><th scope="col">选择</th><th scope="col">数据来源</th><th scope="col">类型 / 样本</th><th scope="col">案例</th><th scope="col">算法</th><th scope="col">记录 / 实例</th></tr></thead><tbody id="library-body"></tbody></table></div>
+      <div class="wb-table-wrap"><table class="wb-table wb-library-table"><thead><tr><th scope="col">选择</th><th scope="col">数据来源</th><th scope="col">类型 / 样本</th><th scope="col">案例</th><th scope="col">算法</th><th scope="col">记录 / 实例</th></tr></thead><tbody id="library-body"></tbody></table></div>
       <p class="wb-note">实验库读取本项目 results/ 与 experiments/ 中的原始 CSV 或 R1 paths.jsonl。文件可读不代表实验完整或独立验证通过；数据来源始终保留。</p>
     </section>
 
@@ -93,6 +97,15 @@
       </div>
     </section>
   </main>
+  <dialog id="annotation-dialog" class="wb-output-dialog">
+    <div class="wb-heading"><div><h2>组织实验</h2><p id="annotation-source" class="help-text"></p></div><button id="annotation-close" class="button button-secondary">关闭</button></div>
+    <p class="help-text">主题、标签与备注只保存在本地旁注中，原始实验记录保持原样。</p>
+    <div class="wb-toolbar"><label>研究主题<input id="annotation-theme" class="field" maxlength="120" list="annotation-themes" /></label>
+      <label>标签（以逗号分隔）<input id="annotation-tags" class="field" /></label></div>
+    <datalist id="annotation-themes"></datalist>
+    <label>实验备注<textarea id="annotation-notes" class="field" rows="5" maxlength="10000"></textarea></label>
+    <p id="annotation-message" role="status" aria-live="polite"></p><button id="annotation-save" class="button button-primary">保存主题、标签与备注</button>
+  </dialog>
   <dialog id="saved-dialog" class="wb-output-dialog">
     <div class="wb-heading"><div><h2 id="saved-title">已保存分析</h2><p id="saved-info" class="help-text"></p></div>
       <button id="close-saved" class="button button-secondary">关闭</button></div>

@@ -105,7 +105,9 @@ class ComparisonExportTests(unittest.TestCase):
         worker = threading.Thread(target=server.serve_forever, daemon=True); worker.start()
         connection = http.client.HTTPConnection("127.0.0.1", server.server_port, timeout=10)
         try:
-            connection.request("POST", "/api/workbench/views", json.dumps(self.payload), {"Content-Type": "application/json"})
+            # Origin must be rejected before consuming a body. Sending a body
+            # after that rejection races socket closure on Windows.
+            connection.request("POST", "/api/workbench/views", headers={"Content-Type": "application/json", "Content-Length": "1"})
             response = connection.getresponse(); response.read(); self.assertEqual(response.status, 403)
             connection.request("POST", "/api/workbench/views", json.dumps(self.payload),
                                {"Content-Type": "application/json", "Origin": f"http://127.0.0.1:{server.server_port}"})

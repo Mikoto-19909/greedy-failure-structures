@@ -238,9 +238,12 @@ complete inputs with paginated details, and displays/exports saved R1 trajectori
 Its summaries are descriptive; matching seeds do not imply paired observations.
 See the [workbench scope, usage and verification](dashboard_workbench_layer1.zh-CN.md).
 
-`/research` adds saved R2–R4 study readers, bounded counterexample/conjecture forms,
-and persistent local mine/refute jobs. Benchmark keeps its existing runner and
-checkpoint semantics. Comparisons can be saved with complete selected records
+`/research` provides one persistent local queue for Benchmark, counterexample and
+conjecture jobs, including submissions from the original dashboard. Benchmark
+supports durable checkpoint progress, cooperative pause/cancel and same-directory
+resume from its frozen configuration. Existing run IDs are skipped; active result
+files remain unavailable until the writer stops. Computation completion does not
+imply independent research validation. Comparisons can be saved with complete selected records
 and exported as CSV, Markdown, SVG or JSON. All data and task history stay local;
 see the [module scope, limits and verification](dashboard_expansion_plan.zh-CN.md).
 
@@ -249,6 +252,14 @@ change. The workbench exposes status and rebuild controls. Archive/restore flags
 hide or reveal completed task history and saved comparisons without moving or
 deleting the underlying files. Initial indexing adds time and disk usage; see
 the module record for measured tradeoffs and recovery behavior.
+
+`/experiments` supports local configuration copies, editing, validation and parameter
+diffs; the workbench adds persistent research themes, tags and notes. Templates stay
+read-only and stale edits conflict. The study analysis page adds saved budget curves,
+distributions, valid graph-level pairs, actual graph/endpoint inspection and replay
+exports using explicitly registered local origins. See the
+[selected-scope implementation and verification](dashboard_selected_scope_20260921.zh-CN.md).
+Backup/restore and further scale optimization remain deferred.
 
 Start the local browser frontend:
 

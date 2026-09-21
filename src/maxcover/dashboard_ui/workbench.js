@@ -4,7 +4,8 @@
   const state = { library: [], selected: new Set(), view: "library", request: 0,
     comparison: null, detail: null, step: 0, timer: null, page: 0,
     saveBusy: false, outputRequest: 0, savedListRequest: 0, savedSelectionVersion: 0, saved: null,
-    archivedViews: {}, archiveAvailable: false, indexRequest: 0 };
+    archivedViews: {}, archiveAvailable: false, indexRequest: 0,
+    annotations: {}, annotation: null, annotationBusy: false, annotationsAvailable: false };
   const percent = (value) => value == null ? "—" : `${(100 * value).toFixed(2)}%`;
   const number = (value, digits = 2) => value == null ? "—" : Number(value).toLocaleString("zh-CN", { maximumFractionDigits: digits });
   const population = (value) => ({ pilot: "pilot 实验样本", confirmation: "确认实验样本", experiment: "实验样本", fixture: "功能夹具" })[value] || value;
@@ -58,10 +59,23 @@
   function renderLibrary() {
     const query = $("library-search").value.trim().toLowerCase();
     const kind = $("library-kind").value;
-    const items = state.library.filter((item) => (!kind || item.kind === kind)
-      && [item.source, ...(item.cases || []), ...(item.algorithms || [])].join(" ").toLowerCase().includes(query));
+    const theme = $("library-theme").value, tag = $("library-tag").value;
+    const items = state.library.filter((item) => {
+      const note = state.annotations[item.source] || {};
+      return (!kind || item.kind === kind) && (!theme || note.theme === theme) && (!tag || (note.tags || []).includes(tag))
+        && [item.source, ...(item.cases || []), ...(item.algorithms || []), note.theme, ...(note.tags || []), note.notes].join(" ").toLowerCase().includes(query);
+    });
+    const group = $("library-group").checked;
+    if (group) items.sort((a, b) => (state.annotations[a.source]?.theme || "").localeCompare(state.annotations[b.source]?.theme || "", "zh-CN") || a.source.localeCompare(b.source));
     $("library-body").replaceChildren();
+    let previousTheme = null;
     for (const item of items) {
+      const note = state.annotations[item.source] || {};
+      const currentTheme = note.theme || "";
+      if (group && currentTheme !== previousTheme) {
+        const header = el("tr"); const heading = el("th", currentTheme || "未分组"); heading.colSpan = 6; heading.scope = "rowgroup";
+        header.append(heading); $("library-body").append(header); previousTheme = currentTheme;
+      }
       const row = el("tr");
       const box = el("input"); box.type = "checkbox"; box.checked = state.selected.has(item.source);
       box.disabled = Boolean(item.error); box.setAttribute("aria-label", `选择 ${item.source}`);
@@ -71,7 +85,13 @@
         state.detail = null; $("nav-detail").disabled = true; message(); saveSelection();
       });
       cell(row, "").append(box);
-      cell(row, item.source.split("/").pop(), item.source);
+      const sourceCell = cell(row, item.source.split("/").pop(), item.source);
+      if (note.theme || note.tags?.length) sourceCell.append(el("small", [note.theme, ...(note.tags || []).map((value) => `#${value}`)].filter(Boolean).join(" · ")));
+      if (note.notes) sourceCell.append(el("small", note.notes));
+      const organize = el("button", "主题与标签", "button button-secondary");
+      organize.disabled = Boolean(item.error) || !state.annotationsAvailable;
+      organize.setAttribute("aria-label", `组织 ${item.source}`);
+      organize.addEventListener("click", () => editAnnotation(item.source)); sourceCell.append(organize);
       if (item.error) {
         const td = cell(row, `无法读取：${item.error}`); td.colSpan = 4; td.className = "wb-error";
       } else {
@@ -90,11 +110,11 @@
     const request = ++state.request; show("library"); message("正在读取实验库…");
     $("refresh-library").disabled = true;
     try {
-      const data = await api("library"); if (request !== state.request) return;
+      const [data, notes] = await Promise.all([api("library"), loadAnnotations()]); if (request !== state.request) return;
       state.library = data.sources;
       const available = new Set(data.sources.filter((item) => !item.error).map((item) => item.source));
       state.selected = new Set([...state.selected].filter((source) => available.has(source)).slice(0, 4));
-      renderLibrary(); message();
+      renderLibrary(); message(notes ? "" : "实验记录可读；本地主题与标签暂不可用，请检查旁注数据后刷新。", !notes);
     } catch (error) { if (request === state.request) { empty("library-body", "读取失败，可点击刷新重试。", 6); message(error.message, true); } }
     finally { $("refresh-library").disabled = false; loadIndex(); }
   }
@@ -103,6 +123,40 @@
     $(id).replaceChildren(new Option(caption, ""), ...values.map((value) => new Option(value, value)));
     if (values.includes(selected)) $(id).value = selected;
   }
+  function annotationOptions() {
+    const values = Object.values(state.annotations);
+    const themes = [...new Set(values.map((item) => item.theme).filter(Boolean))].sort();
+    options("library-theme", themes, "全部主题");
+    options("library-tag", [...new Set(values.flatMap((item) => item.tags || []))].sort(), "全部标签");
+    $("annotation-themes").replaceChildren(...themes.map((value) => new Option(value, value)));
+  }
+  async function loadAnnotations() {
+    try {
+      const response = await fetch("/api/experiments/annotations"); const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "无法读取主题与标签");
+      state.annotations = data.annotations; state.annotationsAvailable = true; annotationOptions(); return true;
+    } catch (_) { state.annotations = {}; state.annotationsAvailable = false; annotationOptions(); return false; }
+  }
+  function editAnnotation(source) {
+    if (state.annotationBusy) return;
+    state.annotation = { source, ...(state.annotations[source] || { theme: "", tags: [], notes: "", revision: 0 }) };
+    $("annotation-source").textContent = source; $("annotation-theme").value = state.annotation.theme;
+    $("annotation-tags").value = state.annotation.tags.join(", "); $("annotation-notes").value = state.annotation.notes;
+    $("annotation-message").textContent = ""; $("annotation-dialog").showModal();
+  }
+  $("annotation-close").addEventListener("click", () => $("annotation-dialog").close());
+  $("annotation-save").addEventListener("click", async () => {
+    if (!state.annotation || state.annotationBusy) return;
+    state.annotationBusy = true; $("annotation-save").disabled = true; $("annotation-close").disabled = true;
+    const payload = { source: state.annotation.source, expected_revision: state.annotation.revision,
+      theme: $("annotation-theme").value, tags: $("annotation-tags").value.split(/[,，]/).map((value) => value.trim()).filter(Boolean), notes: $("annotation-notes").value };
+    try {
+      const response = await fetch("/api/experiments/annotation", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      const data = await response.json(); if (!response.ok) throw new Error(response.status === 409 ? "旁注已在其他窗口更改。请保留当前文字，关闭并刷新实验库后重新编辑。" : data.error || "保存失败");
+      state.annotations[data.source] = data; annotationOptions(); renderLibrary(); $("annotation-dialog").close(); message("主题、标签与备注已保存。");
+    } catch (error) { $("annotation-message").textContent = error.message; }
+    finally { state.annotationBusy = false; $("annotation-save").disabled = false; $("annotation-close").disabled = false; }
+  });
   function compareParams() {
     const params = new URLSearchParams();
     for (const source of state.selected) params.append("source", source);
@@ -401,7 +455,7 @@
     $("saved-dialog").close(); compare(true);
   });
   $("refresh-library").addEventListener("click", library);
-  for (const id of ["library-search", "library-kind"]) $(id).addEventListener("input", renderLibrary);
+  for (const id of ["library-search", "library-kind", "library-theme", "library-tag", "library-group"]) $(id).addEventListener("input", renderLibrary);
   $("compare-selected").addEventListener("click", () => {
     for (const name of ["case", "algorithm"]) $(`compare-${name}`).value = "";
     $("compare-population").value = "research"; $("compare-outcome").value = "all"; compare(true);

@@ -1,0 +1,20 @@
+.config-shell { max-width: 1320px; }
+.wb-library-table { min-width: 850px; }
+.wb-toolbar label.wb-group-toggle { display: flex; align-items: center; gap: 8px; min-height: 44px; }
+.wb-group-toggle input { flex: none; width: 16px; height: 16px; }
+#config-message { min-height: 24px; line-height: 1.7; overflow-wrap: anywhere; }
+#config-message.error { color: var(--red); }
+.config-fields { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 20px; margin: 24px 0 18px; }
+.config-fields label, .config-json-label { display: grid; gap: 10px; color: var(--muted-strong); font-size: 13px; }
+.config-fields .field { width: 100%; min-width: 0; }
+.config-json-label { margin: 24px 0 12px; }
+#config-text { width: 100%; min-height: 340px; resize: vertical; font-family: Consolas, monospace; font-size: 13px; line-height: 1.7; tab-size: 2; }
+.config-preview { margin: 28px 0; padding: 16px 22px; border: 1px solid var(--border); border-radius: 8px; }
+.config-shell h3 { font-size: 18px; margin: 16px 0; }
+.config-diffs { display: grid; gap: 10px; margin: 16px 0 28px; }
+.config-diff { border: 1px solid var(--border); border-radius: 8px; padding: 16px; min-width: 0; }
+.config-diff h4 { color: var(--accent); font-size: 13px; margin: 0 0 12px; overflow-wrap: anywhere; }
+.config-diff pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; line-height: 1.7; margin: 8px 0; }
+.config-shell details { margin: 24px 0; padding: 16px; border: 1px solid var(--border); border-radius: 8px; }
+#config-source, #config-plan { overflow-wrap: anywhere; line-height: 1.8; }
+@media (max-width: 740px) { .config-fields { grid-template-columns: 1fr; } .config-shell { padding: 22px 16px; } }

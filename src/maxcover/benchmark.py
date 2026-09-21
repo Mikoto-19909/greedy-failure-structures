@@ -6,7 +6,7 @@ import json
 import multiprocessing
 import tempfile
 import time
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
@@ -403,6 +403,33 @@ def run_benchmark(
 ) -> BenchmarkResult:
     """Run or resume an experiment with atomic periodic checkpoints."""
 
+    return _run_benchmark_controlled(
+        config_path, output_dir, workers=workers, force=force,
+        expected_config_hash=expected_config_hash, checkpoint_interval=checkpoint_interval,
+    )
+
+
+class _BenchmarkStopped(Exception):
+    """A requested stop reached a durable checkpoint and drained its workers."""
+
+    def __init__(self, action: str) -> None:
+        self.action = action
+        super().__init__(f"benchmark {action} requested; checkpoint preserved")
+
+
+def _run_benchmark_controlled(
+    config_path: Path,
+    output_dir: Path,
+    *,
+    workers: int = 1,
+    force: bool = False,
+    expected_config_hash: str | None = None,
+    checkpoint_interval: int = 1,
+    control: Callable[[], str | None] | None = None,
+    checkpoint_saved: Callable[[tuple[RunRecord, ...]], None] | None = None,
+) -> BenchmarkResult:
+    """Internal queue adapter; stopping waits for already executing algorithms."""
+
     if isinstance(workers, bool) or not isinstance(workers, int) or workers <= 0:
         raise ValueError("workers must be a positive integer")
     if (
@@ -450,6 +477,27 @@ def run_benchmark(
     pending = [task for task in tasks if task.run_id not in existing]
     records = dict(existing)
 
+    def publish_checkpoint() -> None:
+        if checkpoint_saved is not None:
+            checkpoint_saved(tuple(records[identifier] for identifier in expected_ids if identifier in records))
+
+    publish_checkpoint()
+
+    def stop_if_requested() -> None:
+        action = control() if control is not None else None
+        if action is not None:
+            if action not in {"pause", "cancel"}:
+                raise ValueError("unknown benchmark control request")
+            checkpoint = _normalize_optima(
+                [records[identifier] for identifier in expected_ids if identifier in records],
+                instance_records,
+            )
+            _write_csv(output_dir / "raw_results.csv", checkpoint, RunRecord.CSV_FIELDS)
+            publish_checkpoint()
+            raise _BenchmarkStopped(action)
+
+    stop_if_requested()
+
     if workers == 1:
         completed_runs: Iterable[_CompletedRun] = map(_execute_task, pending)
         executor = None
@@ -457,6 +505,7 @@ def run_benchmark(
         context = multiprocessing.get_context("spawn")
         executor = ProcessPoolExecutor(max_workers=workers, mp_context=context)
         completed_runs = executor.map(_execute_task, pending)
+    primary_error: BaseException | None = None
     try:
         for completed_index, completed in enumerate(completed_runs, start=1):
             record = _record_for_completed(completed)
@@ -472,15 +521,28 @@ def run_benchmark(
                 _write_csv(
                     output_dir / "raw_results.csv", checkpoint, RunRecord.CSV_FIELDS
                 )
+                publish_checkpoint()
+            stop_if_requested()
+    except BaseException as error:
+        primary_error = error
+        raise
     finally:
         if executor is not None:
-            executor.shutdown(wait=True, cancel_futures=True)
+            try:
+                executor.shutdown(wait=True, cancel_futures=True)
+            except BaseException as error:
+                if primary_error is None or isinstance(primary_error, _BenchmarkStopped):
+                    raise
+                primary_error.add_note(f"worker shutdown also failed: {type(error).__name__}: {error}")
+
+    stop_if_requested()
 
     all_rows = _normalize_optima(
         [records[run_identifier] for run_identifier in expected_ids],
         instance_records,
     )
     _write_csv(output_dir / "raw_results.csv", all_rows, RunRecord.CSV_FIELDS)
+    publish_checkpoint()
     canonical_rows = _canonical_run_records(all_rows)
     summary = _summarize(canonical_rows)
     _write_csv(output_dir / "summary.csv", summary, SummaryRecord.CSV_FIELDS)

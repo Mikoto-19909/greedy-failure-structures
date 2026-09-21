@@ -176,9 +176,12 @@ class WorkbenchService:
         except OSError as error:
             raise WorkbenchError(f"{source}: {error}") from error
 
-    def library(self) -> dict[str, Any]:
+    def library(self, excluded: set[str] | None = None) -> dict[str, Any]:
         items = []
         for source in self._sources():
+            if excluded and any(source == path or source.startswith(path + "/") for path in excluded):
+                items.append({"source": source, "error": "Benchmark 正在写入此结果；请在运行中心查看检查点进度，停止后再读取。"})
+                continue
             try:
                 items.append(self.index.metadata(self._source_path(source), self._parser(source), lambda: self._load(source)))
             except (WorkbenchError, OSError) as error:

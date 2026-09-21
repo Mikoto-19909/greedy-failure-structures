@@ -162,7 +162,7 @@ class StudiesService:
                 "files": files, "source_files": files, "errors": errors,
                 "error": "; ".join(item["error"] for item in errors) or None}
 
-    def library(self) -> dict[str, Any]:
+    def library(self, excluded: set[str] | None = None) -> dict[str, Any]:
         sources = []
         for name in ("results", "experiments"):
             base = self.root / name
@@ -170,6 +170,10 @@ class StudiesService:
                 continue
             for directory, children, files in os.walk(base, followlinks=False):
                 here = Path(directory)
+                source = here.relative_to(self.root).as_posix()
+                if excluded and any(source == path or source.startswith(path + "/") for path in excluded):
+                    children[:] = []
+                    continue
                 children[:] = sorted(child for child in children if not child.startswith(".")
                                      and child != "graphs" and not _linked(here / child))
                 markers = {"budget_results.csv", "endpoint_results.csv", "base_graph_summary.csv"}

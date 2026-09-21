@@ -18,7 +18,7 @@ from .dashboard_workbench import WorkbenchError
 
 _ID = re.compile(r"[0-9a-f]{32}\Z")
 _KINDS = ("job", "view")
-_TERMINAL = ("completed", "failed", "interrupted")
+_TERMINAL = ("completed", "failed", "interrupted", "paused", "cancelled")
 
 
 class LocalCatalogError(WorkbenchError):
