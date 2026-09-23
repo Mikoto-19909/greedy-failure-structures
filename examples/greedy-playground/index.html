@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>贪心，会选错吗？ · Greedy Lab</title><link rel="icon" href="data:,"><link rel="stylesheet" href="style.css"><script defer src="playground.js"></script></head>
+<body>
+<header><a href="../../README.zh-CN.md">MAXIMUM COVERAGE STUDY</a><span>交互研究玩具 / 01</span></header>
+<main>
+<section class="intro"><div class="eyebrow">GREEDY LAB · 反例实验室</div><h1>贪心，会选错吗？</h1><p>每个集合能盖住一些圆点。<strong id="challenge">挑两个集合，尽量盖住更多点。</strong><br>先凭直觉试试，再看看算法怎么选。</p></section>
+<nav aria-label="选择实验"><button data-case="0" aria-pressed="true">01 平局里的陷阱</button><button data-case="1" aria-pressed="false">02 最大的不一定最好</button><button data-case="2" aria-pressed="false">03 贪心也能全对</button></nav>
+<section class="lab" aria-label="集合选择实验">
+<div class="board"><div class="section-top"><h2 id="case-title"></h2><span id="budget"></span></div><p id="hint" class="muted"></p><div id="elements" aria-label="覆盖状态"></div><div id="sets"></div><div class="actions"><button id="reveal" class="primary">选好后，揭晓答案</button><button id="reset">重新选</button></div><p id="status" role="status" aria-live="polite"></p></div>
+<aside><div class="eyebrow">你的选择</div><div class="score"><strong id="score">0</strong><span id="total"></span></div><p id="selection"></p><div id="before"><h3>30 秒就能上手</h3><ol><li>点下面的集合，选两个。</li><li>看上面的圆点亮起来。</li><li>揭晓答案，挑战贪心。</li></ol><p class="muted">重复盖住同一个点，只算一次。</p></div><div id="answer" hidden><h3 id="verdict"></h3><div id="comparison"></div><p id="explanation"></p></div></aside>
+</section>
+<section id="replay" class="replay" hidden><div class="section-top"><div><div class="eyebrow">跟着算法走一遍</div><h2>它为什么这么选？</h2></div><span id="step"></span></div><p>贪心每次选新增覆盖最多的集合；相同时，选字母靠前的。</p><div id="trace"></div><p id="reachability" class="insight"></p><div class="actions"><button id="prev">上一步</button><button id="next" class="primary">下一步</button><button id="autoplay">自动播放</button><button id="optimal">看看最优组合</button></div></section>
+<details id="editor"><summary>动手改一改：造一个自己的反例 <span>点击展开 →</span></summary><p>点击格子，改变集合包含哪些点。可以保留空集合或重复集合。修改后重新挑战。</p><div id="matrix"></div><div class="actions"><label>可选集合数 <select id="k"><option>1</option><option selected>2</option><option>3</option></select></label><button id="apply" class="primary">用这个实例挑战</button><button id="export">导出实例 JSON</button><label class="file-button">导入实例 <input id="import" type="file" accept=".json,application/json"></label></div><p id="editor-status" role="status"></p><small>本玩具支持 1–8 个集合、1–12 个元素；所有计算都在你的浏览器中完成。</small></details>
+<footer><strong>小反例，大问题。</strong><p>来自 Maximum Coverage Study 的反例与路径分析思路。这里的精选教学案例不代表总体失效率；每个最优答案均在浏览器里穷举计算。</p><a href="../../docs/counterexample_experiments.zh-CN.md">研究与反例工具</a> · <a href="../../analysis/r1_prefix_exchange_report.md">路径分析</a><p>代码 MIT · 文档 CC BY 4.0 · 无需安装、联网或账号</p></footer>
+</main></body></html>

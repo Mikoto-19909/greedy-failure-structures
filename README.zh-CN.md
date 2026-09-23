@@ -5,6 +5,10 @@
 本项目研究最大覆盖（Maximum Coverage）实例结构与贪心算法（Greedy）最优性差距的关系：
 贪心解的覆盖量比精确最优值少多少。项目提供算法、实例生成器和可复现实验工具。
 
+想先动手试试？打开[反例研究玩具](examples/greedy-playground/index.html)，
+挑选集合、挑战贪心、逐步回放并修改自己的反例。下载后可直接用浏览器打开，无需安装；
+见[简短说明](examples/greedy-playground/README.zh-CN.md)。
+
 ## 当前研究
 
 已完成的试验使用 Greedy 与穷举参考，比较共核式 `high_overlap` 实例和维度、

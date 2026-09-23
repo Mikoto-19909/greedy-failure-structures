@@ -6,6 +6,10 @@ This project studies how Maximum Coverage instance structure relates to
 Greedy's optimality gap: the coverage lost relative to an exact optimum.
 It includes algorithms, instance generators and tools for reproducible experiments.
 
+Try the [interactive counterexample toy](examples/greedy-playground/index.html)
+(Chinese UI): choose sets, challenge Greedy, replay its decisions, and edit a small
+instance. Open the downloaded HTML in a browser; no installation is needed.
+
 ## Current research
 
 The completed pilot compares shared-core `high_overlap` instances with a
