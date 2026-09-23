@@ -88,6 +88,8 @@ revisits existing instance families. Both retain schema v1 for compatibility.
 
 ## Experiment guidance
 
+- [可视化实验设计器第二版](visual_experiment_designer_v2.zh-CN.md)：问题入口、教学引导和三种联动视图；附[可点击草图](visual_experiment_designer_v2.html)，正式实验服务尚未接入。
+- [首版设计与接入约定](visual_experiment_designer_v1.zh-CN.md)：编辑范围、保存规则与实施验收，保留供对照。
 - [`greedy_failure_research_plan.zh-CN.md`](greedy_failure_research_plan.zh-CN.md):
   literature-grounded next steps, staged experiments, and verification criteria
   (Simplified Chinese; R1, R2, R3 and the first R4 calibration completed, larger-instance work pending)

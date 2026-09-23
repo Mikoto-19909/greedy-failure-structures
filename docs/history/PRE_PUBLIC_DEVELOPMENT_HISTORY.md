@@ -54,9 +54,15 @@ the exact identities involved: the legacy source commit, the approved
 migration policy digest, the public manifest and payload tree digests, and this
 repository's root commit and tree.
 
-Two manifests sit in the repository root and answer different questions.
+Two manifests sat in the repository root and answered different questions.
 `PUBLIC_SNAPSHOT_MANIFEST.json` is the archive of that one export: it records
 the payload identities as they were at migration time, and stays fixed.
-`LICENSE_MANIFEST.json` is the live allow-list — a file carries a license grant
-only if it appears there with its exact path, byte count, digest and license
-identifier — and it is regenerated whenever the tracked file set changes.
+`LICENSE_MANIFEST.json` was the live allow-list — a file carried a license
+grant only if it appeared there with its exact path, byte count, digest and
+license identifier — and it was regenerated whenever the tracked file set
+changed.
+
+**Status note — not part of the original record (2026-09-21).** The license
+manifest and the publication gates were retired in `a713674` (2026-09-06), and
+`LICENSE_MANIFEST.json` is no longer in the tree. The migration-time statements
+above are kept exactly as written.

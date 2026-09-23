@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>新建实验 · 首版页面线框</title>
+  <style>
+    :root{--paper:#f5f4f0;--surface:#fff;--ink:#203a38;--muted:#667571;--line:#d9dfda;--accent:#17685c;--soft:#eaf2ed;--error:#963d24}
+    *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.65 "Segoe UI","Microsoft YaHei",sans-serif}
+    button,input{font:inherit}button,a{touch-action:manipulation}button{cursor:pointer}button:disabled{cursor:default;opacity:.45}
+    a{color:var(--accent);text-underline-offset:4px}button,input{border:1px solid var(--line);border-radius:6px}
+    button{padding:9px 16px;background:var(--surface);color:var(--ink)}button:hover:not(:disabled){border-color:var(--accent)}
+    :focus-visible{outline:3px solid #b07820;outline-offset:3px}.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+    h1,h2,h3,p{margin:0}h1{font-size:26px;letter-spacing:.01em}h2{font-size:23px;line-height:1.4}h3{font-size:16px}
+    [hidden]{display:none!important}.frame{max-width:1280px;margin:auto;padding:0 28px}.top{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:28px 0}
+    .top p,.muted{color:var(--muted)}.mark{font:600 12px/1.4 "Segoe UI",sans-serif;letter-spacing:2px;margin-bottom:7px;color:var(--accent)}
+    .notice{border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:12px 0;color:var(--muted);font-size:13px}
+    .layout{display:grid;grid-template-columns:190px minmax(0,1fr) 252px;gap:24px;padding:28px 0 48px;align-items:start}
+    nav{display:grid;gap:6px}nav button{text-align:left;border-color:transparent;background:transparent;padding:12px;font-size:14px}
+    nav button[aria-current="step"]{background:var(--soft);color:var(--accent);border-color:#bbcec0;font-weight:600}
+    nav small{display:block;color:var(--muted);font-weight:400;margin-left:25px;margin-top:3px}.nav-note{font-size:12px;color:var(--muted);padding:20px 12px}
+    .stage{background:var(--surface);border:1px solid var(--line);padding:28px;min-width:0}.lede{color:var(--muted);margin:10px 0 24px;font-size:14px}
+    .choices{display:grid;gap:12px}.choice{display:block;border:1px solid var(--line);padding:18px;border-radius:6px;cursor:pointer}
+    .choice:has(input:checked){border-color:var(--accent);background:var(--soft)}.choice strong{font-size:16px}.choice p{font-size:13px;color:var(--muted);margin:8px 0 0 26px}
+    input[type=radio],input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px;margin:0 8px 0 0;vertical-align:middle}
+    .actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px;padding-top:20px;border-top:1px solid var(--line)}
+    .field{display:grid;gap:7px;font-size:13px;font-weight:600;margin-bottom:20px}.field input{padding:10px 12px;min-width:0;width:100%;color:var(--ink);background:#fff;font-weight:400}
+    .field small{font-weight:400;color:var(--muted)}.section{border-top:1px solid var(--line);padding-top:20px;margin-top:20px}.section h3{margin-bottom:10px}
+    .group{border:1px solid var(--line);padding:12px;margin-top:10px;border-radius:5px}.group-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .group-head input{flex:1;min-width:120px;width:120px;padding:7px;font-size:13px}.group-head button{font-size:12px;padding:6px 9px}.group small{display:block;color:var(--muted);margin-top:7px}
+    .compact{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.compact button{font-size:12px;padding:6px 10px}details{font-size:13px;color:var(--muted);margin-top:10px}summary{cursor:pointer}
+    .algorithms{display:grid;gap:10px}.algorithms label{font-size:14px}.algorithms small{display:block;margin-left:26px;color:var(--muted);font-size:12px}
+    aside{font-size:13px;min-width:0}.summary{border-top:3px solid var(--accent);padding-top:16px}.summary h3{margin-bottom:16px}.facts{margin:0}.facts dt{color:var(--muted);margin-top:15px}.facts dd{margin:4px 0 0;overflow-wrap:anywhere}
+    .badge{display:inline-block;background:var(--soft);color:var(--accent);padding:3px 9px;border-radius:4px;font-size:12px;margin-bottom:12px}
+    .annotation{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted)}.annotation strong{display:block;color:var(--ink);margin-bottom:8px}.annotation button{margin-top:12px;font-size:12px;padding:6px 10px}
+    .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:20px 0}.stats div{padding:14px 8px;border-top:1px solid var(--line)}.stats strong{font-size:28px;font-weight:500;display:block}.stats span{font-size:12px;color:var(--muted)}
+    .review-list{margin:15px 0;padding-left:20px;font-size:14px}.review-list li{margin:7px 0}.callout{padding:14px 16px;background:var(--soft);font-size:13px;margin:18px 0}
+    .alert{padding:12px 14px;border:1px solid #d4ad9d;color:var(--error);background:#fff7f2;font-size:13px;margin-top:18px}.status{font-size:13px;margin-top:18px;color:var(--accent)}
+    .handoff{border:1px solid var(--line);padding:18px;margin-top:22px}.handoff h3{margin-bottom:8px}.handoff p{font-size:13px;color:var(--muted)}
+    footer{border-top:1px solid var(--line);padding:18px 0 25px;display:flex;justify-content:space-between;gap:12px;color:var(--muted);font-size:12px}
+    @media(max-width:1100px){.layout{grid-template-columns:155px minmax(0,1fr)}aside{grid-column:2}.stage{padding:22px}}
+    @media(max-width:680px){.frame{padding:0 16px}.top{padding:20px 0;align-items:flex-start;flex-direction:column;gap:10px}h1{font-size:23px}.layout{display:block;padding-top:18px}nav{grid-template-columns:1fr 1fr;gap:4px;margin-bottom:16px}nav button{padding:10px;font-size:12px}nav small,.nav-note{display:none}.stage{padding:20px 16px}h2{font-size:21px}aside{margin-top:20px}.summary{display:block;margin-bottom:20px}.stats{gap:4px}.stats strong{font-size:24px}.actions button{flex:1}.group-head input{min-width:0;flex-basis:100%}footer{flex-direction:column}.notice{font-size:12px}}
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <header class="top"><div><p class="mark">首版设计 · 2026.09.23</p><h1>把一个实验想法，变成可运行的方案</h1></div><a href="visual_experiment_designer_v1.zh-CN.md">阅读实施设计稿</a></header>
+    <p class="notice">页面线框（Wireframe，展示结构与操作的草图）· 只演示交互。这里的保存和排队不会写入文件或调用实验服务。</p>
+    <div class="layout">
+      <nav aria-label="实验设计步骤">
+        <button data-step="0" aria-current="step">01　选择起点<small>从已有方案复制</small></button>
+        <button data-step="1" disabled>02　编辑方案<small>数据、算法与重复</small></button>
+        <button data-step="2" disabled>03　检查并保存<small>看规模与改动</small></button>
+        <button data-step="3" disabled>04　到运行中心<small>单独提交计算</small></button>
+        <p class="nav-note">首版优先完成这条操作流程。详细参数保留模板值。</p>
+      </nav>
+      <main class="stage">
+        <section data-panel="0">
+          <span class="badge">从现有能力开始</span><h2 tabindex="-1">你想从哪个方案改起？</h2>
+          <p class="lede">选择用途相近的起点。原始模板保留，后续操作作用于你的副本。</p>
+          <div class="choices">
+            <label class="choice"><input type="radio" name="source" value="overlap" checked><strong>重叠数据与均匀数据</strong><p>两组生成规则，比较贪心与精确参考。对照是否成立需要另行判断。</p></label>
+            <label class="choice"><input type="radio" name="source" value="uniform"><strong>一组均匀随机数据</strong><p>先保持生成规则固定，比较同一批实例上的算法。</p></label>
+          </div>
+          <p class="callout">这两张卡片展示入口组织方式。正式实现使用现有模板，不在这里规定默认参数。</p>
+          <div class="actions"><button class="primary" id="copy">复制并开始（演示）</button></div>
+        </section>
+        <section data-panel="1" hidden>
+          <span class="badge">编辑本地副本</span><h2 tabindex="-1">这次比较什么？</h2>
+          <p class="lede">先确定数据组和算法。规模与结构的具体参数在每组内部展开。</p>
+          <label class="field">实验名称<input id="name" value="比较贪心与参考算法的覆盖量" maxlength="120"></label>
+          <div class="section"><h3>数据组</h3><p class="muted" style="font-size:13px">数据组（Case）是一套生成规则；每次重复生成一个实例。</p><div id="groups"></div>
+            <div class="compact"><button id="add-uniform">＋ 均匀随机组</button><button id="add-overlap">＋ 共核重叠组</button><button id="undo" hidden>撤销删除</button></div>
+          </div>
+          <div class="section"><h3>算法比较</h3><div class="algorithms">
+            <label><input type="checkbox" name="algorithm" value="greedy" checked>贪心（Greedy）<small>每一步选择新增覆盖最多的集合。</small></label>
+            <label><input type="checkbox" name="algorithm" value="brute_force" checked>穷举（Brute force）<small>完成精确求解时，可以提供最优值参考。</small></label>
+            <label><input type="checkbox" name="algorithm" value="lazy_greedy">惰性贪心（Lazy greedy）<small>缓存部分收益计算，用于与普通贪心比较。</small></label>
+          </div></div>
+          <div class="section"><label class="field">每组重复次数<input id="repetitions" type="text" inputmode="numeric" value="3"><small>草图中的 3 次仅用于说明计数，不是正式实验默认值。</small></label>
+            <details><summary>随机种子与算法选项</summary><p>随机种子（Random seed）控制随机数据生成。首版沿用模板中的明确值；算法选项也保留，展开后才修改。</p></details>
+          </div>
+          <div class="actions"><button id="review" class="primary">查看并检查方案</button></div>
+        </section>
+        <section data-panel="2" hidden>
+          <span class="badge">检查当前内容</span><h2 tabindex="-1">保存前，看清这次会做什么</h2>
+          <p class="lede">正式实现由现有服务检查配置。草图只演示必填项、整数检查与简单计数。</p>
+          <div id="unchecked" class="callout">当前内容还没有通过检查。点击“检查方案”后显示计划规模。</div>
+          <div id="checked" hidden>
+            <div class="stats"><div><strong id="case-count"></strong><span>数据组</span></div><div><strong id="instance-count"></strong><span>生成实例</span></div><div><strong id="run-count"></strong><span>算法运行</span></div></div>
+            <p class="muted" id="count-rule" style="font-size:12px"></p>
+            <ul class="review-list"><li id="review-name"></li><li id="review-groups"></li><li id="review-algorithms"></li></ul>
+            <div class="callout" id="reference-note"></div>
+            <details><summary>改动摘要</summary><p id="changes"></p><p>正式实现展示相对已保存方案的具体字段差异。</p></details>
+          </div>
+          <div class="actions"><button id="back">返回修改</button><button id="check">检查方案（演示）</button><button id="save" class="primary" disabled>保存方案（演示）</button></div>
+        </section>
+        <section data-panel="3" hidden>
+          <span class="badge">已保存 · 演示状态</span><h2 tabindex="-1">方案已准备好，计算由你开始</h2>
+          <p class="lede" id="saved-name"></p>
+          <p>到运行中心后预选这份方案。进入页面不会自动启动实验。</p>
+          <div class="actions"><button id="edit-again">继续编辑</button><button id="handoff" class="primary">到运行中心（演示）</button></div>
+          <div id="queue" class="handoff" hidden><h3>运行中心 · 演示</h3><p id="queue-selection"></p><p>正式实现沿用已有输出位置和执行选项。点击提交后，任务保存当时的输入副本。</p><button id="submit" class="primary" style="margin-top:14px">提交运行（演示）</button><p id="queue-status" class="status" role="status">尚未提交。</p></div>
+        </section>
+        <p id="error" class="alert" role="alert" hidden></p><p id="message" class="status" role="status" aria-live="polite"></p>
+      </main>
+      <aside>
+        <div class="summary"><h3>当前方案摘要</h3><dl class="facts"><dt>名称</dt><dd id="side-name">尚未复制</dd><dt>数据与算法</dt><dd id="side-scope">先选一个起点</dd><dt>当前状态</dt><dd id="side-state">未开始</dd></dl></div>
+        <div class="annotation"><strong>这一页需要规定什么</strong><p id="annotation"></p></div>
+        <div class="annotation"><strong>查看异常状态</strong><p>可尝试输入小数重复次数、取消全部算法，或演示保存时的版本冲突。</p><button id="conflict" aria-pressed="false">演示保存冲突：关闭</button></div>
+        <div class="annotation"><strong>首版边界</strong><p>表单只编辑受支持的配置。不支持的内容仍用完整配置编辑器处理，保留全部字段。</p></div>
+      </aside>
+    </div>
+    <footer><span>设计验证 · 不代表平台功能已经实现</span><a href="visual_experiment_designer_v1.zh-CN.md">查看范围、实现顺序与十项验收</a></footer>
+  </div>
+  <script>
+    (() => {
+      const $ = id => document.getElementById(id);
+      const labels = {greedy:'贪心',brute_force:'穷举',lazy_greedy:'惰性贪心'};
+      const notes = ['卡片说明用途与编辑范围。复制时建立本地副本，模板始终只读。', '表单按数据组、算法和重复次数组织。编辑后立即使旧检查失效。详细参数只在对应分组内展开。', '保存只接受当前检查通过的内容。错误保留输入；冲突不能静默覆盖其他位置的修改。', '保存和运行分开。跳转只预选配置；提交后固定任务输入，后续编辑不改变已排队任务。'];
+      const state = {step:0,copied:false,checked:false,saved:false,conflict:false,groups:[],deleted:null,next:1,original:null};
+      const algorithms = () => [...document.querySelectorAll('[name=algorithm]:checked')].map(el=>el.value);
+      const snapshot = () => ({name:$('name').value.trim(),repetitions:$('repetitions').value,groups:state.groups.map(g=>({...g})),algorithms:algorithms()});
+      function clearError(){ $('error').hidden=true; $('error').textContent=''; }
+      function fail(message){$('error').textContent=message;$('error').hidden=false;$('message').textContent='';}
+      function sync(){
+        document.querySelectorAll('[data-panel]').forEach(el=>el.hidden=Number(el.dataset.panel)!==state.step);
+        document.querySelectorAll('[data-step]').forEach(el=>{
+          const step=Number(el.dataset.step);el.disabled=(step>0&&!state.copied)||(step===3&&!state.saved);
+          if(step===state.step)el.setAttribute('aria-current','step');else el.removeAttribute('aria-current');
+        });
+        $('annotation').textContent=notes[state.step];$('save').disabled=!state.checked;
+        $('unchecked').hidden=state.checked;$('checked').hidden=!state.checked;
+        $('side-name').textContent=state.copied?$('name').value:'尚未复制';
+        $('side-scope').textContent=state.copied?`${state.groups.length} 个数据组 · ${algorithms().length} 种算法`:'先选一个起点';
+        $('side-state').textContent=state.saved?'已保存（演示）':state.checked?'检查通过，待保存':state.copied?'当前内容待检查':'未开始';
+      }
+      function step(value){state.step=value;clearError();$('message').textContent='';sync();document.querySelector(`[data-panel="${value}"] h2`).focus();}
+      function invalidate(){state.checked=false;state.saved=false;$('queue').hidden=true;clearError();$('message').textContent='当前内容已修改，需要重新检查。';sync();}
+      function newGroup(family){const id=state.next++;return {id,family,name:(family==='uniform'?'均匀随机':'共核重叠')+'组 '+id};}
+      function drawGroups(){
+        $('groups').replaceChildren();
+        for(const group of state.groups){
+          const box=document.createElement('div');box.className='group';const row=document.createElement('div');row.className='group-head';
+          const input=document.createElement('input');input.value=group.name;input.setAttribute('aria-label','数据组名称');
+          input.addEventListener('input',()=>{group.name=input.value;invalidate();});row.append(input);
+          for(const [label,action] of [['复制',()=>{const id=state.next++;const copy={...group,id,name:group.name+' 副本 '+id};state.groups.push(copy);invalidate();drawGroups();}],['删除',()=>{state.deleted={group,index:state.groups.indexOf(group)};state.groups=state.groups.filter(g=>g.id!==group.id);invalidate();drawGroups();}]]){
+            const button=document.createElement('button');button.textContent=label;button.addEventListener('click',action);row.append(button);
+          }
+          const detail=document.createElement('small');detail.textContent=(group.family==='uniform'?'均匀随机（uniform）':'共核重叠（high_overlap）')+' · 参数沿用模板';
+          const parameters=document.createElement('details');const title=document.createElement('summary');title.textContent='规模与结构参数';
+          const content=document.createElement('p');content.textContent='规模：元素数、集合数和最多选择数。结构：'+(group.family==='uniform'?'元素进入集合的概率。':'共有核心的大小，以及核心和外围元素进入集合的概率。')+' 线框只展示分组位置，具体输入控件按现有配置规则实现。';
+          parameters.append(title,content);box.append(row,detail,parameters);$('groups').append(box);
+        }
+        $('undo').hidden=!state.deleted;
+      }
+      function check(){
+        clearError();state.checked=false;state.saved=false;const data=snapshot(),reps=Number(data.repetitions);
+        let error='';if(!data.name)error='请填写实验名称。';
+        else if(!/^\d+$/.test(data.repetitions)||!Number.isSafeInteger(reps)||reps<1)error='重复次数需要填写正整数，例如 3。';
+        else if(!data.groups.length)error='至少保留一个数据组。';
+        else if(data.groups.some(g=>!g.name.trim()))error='请填写每个数据组的名称。';
+        else if(new Set(data.groups.map(g=>g.name.trim())).size!==data.groups.length)error='数据组名称重复，请为每组使用不同名称。';
+        else if(!data.algorithms.length)error='至少选择一种算法。';
+        else if(!Number.isSafeInteger(data.groups.length*reps*data.algorithms.length))error='演示计数超出可精确显示的范围，请缩小重复次数。';
+        if(error){fail(error);sync();$('side-state').textContent='检查失败，输入已保留';return;}
+        state.checked=true;const instances=data.groups.length*reps;
+        $('case-count').textContent=data.groups.length;$('instance-count').textContent=instances;$('run-count').textContent=instances*data.algorithms.length;
+        $('count-rule').textContent=`演示计数：${data.groups.length} 组 × ${reps} 次重复 × ${data.algorithms.length} 种确定性算法。正式页面使用服务端计划。`;
+        $('review-name').textContent='实验：'+data.name;$('review-groups').textContent='数据组：'+data.groups.map(g=>g.name).join('、');$('review-algorithms').textContent='算法：'+data.algorithms.map(a=>labels[a]).join('、');
+        $('reference-note').textContent=data.algorithms.includes('brute_force')?'包含最优值参考算法。只有完成精确求解的实例才能使用已证明的最优值。配置检查不等于研究验证。':'未选择最优值参考算法。可以比较覆盖量和运行时间，不能据此报告相对最优值的差距。';
+        const changes=[];if(data.name!==state.original.name)changes.push('实验名称已修改');if(data.repetitions!==state.original.repetitions)changes.push('重复次数已修改');if(JSON.stringify(data.groups)!==JSON.stringify(state.original.groups))changes.push('数据组已修改');if(JSON.stringify(data.algorithms)!==JSON.stringify(state.original.algorithms))changes.push('算法选择已修改');
+        $('changes').textContent=changes.length?changes.join('；')+'。':'相对演示起点没有改动。';$('message').textContent='演示检查通过。';sync();
+      }
+      document.querySelectorAll('[data-step]').forEach(el=>el.addEventListener('click',()=>step(Number(el.dataset.step))));
+      $('copy').addEventListener('click',()=>{
+        if(state.copied&&!confirm('重新选择起点将丢弃当前演示编辑。继续吗？'))return;
+        $('name').value='比较贪心与参考算法的覆盖量';$('repetitions').value='3';
+        document.querySelectorAll('[name=algorithm]').forEach(el=>el.checked=el.value!=='lazy_greedy');
+        state.groups=[newGroup('uniform')];if(document.querySelector('[name=source]:checked').value==='overlap')state.groups.unshift(newGroup('high_overlap'));
+        state.copied=true;state.saved=false;state.checked=false;state.deleted=null;state.original=snapshot();$('queue').hidden=true;drawGroups();step(1);$('message').textContent='副本已建立（演示）。修改后需要检查并保存。';
+      });
+      $('name').addEventListener('input',invalidate);$('repetitions').addEventListener('input',invalidate);document.querySelectorAll('[name=algorithm]').forEach(el=>el.addEventListener('change',invalidate));
+      $('add-uniform').addEventListener('click',()=>{state.groups.push(newGroup('uniform'));invalidate();drawGroups();});
+      $('add-overlap').addEventListener('click',()=>{state.groups.push(newGroup('high_overlap'));invalidate();drawGroups();});
+      $('undo').addEventListener('click',()=>{if(!state.deleted)return;state.groups.splice(state.deleted.index,0,state.deleted.group);state.deleted=null;invalidate();drawGroups();});
+      $('review').addEventListener('click',()=>{step(2);check();});$('check').addEventListener('click',check);$('back').addEventListener('click',()=>step(1));
+      $('save').addEventListener('click',()=>{
+        if(!state.checked)return;
+        if(state.conflict){fail('保存冲突（演示）：其他位置修改了方案。当前输入已保留。正式页面提供重新读取或复制当前文本；关闭右侧演示开关后可重试。');$('side-state').textContent='保存冲突，输入已保留';return;}
+        state.saved=true;$('saved-name').textContent=$('name').value;step(3);$('message').textContent='这里只改变演示状态，没有写入配置文件。';
+      });
+      $('edit-again').addEventListener('click',()=>step(1));
+      $('handoff').addEventListener('click',()=>{$('queue').hidden=false;$('queue-selection').textContent='已预选：'+$('name').value;$('queue-status').textContent='尚未提交。';$('submit').disabled=false;});
+      $('submit').addEventListener('click',()=>{$('queue-status').textContent='已提交（演示）。没有创建真实任务。';$('submit').disabled=true;});
+      $('conflict').addEventListener('click',()=>{state.conflict=!state.conflict;$('conflict').textContent='演示保存冲突：'+(state.conflict?'开启':'关闭');$('conflict').setAttribute('aria-pressed',String(state.conflict));clearError();sync();});
+      sync();
+    })();
+  </script>
+</body>
+</html>
