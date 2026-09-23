@@ -3,10 +3,24 @@
 Use this index to distinguish the current research checkpoint from runnable
 examples, method checks, and broader exploratory workflows.
 
+本次[分支整合与剩余工作](branch_integration_status.zh-CN.md)记录主检出的成果范围、未完成事项和本地材料位置。
+
 The current development phase ends with the R2 failure-reporting fix;
 see the [closeout scope and maintenance status](development_closeout.zh-CN.md).
 Research results and existing tools remain available. New experiments, features
-and further structural splits are paused.
+and further structural splits are paused except for explicitly requested work.
+The separately requested [local workbench expansion](dashboard_expansion_plan.zh-CN.md)
+connects existing artifacts and bounded tools; cloud deployment is outside its scope.
+The [current selected scope](dashboard_selected_scope_20260921.zh-CN.md) integrates
+main, local configuration organization, unified Benchmark control and study analysis;
+backup and further scale optimization remain deferred.
+
+The [component composition design](component_composition_design.zh-CN.md) defines
+reusable analysis components and explicit workflows for comparison previews and
+saved snapshots. The [first experiment](component_composition_experiment.zh-CN.md)
+records the bounded implementation, compatibility comparison and remaining limits.
+The [sharing expansion](component_composition_expansion.zh-CN.md) adds common
+rendering/replay components and a failure-case bundle assembled from saved data.
 
 ## Current research
 
@@ -49,6 +63,10 @@ measures experiment commands and local delivery steps after the gate removal.
 
 ## Examples and compatibility checks
 
+- [Research workbench](dashboard_workbench_layer1.zh-CN.md): browse saved experiments,
+  compare complete inputs and inspect/export R1 trajectories in the local Dashboard
+- [Local research modules](dashboard_expansion_plan.zh-CN.md): saved R2–R4 studies,
+  bounded counterexample jobs, persistent local history and saved analysis exports
 - [Static review preparation](prepare_review.zh-CN.md): committed diffs, bounded source
   context and unexecuted check candidates, without running the reviewed project
 - [Local checks and independent review](local_review.zh-CN.md): execute existing checks
@@ -79,6 +97,8 @@ revisits existing instance families. Both retain schema v1 for compatibility.
 
 ## Experiment guidance
 
+- [可视化实验设计器第二版](visual_experiment_designer_v2.zh-CN.md)：问题入口、教学引导和三种联动视图；附[可点击草图](visual_experiment_designer_v2.html)，正式实验服务尚未接入。
+- [首版设计与接入约定](visual_experiment_designer_v1.zh-CN.md)：编辑范围、保存规则与实施验收，保留供对照。
 - [`greedy_failure_research_plan.zh-CN.md`](greedy_failure_research_plan.zh-CN.md):
   literature-grounded next steps, staged experiments, and verification criteria
   (Simplified Chinese; R1, R2, R3 and the first R4 calibration completed, larger-instance work pending)

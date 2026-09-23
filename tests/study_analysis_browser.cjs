@@ -1,0 +1,115 @@
+/* Saved-study UI acceptance; tiny synthetic inputs, no formal research runs. */
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const { spawn, spawnSync } = require('node:child_process');
+const { chromium } = require('playwright');
+const root = path.resolve(__dirname, '..');
+const output = path.join(root, 'output', 'playwright');
+fs.mkdirSync(output, { recursive: true });
+const fixture = fs.mkdtempSync(path.join(output, 'study-analysis-'));
+const python = process.env.DASHBOARD_PYTHON || 'python';
+const preparation = spawnSync(python, ['-c', "import sys;from pathlib import Path;sys.path.insert(0,'tests');from test_dashboard_analysis import make_r2,make_r3;root=Path(sys.argv[1]);make_r2(root,count=71);make_r3(root);make_r2(root,'results/r4',kind='r4');make_r2(root,'results/r4_dual',kind='r4_dual')", fixture], { cwd: root, encoding: 'utf8', windowsHide: true });
+assert.equal(preparation.status, 0, preparation.stderr);
+let browser, server, log = '';
+const checks = [];
+const passed = text => { checks.push(text); console.log('PASS ' + text); };
+function start() {
+  server = spawn(python, ['-u', '-c', "import sys;from pathlib import Path;sys.path.insert(0,'src');from maxcover.dashboard import serve_dashboard;serve_dashboard(port=0,project_root=Path(sys.argv[1]))", fixture], { cwd: root, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
+  server.stderr.on('data', chunk => { log += chunk; });
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('Startup timeout: ' + log)), 20000);
+    server.on('error', reject);
+    server.stdout.on('data', chunk => { const match = String(chunk).match(/http:\/\/127\.0\.0\.1:\d+\//); if (match) { clearTimeout(timer); resolve(match[0]); } });
+    server.on('exit', code => { clearTimeout(timer); reject(new Error('Server exited ' + code + log)); });
+  });
+}
+(async () => {
+  const url = await start();
+  browser = await chromium.launch({ headless: true, ...(process.env.DASHBOARD_BROWSER_CHANNEL ? { channel: process.env.DASHBOARD_BROWSER_CHANNEL } : {}) });
+  const page = await browser.newPage({ viewport: { width: 1366, height: 980 } });
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.goto(url + 'research-analysis?source=results/r2');
+  await page.waitForFunction(() => document.querySelector('#counts').textContent.includes('213'));
+  await page.locator('#k').selectOption('2');
+  await page.waitForFunction(() => document.querySelector('#distribution-summary').textContent.includes('0.25000'));
+  assert.match(await page.locator('#counts').innerText(), /71 张原图/);
+  assert.equal(await page.locator('#curve svg .point').count(), 3);
+  passed('R2 saved curve and complete fixed-cell loss distribution');
+  let releaseAnalysis;
+  const delayed = new Promise(resolve => { releaseAnalysis = resolve; });
+  await page.route('**/api/studies/analysis?*', async route => {
+    if (new URL(route.request().url()).searchParams.get('k') === '1') await delayed;
+    await route.continue();
+  });
+  await page.locator('#k').selectOption('1');
+  assert.equal(await page.locator('#records button').count(), 0);
+  assert.equal(await page.locator('#next').isDisabled(), true);
+  releaseAnalysis();
+  await page.waitForFunction(() => document.querySelector('#records button'));
+  await page.unroute('**/api/studies/analysis?*');
+  await page.locator('#k').selectOption('2');
+  await page.waitForFunction(() => document.querySelector('#records tr:nth-child(2) td:nth-child(4)')?.textContent === '2');
+  passed('Pending filter response removes stale instance links and disables pagination');
+  await page.locator('#next').click();
+  await page.waitForFunction(() => document.querySelector('#page-count').textContent.includes('51–71'));
+  assert.equal(await page.locator('#records button').count(), 21);
+  passed('Complete filtered records paginate beyond first 50');
+  const complete = await (await page.request.get(url + 'api/studies/records?source=results/r2&offset=200&limit=50')).json();
+  assert.equal(complete.total, 213); assert.equal(complete.rows.length, 13);
+  passed('HTTP record browser is not limited to 200-row preview');
+  await page.locator('#records button').first().click();
+  await page.locator('#instance-panel').waitFor();
+  await page.locator('#step-next').click();
+  assert.match(await page.locator('#step-info').innerText(), /候选 \[1, 2\]/);
+  assert.equal(await page.locator('#matrix tr.selected').count(), 1);
+  const exported = await (await page.request.get(new URL(await page.locator('#export').getAttribute('href'), url).href)).json();
+  assert.deepEqual(exported.instance.sets, [[0,1],[0,2],[1,3],[0,1]]);
+  const saved = path.join(fixture, 'replay.json'); fs.writeFileSync(saved, JSON.stringify(exported));
+  const replay = spawnSync(python, ['-c', "import sys;from pathlib import Path;sys.path.insert(0,'src');from maxcover.benchmark import replay_instance_file;assert replay_instance_file(Path(sys.argv[1]))[1]", saved], { cwd: root, windowsHide: true, encoding: 'utf8' });
+  assert.equal(replay.status, 0, replay.stderr);
+  passed('Instance matrix, deterministic steps and downloadable replay agree');
+  await page.locator('#compare-pairs').click();
+  await page.waitForFunction(() => document.querySelector('#budget-pair-message').textContent.includes('71 张原图'));
+  assert.match(await page.locator('#budget-pair-message').innerText(), /0.25000/);
+  await page.locator('#k-b').selectOption('1'); await page.locator('#compare-pairs').click();
+  await page.waitForFunction(() => document.querySelector('#budget-pair-message').textContent.includes('distinct'));
+  assert.equal(await page.locator('#budget-pair-chart svg').count(), 0);
+  passed('R2 paired difference and invalid duplicate budget handling');
+  await page.goto(url + 'research-analysis?source=results/r3');
+  await page.waitForFunction(() => document.querySelector('#counts').textContent.includes('4 条记录'));
+  assert.equal(await page.locator('#dimensions').isVisible(), false);
+  assert.equal(await page.locator('#curve-section').isVisible(), false);
+  assert.match(await page.locator('#primary').innerText(), /原图 n=1；端点=4/);
+  assert.match(await page.locator('#distribution-summary').innerText(), /1 个原图差值/);
+  await page.locator('#records button').first().click(); await page.locator('#instance-panel').waitFor();
+  await page.locator('#moves-panel summary').click();
+  assert.match(await page.locator('#moves').innerText(), /1, 0, 1, 1, 2/);
+  await page.locator('#instance-choices button').first().click();
+  await page.waitForFunction(() => document.querySelector('#instance-title').textContent.includes('原图'));
+  await page.locator('#loss-only').check();
+  await page.waitForFunction(() => document.querySelector('#counts').textContent.includes('2 条记录'));
+  assert.match(await page.locator('#distribution-summary').innerText(), /均值 1/);
+  passed('R3 endpoint/original navigation and four-endpoint graph pairing under outcome filter');
+  for (const kind of ['r4', 'r4_dual']) {
+    await page.goto(url + 'research-analysis?source=results/' + kind);
+    await page.waitForFunction(() => document.querySelector('#counts').textContent.includes('6 条记录'));
+    await page.locator('#k').selectOption('2');
+    await page.waitForFunction(() => document.querySelector('#counts').textContent.includes('2 条记录'));
+    assert.match(await page.locator('#paired-summary').innerText(), /2 个合法同图配对/);
+    await page.locator('#records button').first().click(); await page.locator('#instance-panel').waitFor();
+    assert.equal(await page.locator('#certificate-panel').isVisible(), true);
+    passed(kind + ' within-record method pairs and certificate detail');
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({ path: path.join(output, 'study-analysis-mobile.png'), fullPage: true });
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true);
+  assert.deepEqual(errors, []);
+  passed('Mobile viewport stays contained and browser reports no script errors');
+  fs.writeFileSync(path.join(output, 'study-analysis-browser-result.json'), JSON.stringify({ checks, fixture }, null, 2));
+  console.log(`${checks.length} study analysis browser scenarios passed`);
+})().catch(error => { console.error(error); console.error(log); process.exitCode = 1; }).finally(async () => {
+  if (browser) await browser.close();
+  if (server && server.exitCode === null) { const exit = new Promise(resolve => server.once('exit', resolve)); server.kill(); await exit; }
+});

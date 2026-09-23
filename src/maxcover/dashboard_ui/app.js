@@ -30,12 +30,18 @@
       running: "运行中",
       completed: "已完成",
       failed: "失败",
+      paused: "已暂停",
+      cancelled: "已取消",
+      interrupted: "已中断",
     },
     en: {
       queued: "Queued",
       running: "Running",
       completed: "Completed",
       failed: "Failed",
+      paused: "Paused",
+      cancelled: "Cancelled",
+      interrupted: "Interrupted",
     },
   };
   const GREEDY_IDS = new Set(["greedy", "greedy_baseline", "lazy_greedy"]);
@@ -669,7 +675,7 @@
     line.replaceChildren(
       dot,
       document.createTextNode(
-        `${t("run.lastJob")} · ${STATUS_LABELS[state.language][job.status] || job.status} · ${job.config} → results/${job.output}`,
+        `${t("run.lastJob")} · ${STATUS_LABELS[state.language][job.status] || job.status} · ${job.config} → results/${job.output}${job.progress ? ` · ${job.progress.saved_runs}/${job.progress.total_runs} ${state.language === "zh" ? "已写入检查点" : "checkpointed"}` : ""}`,
       ),
     );
   }
@@ -730,7 +736,7 @@
         if (state.pollingJobId !== jobId) return false;
         state.jobs = [job, ...state.jobs.filter((item) => item.id !== job.id)];
         renderJobLine();
-        if (["completed", "failed"].includes(job.status)) {
+        if (["completed", "failed", "paused", "cancelled", "interrupted"].includes(job.status)) {
           if (state.pollTimer) clearInterval(state.pollTimer);
           state.pollTimer = null;
           state.pollingJobId = null;
@@ -739,7 +745,8 @@
             "#run-message",
             job.status === "completed"
               ? t("run.complete", { output: job.output })
-              : t("run.failed", { error: job.error }),
+              : job.status === "failed" ? t("run.failed", { error: job.error })
+              : `${STATUS_LABELS[state.language][job.status] || job.status} · ${state.language === "zh" ? "检查点保留，可在统一运行中心续跑。" : "Checkpoint preserved; resume from the run center."}`,
             job.status === "failed",
           );
           await refreshAll(job.status === "completed" ? job.result_name : null);
@@ -1089,7 +1096,9 @@
         return null;
       state.currentResult = name;
       rememberResult(name);
-      setMessage("#result-message", "");
+      setMessage("#result-message", data.incomplete
+        ? (state.language === "zh" ? "该目录最近一次任务尚未完成。当前只显示已有检查点；报告和图表将在完成后更新。" : "The latest attempt is incomplete. Only the saved checkpoint is available; reports and charts update after completion.")
+        : "");
       $("#spectrum-source").textContent = name;
       renderSummary(data.summary);
       renderSpectrum(data.summary);

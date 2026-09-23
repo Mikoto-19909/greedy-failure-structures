@@ -1,0 +1,129 @@
+[hidden] { display: none !important; }
+:root{
+  font:16px/1.6 system-ui,sans-serif;
+  color:#173b3c;
+  background:#eef3ef}
+*{
+  box-sizing:border-box}
+body{
+  margin:0}
+header{
+  padding:18px max(24px,calc((100vw - 1200px)/2));
+  display:flex;
+  gap:24px;
+  background:#163f40;
+  color:white}
+header a{
+  color:white}
+header span{
+  margin-left:auto}
+main{
+  max-width:1200px;
+  margin:auto;
+  padding:28px 24px 70px}
+h1{
+  font-size:32px;
+  margin-bottom:4px}
+h2{
+  font-size:21px;
+  margin-top:0}
+section{
+  background:white;
+  border:1px solid #d3dfd8;
+  border-radius:14px;
+  padding:24px;
+  margin-top:22px}
+p{
+  overflow-wrap:anywhere}
+.note{
+  border-left:4px solid #a67d39;
+  padding:12px 18px;
+  background:#fff8e9}
+a{
+  color:#246664}
+button,.button,select{
+  font:inherit;
+  padding:8px 12px;
+  border:1px solid #afc6bc;
+  border-radius:7px;
+  background:#f7faf7;
+  color:#164644;
+  cursor:pointer}
+button:disabled{
+  opacity:.4;
+  cursor:default}
+label{
+  display:flex;
+  gap:8px;
+  align-items:center}
+.controls,.heading{
+  display:flex;
+  align-items:center;
+  gap:16px;
+  flex-wrap:wrap}
+.heading{
+  justify-content:space-between}
+.scroll{
+  overflow:auto}
+table{
+  border-collapse:collapse;
+  min-width:100%;
+  font-size:14px}
+th,td{
+  border-bottom:1px solid #dbe7df;
+  padding:8px 10px;
+  text-align:left;
+  white-space:nowrap}
+th{
+  background:#f0f5ef}
+.chart svg{
+  display:block;
+  width:100%;
+  min-width:450px;
+  max-height:310px}
+.chart{
+  overflow:auto}
+.chart text{
+  font:12px system-ui,sans-serif;
+  fill:#365352}
+.point{
+  cursor:pointer}
+.point:focus{
+  outline:3px solid #d88a37}
+.selected{
+  background:#d8e9cd}
+.covered{
+  background:#a5cbc4}
+.chosen{
+  outline:2px solid #307b71}
+pre{
+  font-size:13px;
+  max-height:320px;
+  overflow:auto;
+  background:#f4f7f2;
+  padding:16px}
+#message{
+  color:#984b23;
+  min-height:26px}
+#step{
+  flex:1;
+  min-width:160px}
+#primary{
+  border-left:3px solid #548b7d;
+  padding-left:16px}
+@media(max-width:600px){
+  main{
+  padding:18px 12px}
+header{
+  padding:14px;
+  gap:14px;
+  font-size:14px}
+header span{
+  display:none}
+section{
+  padding:16px}
+h1{
+  font-size:25px}
+label{
+  flex-wrap:wrap}
+}

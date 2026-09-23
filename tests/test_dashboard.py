@@ -11,9 +11,11 @@ import tempfile
 import threading
 import time
 import unittest
+from contextlib import contextmanager
+from types import SimpleNamespace
 from pathlib import Path
-from datetime import datetime, timezone
 from unittest.mock import patch
+from datetime import datetime, timezone
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,6 +28,7 @@ from maxcover.dashboard import (  # noqa: E402
     _DashboardHTTPServer,
     serve_dashboard,
 )
+from maxcover.dashboard_jobs import JobConflictError
 
 
 def _config() -> dict[str, object]:
@@ -59,6 +62,7 @@ class DashboardServiceTests(unittest.TestCase):
         self.service = DashboardService(self.root)
 
     def tearDown(self) -> None:
+        self.service.close()
         self.temporary.cleanup()
 
     def test_config_listing_and_preflight_use_existing_engine(self) -> None:
@@ -174,30 +178,18 @@ class DashboardServiceTests(unittest.TestCase):
 
     def test_run_creates_one_local_job_and_reuses_benchmark_runner(self) -> None:
         config_hash = self.service.inspect_config("test.json")["config_hash"]
-        with patch("maxcover.dashboard.run_benchmark") as run:
-            job = self.service.start_run(
-                {
-                    "config": "test.json",
-                    "config_hash": config_hash,
-                    "output": "dashboard-test",
-                }
-            )
-            deadline = time.monotonic() + 2
-            while self.service.get_job(job["id"])["status"] in {"queued", "running"}:
-                if time.monotonic() >= deadline:
-                    self.fail("dashboard job did not finish")
-                time.sleep(0.01)
-            resolved_root = self.root.resolve()
-            run.assert_called_once_with(
-                resolved_root / "configs" / "test.json",
-                resolved_root / "results" / "dashboard-test",
-                workers=1,
-                force=False,
-                expected_config_hash=config_hash,
-            )
+        job = self.service.start_run({"config": "test.json", "config_hash": config_hash, "output": "dashboard-test"})
+        deadline = time.monotonic() + 15
+        while self.service.get_job(job["id"])["status"] in {"queued", "running"}:
+            if time.monotonic() >= deadline:
+                self.fail("dashboard job did not finish")
+            time.sleep(0.03)
         current = self.service.get_job(job["id"])
-        self.assertEqual(current["status"], "completed")
+        self.assertEqual(current["status"], "completed", current)
         self.assertEqual(current["result_name"], "dashboard-test")
+        self.assertEqual(current["progress"]["saved_runs"], 1)
+        self.assertEqual(self.service.research_jobs.get_job(job["id"])["id"], current["id"])
+        self.assertTrue((self.root / "results/dashboard-test/raw_results.csv").is_file())
 
     def test_run_rejects_a_config_changed_after_preflight(self) -> None:
         config_hash = self.service.inspect_config("test.json")["config_hash"]
@@ -262,6 +254,61 @@ class DashboardHttpSecurityTests(unittest.TestCase):
         self.assertEqual(status, 403)
         self.assertIn("same-origin", body["error"])
         self.assertEqual(self.server.service.list_jobs(), {"jobs": []})
+
+    def test_replay_guard_uses_the_same_decoded_trimmed_path_as_reader(self) -> None:
+        seen = []
+
+        @contextmanager
+        def reading(paths):
+            seen.extend(paths)
+            if any(path.startswith("results/example/") for path in paths):
+                raise JobConflictError("active output")
+            yield
+
+        fake = SimpleNamespace(reading_outputs=reading, close=lambda: None)
+        with patch.object(self.server.service, "_research_jobs", fake):
+            for name in ("example/failures/case.json", "%65xample/failures/case.json", " example/failures/case.json "):
+                status, body = self._post("/api/replay", {"instance": name},
+                    origin=f"http://127.0.0.1:{self.port}", content_type="application/json")
+                self.assertEqual(status, 409, body)
+        self.assertEqual(seen, ["results/example/failures/case.json"] * 3)
+
+    def test_incomplete_output_cannot_download_an_older_report(self) -> None:
+        name = "Example" if os.name == "nt" else "example"
+        directory = self.root / "results" / name; directory.mkdir(parents=True)
+        (directory / "summary.csv").write_text("case,algorithm\na,greedy\n", encoding="utf-8")
+        (directory / "raw_results.csv").write_text("invalid,while,writing\n", encoding="utf-8")
+        (directory / "results_summary.md").write_text("# Old complete report", encoding="utf-8")
+
+        @contextmanager
+        def reading(paths):
+            yield
+
+        record = {"kind": "benchmark", "output_dir": "results/example", "status": "paused"}
+        fake = SimpleNamespace(reading_outputs=reading, close=lambda: None,
+            list_jobs=lambda: {"jobs": [record]})
+        with patch.object(self.server.service, "_research_jobs", fake):
+            for endpoint, expected in ((f"/api/result?name={name}", 200),
+                    (f"/api/artifact?result={name}&file=results_summary.md", 409)):
+                connection = http.client.HTTPConnection("127.0.0.1", self.port, timeout=5)
+                try:
+                    connection.request("GET", endpoint)
+                    response = connection.getresponse(); body = json.loads(response.read())
+                    self.assertEqual(response.status, expected, body)
+                    if expected == 200:
+                        self.assertTrue(body["incomplete"])
+                        self.assertEqual(body["artifacts"], [])
+                finally:
+                    connection.close()
+            record["status"] = "running"
+            connection = http.client.HTTPConnection("127.0.0.1", self.port, timeout=5)
+            try:
+                connection.request("GET", "/api/workbench/library")
+                response = connection.getresponse(); body = json.loads(response.read())
+                self.assertEqual(response.status, 200)
+                self.assertIn("正在写入", body["sources"][0]["error"])
+            finally:
+                connection.close()
 
     def test_same_origin_json_post_is_allowed(self) -> None:
         status, body = self._post(

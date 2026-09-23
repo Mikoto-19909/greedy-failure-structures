@@ -11,22 +11,29 @@ from __future__ import annotations
 import csv
 import ipaddress
 import json
+import os
 import re
 import socket
+import stat
 import threading
-import uuid
 import warnings
-from dataclasses import dataclass
 from datetime import datetime, timezone
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from typing import ClassVar, Mapping, cast
+from typing import Any, Callable, ClassVar, Mapping, cast
 from urllib.parse import parse_qs, unquote, urlparse
 
 from .algorithms import ALGORITHMS
-from .benchmark import REPORT_FILENAMES, plan_benchmark, replay_instance_file, run_benchmark
+from .benchmark import REPORT_FILENAMES, plan_benchmark, replay_instance_file
 from .config import load_config
+from .dashboard_exports import ComparisonExports
+from .dashboard_experiments import ExperimentsConflictError, ExperimentsService
+from .dashboard_analysis import StudyAnalysisService
+from .dashboard_jobs import JobConflictError, JobService
+from .dashboard_local import LocalCatalog
+from .dashboard_studies import StudiesService
+from .dashboard_workbench import WorkbenchService
 from .reproducibility import config_hash
 
 
@@ -84,8 +91,15 @@ class DashboardUnsupportedMediaTypeError(DashboardRequestError):
     status = HTTPStatus.UNSUPPORTED_MEDIA_TYPE
 
 
-def _iso_now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+def _research_browser_numbers(value: object) -> object:
+    """Keep seeds and exact search-space counts beyond JavaScript's integer range."""
+    if type(value) is int and abs(value) > 9_007_199_254_740_991:
+        return str(value)
+    if isinstance(value, dict):
+        return {key: _research_browser_numbers(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_research_browser_numbers(item) for item in value]
+    return value
 
 
 def _safe_child(root: Path, relative: str) -> Path:
@@ -95,8 +109,17 @@ def _safe_child(root: Path, relative: str) -> Path:
     if not candidate_text:
         raise DashboardRequestError("path must not be empty")
     candidate = Path(candidate_text)
-    if candidate.is_absolute():
-        raise DashboardRequestError("absolute paths are not allowed")
+    if candidate.is_absolute() or ".." in candidate.parts:
+        raise DashboardRequestError("absolute paths and parent traversal are not allowed")
+    # Keep the path used by data guards identical to the object actually read;
+    # an internal link must not redirect a read into an active output directory.
+    for item in (root, *[root.joinpath(*candidate.parts[:index]) for index in range(1, len(candidate.parts) + 1)]):
+        try:
+            info = item.lstat()
+        except FileNotFoundError:
+            continue
+        if stat.S_ISLNK(info.st_mode) or getattr(info, "st_file_attributes", 0) & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0):
+            raise DashboardRequestError("linked data paths are not supported")
     root_resolved = root.resolve()
     resolved = (root_resolved / candidate).resolve()
     try:
@@ -160,40 +183,6 @@ def _read_json(path: Path) -> object:
         return json.load(handle)
 
 
-@dataclass(slots=True)
-class _Job:
-    job_id: str
-    config: str
-    output: str
-    workers: int
-    force: bool
-    status: str = "queued"
-    created_at: str = ""
-    started_at: str | None = None
-    finished_at: str | None = None
-    error: str | None = None
-    result_name: str | None = None
-
-    def __post_init__(self) -> None:
-        if not self.created_at:
-            self.created_at = _iso_now()
-
-    def payload(self) -> dict[str, object]:
-        return {
-            "id": self.job_id,
-            "config": self.config,
-            "output": self.output,
-            "workers": self.workers,
-            "force": self.force,
-            "status": self.status,
-            "created_at": self.created_at,
-            "started_at": self.started_at,
-            "finished_at": self.finished_at,
-            "error": self.error,
-            "result_name": self.result_name,
-        }
-
-
 class DashboardService:
     """Application services used by the HTTP handler and unit tests."""
 
@@ -201,19 +190,95 @@ class DashboardService:
         self.project_root = Path(project_root).resolve()
         self.configs_root = self.project_root / "configs"
         self.results_root = self.project_root / "results"
-        self._jobs: dict[str, _Job] = {}
         self._lock = threading.RLock()
+        self.workbench = WorkbenchService(self.project_root)
+        self.exports = ComparisonExports(self.project_root)
+        self.experiments = ExperimentsService(self.project_root)
+        self.analysis = StudyAnalysisService(self.project_root)
+        self.studies = StudiesService(self.project_root)
+        self.local_catalog = LocalCatalog(self.project_root)
+        self._index_rebuild_lock = threading.Lock()
+        self._research_jobs: JobService | None = None
+        self._closed = False
+
+    @property
+    def research_jobs(self) -> JobService:
+        with self._lock:
+            if self._closed:
+                raise DashboardConflictError("dashboard service is closed")
+            if self._research_jobs is None:
+                self._research_jobs = JobService(self.project_root)
+            return self._research_jobs
+
+    def close(self) -> None:
+        with self._lock:
+            self._closed = True
+            jobs = self._research_jobs
+        if jobs is not None:
+            jobs.close()
+
+    def read_artifacts(self, paths: list[str], operation: Callable[[], Any]) -> Any:
+        """Hold dispatch coordination until all requested file reads are closed."""
+        try:
+            with self.research_jobs.reading_outputs(paths):
+                return operation()
+        except JobConflictError as error:
+            raise DashboardConflictError(str(error)) from error
+        except ValueError as error:
+            if getattr(error, "status", None) is not None:
+                raise
+            raise DashboardRequestError(str(error)) from error
+
+    def scan_artifacts(self, operation: Callable[[set[str]], Any]) -> Any:
+        def scan() -> Any:
+            active = {job["output_dir"] for job in self.research_jobs.list_jobs()["jobs"]
+                      if job.get("kind") == "benchmark" and job.get("status") == "running"}
+            if os.name == "nt" and active and self.results_root.is_dir():
+                names = {Path(path).name.casefold() for path in active}
+                active.update(path.relative_to(self.project_root).as_posix()
+                              for path in self.results_root.iterdir() if path.name.casefold() in names)
+            return operation(active)
+        return self.read_artifacts([], scan)
+
+    def local_index_status(self) -> dict[str, object]:
+        return {"workbench": self.workbench.index.status(), "studies": self.studies.index.status()}
+
+    def rebuild_local_index(self) -> dict[str, object]:
+        if not self._index_rebuild_lock.acquire(blocking=False):
+            raise DashboardConflictError("the local index is already being rebuilt")
+        try:
+            self.studies.index.clear()
+            result = self.workbench.rebuild_index()
+            sources = self.studies.library()["sources"]
+            study_errors = []
+            for source in sources:
+                try:
+                    detail = self.studies.detail(source["source"])
+                    if detail["errors"]:
+                        study_errors.append({"source": source["source"], "errors": detail["errors"]})
+                except ValueError as error:
+                    study_errors.append({"source": source["source"], "error": str(error)})
+            return {"index": self.local_index_status(), "workbench_sources": result["sources"],
+                    "study_sources": len(sources), "errors": [*result["errors"], *study_errors]}
+        finally:
+            self._index_rebuild_lock.release()
 
     def list_configs(self) -> dict[str, object]:
         configs = []
         if self.configs_root.is_dir():
-            for path in sorted(self.configs_root.glob("*.json")):
+            for path in sorted(self.configs_root.rglob("*.json")):
                 if path.is_symlink():
+                    continue
+                relative = path.relative_to(self.configs_root).as_posix()
+                try:
+                    if _safe_child(self.configs_root, relative) != path.resolve():
+                        continue
+                except DashboardRequestError:
                     continue
                 configs.append(
                     {
                         "name": path.name,
-                        "path": path.relative_to(self.configs_root).as_posix(),
+                        "path": relative,
                         "size": path.stat().st_size,
                     }
                 )
@@ -238,7 +303,7 @@ class DashboardService:
         try:
             source = _read_json(path)
         except (OSError, json.JSONDecodeError) as error:
-            return {"path": path.name, "valid": False, "error": str(error)}
+            return {"path": path.relative_to(self.configs_root).as_posix(), "valid": False, "error": str(error)}
 
         try:
             with warnings.catch_warnings(record=True) as captured:
@@ -247,13 +312,13 @@ class DashboardService:
                 plan = plan_benchmark(config)
         except Exception as error:
             return {
-                "path": path.name,
+                "path": path.relative_to(self.configs_root).as_posix(),
                 "source": source,
                 "valid": False,
                 "error": str(error),
             }
         return {
-            "path": path.name,
+            "path": path.relative_to(self.configs_root).as_posix(),
             "source": source,
             "valid": True,
             "config_hash": config_hash(config),
@@ -272,102 +337,32 @@ class DashboardService:
         }
 
     def start_run(self, payload: Mapping[str, object]) -> dict[str, object]:
-        config_value = payload.get("config")
-        if not isinstance(config_value, str):
-            raise DashboardRequestError("config is required")
-        expected_config_hash = payload.get("config_hash")
-        if not isinstance(expected_config_hash, str):
-            raise DashboardRequestError("config_hash is required")
-        config_info = self.inspect_config(config_value)
-        if config_info.get("valid") is not True:
-            raise DashboardRequestError(cast(str, config_info.get("error", "invalid configuration")))
-        current_config_hash = config_info.get("config_hash")
-        if expected_config_hash != current_config_hash:
-            raise DashboardConflictError(
-                "configuration changed after preflight; validate it again"
-            )
-
-        output_value = payload.get("output")
-        output_name = output_value if isinstance(output_value, str) else Path(config_value).stem
-        if not _RESULT_NAME.fullmatch(output_name):
-            raise DashboardRequestError(
-                "output must be a simple result name using letters, numbers, dots, underscores, or hyphens"
-            )
-        workers_value = payload.get("workers", 1)
-        if isinstance(workers_value, bool) or not isinstance(workers_value, int) or not 1 <= workers_value <= 32:
-            raise DashboardRequestError("workers must be an integer from 1 to 32")
-        force_value = payload.get("force", False)
-        if not isinstance(force_value, bool):
-            raise DashboardRequestError("force must be a boolean")
-        self.results_root.mkdir(parents=True, exist_ok=True)
-        _safe_child(self.results_root, output_name)
-
-        with self._lock:
-            active = next(
-                (job for job in self._jobs.values() if job.status in {"queued", "running"}),
-                None,
-            )
-            if active is not None:
-                raise DashboardConflictError(
-                    f"a benchmark is already {active.status}: {active.job_id}"
-                )
-            job = _Job(
-                job_id=uuid.uuid4().hex,
-                config=config_value,
-                output=output_name,
-                workers=workers_value,
-                force=force_value,
-            )
-            self._jobs[job.job_id] = job
-            thread = threading.Thread(
-                target=self._run_job,
-                args=(job.job_id, expected_config_hash),
-                name=f"maxcover-dashboard-{job.job_id[:8]}",
-                daemon=True,
-            )
-            thread.start()
-        return job.payload()
-
-    def _run_job(self, job_id: str, expected_config_hash: str) -> None:
-        with self._lock:
-            job = self._jobs[job_id]
-            job.status = "running"
-            job.started_at = _iso_now()
         try:
-            run_benchmark(
-                self.configs_root / job.config,
-                self.results_root / job.output,
-                workers=job.workers,
-                force=job.force,
-                expected_config_hash=expected_config_hash,
-            )
-        except Exception as error:
-            with self._lock:
-                job.status = "failed"
-                job.error = str(error)
-                job.finished_at = _iso_now()
-            return
-        with self._lock:
-            job.status = "completed"
-            job.result_name = job.output
-            job.finished_at = _iso_now()
+            return self.research_jobs.submit({**payload, "kind": "benchmark"})
+        except JobConflictError as error:
+            raise DashboardConflictError(str(error)) from error
+        except ValueError as error:
+            raise DashboardRequestError(str(error)) from error
 
     def list_jobs(self) -> dict[str, object]:
-        with self._lock:
-            jobs = [job.payload() for job in self._jobs.values()]
-        return {"jobs": list(reversed(jobs[-20:]))}
+        jobs = self.research_jobs.list_jobs()["jobs"]
+        return {"jobs": [job for job in jobs if job.get("kind") == "benchmark"]}
 
     def get_job(self, job_id: str) -> dict[str, object]:
-        with self._lock:
-            job = self._jobs.get(job_id)
-            if job is None:
-                raise DashboardRequestError(f"unknown job: {job_id}")
-            return job.payload()
+        try:
+            job = self.research_jobs.get_job(job_id)
+            if job.get("kind") != "benchmark":
+                raise DashboardRequestError("this is not a Benchmark task")
+            return job
+        except ValueError as error:
+            raise DashboardRequestError(str(error)) from error
 
-    def list_results(self) -> dict[str, object]:
+    def list_results(self, excluded: set[str] | None = None) -> dict[str, object]:
         results = []
         if self.results_root.is_dir():
             for path in sorted(self.results_root.iterdir(), key=lambda item: item.name.lower()):
+                if excluded and path.relative_to(self.project_root).as_posix() in excluded:
+                    continue
                 if path.is_symlink() or not path.is_dir() or not _RESULT_NAME.fullmatch(path.name):
                     continue
                 summary_path = _safe_child(path, "summary.csv")
@@ -403,26 +398,35 @@ class DashboardService:
         raw_path = _safe_child(path, "raw_results.csv")
         if not summary_path.is_file() and not raw_path.is_file():
             raise DashboardRequestError("result has no canonical CSV artifacts")
+        incomplete = self._incomplete_result(name)
         artifacts = [
             {
                 "name": filename,
                 "url": f"/api/artifact?result={name}&file={filename}",
             }
             for filename in REPORT_FILENAMES
-            if _safe_child(path, filename).is_file()
+            if not incomplete and _safe_child(path, filename).is_file()
         ]
         return {
             "name": name,
-            "summary": _read_csv(summary_path) if summary_path.is_file() else [],
+            "summary": _read_csv(summary_path) if not incomplete and summary_path.is_file() else [],
             "runs": _read_csv(raw_path, limit=2000) if raw_path.is_file() else [],
             "run_limit": 2000,
             "artifacts": artifacts,
+            "incomplete": incomplete,
         }
 
-    def list_replays(self) -> dict[str, object]:
+    def _incomplete_result(self, name: str) -> bool:
+        latest = next((job for job in self._research_jobs.list_jobs()["jobs"]
+                       if job.get("kind") == "benchmark" and Path(job.get("output_dir", "")) == Path("results") / name), None) if self._research_jobs is not None else None
+        return latest is not None and latest["status"] != "completed"
+
+    def list_replays(self, excluded: set[str] | None = None) -> dict[str, object]:
         replays: list[dict[str, object]] = []
         if self.results_root.is_dir():
             for result_dir in sorted(self.results_root.iterdir(), key=lambda item: item.name.lower()):
+                if excluded and result_dir.relative_to(self.project_root).as_posix() in excluded:
+                    continue
                 if (
                     result_dir.is_symlink()
                     or not result_dir.is_dir()
@@ -473,6 +477,8 @@ class DashboardService:
         }
 
     def artifact(self, result_name: str, filename: str) -> tuple[bytes, str]:
+        if self._incomplete_result(result_name):
+            raise DashboardConflictError("latest attempt is incomplete; reports are available after completion")
         result_path = _result_dir(self.results_root, result_name)
         if filename not in REPORT_FILENAMES:
             raise DashboardRequestError("artifact is not available")
@@ -495,6 +501,12 @@ class _DashboardHTTPServer(ThreadingHTTPServer):
         self.service = service
         super().__init__(address, _DashboardRequestHandler)
 
+    def server_close(self) -> None:
+        try:
+            super().server_close()
+        finally:
+            self.service.close()
+
 
 class _DashboardRequestHandler(BaseHTTPRequestHandler):
     """Translate HTTP requests into :class:`DashboardService` operations."""
@@ -505,6 +517,18 @@ class _DashboardRequestHandler(BaseHTTPRequestHandler):
         "index.html": ("index.html", "text/html; charset=utf-8"),
         "app.js": ("app.js", "text/javascript; charset=utf-8"),
         "report.js": ("report.js", "text/javascript; charset=utf-8"),
+        "workbench": ("workbench.html", "text/html; charset=utf-8"),
+        "workbench.js": ("workbench.js", "text/javascript; charset=utf-8"),
+        "workbench.css": ("workbench.css", "text/css; charset=utf-8"),
+        "research": ("research.html", "text/html; charset=utf-8"),
+        "research.js": ("research.js", "text/javascript; charset=utf-8"),
+        "research.css": ("research.css", "text/css; charset=utf-8"),
+        "experiments": ("experiments.html", "text/html; charset=utf-8"),
+        "experiments.js": ("experiments.js", "text/javascript; charset=utf-8"),
+        "experiments.css": ("experiments.css", "text/css; charset=utf-8"),
+        "research-analysis": ("study-analysis.html", "text/html; charset=utf-8"),
+        "study-analysis.js": ("study-analysis.js", "text/javascript; charset=utf-8"),
+        "study-analysis.css": ("study-analysis.css", "text/css; charset=utf-8"),
         "styles.css": ("styles.css", "text/css; charset=utf-8"),
         "favicon.svg": ("favicon.svg", "image/svg+xml; charset=utf-8"),
         "fonts/space-grotesk-latin-600-normal.woff2": ("fonts/space-grotesk-latin-600-normal.woff2", "font/woff2"),
@@ -527,6 +551,8 @@ class _DashboardRequestHandler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def _send_json(self, payload: object, status: HTTPStatus = HTTPStatus.OK) -> None:
+        if self.path.startswith(("/api/studies/", "/api/research/")):
+            payload = _research_browser_numbers(payload)
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         self._send_bytes(body, "application/json; charset=utf-8", status)
 
@@ -597,25 +623,115 @@ class _DashboardRequestHandler(BaseHTTPRequestHandler):
                 self._send_json(service.list_algorithms())
             elif path == "/api/config":
                 self._send_json(service.inspect_config(_one_query(query, "path")))
+            elif path == "/api/experiments/annotations":
+                self._send_json(service.experiments.annotations())
+            elif path == "/api/experiments/config":
+                self._send_json(service.experiments.read_config(_one_query(query, "path")))
             elif path == "/api/jobs":
                 self._send_json(service.list_jobs())
             elif path.startswith("/api/jobs/"):
                 self._send_json(service.get_job(path.rsplit("/", 1)[1]))
             elif path == "/api/results":
-                self._send_json(service.list_results())
+                self._send_json(service.scan_artifacts(service.list_results))
+            elif path == "/api/local/index":
+                self._send_json(service.local_index_status())
+            elif path == "/api/local/archive":
+                self._send_json({"entries": service.local_catalog.list(_one_query(query, "kind")),
+                                 **service.local_catalog.status()})
+            elif path == "/api/studies/library":
+                self._send_json(service.scan_artifacts(service.studies.library))
+            elif path in {"/api/studies/analysis", "/api/studies/records"}:
+                filters: dict[str, str] = {key: _one_query(query, key) for key in ("n", "d", "k", "loss_only") if key in query}
+                source = _one_query(query, "source")
+                if path.endswith("/analysis"):
+                    self._send_json(service.read_artifacts([source], lambda: service.analysis.overview(source, filters)))
+                else:
+                    self._send_json(service.read_artifacts([source], lambda: service.analysis.records(source, filters,
+                        offset=_int_query(query, "offset", 0), limit=_int_query(query, "limit", 50))))
+            elif path == "/api/studies/pairs":
+                self._send_json(service.read_artifacts([_one_query(query, "source")], lambda: service.analysis.pairs(_one_query(query, "source"),
+                    n=_int_query(query, "n"), d=_int_query(query, "d"),
+                    k_a=_int_query(query, "k_a"), k_b=_int_query(query, "k_b"),
+                    metric=_one_query(query, "metric") if "metric" in query else "relative_gap")))
+            elif path in {"/api/studies/instance", "/api/studies/instance-export"}:
+                operation = service.analysis.export_instance if path.endswith("-export") else service.analysis.instance
+                payload = service.read_artifacts([_one_query(query, "source")], lambda: operation(_one_query(query, "source"), _one_query(query, "base_graph_id"),
+                    k=_int_query(query, "k") if "k" in query else None,
+                    direction=_int_query(query, "direction") if "direction" in query else None,
+                    replica=_int_query(query, "replica") if "replica" in query else None))
+                if path.endswith("-export"):
+                    self._send_download(json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+                                        "application/json; charset=utf-8", "study-instance.json")
+                else:
+                    self._send_json(payload)
+            elif path == "/api/studies/detail":
+                self._send_json(service.read_artifacts([_one_query(query, "source")], lambda: service.studies.detail(_one_query(query, "source"))))
+            elif path == "/api/studies/artifact":
+                filename = _one_query(query, "file")
+                body, content_type = service.read_artifacts([_one_query(query, "source")], lambda: service.studies.artifact(_one_query(query, "source"), filename))
+                self._send_download(body, content_type, filename)
+            elif path == "/api/research/jobs":
+                self._send_json(service.research_jobs.list_jobs())
+            elif path.startswith("/api/research/jobs/"):
+                parts = path.split("/")
+                if len(parts) == 5:
+                    self._send_json(service.research_jobs.get_job(parts[4]))
+                elif len(parts) == 6 and parts[5] == "result":
+                    self._send_json(service.research_jobs.result(parts[4]))
+                elif len(parts) == 7 and parts[5] == "files":
+                    body, content_type = service.research_jobs.result_asset(parts[4], parts[6])
+                    self._send_download(body, content_type, parts[6])
+                else:
+                    raise DashboardRequestError("unknown research job endpoint")
+            elif path == "/api/workbench/library":
+                self._send_json(service.scan_artifacts(service.workbench.library))
+            elif path == "/api/workbench/views":
+                self._send_json(service.exports.list_views())
+            elif path.startswith("/api/workbench/views/"):
+                parts = path.split("/")
+                if len(parts) == 6 and parts[5] == "artifact":
+                    body, content_type, filename = service.exports.artifact(parts[4], _one_query(query, "format"))
+                    self._send_download(body, content_type, filename)
+                elif len(parts) == 5:
+                    self._send_json(service.exports.get(parts[4]))
+                else:
+                    raise DashboardRequestError("unknown saved comparison endpoint")
+            elif path == "/api/workbench/compare":
+                try:
+                    page = int(_one_query(query, "page")) if "page" in query else 0
+                except ValueError as error:
+                    raise DashboardRequestError("page must be a non-negative integer") from error
+                self._send_json(service.read_artifacts(query.get("source", []), lambda: service.workbench.compare(
+                    query.get("source", []),
+                    case=_one_query(query, "case") if "case" in query else "",
+                    algorithm=_one_query(query, "algorithm") if "algorithm" in query else "",
+                    population=_one_query(query, "population") if "population" in query else "research",
+                    outcome=_one_query(query, "outcome") if "outcome" in query else "all",
+                    page=page,
+                )))
+            elif path in {"/api/workbench/detail", "/api/workbench/export"}:
+                action = service.workbench.export if path.endswith("/export") else service.workbench.detail
+                self._send_json(service.read_artifacts([_one_query(query, "source")], lambda: action(_one_query(query, "source"), _one_query(query, "key"))))
             elif path == "/api/result":
-                self._send_json(service.get_result(_one_query(query, "name")))
+                self._send_json(service.read_artifacts(["results/" + _one_query(query, "name")], lambda: service.get_result(_one_query(query, "name"))))
             elif path == "/api/replay-files":
-                self._send_json(service.list_replays())
+                self._send_json(service.scan_artifacts(service.list_replays))
             elif path == "/api/artifact":
-                body, content_type = service.artifact(
+                body, content_type = service.read_artifacts(["results/" + _one_query(query, "result")], lambda: service.artifact(
                     _one_query(query, "result"), _one_query(query, "file")
-                )
+                ))
                 self._send_bytes(body, content_type)
             else:
                 self._serve_static(path)
         except (DashboardRequestError, DashboardConflictError, OSError, ValueError) as error:
-            self._error(error)
+            if self.path.startswith("/api/experiments/") and isinstance(error, ValueError):
+                self._error(DashboardConflictError(str(error)) if isinstance(error, ExperimentsConflictError)
+                            else DashboardRequestError(str(error)))
+            elif self.path.startswith("/api/research/") and isinstance(error, ValueError):
+                self._error(DashboardConflictError(str(error)) if isinstance(error, JobConflictError)
+                            else DashboardRequestError(str(error)))
+            else:
+                self._error(error)
 
     def do_POST(self) -> None:  # noqa: N802
         try:
@@ -627,11 +743,64 @@ class _DashboardRequestHandler(BaseHTTPRequestHandler):
             elif self.path == "/api/run":
                 self._send_json(service.start_run(payload), HTTPStatus.ACCEPTED)
             elif self.path == "/api/replay":
-                self._send_json(service.replay(payload))
+                replay_path = unquote(_required_string(payload, "instance")).strip()
+                self._send_json(service.read_artifacts(["results/" + replay_path], lambda: service.replay(payload)))
+            elif self.path == "/api/workbench/views":
+                sources = payload.get("sources")
+                if not isinstance(sources, list) or not all(isinstance(source, str) for source in sources):
+                    raise DashboardRequestError("sources must be a list of paths")
+                self._send_json(service.read_artifacts(sources, lambda: service.exports.save(payload)), HTTPStatus.CREATED)
+            elif self.path.startswith("/api/experiments/"):
+                operations = {
+                    "/api/experiments/annotation": service.experiments.set_annotation,
+                    "/api/experiments/config-copy": service.experiments.copy_config,
+                    "/api/experiments/config-preview": service.experiments.preview_config,
+                    "/api/experiments/config-save": service.experiments.save_config,
+                }
+                if self.path not in operations:
+                    raise DashboardRequestError("unknown experiment management endpoint")
+                if self.path.endswith("/annotation"):
+                    self._send_json(service.read_artifacts([_required_string(payload, "source")], lambda: operations[self.path](payload)))
+                else:
+                    self._send_json(operations[self.path](payload))
+            elif self.path == "/api/local/index/rebuild":
+                if payload:
+                    raise DashboardRequestError("index rebuild accepts an empty object")
+                self._send_json(service.read_artifacts(["results"], service.rebuild_local_index))
+            elif self.path == "/api/local/archive":
+                if set(payload) != {"kind", "id", "archived"} or type(payload["archived"]) is not bool:
+                    raise DashboardRequestError("archive requires kind, id and a boolean archived flag")
+                self._send_json(service.local_catalog.set_archived(_required_string(payload, "kind"),
+                    _required_string(payload, "id"), cast(bool, payload["archived"])))
+            elif self.path == "/api/research/jobs":
+                self._send_json(service.research_jobs.submit(payload), HTTPStatus.ACCEPTED)
+            elif self.path.startswith("/api/research/jobs/"):
+                parts = self.path.split("/")
+                job_operations = {"retry": service.research_jobs.retry, "resume": service.research_jobs.resume,
+                              "pause": service.research_jobs.pause, "cancel": service.research_jobs.cancel}
+                if len(parts) == 6 and parts[5] in job_operations and not payload:
+                    self._send_json(job_operations[parts[5]](parts[4]), HTTPStatus.ACCEPTED)
+                else:
+                    raise DashboardRequestError("unknown research operation or nonempty retry payload")
             else:
                 raise DashboardRequestError("unknown API endpoint")
         except (DashboardRequestError, DashboardConflictError, OSError, ValueError) as error:
-            self._error(error)
+            if self.path.startswith("/api/experiments/") and isinstance(error, ValueError):
+                if isinstance(error, DashboardRequestError):
+                    self._error(error)
+                else:
+                    self._error(DashboardConflictError(str(error)) if isinstance(error, ExperimentsConflictError)
+                                else DashboardRequestError(str(error)))
+            elif self.path.startswith("/api/research/") and isinstance(error, ValueError):
+                # Preserve Origin/media-type errors; map the CLI adapter's
+                # validation and queue-conflict exceptions to client responses.
+                if isinstance(error, DashboardRequestError):
+                    self._error(error)
+                else:
+                    self._error(DashboardConflictError(str(error)) if isinstance(error, JobConflictError)
+                                else DashboardRequestError(str(error)))
+            else:
+                self._error(error)
 
     def _serve_static(self, request_path: str) -> None:
         key = request_path.lstrip("/")
@@ -641,12 +810,30 @@ class _DashboardRequestHandler(BaseHTTPRequestHandler):
         path = STATIC_ROOT / filename
         self._send_bytes(path.read_bytes(), content_type)
 
+    def _send_download(self, body: bytes, content_type: str, filename: str) -> None:
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Content-Disposition", f'attachment; filename="{filename}"')
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(body)
+
 
 def _one_query(query: Mapping[str, list[str]], key: str) -> str:
     values = query.get(key, [])
     if len(values) != 1:
         raise DashboardRequestError(f"query parameter {key!r} is required exactly once")
     return values[0]
+
+
+def _int_query(query: Mapping[str, list[str]], key: str, default: int | None = None) -> int:
+    if key not in query and default is not None:
+        return default
+    try:
+        return int(_one_query(query, key))
+    except ValueError as error:
+        raise DashboardRequestError(f"query parameter {key!r} must be an integer") from error
 
 
 def _required_string(payload: Mapping[str, object], key: str) -> str:
