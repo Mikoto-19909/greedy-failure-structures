@@ -13,6 +13,13 @@ The [current selected scope](dashboard_selected_scope_20260921.zh-CN.md) integra
 main, local configuration organization, unified Benchmark control and study analysis;
 backup and further scale optimization remain deferred.
 
+The [component composition design](component_composition_design.zh-CN.md) defines
+reusable analysis components and explicit workflows for comparison previews and
+saved snapshots. The [first experiment](component_composition_experiment.zh-CN.md)
+records the bounded implementation, compatibility comparison and remaining limits.
+The [sharing expansion](component_composition_expansion.zh-CN.md) adds common
+rendering/replay components and a failure-case bundle assembled from saved data.
+
 ## Current research
 
 Open the [interactive research showcase](greedy_failure_showcase.html) in a browser
