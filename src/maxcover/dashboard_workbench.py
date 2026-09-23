@@ -8,26 +8,19 @@ from __future__ import annotations
 
 import csv
 import json
-import math
 import os
-from collections import OrderedDict, defaultdict
-from http import HTTPStatus
+from collections import OrderedDict
 from pathlib import Path
-from statistics import fmean
 import threading
 from typing import Any, cast
 
 from ._run_contracts import RunRecord
+from .comparison import ComparisonSelection, validate_page, validate_sources
+from .comparison_workflows import ComparisonAnalysis, analyze_comparison, preview_comparison
+from .dashboard_paths import WorkbenchError, data_file, linked as _linked
 from .dashboard_index import DashboardIndex, IndexedDocument
 from .reproducibility import instance_from_payload, instance_payload
-
-
-class WorkbenchError(ValueError):
-    status = HTTPStatus.BAD_REQUEST
-
-
-def _linked(path: Path) -> bool:
-    return path.is_symlink() or bool(getattr(path, "is_junction", lambda: False)())
+from .replay_documents import greedy_replay_document
 
 
 def _identity(row: dict[str, Any]) -> tuple[Any, ...]:
@@ -108,22 +101,7 @@ class WorkbenchService:
         return "workbench-v1:" + source
 
     def _file(self, source: str, filename: str) -> Path:
-        relative = Path(source)
-        if (relative.is_absolute() or not relative.parts or relative.parts[0] not in {"results", "experiments"}
-                or ".." in relative.parts or source != relative.as_posix()):
-            raise WorkbenchError("source must be under results/ or experiments/")
-        path = self.root / relative / filename
-        try:
-            path.resolve().relative_to((self.root / relative.parts[0]).resolve())
-        except ValueError as error:
-            raise WorkbenchError("source escapes its data directory") from error
-        # Refuse links at every level, including Windows junctions resolving outside root.
-        for item in (path, *path.parents):
-            if item == self.root:
-                break
-            if _linked(item):
-                raise WorkbenchError("linked data paths are not supported")
-        return path
+        return data_file(self.root, source, filename)
 
     def _sources(self) -> list[str]:
         sources = []
@@ -202,16 +180,31 @@ class WorkbenchService:
         except OSError as error:
             raise WorkbenchError(str(error)) from error
 
+    def _analyze(self, sources: list[str], selection: ComparisonSelection) -> ComparisonAnalysis:
+        rows = tuple(row for source in sources for row in self._read(source, include_raw=False)[1])
+        return analyze_comparison(tuple(sources), rows, selection)
+
+    def analyze(self, sources: list[str], selection: ComparisonSelection) -> ComparisonAnalysis:
+        """Read a complete analysis; application callers retain write coordination."""
+        try:
+            validate_sources(tuple(sources))
+        except ValueError as error:
+            raise WorkbenchError(str(error)) from error
+        signatures = self._source_signatures(sources)
+        analysis = self._analyze(sources, selection)
+        if self._source_signatures(sources) != signatures:
+            raise WorkbenchError("source changed during comparison; refresh and retry")
+        return analysis
+
     def compare(self, sources: list[str], *, case: str = "", algorithm: str = "",
                 population: str = "research", outcome: str = "all", page: int = 0,
                 page_size: int = 50, include_all: bool = False) -> dict[str, Any]:
-        if not 1 <= len(sources) <= 4 or len(set(sources)) != len(sources):
-            raise WorkbenchError("select one to four distinct sources")
-        if population not in {"research", "fixture", "all"} or outcome not in {"all", "loss", "zero", "missing"}:
-            raise WorkbenchError("unknown comparison filter")
-        _integer(page, "page")
-        if type(page_size) is not int or not 1 <= page_size <= 100:
-            raise WorkbenchError("page_size must be between 1 and 100")
+        try:
+            validate_sources(tuple(sources))
+            selection = ComparisonSelection(case, algorithm, population, outcome)
+            validate_page(page, page_size)
+        except ValueError as error:
+            raise WorkbenchError(str(error)) from error
         signatures = self._source_signatures(sources)
         cache_key = json.dumps([signatures, case, algorithm, population, outcome, page, page_size])
         if not include_all:
@@ -223,52 +216,8 @@ class WorkbenchService:
                 if self._source_signatures(sources) != signatures:
                     raise WorkbenchError("source changed during comparison; refresh and retry")
                 return cast(dict[str, Any], json.loads(cached))
-        all_rows = [row for source in sources for row in self._read(source, include_raw=False)[1]]
-        rows = [row for row in all_rows
-                if (not case or row["case_id"] == case)
-                and (not algorithm or row["algorithm_id"] == algorithm)
-                and (population == "all" or (row["population"] == "fixture" if population == "fixture"
-                     else row["population"] in {"pilot", "confirmation", "experiment"}))]
-        # Compute summaries before the outcome filter: selecting failures must not
-        # silently change a population failure-rate denominator.
-        groups: dict[tuple[Any, ...], list[dict[str, Any]]] = defaultdict(list)
-        for row in rows:
-            group = tuple(row[key] for key in ("source", "case_id", "algorithm_id", "population",
-                                               "universe_size", "set_count", "k")) + (
-                json.dumps(row["parameters"], sort_keys=True),
-                json.dumps(row["algorithm_options"], sort_keys=True))
-            groups[group].append(row)
-        summaries = []
-        for group_rows in groups.values():
-            first = group_rows[0]
-            gaps = [row["optimality_gap"] for row in group_rows if row["optimality_gap"] is not None]
-            coverages = [row["coverage"] for row in group_rows if row["coverage"] is not None]
-            runtimes = [row["runtime_seconds"] for row in group_rows if row["runtime_seconds"] is not None]
-            summaries.append({key: first[key] for key in (
-                "source", "case_id", "algorithm_id", "population", "universe_size", "set_count", "k",
-                "parameters", "algorithm_options")} | {
-                "records": len(group_rows), "gap_records": len(gaps),
-                "missing_gap": len(group_rows) - len(gaps), "losses": sum(gap > 0 for gap in gaps),
-                "loss_rate": sum(gap > 0 for gap in gaps) / len(gaps) if gaps else None,
-                "mean_gap": fmean(gaps) if gaps else None, "max_gap": max(gaps) if gaps else None,
-                "mean_coverage": fmean(coverages) if coverages else None,
-                "mean_runtime": fmean(runtimes) if runtimes else None,
-                "errors": sum(row["status"] == "error" for row in group_rows),
-                "timeouts": sum(row["status"] == "timeout" for row in group_rows)})
-        selected = [row for row in rows if outcome == "all"
-                    or (outcome == "missing" and row["optimality_gap"] is None)
-                    or (outcome == "loss" and row["optimality_gap"] is not None and row["optimality_gap"] > 0)
-                    or (outcome == "zero" and row["optimality_gap"] == 0)]
-        selected.sort(key=lambda row: (-(row["optimality_gap"] if row["optimality_gap"] is not None else -1),
-                                       row["source"], row["key"]))
-        pages = max(1, math.ceil(len(selected) / page_size))
-        page = min(page, pages - 1)
-        result = {"sources": sources, "input_records": len(all_rows), "filtered_records": len(rows),
-                "total": len(selected), "page": page, "pages": pages, "page_size": page_size,
-                "cases": sorted({row["case_id"] for row in all_rows}),
-                "algorithms": sorted({row["algorithm_id"] for row in all_rows}),
-                "summaries": summaries,
-                "rows": selected if include_all else selected[page * page_size:(page + 1) * page_size]}
+        analysis = self._analyze(sources, selection)
+        result = preview_comparison(analysis, page, page_size, include_all=include_all)
         if self._source_signatures(sources) != signatures:
             raise WorkbenchError("source changed during comparison; refresh and retry")
         if not include_all:
@@ -402,10 +351,13 @@ class WorkbenchService:
         trace = detail["trace"]
         if trace is None:
             raise WorkbenchError("no saved instance sets are available for replay export")
-        return {"instance": trace["instance"], "replay": {"algorithm": "greedy", "options": {},
-                "expected": {"coverage": trace["coverage"], "selected": sorted(trace["greedy_selected"])}},
-                "provenance": {"record_source": source, "record_key": key,
-                               "trajectory_source": detail["trace_source"],
-                               "instance_id": detail["record"]["instance_id"],
-                               "note": "Saved R1 diagnostics; display consistency checked, not a fresh optimality proof."},
-                "r1_diagnostics": trace}
+        provenance = {"record_source": source, "record_key": key,
+                      "trajectory_source": detail["trace_source"],
+                      "instance_id": detail["record"]["instance_id"],
+                      "note": "Saved R1 diagnostics; display consistency checked, not a fresh optimality proof."}
+        try:
+            document = greedy_replay_document(trace["instance"], coverage=trace["coverage"],
+                                              selected=sorted(trace["greedy_selected"]), provenance=provenance)
+        except ValueError as error:
+            raise WorkbenchError(str(error)) from error
+        return {**document, "r1_diagnostics": trace}

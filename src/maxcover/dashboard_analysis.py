@@ -12,6 +12,7 @@ import statistics
 from typing import Any
 
 from .dashboard_studies import StudiesError, StudiesService, _json
+from .replay_documents import greedy_replay_document
 
 
 TEXT = {"base_graph_id", "instance_id", "endpoint", "chain_seed"}
@@ -311,6 +312,8 @@ class StudyAnalysisService:
     def export_instance(self, source: str, base_graph_id: str, k: int | None = None,
                         direction: int | None = None, replica: int | None = None) -> dict[str, Any]:
         detail = self.instance(source, base_graph_id, k, direction, replica)
-        return {"instance": detail["instance"], "replay": {"algorithm": "greedy", "options": {},
-                "expected": {"coverage": detail["values"]["greedy"], "selected": detail["values"]["greedy_selected"]}},
-                "provenance": detail["provenance"]}
+        try:
+            return greedy_replay_document(detail["instance"], coverage=detail["values"]["greedy"],
+                                          selected=detail["values"]["greedy_selected"], provenance=detail["provenance"])
+        except ValueError as error:
+            raise StudiesError(str(error)) from error
