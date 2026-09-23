@@ -52,11 +52,11 @@
 - [`check-initial-environment.log`](../results/component_composition/check-initial-environment.log)：首次环境不匹配的完整失败记录。
 - [`demo-preview.json`](../results/component_composition/demo-preview.json)、[`demo.json`](../results/component_composition/demo.json)、[`demo.csv`](../results/component_composition/demo.csv)、[`demo.md`](../results/component_composition/demo.md)、[`demo.svg`](../results/component_composition/demo.svg)：相同历史数据的分页和完整输出。
 
-以上 results 文件是本工作树的本地记录，不随 Git 文档自动发布。未新增研究样本或更新科学结论；常规检查会执行仓库规定的测试及研究验证。
+以上 results 文件是本地记录，不随 Git 文档自动发布；2026-09-23 整合时已迁入主检出的同名目录。未新增研究样本或更新科学结论；常规检查会执行仓库规定的测试及研究验证。
 
 ## 复查方式与下一步
 
-在本工作树根目录、已配置依赖的 Python 环境中运行：
+以下命令从主检出根目录运行，使用该目录已配置依赖的 Python 环境：
 
 ```console
 python -m unittest discover -s tests -p test_comparison_components.py -v
@@ -65,8 +65,8 @@ python results/component_composition/demo.py
 python scripts/check.py
 ```
 
-基线、组件测试和行为比较使用 canonical 工作树既有 `.venv` 的 Python 3.12.14；修正验证环境后，日常检查使用相邻 `wt-fast-verification/.venv/Scripts/python.exe`（Python 3.12.14、Numba 0.67.0、SciPy 1.18.1、mypy 2.3.0）。后者未安装可选 Rust 扩展，对应测试按既有规则跳过。
+历史验收中，基线、组件测试和行为比较使用主检出既有 `.venv` 的 Python 3.12.14；修正验证环境后，日常检查使用当时的 `wt-fast-verification/.venv/Scripts/python.exe`（Python 3.12.14、Numba 0.67.0、SciPy 1.18.1、mypy 2.3.0）。后者未安装可选 Rust 扩展，对应测试按既有规则跳过；该旧环境不再是当前使用入口。
 
 运行时将 `PYTHONPATH` 指向本工作树的 `src`，没有修改其他工作树的虚拟环境。日常检查的两个缺失历史配置按 CONTRIBUTING 从固定提交恢复，未覆盖已有配置。
 
-首轮到此限定在两个现有功能。后续已开展[共享扩展试验](component_composition_expansion.zh-CN.md)，接入内存渲染、R1–R4 回放文档和失败案例包；新增消费者没有修改本轮共同统计代码。两轮都尚未合并或发布。
+首轮到此限定在两个现有功能。后续已开展[共享扩展试验](component_composition_expansion.zh-CN.md)，接入内存渲染、R1–R4 回放文档和失败案例包；新增消费者没有修改本轮共同统计代码。两轮成果于 2026-09-23 纳入主检出整合，当前验收与发布状态见[整合记录](branch_integration_status.zh-CN.md)。

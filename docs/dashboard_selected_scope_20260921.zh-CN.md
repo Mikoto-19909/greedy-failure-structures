@@ -54,16 +54,15 @@
 
 ## 执行进度
 
-- 1 已在本地 main 完成首轮整合；5、2、4 已实现并通过模块验证、完整回归和独立复核，验收证据见下方记录。最终提交仅整合到本地 main，不推送或创建 PR。
+- 1 已在本地 main 完成首轮整合；5、2、4 已实现并通过模块验证、完整回归和独立复核，验收证据见下方记录。2026-09-21 当时按授权仅整合到本地 main；当前交付状态见[2026-09-23 整合记录](branch_integration_status.zh-CN.md)。
 - 3 本地备份/恢复/迁移与 6 进一步性能/规模优化继续暂缓；本轮没有执行新正式科研批次。
 
 ## 本地使用
 
-在本地 main 工作树启动：
+在主检出根目录启动：
 
 ```powershell
-Set-Location 'D:\test area\greedy-failure\wt-dashboard-mainline'
-& '..\wt-fast-verification\.venv\Scripts\python.exe' run_project.py dashboard --port 57862
+.\.venv\Scripts\python.exe run_project.py dashboard --port 57862
 ```
 
 打开 `http://127.0.0.1:57862/workbench`。配置、任务和旁注属于启动工作树的数据目录；其他工作树的本地数据不会自动合并。
@@ -81,11 +80,11 @@ Set-Location 'D:\test area\greedy-failure\wt-dashboard-mainline'
 
 配置副本在 `configs/local/`，模板原文/diff来源与研究主题旁注在 `results/.dashboard_local/`；它们不随源码提交。任务沿用 `results/workbench_jobs/<id>/`，Benchmark 输出仍为 `results/<simple-name>/`，兼容旧结果入口。
 
-四个已保存专题的展示表在本实现工作树 `results/research_views/{r2,r3,r4,r4_dual}/`；本地 main 预览使用同一批展示表的独立副本。
+四个已保存专题的展示表已迁入主检出的 `results/research_views/{r2,r3,r4,r4_dual}/`。
 每个目录的 `graph_origin.json` 登记数据集根（其中有 `graphs/`）或固定的本地 Git 证据：
 
 ```json
-{"kind":"directory","path":"D:/test area/greedy-failure/greedy-failure-structures/results/r4_calibration_v1"}
+{"kind":"directory","path":"<本机数据集目录的绝对路径>"}
 ```
 
 R3 使用 `8663e0dcf576ab156535ff7403bb7e4715091357` 与 `results/r3_confirmation_v1`。HTTP不能指定或改写任意来源、Git ref/path。非法链接、身份、见证、交换链或缺失配对被拒绝。没有重新运行正式研究，没有复制全量原图，也没有实现备份恢复功能。

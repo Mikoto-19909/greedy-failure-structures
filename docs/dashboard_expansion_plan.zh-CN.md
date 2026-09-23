@@ -100,11 +100,10 @@ Benchmark 已接入统一队列，配置管理和专题原图分析已扩展。�
 - `/workbench`：实验库、比较、R1/R1c 轨迹、保存分析与研究输出。
 - `/research`：R2–R4 专题、反例/猜想表单、持久运行中心。
 
-本机独立工作树可复用既有解释器：
+在主检出根目录中使用该目录已有的解释器：
 
 ```powershell
-Set-Location 'D:\test area\greedy-failure\wt-dashboard-workbench'
-& '..\wt-fast-verification\.venv\Scripts\python.exe' run_project.py dashboard
+.\.venv\Scripts\python.exe run_project.py dashboard
 ```
 
 **专题研究。** 页面按专题列出已有 CSV/JSON 和历史验证记录；表格完整扫描计数、预览前 200 行，下载保留完整原文。R3 主摘要以原图为统计单位，端点数单列；R4 的 G/U 作为近似比下界，不能把未认证直接称为失效。界面保留原 CSV 列名；JSON 中超出 JavaScript 精确整数范围的种子和候选计数以十进制字符串展示，下载原文件不变。

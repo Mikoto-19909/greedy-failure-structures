@@ -35,11 +35,10 @@ python run_project.py dashboard
 ```
 
 打开终端给出的本地地址，点击“研究工作台”，或访问同一地址的 `/workbench`。
-本机独立实施工作树可以复用已有解释器：
+在主检出根目录中，可以直接使用该目录已有的解释器：
 
 ```powershell
-Set-Location 'D:\test area\greedy-failure\wt-dashboard-workbench'
-& '..\wt-fast-verification\.venv\Scripts\python.exe' run_project.py dashboard
+.\.venv\Scripts\python.exe run_project.py dashboard
 ```
 
 1. 在实验库选择 `experiments/core_rq/overlap_pilot_v1` 和 `experiments/r1_prefix_exchange_v1`。搜索时保留选择，页面刷新后恢复本次浏览器会话的选择。
@@ -64,17 +63,16 @@ python run_project.py replay --instance '实际下载路径/greedy-case.json'
 - 2,005 行回归数据中，仅最后一行失效：它正确进入筛选明细，统计分母仍是 2,005。缺失参考不会被计成零损失，大整数种子保持原值。
 - 本地 R1c 的 6,000 条兼容记录可读取；抽查一例轨迹可展示。这不是重新执行或重新验证 R1c 正式实验。
 
-复验浏览器时沿用项目既有 Playwright 设置：
+复验浏览器时，当前 Node.js 环境须能加载 Playwright；从主检出根目录运行：
 
 ```powershell
-$env:NODE_PATH = 'C:\Users\梁道\AppData\Local\npm-cache\_npx\e41f203b7505f1fb\node_modules'
-$env:DASHBOARD_PYTHON = 'D:\test area\greedy-failure\wt-fast-verification\.venv\Scripts\python.exe'
+$env:DASHBOARD_PYTHON = (Resolve-Path '.venv/Scripts/python.exe').Path
 $env:DASHBOARD_BROWSER_CHANNEL = 'chrome'
 node tests/workbench_browser.cjs
 node tests/dashboard_browser.cjs
 ```
 
-缓存和解释器路径是本机设置，其他机器需换成已有安装。浏览器测试在独立临时目录复制已有数据，并只为既有回归运行小型测试实验；不覆盖正式结果。
+浏览器及 Node.js 依赖使用各机器已有安装。浏览器测试在独立临时目录复制已有数据，并只为既有回归运行小型测试实验；不覆盖正式结果。
 
 本地检查记录为 `output/verification/workbench-check.log`、`output/playwright/workbench-browser-checks.json` 与 `output/playwright/browser-checks.json`；截图同在 `output/playwright/`。这些忽略的输出未随源码发布。
 

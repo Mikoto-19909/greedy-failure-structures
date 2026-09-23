@@ -3,6 +3,8 @@
 Use this index to distinguish the current research checkpoint from runnable
 examples, method checks, and broader exploratory workflows.
 
+本次[分支整合与剩余工作](branch_integration_status.zh-CN.md)记录主检出的成果范围、未完成事项和本地材料位置。
+
 The current development phase ends with the R2 failure-reporting fix;
 see the [closeout scope and maintenance status](development_closeout.zh-CN.md).
 Research results and existing tools remain available. New experiments, features

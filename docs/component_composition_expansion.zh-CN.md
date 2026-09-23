@@ -73,7 +73,7 @@ content, media_type, filename = render_snapshot(snapshot, "csv")
 - [比较摘要](../results/component_composition_expansion/comparison.md)、[CSV](../results/component_composition_expansion/comparison.csv)、[SVG](../results/component_composition_expansion/comparison.svg)、[JSON](../results/component_composition_expansion/comparison.json)。
 - [实际组合结果](../results/component_composition_expansion/demo-result.json)、[回放兼容结果](../results/component_composition_expansion/replay-parity.json)、[比较兼容日志](../results/component_composition_expansion/comparison-parity.log)、[日常检查日志](../results/component_composition_expansion/check.log)。
 
-这些文件保留在当前工作树，不随 Git 文档自动发布。相邻 `wt-fast-verification/.venv` 提供已有依赖，未修改共享环境。
+这些文件于 2026-09-23 迁入主检出的同名目录，不随 Git 文档自动发布。历史验收使用当时相邻的 `wt-fast-verification/.venv`，未修改共享环境；现在从主检出的已配置环境运行以下命令。
 
 ```console
 python -m unittest discover -s tests -p test_component_expansion.py -v
