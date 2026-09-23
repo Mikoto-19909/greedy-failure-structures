@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>实验设计 · 第二版</title>
+  <style>
+    :root{--paper:#f5f4f0;--surface:#fff;--ink:#203a38;--muted:#63736d;--line:#d6ddd6;--accent:#17685c;--soft:#edf4ed;--gold:#f3c774;--error:#923c26}
+    *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.65 "Segoe UI","Microsoft YaHei",sans-serif}button,input,select{font:inherit;color:inherit}
+    button,a,input,select{touch-action:manipulation}button{cursor:pointer;border:1px solid var(--line);border-radius:6px;padding:9px 15px;background:#fff}button:hover:not(:disabled){border-color:var(--accent)}
+    button:disabled{opacity:.45;cursor:default}.primary{color:#fff;background:var(--accent);border-color:var(--accent)}a{color:var(--accent);text-underline-offset:4px}:focus-visible{outline:3px solid #ad7623;outline-offset:3px}
+    input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:16px;height:16px;vertical-align:middle;margin:0 7px 0 0}input[type=text],select{border:1px solid var(--line);border-radius:5px;padding:8px 10px;background:#fff;max-width:100%}
+    [hidden]{display:none!important}h1,h2,h3,p{margin:0}h1{font-size:27px;line-height:1.4}h2{font-size:23px;line-height:1.45}h3{font-size:16px}small,.muted{color:var(--muted)}small{font-size:12px}
+    .frame{max-width:1380px;margin:auto;padding:0 28px}.top{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:25px 0}.eyebrow{font-size:12px;letter-spacing:1.6px;color:var(--accent);margin-bottom:5px}.top-links{display:flex;gap:18px;font-size:13px}
+    .notice{border-block:1px solid var(--line);padding:10px 0;font-size:12px;color:var(--muted)}.notice strong{color:var(--ink)}.layout{display:grid;grid-template-columns:168px minmax(0,1fr) 226px;gap:22px;align-items:start;padding:25px 0 32px}
+    nav{display:grid;gap:5px;position:sticky;top:20px}nav button{text-align:left;background:transparent;border-color:transparent;font-size:14px;padding:12px 10px}nav button[aria-current=step]{background:var(--soft);border-color:#b9cdc0;color:var(--accent);font-weight:600}nav small{display:block;font-weight:400;margin:3px 0 0 24px}.nav-note{font-size:12px;padding:15px 10px;color:var(--muted)}
+    .stage{background:var(--surface);border:1px solid var(--line);padding:26px;min-width:0}.badge{display:inline-block;font-size:12px;background:var(--soft);color:var(--accent);border-radius:4px;padding:3px 8px;margin-bottom:10px}.lede{font-size:14px;color:var(--muted);margin:8px 0 20px}
+    .choices{display:grid;gap:12px}.choice{border:1px solid var(--line);border-radius:6px;padding:18px;cursor:pointer}.choice:has(input:checked){border-color:var(--accent);background:var(--soft)}.choice strong{font-size:16px}.choice p{margin:8px 0 0 26px;font-size:13px;color:var(--muted)}.choice small{display:block;margin:10px 0 0 26px;color:var(--accent)}
+    .actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:23px;padding-top:20px;border-top:1px solid var(--line)}.section{border-top:1px solid var(--line);margin-top:22px;padding-top:18px}.section h3{margin-bottom:10px}.inline{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .mini-label{font-size:12px;color:var(--muted);margin-bottom:6px}.intro-figure{margin:20px 0 0;border-top:1px solid var(--line);padding-top:18px}.intro-figure figcaption{font-size:12px;color:var(--muted);margin-top:8px}
+    .sample-toolbar{display:flex;justify-content:space-between;gap:14px;align-items:center;margin:18px 0 14px}.sample-toolbar label{font-size:13px}.slots{display:flex;gap:5px;align-items:center}.slot{width:25px;height:25px;border:1px solid var(--line);border-radius:4px;text-align:center;font-size:12px;line-height:23px}.slot.on{background:var(--accent);border-color:var(--accent);color:#fff}
+    .tabs{display:flex;border-bottom:1px solid var(--line);gap:4px;margin-top:16px}.tabs button{border:0;border-bottom:3px solid transparent;border-radius:0;padding:11px 14px;background:transparent;font-size:14px}.tabs button[aria-selected=true]{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}.tabs button:focus-visible{outline-offset:-3px}
+    .visual{margin-top:18px}.visual-heading{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:6px}.visual-heading small{font-size:12px}.matrix{max-width:550px;margin:12px auto 0}.matrix svg{display:block;width:100%;height:auto}.matrix text{font-family:"Segoe UI","Microsoft YaHei",sans-serif}.matrix .member{fill:#d5e1d8}.matrix .absent{fill:#fff;stroke:#e2e6df}.matrix .selected{fill:var(--accent)}.matrix .fresh{fill:var(--gold)}.matrix .shared{fill:var(--soft);stroke:#8db2a1;stroke-dasharray:3 2}.matrix .uncovered{fill:#fff;stroke:#9ca99f;stroke-dasharray:3 2}.matrix .covered{fill:var(--accent)}
+    .legend{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin:6px 0}.legend i{display:inline-block;width:11px;height:11px;margin-right:5px;vertical-align:middle;border:1px solid var(--line)}.legend .member{background:#d5e1d8}.legend .chosen{background:var(--accent);border-color:var(--accent)}.legend .fresh{background:var(--gold);border-color:#cca454}.legend .empty{border:1px dashed #8c9d90}
+    .insight{font-size:14px;padding:13px 15px;background:var(--soft);margin-top:14px;border-left:3px solid var(--accent)}.insight strong{font-weight:600}.prompt{font-size:13px;color:var(--muted);margin:10px 0}.walk-controls{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.walk-controls button{font-size:13px;padding:8px 11px}.gains{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.gain{font-size:12px;border:1px solid var(--line);padding:5px 9px;border-radius:4px}.gain.best{border-color:var(--accent);color:var(--accent)}
+    .compare-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:16px}.result{min-width:0;border-top:2px solid var(--line);padding-top:12px}.result.reference{border-top-color:var(--accent)}.score{font-size:30px;line-height:1.4;font-variant-numeric:tabular-nums;margin:6px 0}.score small{font-size:13px}.result .selection{font-size:13px}.result .missing{font-size:12px;color:var(--muted)}.result .matrix{margin-top:8px}.result-proof{font-size:12px;color:var(--muted);margin-top:10px}
+    .change-box{background:#fcf7e9;border:1px solid #e4d4af;padding:12px 15px;margin-top:18px}.change-box p{font-size:13px}.change-scores{display:flex;gap:20px;flex-wrap:wrap;margin:8px 0 2px}.change-scores span{font-size:13px}.change-scores b{font-size:18px;font-variant-numeric:tabular-nums}.link-button{border:0;background:transparent;color:var(--accent);text-decoration:underline;text-underline-offset:3px;padding:4px 0;font-size:13px}
+    details{font-size:13px;margin-top:18px}summary{cursor:pointer;color:var(--accent);font-weight:600}.settings{border-top:1px solid var(--line);padding-top:18px}.settings-body{padding-top:16px}.field{display:grid;gap:6px;margin-bottom:15px;font-size:13px;font-weight:600}.field input{width:100%;min-width:0;font-weight:400}.field small{font-weight:400}.algorithm-options{display:flex;gap:16px;flex-wrap:wrap;margin:10px 0 14px;font-size:13px}.group-row{display:grid;grid-template-columns:minmax(100px,1fr) minmax(130px,1fr) auto auto;gap:7px;margin:9px 0}.group-row input,.group-row select{min-width:0;width:100%;font-size:12px}.group-row button{font-size:12px;padding:7px 9px}.compact{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.compact button{font-size:12px;padding:6px 10px}
+    aside{position:sticky;top:24px;min-width:0}.summary{border-top:3px solid var(--accent);padding-top:16px}.summary h3{font-size:15px}.facts{font-size:13px;margin:12px 0 0}.facts dt{font-size:12px;color:var(--muted);margin-top:14px}.facts dd{margin:3px 0 0;overflow-wrap:anywhere}.side-section{border-top:1px solid var(--line);padding-top:16px;margin-top:20px;font-size:13px}.side-section h3{font-size:14px;margin-bottom:8px}.side-section ul{padding-left:18px;margin:0}.side-section li{margin:6px 0}.side-section p{color:var(--muted)}
+    .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:18px 0}.stats div{border-top:1px solid var(--line);padding-top:12px}.stats strong{display:block;font-size:28px;font-weight:500;font-variant-numeric:tabular-nums}.stats small{display:block}.change-list{list-style:none;padding:0;margin:12px 0}.change-list li{display:flex;justify-content:space-between;gap:16px;border-bottom:1px solid var(--line);padding:10px 0;font-size:13px}.change-list li span:last-child{color:var(--accent);text-align:right;overflow-wrap:anywhere}
+    .handoff{border:1px solid var(--line);padding:18px;margin-top:20px}.handoff p{font-size:13px;margin:8px 0}.status{color:var(--accent);font-size:13px;margin-top:16px}.error{border:1px solid #d4ad9d;background:#fff7f2;color:var(--error);padding:12px 14px;margin-top:18px;font-size:13px}.review-note{font-size:12px;color:var(--muted);margin-top:12px}
+    .design-notes{border-top:1px solid var(--line);padding:18px 0;margin-top:0}.design-notes p{color:var(--muted);font-size:13px;margin:10px 0}.design-notes button{font-size:12px;padding:6px 10px}.design-links{display:flex;gap:18px;flex-wrap:wrap;font-size:13px}footer{display:flex;justify-content:space-between;gap:14px;padding:18px 0 25px;color:var(--muted);font-size:12px;border-top:1px solid var(--line)}
+    @media(max-width:1100px){.layout{grid-template-columns:155px minmax(0,1fr)}aside{grid-column:2;position:static}.summary{display:grid;grid-template-columns:1fr 2fr;gap:20px}.facts{margin:0}.facts dt:first-child{margin-top:0}.side-section{display:inline-block;vertical-align:top;width:48%;padding-right:20px}.stage{padding:22px}}
+    @media(max-width:680px){.frame{padding:0 15px}.top{align-items:flex-start;flex-direction:column;padding:18px 0;gap:12px}h1{font-size:23px}.top-links{font-size:12px}h2{font-size:21px}.layout{display:block;padding-top:16px}nav{grid-template-columns:1fr 1fr;position:static;margin-bottom:16px}nav button{font-size:12px;padding:10px}nav small,.nav-note{display:none}.stage{padding:19px 14px}.choice{padding:15px}.choice strong{font-size:14px}.sample-toolbar{align-items:flex-start;flex-direction:column}.tabs button{flex:1;padding:10px 4px;font-size:12px}.visual-heading{align-items:flex-start;flex-direction:column;gap:3px}.compare-grid{grid-template-columns:1fr;gap:20px}.result .matrix{max-width:400px}.group-row{grid-template-columns:1fr 1fr}.group-row input{grid-column:1/-1}.group-row select{grid-column:1/-1}.actions button{flex:1}.stats{gap:8px}.stats strong{font-size:25px}.stats small{font-size:11px}.change-list li{display:block}.change-list li span{display:block}.change-list li span:last-child{text-align:left}.summary{display:block}.facts{margin-top:14px}aside{margin-top:22px}.side-section{display:block;width:100%;padding-right:0}.walk-controls button{flex:1;white-space:nowrap}.legend{justify-content:flex-start;gap:8px}.notice{font-size:11px}footer{flex-direction:column}}
+  </style>
+</head>
+<body>
+<div class="frame">
+  <header class="top"><div><p class="eyebrow">实验设计 · 第二版</p><h1>先看懂一次比较，再设计自己的实验</h1></div><div class="top-links"><a href="visual_experiment_designer_v2.zh-CN.md">设计说明</a><a href="visual_experiment_designer_v1.html">对照第一版</a></div></header>
+  <p class="notice"><strong>离线设计演示</strong> · 教学图按固定案例计算；保存与提交仅演示状态，不会创建真实实验。</p>
+  <div class="layout">
+    <nav aria-label="实验设计步骤">
+      <button data-stage="0" aria-current="step">01　选择起点<small>先说清比较的问题</small></button>
+      <button data-stage="1" disabled>02　编辑方案<small>看一次，再改一处</small></button>
+      <button data-stage="2" disabled>03　检查并保存<small>核对改动与规模</small></button>
+      <button data-stage="3" disabled>04　到运行中心<small>由你提交计算</small></button>
+      <p class="nav-note">可以直接编辑方案，也可以先跟着示例看一遍。</p>
+    </nav>
+    <main class="stage">
+      <section data-panel="0">
+        <span class="badge">从一个具体问题开始</span><h2 tabindex="-1">这次想弄清楚什么？</h2><p class="lede">先用一份小数据观察算法。之后复制这个起点，试着改一个条件。</p>
+        <div class="choices">
+          <label class="choice"><input type="radio" name="question" value="compare" checked><strong>同样选 2 个集合，哪种方法覆盖更多？</strong><p>比较贪心和穷举，看看它们选了什么、漏了什么。</p><small>先看选择过程，再并列看结果。</small></label>
+          <label class="choice"><input type="radio" name="question" value="budget"><strong>多一个选择名额，覆盖量会怎样变化？</strong><p>从最多选 1 个开始，只改变名额，保留同一份数据。</p><small>先观察，再改一处，再看前后变化。</small></label>
+        </div>
+        <figure class="intro-figure"><h3>同一个元素可以出现在多个集合里</h3><div id="intro-matrix" class="matrix"></div><figcaption>每行一个集合，每列一个元素；有圆点的小格表示包含关系。例子来自项目已有教学案例。</figcaption></figure>
+        <div class="actions"><button id="start" class="primary">复制示例，开始探索</button></div>
+      </section>
+      <section data-panel="1" hidden>
+        <span class="badge">先看一次 · 再改一处</span><h2 tabindex="-1" id="edit-title">同一份数据，比较不同的选择</h2><p class="lede" id="sample-description"></p>
+        <div class="inline" id="active-group-control" hidden><label for="active-group">当前查看的数据组</label><select id="active-group"></select></div>
+        <div class="sample-toolbar"><label for="budget">最多选择 <select id="budget"><option value="1">1 个集合</option><option value="2" selected>2 个集合</option><option value="3">3 个集合</option></select></label><div class="slots" id="slots" aria-label="选择名额"></div></div>
+        <p class="prompt" id="try-prompt">先看一遍，再把名额从 2 改成 3。集合内容保持相同。</p>
+        <div class="tabs" role="tablist" aria-label="学习这个例子">
+          <button id="tab-data" role="tab" data-view="data" aria-controls="view-data" aria-selected="true">① 看数据</button>
+          <button id="tab-walk" role="tab" data-view="walk" aria-controls="view-walk" aria-selected="false" tabindex="-1">② 跟着选</button>
+          <button id="tab-result" role="tab" data-view="result" aria-controls="view-result" aria-selected="false" tabindex="-1">③ 看比较</button>
+        </div>
+        <div id="view-data" class="visual" role="tabpanel" aria-labelledby="tab-data">
+          <div class="visual-heading"><h3>先找出集合之间的重叠</h3><small id="data-caption"></small></div><div id="data-matrix" class="matrix"></div>
+          <div class="legend"><span><i class="member"></i>包含这个元素</span><span><i class="empty"></i>虚线列头：出现在多个集合</span></div>
+          <p class="insight" id="structure-note"></p><p class="prompt">观察同一列中出现多个圆点的位置。它们会影响后续选择还能新增多少覆盖。</p>
+          <button class="link-button" id="go-walk">接着看算法怎样选择 →</button>
+        </div>
+        <div id="view-walk" class="visual" role="tabpanel" aria-labelledby="tab-walk" hidden>
+          <div class="visual-heading"><h3 id="walk-heading">贪心每一步怎样选？</h3><small id="step-count"></small></div><div id="walk-matrix" class="matrix"></div>
+          <div class="legend"><span><i class="chosen"></i>✓ 已选集合</span><span><i class="fresh"></i>＋ 本步新增覆盖</span><span><i class="empty"></i>－ 尚未覆盖</span></div>
+          <div class="walk-controls"><button id="previous">上一步</button><button id="next" class="primary">下一步</button><button id="play">自动播放</button><button id="reset-walk">重置</button></div>
+          <p class="insight" id="step-note" role="status" aria-live="polite"></p><div id="candidate-gains" class="gains"></div><p class="prompt" id="next-reason"></p>
+          <button class="link-button" id="go-result">把这条路径与其他算法比较 →</button>
+        </div>
+        <div id="view-result" class="visual" role="tabpanel" aria-labelledby="tab-result" hidden>
+          <div class="visual-heading"><h3>保持数据相同，看选择与覆盖的差别</h3><small id="comparison-caption"></small></div><div id="comparison" class="compare-grid"></div><div class="legend"><span><i class="chosen"></i>✓ 已选集合与已覆盖元素</span><span><i class="empty"></i>－ 遗漏元素</span></div><p id="comparison-note" class="insight"></p><p id="proof-note" class="result-proof"></p>
+        </div>
+        <div id="change-preview" class="change-box" hidden><h3>只对照选择名额的变化</h3><p id="change-setting"></p><div id="change-scores" class="change-scores"></div><p id="change-observation"></p><button id="undo-budget" class="link-button">恢复改动前的名额</button></div>
+        <details class="settings" id="settings"><summary>更多方案设置：名称、数据组、算法和重复次数</summary><div class="settings-body">
+          <label class="field">这次实验的名称<input type="text" id="name" maxlength="120"></label>
+          <h3>比较哪些算法？</h3><div class="algorithm-options"><label><input type="checkbox" name="algorithm" value="greedy" checked>贪心</label><label><input type="checkbox" name="algorithm" value="brute_force" checked>穷举参考</label><label><input type="checkbox" name="algorithm" value="lazy_greedy">惰性贪心</label></div>
+          <p class="prompt">贪心（Greedy）每步选择新增覆盖最多的集合。穷举（Brute force）检查所有候选组合。惰性贪心（Lazy greedy）缓存部分收益计算；这里展示它的选择，不比较耗时。</p>
+          <div class="section"><h3>数据组与教学预览</h3><p class="prompt">数据组（Case）是一套数据生成规则。草图用固定案例展示每组的预览；正式实验再接入生成器。</p><div id="group-editors"></div><div class="compact"><button id="add-group">添加一组</button><button id="undo-group" hidden>撤销删除</button></div></div>
+          <label class="field">正式实验的每组重复次数<input type="text" inputmode="numeric" id="repetitions" value="3"><small>表示按一套规则生成多少份数据。此处只演示计划计数，不会把固定案例当成多个独立样本。</small></label>
+          <p class="prompt">随机种子（Random seed）控制随机数据生成。固定教学案例没有随机抽样；正式方案沿用模板中的种子。</p>
+        </div></details>
+        <div class="actions"><button id="to-review" class="primary">检查这份方案</button></div>
+      </section>
+      <section data-panel="2" hidden>
+        <span class="badge">核对改动，再保存</span><h2 tabindex="-1">这次改了什么，将运行什么？</h2><p class="lede">先对照复制时的起点，再确认计划规模。</p>
+        <h3>相对起点的改动</h3><ul id="review-changes" class="change-list"></ul>
+        <div class="section"><h3>计划规模 · 演示</h3><div id="unchecked" class="insight">内容已修改，需要重新检查。</div><div id="checked" hidden><div class="stats"><div><strong id="group-count"></strong><small>数据组</small></div><div><strong id="instance-count"></strong><small>计划生成的实例</small></div><div><strong id="run-count"></strong><small>计划算法运行次数</small></div></div><p id="plan-equation" class="prompt"></p><p class="review-note">实例（Instance）是一份具体的集合数据。两个算法处理同一个实例，仍然只有一份数据。</p><p id="review-reference" class="insight"></p></div></div>
+        <p class="review-note">这里检查演示输入，不评估研究设计是否合理。正式计划规模由现有实验服务计算。</p>
+        <div class="actions"><button id="back-edit">返回修改</button><button id="check">重新检查</button><button id="save" class="primary" disabled>保存方案（演示）</button></div>
+      </section>
+      <section data-panel="3" hidden>
+        <span class="badge">保存和运行是两个动作</span><h2 tabindex="-1">方案已保存，还没有开始计算</h2><p id="saved-name" class="lede"></p><p>进入运行中心会预选这份方案。点击提交后才建立任务。</p>
+        <div class="actions"><button id="edit-again">继续编辑</button><button id="handoff" class="primary">到运行中心（演示）</button></div>
+        <div id="queue" class="handoff" hidden><h3>提交前确认</h3><p id="queue-selection"></p><p>任务使用提交时的方案副本。之后的编辑不会改变这份副本。</p><button id="submit" class="primary">提交运行（演示）</button><p id="queue-status" role="status" class="status"></p></div>
+        <div id="task-record" class="handoff" hidden><h3>最近一次示意任务</h3><p id="task-description"></p><small>这是提交状态演示，没有创建真实任务或实验结果。</small></div>
+      </section>
+      <p id="error" class="error" role="alert" tabindex="-1" hidden></p><p id="message" class="status" role="status" aria-live="polite"></p>
+    </main>
+    <aside><div class="summary"><h3>当前方案</h3><dl class="facts"><dt>比较的问题</dt><dd id="side-name">先选择一个起点</dd><dt>数据与算法</dt><dd id="side-scope">一份小例子</dd><dt>状态</dt><dd id="side-state">尚未开始</dd></dl></div><div class="side-section"><h3>这次改动</h3><ul id="side-changes"><li>从一个已配好的例子开始。</li></ul></div><div class="side-section"><h3>下一步看什么</h3><p id="side-help">先想清楚要比较的方法和结果。</p></div></aside>
+  </div>
+  <details class="design-notes" id="design-notes"><summary>设计说明、案例来源与异常状态演示</summary><p>第二版保留四步流程，增加任务表述、结构图、逐步选择和同数据比较。图中的集合与元素来自项目既有教学案例，未开展新的随机实验。</p><p>集合编号 A、B、C 对应原索引 0、1、2；元素展示编号为原编号加 1。新增覆盖相同时按字母顺序选择。选择名额的改动只用于教学探索。</p><p>固定例子在浏览器中实际计算。保存和提交仅保留当前页面状态；刷新不会恢复方案。正式实验的生成规则、保存服务和运行中心仍按设计说明接入。</p><div class="design-links"><a href="../analysis/r1_prefix_exchange_design.json">案例原始定义</a><a href="visual_experiment_designer_v2.zh-CN.md">第二版设计与验证</a><a href="visual_experiment_designer_v1.html">第一版草图</a></div><p>可尝试清空算法或填写小数重复次数，检查输入能否保留并修正。</p><button id="conflict" aria-pressed="false">模拟保存冲突：关闭</button></details>
+  <footer><span>教学图帮助理解单个例子，不估计算法的一般失效率。</span><span>布局沿用第一版 · 数据、过程和结果共用一种图形</span></footer>
+</div>
+<script id="demo-cases" type="application/json">{"source":"analysis/r1_prefix_exchange_design.json","cases":[{"name":"unique_bait","title":"眼前最大的诱饵","universe_size":9,"k":2,"sets":[[0,1,2,3,4],[0,1,5,6],[2,3,7,8]]},{"name":"avoidable_tie","title":"平局里的岔路","universe_size":8,"k":2,"sets":[[0,1,2,3],[0,1,4,5],[2,3,6,7]]}]}</script>
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const CASES = JSON.parse($('demo-cases').textContent).cases;
+  const LABELS = {greedy:'贪心',brute_force:'穷举参考',lazy_greedy:'惰性贪心'};
+  const state = {stage:0,view:'data',started:false,name:'',groups:[],active:0,algorithms:['greedy','brute_force'],repetitions:'3',original:null,revision:0,checked:null,saved:null,session:0,nextId:1,cursor:0,timer:null,change:null,removed:null,queueOpen:false,lastTask:null,conflict:false};
+  const clone = value => JSON.parse(JSON.stringify(value));
+  const esc = value => String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const letter = index => String.fromCharCode(65+index);
+  const letters = indices => indices.length ? indices.map(letter).join(' + ') : '尚未选择';
+  const numbers = elements => elements.length ? elements.map(i=>i+1).join('、') : '无';
+  const range = length => Array.from({length},(_,i)=>i);
+  const currentGroup = () => state.groups.find(g=>g.id===state.active) || state.groups[0];
+  const sample = group => CASES.find(c=>c.name===group.fixture);
+  const plan = () => ({name:state.name.trim(),groups:clone(state.groups),algorithms:[...state.algorithms],repetitions:state.repetitions});
+  const savedCurrent = () => state.saved && state.saved.revision===state.revision && state.saved.session===state.session;
+  const union = (data,ids) => new Set(ids.flatMap(i=>data.sets[i]));
+  const sorted = values => [...values].sort((a,b)=>a-b);
+
+  function trace(data,k,lazy=false) {
+    const states=[{ids:[],covered:[],fresh:[],chosen:null}];
+    const ids=[];let covered=new Set();
+    const queue=data.sets.map((set,i)=>({i,bound:set.length}));
+    for(let t=0;t<k;t++) {
+      let chosen=-1;
+      if(lazy) {
+        for(;;) {
+          queue.sort((a,b)=>b.bound-a.bound||a.i-b.i);
+          const item=queue.shift();
+          item.bound=data.sets[item.i].filter(e=>!covered.has(e)).length;
+          const top=queue[0];
+          if(!top || item.bound>top.bound || (item.bound===top.bound && item.i<top.i)){chosen=item.i;break;}
+          queue.push(item);
+        }
+      } else {
+        let best=-1;
+        data.sets.forEach((set,i)=>{if(ids.includes(i))return;const gain=set.filter(e=>!covered.has(e)).length;if(gain>best){best=gain;chosen=i;}});
+      }
+      const fresh=data.sets[chosen].filter(e=>!covered.has(e));ids.push(chosen);covered=union(data,ids);
+      states.push({ids:[...ids],covered:sorted(covered),fresh,chosen});
+    }
+    return states;
+  }
+  function exact(data,k) {
+    let best=null,count=0;
+    function visit(start,ids) {
+      if(ids.length===k){const covered=sorted(union(data,ids));count++;if(!best||covered.length>best.covered.length)best={ids:[...ids],covered};return;}
+      for(let i=start;i<=data.sets.length-(k-ids.length);i++)visit(i+1,[...ids,i]);
+    }
+    visit(0,[]);return {...best,count};
+  }
+  function solution(data,k,algorithm) {return algorithm==='brute_force'?exact(data,k):trace(data,k,algorithm==='lazy_greedy').at(-1);}
+  function matrix(data,k,{ids=[],covered=[],fresh=[],structure=false}={}) {
+    const members=new Set(ids),cov=new Set(covered),added=new Set(fresh);
+    const frequencies=range(data.universe_size).map(e=>data.sets.filter(set=>set.includes(e)).length);
+    const x0=44,cell=32,row=34,top=34,bottom=top+data.sets.length*row+14,width=x0+data.universe_size*cell+6,height=bottom+39;
+    let body=`<title>${esc(data.title)}：集合与元素的关系</title><desc>每行一个集合，每列一个元素。${data.sets.map((set,i)=>`${letter(i)}包含${numbers(set)}`).join('。')}。已选${letters(ids)}，覆盖${covered.length}个。</desc>`;
+    frequencies.forEach((count,e)=>{const x=x0+e*cell;if(structure&&count>1)body+=`<rect class="shared" x="${x}" y="5" width="27" height="23" rx="3"/>`;body+=`<text x="${x+13.5}" y="22" text-anchor="middle" font-size="14" fill="#203a38">${e+1}</text>`;});
+    data.sets.forEach((set,i)=>{
+      const y=top+i*row;
+      body+=`<text x="4" y="${y+19}" font-size="13" font-weight="${members.has(i)?700:500}" fill="#203a38">${letter(i)}${members.has(i)?' ✓':''}</text>`;
+      range(data.universe_size).forEach(e=>{
+        const has=set.includes(e),isSelected=members.has(i)&&has,isFresh=isSelected&&added.has(e),x=x0+e*cell;
+        const cls=isFresh?'fresh':isSelected?'selected':has?'member':'absent';
+        body+=`<rect class="${cls}" x="${x}" y="${y}" width="27" height="27" rx="3"/>`;
+        if(has)body+=`<text x="${x+13.5}" y="${y+19}" text-anchor="middle" font-size="18" fill="${isSelected&&!isFresh?'#fff':'#203a38'}">${isFresh?'+':'•'}</text>`;
+      });
+    });
+    body+=`<text x="1" y="${bottom+18}" font-size="11" fill="#63736d">${structure?'出现':'覆盖'}</text>`;
+    range(data.universe_size).forEach(e=>{
+      const x=x0+e*cell,active=structure?frequencies[e]>1:cov.has(e);
+      const cls=structure?(active?'member':'absent'):added.has(e)?'fresh':active?'covered':'uncovered';
+      body+=`<rect class="${cls}" x="${x}" y="${bottom}" width="27" height="27" rx="3"/><text x="${x+13.5}" y="${bottom+19}" text-anchor="middle" font-size="14" fill="${!structure&&active&&!added.has(e)?'#fff':'#203a38'}">${structure?frequencies[e]:added.has(e)?'+':active?'✓':'−'}</text>`;
+    });
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(data.title)}，${structure?'集合包含关系':`已选${letters(ids)}，覆盖${covered.length}个元素`}，最多选${k}个集合" data-case="${data.name}" data-k="${k}" data-selected="${ids.join(',')}" data-covered="${covered.join(',')}" data-fresh="${fresh.join(',')}">${body}</svg>`;
+  }
+  function clearError(){ $('error').hidden=true;$('error').textContent=''; }
+  function fail(message){stop();$('error').textContent=message;$('error').hidden=false;$('message').textContent='';$('error').focus();}
+  function stop(){if(state.timer!==null)clearInterval(state.timer);state.timer=null;$('play').textContent='自动播放';}
+  function changes() {
+    if(!state.original)return [];
+    const before=state.original,after=plan(),rows=[];
+    if(before.name!==after.name)rows.push(['实验名称',after.name||'待填写']);
+    if(before.repetitions!==after.repetitions)rows.push(['每组重复次数',`${before.repetitions} → ${after.repetitions}`]);
+    if(JSON.stringify(before.algorithms)!==JSON.stringify(after.algorithms))rows.push(['比较算法',after.algorithms.map(a=>LABELS[a]).join('、')||'尚未选择']);
+    after.groups.forEach(group=>{
+      const old=before.groups.find(g=>g.id===group.id);
+      if(!old){rows.push(['新增数据组',group.name]);return;}
+      if(old.name!==group.name)rows.push(['数据组名称',`${old.name} → ${group.name}`]);
+      if(old.fixture!==group.fixture)rows.push([group.name+'的教学预览',`${sample(old).title} → ${sample(group).title}`]);
+      if(old.k!==group.k)rows.push([group.name+'的选择名额',`${old.k} → ${group.k}`]);
+    });
+    before.groups.filter(old=>!after.groups.some(g=>g.id===old.id)).forEach(old=>rows.push(['移除数据组',old.name]));
+    return rows;
+  }
+  function renderShell() {
+    document.querySelectorAll('[data-panel]').forEach(el=>el.hidden=Number(el.dataset.panel)!==state.stage);
+    document.querySelectorAll('[data-stage]').forEach(el=>{const n=Number(el.dataset.stage);el.disabled=n>0&&!state.started||n===3&&!savedCurrent();if(n===state.stage)el.setAttribute('aria-current','step');else el.removeAttribute('aria-current');});
+    $('side-name').textContent=state.started?(state.name.trim()||'尚未命名'):'先选择一个起点';
+    $('side-scope').textContent=state.started?`${state.groups.length} 个数据组 · ${state.algorithms.length} 种算法`:'一份小例子';
+    $('side-state').textContent=!state.started?'尚未开始':savedCurrent()?'已保存（演示）':state.checked===state.revision?'检查通过，待保存':'当前内容待检查';
+    const rows=changes();$('side-changes').innerHTML=rows.length?rows.map(([key,value])=>`<li>${esc(key)}：${esc(value)}</li>`).join(''):`<li>${state.started?'沿用复制时的设置。':'从一个已配好的例子开始。'}</li>`;
+    const help=state.stage===0?'先选一个你关心的问题。两个入口都可以继续修改。':state.stage===1?(state.view==='data'?'看看哪些元素同时出现在多个集合中，再跟着算法选一次。':state.view==='walk'?'注意每一步新增的元素。重复覆盖不计为新增。':'保持同一份数据，比较选中的集合和遗漏的元素。试着只改变选择名额。'):state.stage===2?'核对这次改动与计划规模。保存后还需要单独提交运行。':'进入运行中心只会预选方案。提交时才建立任务。';
+    $('side-help').textContent=help;$('save').disabled=state.checked!==state.revision;
+  }
+  function renderReview() {
+    const rows=changes();$('review-changes').innerHTML=rows.length?rows.map(([key,value])=>`<li><span>${esc(key)}</span><span>${esc(value)}</span></li>`).join(''):'<li><span>沿用起点</span><span>尚未改动参数</span></li>';
+    const valid=state.checked===state.revision;$('checked').hidden=!valid;$('unchecked').hidden=valid;
+    if(valid){const count=state.groups.length*Number(state.repetitions);$('group-count').textContent=state.groups.length;$('instance-count').textContent=count;$('run-count').textContent=count*state.algorithms.length;$('plan-equation').textContent=`${state.groups.length} 组 × ${state.repetitions} 次重复 = ${count} 个计划实例；每个实例运行 ${state.algorithms.length} 种算法。`;$('review-reference').textContent=state.algorithms.includes('brute_force')?'包含穷举参考。正式运行后，只有已证明最优的实例才使用最优值计算差距。':'未选择最优值参考。可以比较覆盖量和运行时间，但不能据此计算相对最优值的差距。';}
+  }
+  function renderGroups() {
+    $('group-editors').innerHTML=state.groups.map(g=>`<div class="group-row" data-group="${g.id}"><input type="text" data-group-name="${g.id}" aria-label="数据组名称" value="${esc(g.name)}"><select data-fixture="${g.id}" aria-label="${esc(g.name)}的教学预览">${CASES.map(c=>`<option value="${c.name}" ${c.name===g.fixture?'selected':''}>${c.title}</option>`).join('')}</select><button data-copy="${g.id}">复制</button><button data-remove="${g.id}">删除</button></div>`).join('');
+    $('undo-group').hidden=!state.removed;renderGroupSelector();
+  }
+  function renderGroupSelector(){const group=currentGroup();if(group)state.active=group.id;$('active-group-control').hidden=state.groups.length<2;$('active-group').innerHTML=state.groups.map(g=>`<option value="${g.id}" ${g.id===state.active?'selected':''}>${esc(g.name)}</option>`).join('');}
+  function renderExplore() {
+    const group=currentGroup(),heuristic=state.algorithms.includes('greedy')?'greedy':state.algorithms.includes('lazy_greedy')?'lazy_greedy':null;
+    if(state.view==='walk'&&!heuristic)state.view='data';
+    const noData=!group;$('budget').disabled=noData;
+    document.querySelectorAll('[data-view]').forEach(el=>{const selected=el.dataset.view===state.view;el.disabled=noData||el.dataset.view==='walk'&&!heuristic;el.setAttribute('aria-selected',String(selected));el.tabIndex=selected?0:-1;});
+    ['data','walk','result'].forEach(view=>$('view-'+view).hidden=noData||view!==state.view);
+    if(noData){$('sample-description').textContent='还没有数据组。展开更多设置，添加一组后继续。';$('slots').textContent='';$('change-preview').hidden=true;$('settings').open=true;return;}
+    const data=sample(group),k=group.k;$('budget').value=String(k);
+    $('sample-description').textContent=`${group.name} · 固定教学案例「${data.title}」 · ${data.sets.length} 个集合、${data.universe_size} 个元素。`;
+    $('slots').innerHTML=`<small>选择名额</small>`+range(data.sets.length).map(i=>`<span class="slot ${i<k?'on':''}" aria-label="第${i+1}个名额${i<k?'可用':'不可用'}">${i<k?i+1:'−'}</span>`).join('');
+    $('try-prompt').textContent=k<3?`试着把名额从 ${k} 改成 ${k+1}。集合内容保持相同，观察覆盖量怎样变化。`:'名额已增加到 3。可以改回 2，比较减少一个名额后的结果。';
+    $('data-caption').textContent='原始数据保持不变';$('data-matrix').innerHTML=matrix(data,k,{structure:true});
+    const shared=range(data.universe_size).filter(e=>data.sets.filter(set=>set.includes(e)).length>1);
+    $('structure-note').textContent=`元素 ${numbers(shared)} 同时出现在多个集合中。底行数字表示它出现在几个集合中。`;
+    $('go-walk').disabled=!heuristic;$('go-walk').textContent=heuristic?'接着看算法怎样选择 →':'选择贪心或惰性贪心后，可以逐步查看';
+    const steps=trace(data,k,heuristic==='lazy_greedy');state.cursor=Math.min(state.cursor,k);const frame=steps[state.cursor];
+    $('walk-heading').textContent=(heuristic==='lazy_greedy'?'惰性贪心':'贪心')+'每一步怎样选？';$('step-count').textContent=`第 ${state.cursor} / ${k} 步`;
+    $('walk-matrix').innerHTML=matrix(data,k,frame);$('previous').disabled=state.cursor===0;$('next').disabled=state.cursor===k;$('play').disabled=state.cursor===k;
+    $('step-note').textContent=state.cursor===0?'还没有选择集合。点击下一步，看看谁能新增最多覆盖。':`第 ${state.cursor} 步选择 ${letter(frame.chosen)}：新增 ${frame.fresh.length} 个元素（${numbers(frame.fresh)}），累计覆盖 ${frame.covered.length} 个。`;
+    const covered=new Set(frame.covered),remaining=data.sets.map((set,i)=>({i,gain:set.filter(e=>!covered.has(e)).length})).filter(item=>!frame.ids.includes(item.i));
+    const max=remaining.length?Math.max(...remaining.map(item=>item.gain)):0;
+    $('candidate-gains').innerHTML=state.cursor===k?'':remaining.map(item=>`<span class="gain ${item.gain===max?'best':''}">${letter(item.i)} 下一步可新增 ${item.gain}</span>`).join('');
+    const tied=remaining.filter(item=>item.gain===max).map(item=>item.i);
+    $('next-reason').textContent=state.cursor===k?'名额用完。现在可以与参考解比较，看看遗漏的元素是否相同。':tied.length>1?`${letters(tied)} 的新增覆盖相同。按 A、B、C 的顺序选择 ${letter(tied[0])}。`:`下一步 ${letter(tied[0])} 能新增 ${max} 个元素，最多。`;
+    renderComparison(data,k);renderChange(group,data);renderShell();
+  }
+  function renderComparison(data,k) {
+    $('comparison-caption').textContent=`同一份数据 · 都最多选 ${k} 个集合`;
+    $('comparison').innerHTML=state.algorithms.map(algorithm=>{
+      const answer=solution(data,k,algorithm),missing=range(data.universe_size).filter(e=>!answer.covered.includes(e));
+      return `<article class="result ${algorithm==='brute_force'?'reference':''}" data-algorithm="${algorithm}" data-coverage="${answer.covered.length}"><h3>${LABELS[algorithm]}</h3><p class="score">${answer.covered.length}<small> / ${data.universe_size} 个元素</small></p><p class="selection">选择：${letters(answer.ids)}</p><div class="matrix">${matrix(data,k,{ids:answer.ids,covered:answer.covered})}</div><p class="missing">遗漏元素：${numbers(missing)}</p></article>`;
+    }).join('');
+    const reference=state.algorithms.includes('brute_force')?exact(data,k):null;
+    const heuristic=state.algorithms.includes('greedy')?'greedy':state.algorithms.includes('lazy_greedy')?'lazy_greedy':null;
+    if(!state.algorithms.length)$('comparison-note').textContent='还没有选择算法。展开更多方案设置，至少选择一种算法。';
+    else if(!reference)$('comparison-note').textContent='没有最优值参考，当前只比较覆盖量。惰性贪心沿用相同的平局处理规则。';
+    else if(!heuristic)$('comparison-note').textContent=`当前只查看穷举参考：在这个例子中最多覆盖 ${reference.covered.length} 个元素。可以再选择一种算法进行比较。`;
+    else {const answer=solution(data,k,heuristic),gap=reference.covered.length-answer.covered.length;$('comparison-note').textContent=gap?`在这个例子中，${LABELS[heuristic]}覆盖 ${answer.covered.length} 个，最优参考覆盖 ${reference.covered.length} 个，相差 ${gap} 个。对照底行，看看双方分别漏掉了什么。`:`在这个例子中，两种方法都覆盖 ${answer.covered.length} 个元素。数量相同不代表所有数据上都相同。`;}
+    $('proof-note').textContent=reference?`本例已枚举全部 ${reference.count} 种恰好选 ${k} 个集合的组合，最优值为 ${reference.covered.length}。增加集合不会减少覆盖，因此这也给出最多选 ${k} 个的最优值。`:'教学图不提供未经证明的最优值或推测耗时。';
+  }
+  function renderChange(group,data) {
+    const change=state.change,show=change&&change.group===group.id&&change.fixture===group.fixture&&change.after===group.k;$('change-preview').hidden=!show;if(!show)return;
+    $('change-setting').textContent=`选择名额 ${change.before} → ${change.after}；集合内容没有变化。`;
+    $('change-scores').innerHTML=state.algorithms.map(a=>`<span>${LABELS[a]}覆盖 <b>${solution(data,change.before,a).covered.length} → ${solution(data,change.after,a).covered.length}</b></span>`).join('');
+    $('change-observation').textContent='这是同一个固定例子的前后变化，不是增加了独立样本。';
+  }
+  function renderQueue() {
+    if(!state.saved)return;const saved=state.saved.plan;
+    $('saved-name').textContent=saved.name;$('queue').hidden=!state.queueOpen;$('queue-selection').textContent=`预选方案：${saved.name} · ${saved.groups.length} 组 · ${saved.algorithms.length} 种算法`;
+    const submitted=state.lastTask&&state.lastTask.token===state.saved.token;$('submit').disabled=!!submitted;$('queue-status').textContent=submitted?'已提交（演示），未启动真实计算。':'尚未提交。';
+    $('task-record').hidden=!state.lastTask;
+    if(state.lastTask){const p=state.lastTask.plan;$('task-description').textContent=`提交时的方案：${p.name}；${p.groups.map(g=>`${g.name}最多选${g.k}个`).join('、')}；算法：${p.algorithms.map(a=>LABELS[a]).join('、')}。`;}
+  }
+  function render(){renderShell();if(state.started){renderExplore();renderReview();renderQueue();}}
+  function goStage(stage){stop();state.stage=stage;clearError();$('message').textContent='';render();document.querySelector(`[data-panel="${stage}"] h2`).focus();}
+  function setView(view){if(!currentGroup())return;if(view==='walk'&&!state.algorithms.some(a=>a==='greedy'||a==='lazy_greedy'))return;stop();state.view=view;renderExplore();}
+  function dirty({reset=false}={}){stop();state.revision++;state.checked=null;state.queueOpen=false;if(reset)state.cursor=0;clearError();$('message').textContent='方案已修改，需要重新检查后保存。';render();}
+  function syncInputs(){$('name').value=state.name;$('repetitions').value=state.repetitions;document.querySelectorAll('[name=algorithm]').forEach(el=>el.checked=state.algorithms.includes(el.value));renderGroups();}
+  function begin() {
+    if(state.started&&changes().length&&!savedCurrent()&&!confirm('重新开始会丢弃当前演示中的未保存修改。继续吗？'))return;
+    stop();const budgetQuestion=document.querySelector('[name=question]:checked').value==='budget';state.session++;state.nextId=2;state.groups=[{id:1,name:'示例组',fixture:'unique_bait',k:budgetQuestion?1:2}];state.active=1;state.name=budgetQuestion?'改变选择名额，观察覆盖量':'同一份数据上的贪心与穷举比较';state.algorithms=['greedy','brute_force'];state.repetitions='3';state.started=true;state.view='data';state.cursor=0;state.revision=0;state.checked=null;state.saved=null;state.change=null;state.removed=null;state.queueOpen=false;state.lastTask=null;state.original=clone(plan());$('settings').open=false;syncInputs();goStage(1);
+  }
+  function check() {
+    clearError();state.checked=null;const reps=Number(state.repetitions);let error='';
+    if(!state.name.trim())error='请填写实验名称。';
+    else if(!state.groups.length)error='至少保留一个数据组。返回编辑后可以添加。';
+    else if(state.groups.some(g=>!g.name.trim()))error='请为每个数据组填写名称。';
+    else if(new Set(state.groups.map(g=>g.name.trim())).size!==state.groups.length)error='数据组名称重复，请为每组使用不同名称。';
+    else if(!/^\d+$/.test(state.repetitions)||!Number.isSafeInteger(reps)||reps<1)error='重复次数需要填写正整数，例如 3。';
+    else if(!state.algorithms.length)error='至少选择一种算法。';
+    else if(!Number.isSafeInteger(reps*state.groups.length*state.algorithms.length))error='计划次数超出草图可以精确显示的范围，请减少重复次数。';
+    if(error){renderReview();renderShell();fail(error);$('side-state').textContent='检查失败，输入已保留';return false;}
+    state.checked=state.revision;renderReview();renderShell();$('message').textContent='演示输入检查通过，可以保存。';return true;
+  }
+  function moveStep(amount){const group=currentGroup();if(!group)return;state.cursor=Math.max(0,Math.min(group.k,state.cursor+amount));if(state.cursor===group.k)stop();renderExplore();}
+  $('intro-matrix').innerHTML=matrix(CASES[0],2,{structure:true});
+  document.querySelectorAll('[name=question]').forEach(el=>el.addEventListener('change',()=>{$('intro-matrix').innerHTML=matrix(CASES[0],el.value==='budget'?1:2,{structure:true});}));
+  document.querySelectorAll('[data-stage]').forEach(el=>el.addEventListener('click',()=>goStage(Number(el.dataset.stage))));
+  document.querySelectorAll('[data-view]').forEach(el=>{el.addEventListener('click',()=>setView(el.dataset.view));el.addEventListener('keydown',event=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;event.preventDefault();const tabs=[...document.querySelectorAll('[data-view]')].filter(t=>!t.disabled),index=tabs.indexOf(el);const next=event.key==='Home'?0:event.key==='End'?tabs.length-1:(index+(event.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;setView(tabs[next].dataset.view);tabs[next].focus();});});
+  $('start').addEventListener('click',begin);$('go-walk').addEventListener('click',()=>setView('walk'));$('go-result').addEventListener('click',()=>setView('result'));
+  $('previous').addEventListener('click',()=>{stop();moveStep(-1);});$('next').addEventListener('click',()=>{stop();moveStep(1);});$('reset-walk').addEventListener('click',()=>{stop();state.cursor=0;renderExplore();});
+  $('play').addEventListener('click',()=>{if(state.timer!==null){stop();return;}$('play').textContent='暂停';state.timer=setInterval(()=>moveStep(1),900);});
+  $('budget').addEventListener('change',()=>{const group=currentGroup(),next=Number($('budget').value);if(group.k===next)return;state.change={group:group.id,fixture:group.fixture,before:group.k,after:next};group.k=next;dirty({reset:true});});
+  $('undo-budget').addEventListener('click',()=>{const group=currentGroup();if(!state.change||state.change.group!==group.id)return;group.k=state.change.before;state.change=null;dirty({reset:true});});
+  $('active-group').addEventListener('change',()=>{stop();state.active=Number($('active-group').value);state.cursor=0;renderExplore();});
+  $('name').addEventListener('input',()=>{state.name=$('name').value;dirty();});$('repetitions').addEventListener('input',()=>{state.repetitions=$('repetitions').value;dirty();});
+  document.querySelectorAll('[name=algorithm]').forEach(el=>el.addEventListener('change',()=>{state.algorithms=[...document.querySelectorAll('[name=algorithm]:checked')].map(input=>input.value);dirty({reset:true});}));
+  $('group-editors').addEventListener('input',event=>{const id=event.target.dataset.groupName;if(!id)return;state.groups.find(g=>g.id===Number(id)).name=event.target.value;renderGroupSelector();dirty();});
+  $('group-editors').addEventListener('change',event=>{const id=event.target.dataset.fixture;if(!id)return;const group=state.groups.find(g=>g.id===Number(id));group.fixture=event.target.value;state.active=group.id;state.change=null;renderGroupSelector();dirty({reset:true});});
+  $('group-editors').addEventListener('click',event=>{
+    const button=event.target.closest('button');if(!button)return;
+    if(button.dataset.copy){const group=state.groups.find(g=>g.id===Number(button.dataset.copy)),id=state.nextId++;state.groups.push({...group,id,name:group.name+' 副本 '+id});}
+    if(button.dataset.remove){const index=state.groups.findIndex(g=>g.id===Number(button.dataset.remove));state.removed={group:clone(state.groups[index]),index};state.groups.splice(index,1);if(state.removed.group.id===state.active)state.active=state.groups[0]?.id||0;state.change=null;}
+    renderGroups();dirty({reset:true});
+  });
+  $('add-group').addEventListener('click',()=>{const id=state.nextId++;state.groups.push({id,name:'示例组 '+id,fixture:'unique_bait',k:2});state.active=id;renderGroups();dirty({reset:true});});
+  $('undo-group').addEventListener('click',()=>{if(!state.removed)return;state.groups.splice(state.removed.index,0,state.removed.group);state.active=state.removed.group.id;state.removed=null;renderGroups();dirty({reset:true});});
+  $('to-review').addEventListener('click',()=>{goStage(2);check();});$('check').addEventListener('click',check);$('back-edit').addEventListener('click',()=>goStage(1));
+  $('save').addEventListener('click',()=>{if(state.checked!==state.revision)return;if(state.conflict){fail('保存冲突（演示）：其他位置已经修改了方案。当前输入仍然保留。关闭底部的冲突演示后可以重试。');$('side-state').textContent='保存冲突，输入已保留';return;}state.saved={plan:clone(plan()),revision:state.revision,session:state.session,token:state.session+'/'+state.revision};goStage(3);$('message').textContent='已保存到当前演示状态，尚未写入配置文件。';});
+  $('edit-again').addEventListener('click',()=>goStage(1));$('handoff').addEventListener('click',()=>{if(!savedCurrent())return;state.queueOpen=true;renderQueue();});
+  $('submit').addEventListener('click',()=>{if(!savedCurrent()||!state.queueOpen)return;state.lastTask={plan:clone(state.saved.plan),token:state.saved.token};renderQueue();});
+  $('conflict').addEventListener('click',()=>{state.conflict=!state.conflict;$('conflict').textContent='模拟保存冲突：'+(state.conflict?'开启':'关闭');$('conflict').setAttribute('aria-pressed',String(state.conflict));clearError();renderShell();});
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)stop();});
+  window.addEventListener('beforeunload',event=>{if(state.started&&changes().length&&!savedCurrent()){event.preventDefault();event.returnValue='';}});
+  renderShell();
+})();
+</script>
+</body>
+</html>
