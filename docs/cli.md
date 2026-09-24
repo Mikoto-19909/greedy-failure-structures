@@ -254,7 +254,16 @@ deleting the underlying files. Initial indexing adds time and disk usage; see
 the module record for measured tradeoffs and recovery behavior.
 
 `/experiments` supports local configuration copies, editing, validation and parameter
-diffs; the workbench adds persistent research themes, tags and notes. Templates stay
+diffs. The single-case starter opens a schema-v3 uniform case with Greedy, Lazy Greedy
+and Brute Force. Eligible configurations have one uniform case, no sweep and only
+those algorithms; numeric fields and existing algorithm enable flags can be edited
+in the form. Other configurations retain the full JSON editor with an explanation.
+Disabling an algorithm preserves its entry, ID and options. Apply and check form edits
+before saving; text edits also require a successful check of the current draft.
+Only saved content can be handed to the run center. Its normalized configuration
+identity must still match before submission; whitespace changes alone do not conflict.
+The separate file-revision check for concurrent saves remains byte-sensitive.
+The workbench adds persistent research themes, tags and notes. Templates stay
 read-only and stale edits conflict. The study analysis page adds saved budget curves,
 distributions, valid graph-level pairs, actual graph/endpoint inspection and replay
 exports using explicitly registered local origins. See the

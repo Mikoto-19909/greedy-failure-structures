@@ -12,7 +12,7 @@
   </header>
   <main class="wb-shell config-shell">
     <div class="wb-heading"><div><p class="section-kicker">复制 → 编辑 → 预览 → 运行</p><h2>为下一个实验准备配置</h2>
-      <p class="lede">从已有模板创建本地副本，核对参数与规模，再到运行中心排队。</p></div></div>
+      <p class="lede">从已有模板创建本地副本，核对参数与规模，再到运行中心排队。<a href="/experiments?config=visual_starter.json">从单组入门模板开始 →</a></p></div></div>
     <p id="config-message" role="status" aria-live="polite"></p>
     <div class="wb-toolbar"><label>已有模板与本地配置<select id="config-select" class="field"><option value="">正在读取…</option></select></label>
       <button id="config-refresh" class="button button-secondary">刷新列表</button><button id="config-reload" class="button button-secondary" disabled>重新载入所选配置</button>
@@ -22,9 +22,22 @@
       <div class="config-fields"><label>实验名称<input id="config-name" class="field" /></label>
         <label>基础种子<input id="config-seed" class="field" inputmode="numeric" /></label>
         <label>重复次数<input id="config-repetitions" class="field" inputmode="numeric" /></label></div>
-      <div class="wb-actions"><button id="config-apply" class="button button-secondary">应用基本参数并预览</button></div>
+      <section aria-labelledby="guided-title"><h3 id="guided-title">设计一组均匀随机数据</h3>
+        <p id="guided-reason" class="help-text"></p>
+        <fieldset id="guided-fields" disabled><legend>数据与比较算法</legend>
+          <div class="config-fields guided-numbers">
+            <label>元素数<input id="guided-universe_size" class="field" inputmode="numeric" /></label>
+            <label>集合数<input id="guided-set_count" class="field" inputmode="numeric" /></label>
+            <label>选择名额<input id="guided-k" class="field" inputmode="numeric" /></label>
+            <label>元素进入集合的概率<input id="guided-density" class="field" inputmode="decimal" /></label>
+          </div>
+          <div id="guided-algorithms" class="guided-algorithms"></div>
+          <p class="help-text">取消勾选仅停用该算法，原选项会保留。穷举完成精确求解时可提供最优值参考。</p>
+        </fieldset>
+      </section>
+      <div class="wb-actions"><button id="config-apply" class="button button-secondary">应用表单并检查</button></div>
       <label class="config-json-label">完整配置 JSON<textarea id="config-text" class="field" spellcheck="false" rows="22"></textarea></label>
-      <p class="help-text">案例、算法与扫描参数可在 JSON 中修改；种子以整数文本保留。基本参数修改后请先点击“应用基本参数并预览”。</p>
+      <p class="help-text">版本 3 的单组均匀随机配置可使用上方表单。其他配置继续在 JSON 中编辑，种子以整数文本保留。修改后先检查，再保存；保存成功后才能交给运行中心。</p>
       <div class="wb-actions"><button id="config-preview" class="button button-secondary">校验 JSON 与比较差异</button>
         <button id="config-save" class="button button-primary">保存本地配置</button><a id="config-run" href="/research" class="button button-secondary">到运行中心排队 ↗</a></div>
       <section class="config-preview" aria-labelledby="config-plan-title"><h3 id="config-plan-title">规模预览</h3><p id="config-plan"></p><p id="config-warnings" class="help-text"></p></section>

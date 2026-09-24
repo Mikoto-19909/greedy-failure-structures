@@ -79,6 +79,72 @@ class ExperimentsTests(unittest.TestCase):
             "name": "nested", "base_seed": "18446744073709551615", "repetitions": "1"}})
         self.assertEqual(json.loads(preview["text"])["algorithms"][1]["algorithm_seeds"], [18446744073709551613])
 
+    def test_guided_fields_and_enabled_round_trip_preserve_identity_options_and_template(self) -> None:
+        data = {**self.config, "algorithms": [{"name": "greedy", "id": "baseline"},
+            {"name": "brute_force", "id": "exact_reference", "options": {"max_set_count": 16}}]}
+        original = json.dumps(data).encode()
+        self.template.write_bytes(original)
+        copied = self.copy()
+        self.assertTrue(copied["guided"]["supported"])
+        fields = {"universe_size": "12", "set_count": "6", "k": "3", "density": "0.3"}
+        changed = self.service.preview_config({"text": copied["text"], "base_path": copied["path"],
+            "guided": {"case": fields, "enabled": [True, False]}})
+        parsed = json.loads(changed["text"])
+        self.assertEqual(parsed["schema_version"], 3)
+        self.assertEqual(parsed["base_seed"], data["base_seed"])
+        self.assertEqual(parsed["algorithms"][1], {**data["algorithms"][1], "enabled": False})
+        self.assertEqual([item["id"] for item in parsed["algorithms"]], ["baseline", "exact_reference"])
+        self.assertEqual(parsed["cases"][0], {**data["cases"][0], "universe_size": 12, "set_count": 6, "k": 3, "density": 0.3})
+        self.assertEqual(changed["plan"]["algorithm_run_count"], 2)
+        restored = self.service.preview_config({"text": changed["text"],
+            "guided": {"case": copied["guided"]["case"], "enabled": [True, True]}})
+        self.assertEqual(restored["config_hash"], copied["config_hash"])
+        self.service.save_config({"path": copied["path"], "text": changed["text"], "expected_revision": copied["revision"]})
+        self.assertEqual(self.template.read_bytes(), original)
+
+    def test_guided_rejects_unsupported_raw_configs_without_converting_them(self) -> None:
+        variants = [
+            {**self.config, "schema_version": 1, "algorithms": ["greedy"]},
+            {**self.config, "schema_version": 2},
+            {**self.config, "cases": [self.config["cases"][0], {**self.config["cases"][0], "name": "other"}]},
+            {**self.config, "cases": [{**{key: value for key, value in self.config["cases"][0].items() if key != "k"}, "sweep": {"k": [1, 2]}}]},
+            {**self.config, "algorithms": [{"name": "branch_and_bound"}]},
+        ]
+        fields = {"case": {"universe_size": "10", "set_count": "5", "k": "2", "density": "0.4"}, "enabled": [True]}
+        for data in variants:
+            text = json.dumps(data)
+            with self.subTest(config=data):
+                preview = self.service.preview_config({"text": text})
+                self.assertFalse(preview["guided"]["supported"])
+                self.assertTrue(preview["guided"]["reason"])
+                self.assertEqual(preview["text"], text)
+                with self.assertRaises(ValueError):
+                    self.service.preview_config({"text": text, "guided": fields})
+
+    def test_guided_invalid_inputs_and_all_disabled_never_write_config(self) -> None:
+        copied = self.copy()
+        valid = {"case": copied["guided"]["case"], "enabled": [True]}
+        invalid = [None, {}, {**valid, "extra": 1}, {**valid, "enabled": []},
+                   {**valid, "enabled": [1]}, {**valid, "enabled": [False]}]
+        for key, value in (("k", "6"), ("set_count", "0"), ("density", "NaN"),
+                           ("density", "1.1"), ("universe_size", "12.0")):
+            invalid.append({**valid, "case": {**valid["case"], key: value}})
+        for fields in invalid:
+            with self.subTest(guided=fields), self.assertRaises(ValueError):
+                self.service.preview_config({"text": copied["text"], "guided": fields})
+        self.assertEqual((self.root / "configs" / copied["path"]).read_bytes(), self.template_bytes)
+        self.assertEqual(self.template.read_bytes(), self.template_bytes)
+        with self.assertRaisesRegex(ValueError, "basics requires"):
+            self.service.preview_config({"text": copied["text"], "basics": {"name": "bad"}})
+
+    def test_visual_starter_has_the_bounded_acceptance_plan(self) -> None:
+        data = json.loads((ROOT / "configs/visual_starter.json").read_text(encoding="utf-8"))
+        data["repetitions"] = 3
+        preview = self.service.preview_config({"text": json.dumps(data)})
+        self.assertTrue(preview["guided"]["supported"])
+        self.assertEqual(preview["plan"]["instance_count"], 3)
+        self.assertEqual(preview["plan"]["algorithm_run_count"], 9)
+
     def test_saved_copy_conflict_and_external_template_change_are_rejected(self) -> None:
         copied = self.copy()
         other = ExperimentsService(self.root)

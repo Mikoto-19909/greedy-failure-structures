@@ -97,7 +97,7 @@ revisits existing instance families. Both retain schema v1 for compatibility.
 
 ## Experiment guidance
 
-- [可视化实验设计器第二版](visual_experiment_designer_v2.zh-CN.md)：问题入口、教学引导和三种联动视图；附[可点击草图](visual_experiment_designer_v2.html)。下一阶段单组接入范围已设计，尚未实施。
+- [可视化实验设计器第二版](visual_experiment_designer_v2.zh-CN.md)：保留[教学草图](visual_experiment_designer_v2.html)；单组表单与真实配置、运行交接已在 `/experiments` 接入，附实施与验收范围。
 - [首版设计与接入约定](visual_experiment_designer_v1.zh-CN.md)：编辑范围、保存规则与实施验收，保留供对照。
 - [`greedy_failure_research_plan.zh-CN.md`](greedy_failure_research_plan.zh-CN.md):
   literature-grounded next steps, staged experiments, and verification criteria

@@ -57,6 +57,56 @@ def _revision(raw: bytes) -> str:
     return hashlib.sha256(raw).hexdigest()
 
 
+_GUIDED_FIELDS = ("universe_size", "set_count", "k", "density")
+_GUIDED_ALGORITHMS = {"greedy", "lazy_greedy", "brute_force"}
+
+
+def _guided_form(data: dict[str, Any]) -> dict[str, Any]:
+    """Describe raw supported fields without normalizing legacy configurations."""
+    reason = ""
+    cases, algorithms = data.get("cases"), data.get("algorithms")
+    if type(data.get("schema_version")) is not int or data["schema_version"] != 3:
+        reason = "当前格式不是版本 3，请使用完整配置编辑。"
+    elif not isinstance(cases, list) or len(cases) != 1 or not isinstance(cases[0], dict):
+        reason = "表单只支持一个数据组，请使用完整配置编辑。"
+    elif cases[0].get("family") != "uniform" or "sweep" in cases[0]:
+        reason = "表单只支持无参数扫描的均匀随机数据组，请使用完整配置编辑。"
+    elif any(key not in cases[0] for key in _GUIDED_FIELDS):
+        reason = "数据组缺少表单字段，请使用完整配置编辑。"
+    elif not isinstance(algorithms, list) or not algorithms or any(
+        not isinstance(item, dict) or not isinstance(item.get("name"), str)
+        or item["name"] not in _GUIDED_ALGORITHMS for item in algorithms
+    ):
+        reason = "表单只支持贪心、惰性贪心和穷举，请使用完整配置编辑。"
+    if reason:
+        return {"supported": False, "reason": reason}
+    return {"supported": True, "reason": "单组均匀随机配置；其他字段保持原值。",
+            "case": {key: str(data["cases"][0][key]) for key in _GUIDED_FIELDS},
+            "algorithms": [{"name": item["name"], "id": item.get("id", item["name"]),
+                            "enabled": item.get("enabled", True)} for item in data["algorithms"]]}
+
+
+def _apply_guided(data: dict[str, Any], guided: Any) -> None:
+    description = _guided_form(data)
+    if not description["supported"]:
+        raise ValueError(description["reason"])
+    if not isinstance(guided, dict) or set(guided) != {"case", "enabled"}:
+        raise ValueError("guided requires case and enabled")
+    values, enabled = guided["case"], guided["enabled"]
+    if not isinstance(values, dict) or set(values) != set(_GUIDED_FIELDS):
+        raise ValueError("guided case requires universe_size, set_count, k and density")
+    if (not isinstance(enabled, list) or len(enabled) != len(data["algorithms"])
+            or any(type(value) is not bool for value in enabled)):
+        raise ValueError("guided enabled requires one boolean per existing algorithm")
+    for key in _GUIDED_FIELDS:
+        value = _text(values[key], key, 100)
+        if key != "density" and not re.fullmatch(r"-?\d+", value, flags=re.ASCII):
+            raise ValueError(f"{key} must be integer text")
+        data["cases"][0][key] = float(value) if key == "density" else int(value)
+    for item, flag in zip(data["algorithms"], enabled):
+        item["enabled"] = flag
+
+
 def _changes(before: Any, after: Any, path: str = "$") -> list[dict[str, str]]:
     result: list[dict[str, str]] = []
     if isinstance(before, dict) and isinstance(after, dict):
@@ -204,6 +254,7 @@ class ExperimentsService:
             config = parse_config(data)
             plan = plan_benchmark(config)
         return {"text": text, "valid": True, "config_hash": config_hash(config),
+                "guided": _guided_form(data),
                 "basics": {"name": config.name, "base_seed": str(config.base_seed), "repetitions": str(config.repetitions)},
                 "warnings": [str(item.message) for item in captured],
                 "plan": {"name": plan.name, "case_ids": list(plan.case_ids), "repetitions": plan.repetitions,
@@ -223,8 +274,8 @@ class ExperimentsService:
         return result
 
     def preview_config(self, payload: dict[str, Any]) -> dict[str, Any]:
-        if not set(payload) <= {"text", "base_path", "basics"} or "text" not in payload:
-            raise ValueError("preview requires text, with optional base_path and basics")
+        if not set(payload) <= {"text", "base_path", "basics", "guided"} or "text" not in payload:
+            raise ValueError("preview requires text, with optional base_path, basics and guided")
         text = _text(payload["text"], "config text", 1_000_000)
         data = _json(text)
         if "basics" in payload:
@@ -237,6 +288,9 @@ class ExperimentsService:
                 if not re.fullmatch(r"-?\d+", value, flags=re.ASCII):
                     raise ValueError(f"{key} must be integer text")
                 data[key] = int(value)
+        if "guided" in payload:
+            _apply_guided(data, payload["guided"])
+        if "basics" in payload or "guided" in payload:
             text = json.dumps(data, indent=2, ensure_ascii=False, allow_nan=False) + "\n"
         result = self._preview(text)
         result["changes"] = []

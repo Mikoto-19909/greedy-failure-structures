@@ -4,6 +4,7 @@ const $ = (id) => document.getElementById(id);
 const state = { view: 'studies', epoch: 0, studies: [], jobs: [], archivedJobs: {}, archiveAvailable: false, source: null, job: null,
   studyRequest: 0, libraryRequest: 0, jobRequest: 0, jobsRequest: 0, resultKey: null, timer: null,
   benchmarkConfig: null, benchmarkRequest: 0 };
+const handoff = new URLSearchParams(location.search);
 const labels = {
   r2: 'R2 · 预算扫描', r3: 'R3 · 配对差异', r4: 'R4 · 上界校准', r4_dual: 'R4 · 上界对照',
   mine: '反例挖掘', refute: '猜想检验', queued: '排队中', running: '运行中', completed: '计算完成',
@@ -342,6 +343,9 @@ async function inspectBenchmark() {
     const data = await api('/api/config?' + new URLSearchParams({ path }));
     if (request !== state.benchmarkRequest) return;
     if (!data.valid) throw new Error(data.error || '配置不可用');
+    if (path === handoff.get('config') && handoff.has('config_hash') && data.config_hash !== handoff.get('config_hash')) {
+      throw new Error('此方案在保存交接后已变化，提交已停止。请返回配置管理重新读取、核对并交接。');
+    }
     state.benchmarkConfig = data;
     const plan = data.plan;
     $('benchmark-preview').textContent = `${plan.name} · ${plan.instance_count} 个实例 · ${plan.algorithm_run_count} 次算法计算 · ${plan.runs_by_algorithm.map((row) => `${row.algorithm}: ${row.runs}`).join('；')}${data.warnings?.length ? `。${data.warnings.join(' ')}` : ''}`;
