@@ -85,10 +85,10 @@
 验证已完成：23 个浏览器场景通过；项目检查执行 469 项测试、4 项可选跳过，mypy 检查 38 个源文件无问题。依赖环境和日志见完成记录。以下为验证入口：
 
 ```powershell
-# 在选定实施工作树运行；若使用新工作树，先确认解释器及导入指向该工作树。
-& '..\wt-fast-verification\.venv\Scripts\python.exe' -m unittest discover -s tests -p test_dashboard.py
+# 在仓库根目录运行，使用当前项目环境。
+& '.\.venv\Scripts\python.exe' -m unittest discover -s tests -p test_dashboard.py
 node --check src/maxcover/dashboard_ui/app.js
-& '..\wt-fast-verification\.venv\Scripts\python.exe' scripts/check.py
+& '.\.venv\Scripts\python.exe' scripts/check.py
 ```
 
 服务单测验证索引、输入与原文件接口；浏览器回归验证实际 DOM、交互和异步状态。日常项目检查在整体验收时完成；仅当修改检查系统时按 CONTRIBUTING 扩展到 full profile。测试结果如实记录，不能把环境失败算作通过。

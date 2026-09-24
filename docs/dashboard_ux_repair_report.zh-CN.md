@@ -34,17 +34,16 @@
 
 ## 运行与复验
 
-在修复工作树中启动即可试用。此工作树的实验结果与原工作树隔离；首次运行使用新结果名称：
+修复已整合。从仓库根目录启动即可试用；新增实验使用新的结果名称：
 
 ```powershell
-Set-Location 'D:\test area\greedy-failure\wt-dashboard-ux-repair'
-& '..\greedy-failure-structures\.venv\Scripts\python.exe' run_project.py dashboard
+& '.\.venv\Scripts\python.exe' run_project.py dashboard
 ```
 
 日常项目检查使用具备 CONTRIBUTING 所列依赖的解释器：
 
 ```powershell
-& '..\wt-fast-verification\.venv\Scripts\python.exe' scripts/check.py
+& '.\.venv\Scripts\python.exe' scripts/check.py
 node --check src/maxcover/dashboard_ui/app.js
 node --check src/maxcover/dashboard_ui/report.js
 ```
@@ -53,7 +52,7 @@ node --check src/maxcover/dashboard_ui/report.js
 
 ```powershell
 $env:NODE_PATH = 'C:\Users\梁道\AppData\Local\npm-cache\_npx\e41f203b7505f1fb\node_modules'
-$env:DASHBOARD_PYTHON = 'D:\test area\greedy-failure\greedy-failure-structures\.venv\Scripts\python.exe'
+$env:DASHBOARD_PYTHON = (Resolve-Path '.\.venv\Scripts\python.exe').Path
 $env:DASHBOARD_BROWSER_CHANNEL = 'chrome'
 $env:DASHBOARD_HEADED = '1'
 node tests/dashboard_browser.cjs

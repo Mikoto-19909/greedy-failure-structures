@@ -71,10 +71,10 @@ Benchmark 已接入统一队列，配置管理和专题原图分析已扩展。�
 - R1c 全量比较首次请求：0.448 秒 → 0.943 秒；热读：0.471 秒 → 0.172 秒。
 - 人工 CSV 共 64,517,300 字节，派生索引额外占 238,747,648 字节（约输入的 3.70 倍）；29,801,326 字节的 R1c 副本额外占 50,483,200 字节索引。
 
-这是以首次构建时间和额外磁盘换重复读取速度的结果，不是所有数据规模下的延迟承诺。可重复执行：
+这是以首次构建时间和额外磁盘换重复读取速度的结果，不是所有数据规模下的延迟承诺。从仓库根目录可重复执行：
 
 ```powershell
-& '..\wt-fast-verification\.venv\Scripts\python.exe' scripts/benchmark_dashboard_index.py --include-r1
+& '.\.venv\Scripts\python.exe' scripts/benchmark_dashboard_index.py --include-r1
 ```
 
 本轮最终性能证据在 `output/verification/index-scale/run-ognez8ia/report-20260920T101659308101.json`，先行 `report.json` 保留但不作为最终结果。复用同一批人工输入可传 `--reuse-run output/verification/index-scale/run-ognez8ia --include-r1`；脚本不覆盖既有输入或报告，记录是否已有缓存。实验库首读包含索引构建时会更慢，且“新服务对象”计时不等同于独立进程重启测量。

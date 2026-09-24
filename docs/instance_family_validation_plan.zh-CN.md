@@ -22,9 +22,9 @@
    记录、实例族、CSV、恢复及 spawn 测试，最后运行 `python scripts/check.py`。
 5. 独立审阅者检查实际 diff，并执行有效与无效输入；修正发现后记录验收结果。
 
-本机解释器为 `D:\test area\greedy-failure\wt-fast-verification\.venv\Scripts\python.exe`
-（Python 3.12.14）。执行时将本工作树的 `src` 放在 `PYTHONPATH` 首位，避免使用
-解释器所在工作树的源码。验证材料保存在忽略目录 `results/instance_family_validation/`；
+历史验收使用当时的 `wt-fast-verification/.venv`（Python 3.12.14）。
+现在从仓库根目录复查，使用当前 `.venv`，并将当前 `src` 放在 `PYTHONPATH` 首位。
+验证材料保存在忽略目录 `results/instance_family_validation/`；
 不提交全部探针观测，也不新增文档措辞或文件行数门禁。
 
 ## 当前状态
@@ -54,10 +54,10 @@
 [独立审阅结果](../results/instance_family_validation/independent_review/result.json)。这些忽略目录中的
 材料未发布；常驻回归与旧 pickle 随源码交付，不依赖该目录才能运行。
 
-在本工作树根目录复查常驻回归和默认检查：
+在仓库根目录复查常驻回归和默认检查：
 
 ```powershell
-$instancePython = 'D:\test area\greedy-failure\wt-fast-verification\.venv\Scripts\python.exe'
+$instancePython = (Resolve-Path '.\.venv\Scripts\python.exe').Path
 $env:PYTHONPATH = Join-Path (Get-Location) 'src'
 & $instancePython -B -m unittest discover -s tests -p test_instance_family_validation.py -v
 & $instancePython -B scripts/check.py

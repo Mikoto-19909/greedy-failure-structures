@@ -15,10 +15,10 @@
 第三方 PR 即使已经下载为本地分支，运行检查仍等于执行第三方代码；未经信任核对时，
 应先只读查看改动，或在另行配置的受限环境中运行整个流程。
 
-从本工具工作树运行，例如：
+从仓库根目录运行。下面以已有固定提交展示审查区间，使用时换成实际候选：
 
 ```console
-python scripts/review_local.py --repo ../greedy-failure-structures --base main --head codex/prepare-review --output ../local-review-001 --python ../wt-fast-verification/.venv/Scripts/python.exe
+python scripts/review_local.py --repo . --base ca5499c7bf0eb8a1393bda4ba373697a07679c12 --head 63b74970f8252df32125cbd8c57fba00ca1db5c8 --output ../local-review-001 --python .venv/Scripts/python.exe
 ```
 
 `--base/--head` 可换成分支或完整提交；输出目录必须全新，父目录须已存在，
@@ -26,10 +26,10 @@ python scripts/review_local.py --repo ../greedy-failure-structures --base main -
 若需要精确比较区间，使用明确基线，不要默认本地 main 已同步远端。
 也可指定 `--base origin/main`；它使用本地保存的远端跟踪引用，不会更新远端状态。
 
-本机尚未把 Python 加入 PATH 时，可用解释器绝对路径启动；例如在 PowerShell 中：
+若 Python 未加入 PATH，可在仓库根目录用项目解释器启动；PowerShell 示例：
 
 ```powershell
-& 'D:\test area\greedy-failure\wt-fast-verification\.venv\Scripts\python.exe' -B scripts/review_local.py --repo '../greedy-failure-structures' --base 'ca5499c7bf0eb8a1393bda4ba373697a07679c12' --head '63b74970f8252df32125cbd8c57fba00ca1db5c8' --output '../local-review-prepare-001' --python 'D:\test area\greedy-failure\wt-fast-verification\.venv\Scripts\python.exe'
+& '.\.venv\Scripts\python.exe' -B scripts/review_local.py --repo '.' --base 'ca5499c7bf0eb8a1393bda4ba373697a07679c12' --head '63b74970f8252df32125cbd8c57fba00ca1db5c8' --output '../local-review-prepare-001' --python '.\.venv\Scripts\python.exe'
 ```
 
 源仓库应由执行命令的账户拥有；Git 所有权错误应在正确账户下处理，不修改全局信任设置。
