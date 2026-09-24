@@ -3,12 +3,11 @@
 日常操作统一使用 `counterexamples.ps1`。它自动寻找 Python，默认给每次运行新建结果目录，
 并调用已有独立验证器。先做一遍下面的小实验，再替换数据或猜想。
 
-## 进入工作树，跑两个已有例子
+## 从仓库根目录跑两个已有例子
 
-在 PowerShell 中：
+先在仓库根目录打开 PowerShell：
 
 ```powershell
-Set-Location 'D:\test area\greedy-failure\greedy-failure-structures\.worktrees\counterexample-miner'
 .\counterexamples.ps1
 .\counterexamples.ps1 mine
 .\counterexamples.ps1 refute

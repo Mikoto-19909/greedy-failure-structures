@@ -12,6 +12,9 @@ const fixture = fs.mkdtempSync(path.join(output, 'experiments-'));
 const write = (name, data) => { const file = path.join(fixture, name); fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, data); return file; };
 const templateText = '{"schema_version":3,"name":"browser template","base_seed":18446744073709551615,"repetitions":2,"algorithms":[{"name":"greedy"}],"cases":[{"name":"small","family":"uniform","universe_size":10,"set_count":5,"k":2,"density":0.4}]}';
 const template = write('configs/template.json', templateText);
+write('configs/visual_starter.json', fs.readFileSync(path.join(root, 'configs/visual_starter.json')));
+const legacy = { ...JSON.parse(templateText), schema_version: 1, algorithms: ['greedy'] };
+write('configs/legacy.json', JSON.stringify(legacy));
 const raw = fs.readFileSync(path.join(root, 'experiments/r1_prefix_exchange_v1/paths.jsonl'));
 const r1 = write('experiments/r1/paths.jsonl', raw);
 write('results/other/paths.jsonl', raw);
@@ -34,7 +37,7 @@ let browser; const checks = []; const passed = (name) => { checks.push(name); co
   const page = await context.newPage(); const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   page.on('dialog', (dialog) => dialog.accept());
-  const idle = async (target = page) => { await target.waitForFunction(() => !document.querySelector('#config-select').disabled); };
+  const idle = async (target = page) => { await target.locator('#config-select:enabled').waitFor({ state: 'visible' }); };
   const configPage = async (target, configPath) => {
     await target.goto(url + 'experiments' + (configPath ? '?config=' + encodeURIComponent(configPath) : ''));
     await idle(target);
@@ -67,7 +70,7 @@ let browser; const checks = []; const passed = (name) => { checks.push(name); co
   passed('basic form changes show exact parameter differences, validate scale and save');
   await page.locator('#config-text').fill('{bad'); await page.locator('#config-preview').click(); await idle();
   assert.equal(await page.locator('#config-message').getAttribute('class'), 'error');
-  await page.locator('#config-save').click(); await idle();
+  assert.equal(await page.locator('#config-save').isDisabled(), true);
   assert.equal(fs.readFileSync(path.join(fixture, 'configs', copied), 'utf8'), savedText);
   await page.locator('#config-reload').click(); await idle();
   const complexText = (await page.locator('#config-text').inputValue()).replace('"density": 0.4', '"density": 0.5');
@@ -133,6 +136,135 @@ let browser; const checks = []; const passed = (name) => { checks.push(name); co
   await page.screenshot({ path: path.join(output, 'experiments-config-mobile.png'), fullPage: true });
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), true);
   assert.deepEqual(errors, []); passed('desktop and narrow layouts have no page errors or horizontal document overflow');
-  fs.writeFileSync(path.join(output, 'experiments-browser-checks.json'), JSON.stringify({ checks, fixture }, null, 2));
+  await configPage(page, 'legacy.json');
+  assert.equal(await page.locator('#guided-universe_size').isDisabled(), true);
+  assert.match(await page.locator('#guided-reason').innerText(), /版本 3/);
+  assert.equal(fs.readFileSync(path.join(fixture, 'configs/legacy.json'), 'utf8'), JSON.stringify(legacy));
+  passed('legacy configuration remains text-only without schema conversion');
+
+  await configPage(page, 'visual_starter.json');
+  await page.locator('#config-copy').click(); await idle();
+  const guidedPath = await page.locator('#config-select').inputValue();
+  const guidedFile = path.join(fixture, 'configs', guidedPath);
+  await page.locator('#config-name').fill('designer acceptance');
+  await page.locator('#config-repetitions').fill('3');
+  await page.locator('#guided-universe_size').fill('14');
+  await page.locator('#guided-set_count').fill('7');
+  await page.locator('#guided-k').fill('3');
+  await page.locator('#guided-density').fill('0.4');
+  assert.equal(await page.locator('#config-run').getAttribute('href'), null);
+  await page.locator('#config-apply').click(); await idle();
+  let edited = JSON.parse(await page.locator('#config-text').inputValue());
+  assert.deepEqual([edited.cases[0].universe_size, edited.cases[0].set_count, edited.cases[0].k, edited.cases[0].density], [14, 7, 3, .4]);
+  for (const [key, value] of Object.entries({ universe_size: '12', set_count: '6', k: '2', density: '0.3' })) await page.locator('#guided-' + key).fill(value);
+  await page.locator('#guided-algorithms input').nth(1).uncheck();
+  await page.locator('#config-apply').click(); await idle();
+  edited = JSON.parse(await page.locator('#config-text').inputValue());
+  assert.equal(edited.algorithms.length, 3); assert.equal(edited.algorithms[1].enabled, false);
+  assert.match(await page.locator('#config-plan').innerText(), /6 次算法运行/);
+  for (const checkbox of await page.locator('#guided-algorithms input').all()) await checkbox.uncheck();
+  await page.locator('#config-apply').click(); await idle();
+  assert.match(await page.locator('#config-message').innerText(), /at least one algorithm/);
+  assert.equal(await page.locator('#config-save').isDisabled(), true);
+  for (const checkbox of await page.locator('#guided-algorithms input').all()) await checkbox.check();
+  await page.locator('#guided-k').fill('7'); await page.locator('#config-apply').click(); await idle();
+  assert.equal(await page.locator('#config-save').isDisabled(), true);
+  assert.equal(await page.locator('#guided-k').inputValue(), '7');
+  await page.locator('#guided-k').fill('2'); await page.locator('#config-apply').click(); await idle();
+  passed('guided numeric edits and enabled toggles preserve entries; invalid inputs retain the draft and block saving');
+
+  let releasePreview;
+  let previewReached;
+  const reached = new Promise((resolve) => { previewReached = resolve; });
+  await page.route('**/api/experiments/config-preview', async (route) => {
+    const response = await route.fetch();
+    previewReached(); await new Promise((resolve) => { releasePreview = resolve; });
+    await route.fulfill({ response });
+  });
+  await page.locator('#guided-density').fill('0.4');
+  await page.locator('#config-apply').click(); await reached;
+  // Simulate a later draft event while an old response is outstanding.
+  await page.locator('#guided-density').evaluate((input) => { input.value = '0.3'; input.dispatchEvent(new Event('input', { bubbles: true })); });
+  releasePreview(); await idle(); await page.unroute('**/api/experiments/config-preview');
+  assert.equal(await page.locator('#guided-density').inputValue(), '0.3');
+  assert.equal(await page.locator('#config-save').isDisabled(), true);
+  await page.locator('#config-apply').click(); await idle();
+  assert.match(await page.locator('#config-plan').innerText(), /3 个实例 · 9 次算法运行/);
+  await page.locator('#config-save').click(); await idle();
+  const acceptanceText = fs.readFileSync(guidedFile, 'utf8');
+  passed('a late preview cannot restore save eligibility or overwrite a newer draft');
+
+  const beforeDisconnect = fs.readFileSync(guidedFile, 'utf8');
+  await page.locator('#guided-density').fill('0.35');
+  await page.route('**/api/experiments/config-preview', (route) => route.abort());
+  await page.locator('#config-apply').click(); await idle();
+  assert.equal(await page.locator('#guided-density').inputValue(), '0.35');
+  assert.equal(await page.locator('#config-save').isDisabled(), true);
+  assert.equal(fs.readFileSync(guidedFile, 'utf8'), beforeDisconnect);
+  await page.unroute('**/api/experiments/config-preview');
+  await page.locator('#config-reload').click(); await idle();
+  await page.locator('#guided-universe_size').focus(); await page.keyboard.press('Tab');
+  assert.equal(await page.locator('#guided-set_count').evaluate((input) => document.activeElement === input), true);
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), true);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.screenshot({ path: path.join(output, 'designer-mobile.png'), fullPage: true });
+  await page.setViewportSize({ width: 1366, height: 960 });
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.screenshot({ path: path.join(output, 'designer-desktop.png'), fullPage: true });
+  passed('connection failure retains inputs; guided controls remain usable by keyboard and at 390 pixels');
+
+  const handoffLink = await page.locator('#config-run').getAttribute('href');
+  assert.match(handoffLink, /config_hash=/);
+  const runner = await context.newPage();
+  const jobs = async () => (await (await runner.request.get(url + 'api/research/jobs')).json()).jobs;
+  fs.appendFileSync(guidedFile, '\n');
+  await runner.goto(new URL(handoffLink, url).href);
+  await runner.waitForFunction(() => !document.querySelector('#submit-benchmark').disabled);
+  assert.equal((await jobs()).length, 0);
+  const altered = JSON.parse(acceptanceText); altered.repetitions = 4;
+  fs.writeFileSync(guidedFile, JSON.stringify(altered));
+  await runner.reload();
+  await runner.waitForFunction(() => document.querySelector('#benchmark-preview').textContent.includes('保存交接后已变化'));
+  assert.equal(await runner.locator('#submit-benchmark').isDisabled(), true);
+  assert.equal((await jobs()).length, 0);
+  // The original path-only entry still preflights the current file.
+  await runner.goto(url + 'research?config=' + encodeURIComponent(guidedPath));
+  await runner.waitForFunction(() => !document.querySelector('#submit-benchmark').disabled);
+  assert.match(await runner.locator('#benchmark-preview').innerText(), /4 个实例/);
+  fs.writeFileSync(guidedFile, acceptanceText);
+  await runner.goto(new URL(handoffLink, url).href);
+  await runner.waitForFunction(() => !document.querySelector('#submit-benchmark').disabled);
+  passed('saved semantic identity gates handoff, formatting changes are allowed, and the path-only entry remains compatible');
+
+  await runner.locator('#benchmark-output').fill('designer-acceptance');
+  const submission = runner.waitForResponse((response) => response.url().endsWith('/api/research/jobs') && response.request().method() === 'POST');
+  await runner.locator('#submit-benchmark').click();
+  const accepted = await submission; assert.equal(accepted.status(), 202);
+  const job = await accepted.json();
+  // One bounded real browser job. Test sources are separate from research data.
+  let completed;
+  const deadline = Date.now() + 120000;
+  do {
+    completed = await (await runner.request.get(url + 'api/research/jobs/' + job.id)).json();
+    if (['completed', 'failed', 'cancelled', 'interrupted'].includes(completed.status)) break;
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  } while (Date.now() < deadline);
+  if (!['completed', 'failed', 'cancelled', 'interrupted'].includes(completed.status)) {
+    await runner.evaluate((id) => fetch('/api/research/jobs/' + id + '/cancel', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }), job.id);
+    throw new Error('Browser acceptance job exceeded 120 seconds');
+  }
+  assert.equal(completed.status, 'completed', JSON.stringify(completed));
+  assert.equal(completed.progress.saved_runs, 9);
+  assert.equal(completed.plan.instance_count, 3);
+  assert.equal((await jobs()).length, 1);
+  await runner.locator('#job-result').waitFor({ state: 'visible' });
+  const csv = await runner.request.get(url + 'api/research/jobs/' + job.id + '/files/raw_results.csv');
+  assert.equal(csv.status(), 200); assert.equal((await csv.text()).trim().split(/\r?\n/).length, 10);
+  await runner.screenshot({ path: path.join(output, 'designer-result.png'), fullPage: true });
+  await runner.close();
+  assert.equal(fs.readFileSync(path.join(fixture, 'configs/visual_starter.json'), 'utf8'), fs.readFileSync(path.join(root, 'configs/visual_starter.json'), 'utf8'));
+  passed('one saved configuration completes 3 instances and 9 algorithm runs with readable real results');
+  assert.deepEqual(errors, []);
+  fs.writeFileSync(path.join(output, 'experiments-browser-checks.json'), JSON.stringify({ checks, fixture, acceptanceJob: job.id, instanceCount: 3, algorithmRuns: 9 }, null, 2));
   console.log(`Completed ${checks.length} experiment organization scenarios.`);
 })().catch((error) => { console.error(error); console.error(log); process.exitCode = 1; }).finally(async () => { if (browser) await browser.close(); server.kill(); });

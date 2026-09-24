@@ -23,9 +23,8 @@ python run_project.py replay --instance results/conjecture_equal_size/counterexa
 python run_project.py replay --instance results/conjecture_equal_size/counterexample.json --algorithm brute_force
 ```
 
-Windows 若当前工作树没有虚拟环境，可以将 `python` 换成已有解释器的完整路径。
-本项目当前环境可在 PowerShell 用 `& '..\..\.venv\Scripts\python.exe'` 替换它，
-命令从 `.worktrees/counterexample-miner` 运行；仅复用解释器，输入和输出仍在当前工作树。
+以上命令从仓库根目录运行。Windows 已配置项目虚拟环境时，
+可在 PowerShell 用 `& '.\.venv\Scripts\python.exe'` 替换 `python`。
 输出目录必须不存在；失败的输入验证不会创建结果目录。
 
 示例按第 3 个候选停止，得到：
