@@ -88,8 +88,10 @@ async function loadDetail(id) {
     if(data.cases.some(c=>c.id==='dev_uniform')) $('matching-case').value='dev_uniform';
     const split=data.summary.split==='eval'?'固定比较':'开发例子';
     $('matching-source').textContent=split+' · '+data.cases.length+' 条序列 · '+runTime(id.split('/')[1]);
-    const passed=data.verification?.status==='automatic_verification_passed_user_review_pending';
-    $('matching-verification').textContent=passed?'该批次的独立核验记录：通过。':'该批次尚无通过的独立核验记录。';
+    const passed=data.verification?.recorded_status==='automatic_verification_passed_user_review_pending';
+    $('matching-verification').textContent=passed
+      ?'历史自动核验记录：通过，用户审阅未完成。当前展示文件未重新核验。'
+      :'当前展示文件未重新核验，也未找到历史通过记录。';
     const links=['metrics.csv','summary.json','traces.json','inputs.json'];
     if(data.verification) links.push('verification.json');
     $('matching-downloads').replaceChildren(...links.map(file=>{

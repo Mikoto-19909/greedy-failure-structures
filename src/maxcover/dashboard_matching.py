@@ -100,6 +100,10 @@ class OnlineMatchingService:
             rows = list(csv.DictReader(handle))
         verification_file = self._run_file(identifier, "verification.json")
         verification = self._json(verification_file) if verification_file.is_file() else None
+        if verification is not None:
+            # The saved record describes its original run, not these mutable files.
+            verification = {**verification, "recorded_status": verification.get("status"),
+                            "status": "current_artifacts_not_revalidated"}
         return {"id": identifier, "summary": summary, "rows": rows, "verification": verification,
                 "cases": [c for c in inputs["cases"] if c["split"] == summary["split"]]}
 

@@ -34,6 +34,7 @@ def main():
     started = time.process_time()
     cases = {c['id']: c for c in read(out/'inputs.json')['cases']}
     traces, summary, oracle = read(out/'traces.json'), read(out/'summary.json'), read(out/'oracle.json')
+    assert cases and traces and summary['groups'], 'empty comparison'
     with (out/'metrics.csv').open(encoding='utf-8-sig', newline='') as f:
         metrics = list(csv.DictReader(f))
     assert len(metrics) == len(traces)
@@ -63,8 +64,10 @@ def main():
         case = cases[trace['case_id']]
         ss, rr = case['servers'], [case['requests'][i] for i in case['order']]
         old, counts = [], []
+        assert len(trace['history']) == len(rr), 'incomplete trajectory'
         for step in trace['history']:
             t = len(old)+1
+            assert step['t'] == t, 'nonconsecutive stage'
             candidates = []
             for proposed in permutations(range(len(ss)), t):
                 moves = path_moves(old, proposed)

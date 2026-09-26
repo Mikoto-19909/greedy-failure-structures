@@ -60,6 +60,12 @@ const passed = name => { checks.push(name); console.log('PASS ' + name); };
   assert.equal(await page.locator('[data-topic-nav] select').inputValue(), 'online-matching');
   await page.locator('#matching-content:not([hidden])').waitFor();
   await page.locator('#matching-report-body h2').first().waitFor();
+  const detail = await (await page.request.get(url + 'api/online-matching/detail?run=' +
+    encodeURIComponent(await page.locator('#matching-run').inputValue()))).json();
+  assert.equal(detail.verification.status, 'current_artifacts_not_revalidated');
+  assert.equal(detail.verification.recorded_status, 'automatic_verification_passed_user_review_pending');
+  assert.match(await page.locator('#matching-verification').innerText(), /当前展示文件未重新核验/);
+  passed('saved verification is displayed as history without certifying the current artifacts');
   await page.getByRole('link', { name: '← 研究首页', exact: true }).click();
   await waitCards(2);
   passed('shared switcher reaches saved matching results and returns home');

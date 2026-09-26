@@ -12,6 +12,28 @@ import sys
 import time
 
 
+def verify_rounding(summary):
+    """Check the saved rounding bound independently of its report producer."""
+    assert tuple(summary['servers']) == (-4, -1, 2, 8)
+    assert tuple(summary['future_alphabet']) == tuple(range(-4, 9))
+    assert summary['horizon'] == 4
+    rounding = summary['rounding']
+    assert rounding['first_coordinate_error_at_most'] == 1
+    assert rounding['later_coordinate_error_at_most'] == 0.5
+    assert rounding['preserve_first_nearest_server'] is True
+    certificate = 2 * (3 * 1 + sum(range(1, 4)) * 0.5)
+    assert rounding['additive_certificate'] == certificate
+    lower = {(row['model'], row['budget']): row['value'] for row in summary['results']}
+    intervals = {(row['model'], row['budget']): row for row in summary['continuous_intervals']}
+    expected = {(model, budget) for model in ('atomic', 'chain') for budget in (1, 2)}
+    assert len(summary['results']) == len(summary['continuous_intervals']) == len(expected)
+    assert set(lower) == set(intervals) == expected
+    for key, value in lower.items():
+        assert intervals[key]['lower'] == value
+        assert intervals[key]['upper'] == value + certificate
+    assert summary['budget4_continuous_value'] == 0
+
+
 def verify(source, cpu_limit=120):
     started = time.process_time()
     summary = json.loads(source.read_text(encoding="utf-8"))
@@ -20,6 +42,10 @@ def verify(source, cpu_limit=120):
     horizon = summary["horizon"]
     assert horizon == len(servers) == 4
     assert servers == tuple(sorted(set(servers)))
+    assert alphabet, 'empty request alphabet'
+    assert summary['results'] or summary['hindsight_fixed_sequence'], 'empty game comparison'
+    if 'rounding' in summary or 'continuous_intervals' in summary:
+        verify_rounding(summary)
 
     @lru_cache(None)
     def optimum(requests_sorted):
@@ -31,6 +57,7 @@ def verify(source, cpu_limit=120):
 
     verified = []
     for reference in summary["results"] + summary["hindsight_fixed_sequence"]:
+        assert len(reference["witness"]) == horizon, "incomplete witness"
         budget, model = reference["budget"], reference["model"]
         fixed = tuple(row["request"] for row in reference["witness"]) if reference["known_future"] else None
 
