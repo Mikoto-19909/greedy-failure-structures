@@ -32,6 +32,7 @@ from .dashboard_experiments import ExperimentsConflictError, ExperimentsService
 from .dashboard_analysis import StudyAnalysisService
 from .dashboard_jobs import JobConflictError, JobService
 from .dashboard_local import LocalCatalog
+from .dashboard_matching import OnlineMatchingService
 from .dashboard_studies import StudiesService
 from .dashboard_workbench import WorkbenchService
 from .reproducibility import config_hash
@@ -196,6 +197,7 @@ class DashboardService:
         self.experiments = ExperimentsService(self.project_root)
         self.analysis = StudyAnalysisService(self.project_root)
         self.studies = StudiesService(self.project_root)
+        self.online_matching = OnlineMatchingService(self.project_root)
         self.local_catalog = LocalCatalog(self.project_root)
         self._index_rebuild_lock = threading.Lock()
         self._research_jobs: JobService | None = None
@@ -513,8 +515,12 @@ class _DashboardRequestHandler(BaseHTTPRequestHandler):
 
     server: _DashboardHTTPServer
     _STATIC_FILES: ClassVar[dict[str, tuple[str, str]]] = {
-        "": ("index.html", "text/html; charset=utf-8"),
+        "": ("portal.html", "text/html; charset=utf-8"),
+        "maximum-coverage": ("index.html", "text/html; charset=utf-8"),
         "index.html": ("index.html", "text/html; charset=utf-8"),
+        "topics.json": ("topics.json", "application/json; charset=utf-8"),
+        "topics.js": ("topics.js", "text/javascript; charset=utf-8"),
+        "topics.css": ("topics.css", "text/css; charset=utf-8"),
         "app.js": ("app.js", "text/javascript; charset=utf-8"),
         "report.js": ("report.js", "text/javascript; charset=utf-8"),
         "workbench": ("workbench.html", "text/html; charset=utf-8"),
@@ -523,6 +529,9 @@ class _DashboardRequestHandler(BaseHTTPRequestHandler):
         "research": ("research.html", "text/html; charset=utf-8"),
         "research.js": ("research.js", "text/javascript; charset=utf-8"),
         "research.css": ("research.css", "text/css; charset=utf-8"),
+        "online-matching": ("online-matching.html", "text/html; charset=utf-8"),
+        "online-matching.js": ("online-matching.js", "text/javascript; charset=utf-8"),
+        "online-matching.css": ("online-matching.css", "text/css; charset=utf-8"),
         "experiments": ("experiments.html", "text/html; charset=utf-8"),
         "experiments.js": ("experiments.js", "text/javascript; charset=utf-8"),
         "experiments.css": ("experiments.css", "text/css; charset=utf-8"),
@@ -551,7 +560,7 @@ class _DashboardRequestHandler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def _send_json(self, payload: object, status: HTTPStatus = HTTPStatus.OK) -> None:
-        if self.path.startswith(("/api/studies/", "/api/research/")):
+        if self.path.startswith(("/api/studies/", "/api/research/", "/api/online-matching/")):
             payload = _research_browser_numbers(payload)
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         self._send_bytes(body, "application/json; charset=utf-8", status)
@@ -617,6 +626,20 @@ class _DashboardRequestHandler(BaseHTTPRequestHandler):
             service = self.server.service
             if path == "/healthz":
                 self._send_json({"ok": True})
+            elif path == "/api/online-matching/library":
+                self._send_json(service.online_matching.library())
+            elif path == "/api/online-matching/detail":
+                self._send_json(service.online_matching.detail(_one_query(query, "run")))
+            elif path == "/api/online-matching/trace":
+                self._send_json(service.online_matching.trace(
+                    _one_query(query, "run"), _one_query(query, "case"),
+                    _one_query(query, "policy"), _int_query(query, "budget")))
+            elif path == "/api/online-matching/report":
+                self._send_json(service.online_matching.report(_one_query(query, "key")))
+            elif path == "/api/online-matching/artifact":
+                body, media = service.online_matching.artifact(
+                    _one_query(query, "run"), _one_query(query, "file"))
+                self._send_download(body, media, _one_query(query, "file"))
             elif path == "/api/configs":
                 self._send_json(service.list_configs())
             elif path == "/api/algorithms":
@@ -740,6 +763,8 @@ class _DashboardRequestHandler(BaseHTTPRequestHandler):
             service = self.server.service
             if self.path == "/api/validate":
                 self._send_json(service.inspect_config(_required_string(payload, "config")))
+            elif self.path == "/api/online-matching/run":
+                self._send_json(service.online_matching.run(payload))
             elif self.path == "/api/run":
                 self._send_json(service.start_run(payload), HTTPStatus.ACCEPTED)
             elif self.path == "/api/replay":

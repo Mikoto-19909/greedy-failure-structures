@@ -1,0 +1,89 @@
+{
+  "status": "independently_verified",
+  "source": "summary.json",
+  "source_sha256": "e9735e73585bd3af48e068925819e3850269534e686338890fa55463493b5c9e",
+  "verifier_sha256": "90410e6e6bb348ac56c6bbace99bde1da09761fb080e04332e8dae1289dacf9f",
+  "scope": "6 finite alphabet online games, 3 known future comparisons, all saved witness stages",
+  "independence": {
+    "imports_original_solver": false,
+    "state": "sorted multiset of coordinate, server index, lifetime count triples",
+    "optimum": "sorted requests against every service subset",
+    "chain_actions": "grow backwards from each free service; move each old request at most once"
+  },
+  "results": [
+    {
+      "model": "atomic",
+      "budget": 1,
+      "known_future": false,
+      "value": 4,
+      "canonical_states": 12027,
+      "witness_stages_verified": 4
+    },
+    {
+      "model": "atomic",
+      "budget": 2,
+      "known_future": false,
+      "value": 2,
+      "canonical_states": 45277,
+      "witness_stages_verified": 4
+    },
+    {
+      "model": "atomic",
+      "budget": 4,
+      "known_future": false,
+      "value": 0,
+      "canonical_states": 85277,
+      "witness_stages_verified": 4
+    },
+    {
+      "model": "chain",
+      "budget": 1,
+      "known_future": false,
+      "value": 4,
+      "canonical_states": 11376,
+      "witness_stages_verified": 4
+    },
+    {
+      "model": "chain",
+      "budget": 2,
+      "known_future": false,
+      "value": 2,
+      "canonical_states": 41879,
+      "witness_stages_verified": 4
+    },
+    {
+      "model": "chain",
+      "budget": 4,
+      "known_future": false,
+      "value": 0,
+      "canonical_states": 77504,
+      "witness_stages_verified": 4
+    },
+    {
+      "model": "atomic",
+      "budget": 1,
+      "known_future": true,
+      "value": 2,
+      "canonical_states": 158,
+      "witness_stages_verified": 4
+    },
+    {
+      "model": "atomic",
+      "budget": 2,
+      "known_future": true,
+      "value": 2,
+      "canonical_states": 398,
+      "witness_stages_verified": 4
+    },
+    {
+      "model": "atomic",
+      "budget": 4,
+      "known_future": true,
+      "value": 0,
+      "canonical_states": 542,
+      "witness_stages_verified": 4
+    }
+  ],
+  "cpu_seconds": 11.390625,
+  "all_checks_passed": true
+}

@@ -1,7 +1,10 @@
 # Contributing
 
 This project studies how Maximum Coverage instance structure affects Greedy's
-optimality gap. Keep changes focused on the research question or requested fix.
+optimality gap and maintains a local reproducible experiment Dashboard.
+Independent platform cases retain their own inputs, metrics and verification;
+hosting a study does not make its findings Maximum Coverage results.
+Keep changes focused on the agreed research question or platform task.
 Discuss new algorithms, instance families, or result schemas before implementing
 them when they are outside the agreed task.
 

@@ -1,0 +1,1433 @@
+{
+  "input_domain": "three ordered rational servers, three requests in [a,c], lifetime budget one",
+  "continuous_method": "exact Fraction arrangement and envelope enumeration; proof in report",
+  "prefix_checks": 1690,
+  "grid_layouts": 5,
+  "grid_points": 13,
+  "first_games": 23,
+  "chain_atomic_differences": [
+    {
+      "servers": [
+        "0",
+        "2",
+        "6"
+      ],
+      "x": "3/2",
+      "y": "2",
+      "chain": [
+        "2",
+        [
+          1,
+          0
+        ],
+        "5/2"
+      ],
+      "atomic": [
+        "1",
+        [
+          1,
+          0
+        ],
+        "0"
+      ]
+    },
+    {
+      "servers": [
+        "0",
+        "2",
+        "6"
+      ],
+      "x": "3/2",
+      "y": "5/2",
+      "chain": [
+        "2",
+        [
+          1,
+          0
+        ],
+        "3"
+      ],
+      "atomic": [
+        "1",
+        [
+          1,
+          0
+        ],
+        "0"
+      ]
+    },
+    {
+      "servers": [
+        "0",
+        "2",
+        "6"
+      ],
+      "x": "4",
+      "y": "7/2",
+      "chain": [
+        "2",
+        [
+          1,
+          0
+        ],
+        "0"
+      ],
+      "atomic": [
+        "1",
+        [
+          1,
+          2
+        ],
+        "0"
+      ]
+    },
+    {
+      "servers": [
+        "0",
+        "3",
+        "6"
+      ],
+      "x": "2",
+      "y": "5/2",
+      "chain": [
+        "2",
+        [
+          1,
+          0
+        ],
+        "7/2"
+      ],
+      "atomic": [
+        "1",
+        [
+          1,
+          0
+        ],
+        "0"
+      ]
+    },
+    {
+      "servers": [
+        "0",
+        "3",
+        "6"
+      ],
+      "x": "4",
+      "y": "7/2",
+      "chain": [
+        "2",
+        [
+          1,
+          0
+        ],
+        "0"
+      ],
+      "atomic": [
+        "1",
+        [
+          1,
+          2
+        ],
+        "0"
+      ]
+    },
+    {
+      "servers": [
+        "0",
+        "3",
+        "6"
+      ],
+      "x": "9/2",
+      "y": "7/2",
+      "chain": [
+        "3",
+        [
+          1,
+          0
+        ],
+        "0"
+      ],
+      "atomic": [
+        "2",
+        [
+          1,
+          2
+        ],
+        "0"
+      ]
+    },
+    {
+      "servers": [
+        "0",
+        "3",
+        "6"
+      ],
+      "x": "9/2",
+      "y": "4",
+      "chain": [
+        "2",
+        [
+          1,
+          2
+        ],
+        "0"
+      ],
+      "atomic": [
+        "1",
+        [
+          1,
+          2
+        ],
+        "0"
+      ]
+    },
+    {
+      "servers": [
+        "0",
+        "4",
+        "6"
+      ],
+      "x": "9/2",
+      "y": "7/2",
+      "chain": [
+        "2",
+        [
+          1,
+          0
+        ],
+        "0"
+      ],
+      "atomic": [
+        "1",
+        [
+          1,
+          2
+        ],
+        "0"
+      ]
+    }
+  ],
+  "chain_atomic_difference_count": 10,
+  "strict_timing_reversal_example": {
+    "servers": [
+      "0",
+      "2",
+      "6"
+    ],
+    "x": "5/4",
+    "y": "2",
+    "chain": [
+      [
+        "5/2",
+        [
+          0,
+          1
+        ],
+        "0"
+      ],
+      [
+        [
+          "5/2",
+          [
+            0,
+            1
+          ],
+          "0"
+        ],
+        [
+          "3",
+          [
+            1,
+            0
+          ],
+          "11/4"
+        ],
+        [
+          "7/2",
+          [
+            1,
+            2
+          ],
+          "0"
+        ],
+        [
+          "13",
+          [
+            2,
+            1
+          ],
+          "6"
+        ]
+      ]
+    ],
+    "atomic": [
+      [
+        "3/2",
+        [
+          1,
+          0
+        ],
+        "0"
+      ],
+      [
+        [
+          "5/2",
+          [
+            0,
+            1
+          ],
+          "0"
+        ],
+        [
+          "13/2",
+          [
+            0,
+            2
+          ],
+          "0"
+        ],
+        [
+          "3/2",
+          [
+            1,
+            0
+          ],
+          "0"
+        ],
+        [
+          "7/2",
+          [
+            1,
+            2
+          ],
+          "0"
+        ],
+        [
+          "15",
+          [
+            2,
+            0
+          ],
+          "6"
+        ],
+        [
+          "13",
+          [
+            2,
+            1
+          ],
+          "6"
+        ]
+      ]
+    ]
+  },
+  "off_grid_rational_prefix_checks": 48,
+  "first_results": [
+    {
+      "servers": [
+        "0",
+        "3",
+        "6"
+      ],
+      "x": "0",
+      "nearest": 0,
+      "optimal_first": 0,
+      "choices": [
+        {
+          "value": "0",
+          "future_value": "0",
+          "first_excess": "0",
+          "y": "0",
+          "z": "0",
+          "second_assignment": [
+            0,
+            1
+          ],
+          "candidate_count": 15
+        },
+        {
+          "value": "3",
+          "future_value": "0",
+          "first_excess": "3",
+          "y": "0",
+          "z": "0",
+          "second_assignment": [
+            0,
+            1
+          ],
+          "candidate_count": 12
+        },
+        {
+          "value": "6",
+          "future_value": "0",
+          "first_excess": "6",
+          "y": "0",
+          "z": "0",
+          "second_assignment": [
+            0,
+            1
+          ],
+          "candidate_count": 9
+        }
+      ]
+    },
+    {
+      "servers": [
+        "0",
+        "3",
+        "6"
+      ],
+      "x": "1/2",
+      "nearest": 0,
+      "optimal_first": 0,
+      "choices": [
+        {
+          "value": "0",
+          "future_value": "0",
+          "first_excess": "0",
+          "y": "0",
+          "z": "0",
+          "second_assignment": [
+            1,
+            0
+          ],
+          "candidate_count": 27
+        },
+        {
+          "value": "3",
+          "future_value": "1",
+          "first_excess": "2",
+          "y": "1",
+          "z": "0",
+          "second_assignment": [
+            0,
+            1
+          ],
+          "candidate_count": 25
+        },
+        {
+          "value": "6",
+          "future_value": "1",
+          "first_excess": "5",
+          "y": "3/4",
+          "z": "0",
+          "second_assignment": [
+            0,
+            1
+          ],
+          "candidate_count": 25
+        }
+      ]
+    },
+    {
+      "servers": [
+        "0",
+        "3",
+        "6"
+      ],
+      "x": "1",
+      "nearest": 0,
+      "optimal_first": 0,
+      "choices": [
+        {
+          "value": "0",
+          "future_value": "0",
+          "first_excess": "0",
+          "y": "0",
+          "z": "0",
+          "second_assignment": [
+            1,
+            0
+          ],
+          "candidate_count": 27
+        },
+        {
+          "value": "3",
+          "future_value": "2",
+          "first_excess": "1",
+          "y": "2",
+          "z": "0",
+          "second_assignment": [
+            0,
+            1
+          ],
+          "candidate_count": 30
+        },
+        {
+          "value": "6",
+          "future_value": "2",
+          "first_excess": "4",
+          "y": "3/2",
+          "z": "0",
+          "second_assignment": [
+            0,
+            1
+          ],
+          "candidate_count": 26
+        }
+      ]
+    },
+    {
+      "servers": [
+        "0",
+        "3",
+        "6"
+      ],
+      "x": "3/2",
+      "nearest": 0,
+      "optimal_first": 0,
+      "choices": [
+        {
+          "value": "0",
+          "future_value": "0",
+          "first_excess": "0",
+          "y": "0",
+          "z": "0",
+          "second_assignment": [
+            1,
+            0
+          ],
+          "candidate_count": 12
+        },
+        {
+          "value": "3",
+          "future_value": "3",
+          "first_excess": "0",
+          "y": "3",
+          "z": "0",
+          "second_assignment": [
+            0,
+            1
+          ],
+          "candidate_count": 14
+        },
+        {
+          "value": "6",
+          "future_value": "3",
+          "first_excess": "3",
+          "y": "9/4",
+          "z": "0",
+          "second_assignment": [
+            0,
+            1
+          ],
+          "candidate_count": 12
+        }
+      ]
+    },
+    {
+      "servers": [
+        "0",
+        "3",
+        "6"
+      ],
+      "x": "2",
+      "nearest": 1,
+      "optimal_first": 0,
+      "choices": [
+        {
+          "value": "2",
+          "future_value": "1",
+          "first_excess": "1",
+          "y": "9/2",
+          "z": "0",
+          "second_assignment": [
+            0,
+            1
+          ],
+          "candidate_count": 30
+        },
+        {
+          "value": "2",
+          "future_value": "2",
+          "first_excess": "0",
+          "y": "3",
+          "z": "0",
+          "second_assignment": [
+            1,
+            0
+          ],
+          "candidate_count": 36
+        },
+        {
+          "value": "5",
+          "future_value": "2",
+          "first_excess": "3",
+          "y": "5/2",
+          "z": "5/2",
+          "second_assignment": [
+            1,
+            0
+          ],
+          "candidate_count": 28
+        }
+      ]
+    },
+    {
+      "servers": [
+        "0",
+        "3",
+        "6"
+      ],
+      "x": "5/2",
+      "nearest": 1,
+      "optimal_first": 1,
+      "choices": [
+        {
+          "value": "3",
+          "future_value": "1",
+          "first_excess": "2",
+          "y": "4",
+          "z": "0",
+          "second_assignment": [
+            0,
+            1
+          ],
+          "candidate_count": 27
+        },
+        {
+          "value": "1",
+          "future_value": "1",
+          "first_excess": "0",
+          "y": "3",
+          "z": "0",
+          "second_assignment": [
+            1,
+            0
+          ],
+          "candidate_count": 32
+        },
+        {
+          "value": "4",
+          "future_value": "1",
+          "first_excess": "3",
+          "y": "11/4",
+          "z": "11/4",
+          "second_assignment": [
+            1,
+            0
+          ],
+          "candidate_count": 26
+        }
+      ]
+    },
+    {
+      "servers": [
+        "0",
+        "3",
+        "6"
+      ],
+      "x": "3",
+      "nearest": 1,
+      "optimal_first": 1,
+      "choices": [
+        {
+          "value": "3",
+          "future_value": "0",
+          "first_excess": "3",
+          "y": "0",
+          "z": "0",
+          "second_assignment": [
+            1,
+            0
+          ],
+          "candidate_count": 11
+        },
+        {
+          "value": "0",
+          "future_value": "0",
+          "first_excess": "0",
+          "y": "0",
+          "z": "0",
+          "second_assignment": [
+            1,
+            0
+          ],
+          "candidate_count": 12
+        },
+        {
+          "value": "3",
+          "future_value": "0",
+          "first_excess": "3",
+          "y": "0",
+          "z": "0",
+          "second_assignment": [
+            1,
+            0
+          ],
+          "candidate_count": 11
+        }
+      ]
+    },
+    {
+      "servers": [
+        "0",
+        "3",
+        "6"
+      ],
+      "x": "7/2",
+      "nearest": 1,
+      "optimal_first": 1,
+      "choices": [
+        {
+          "value": "4",
+          "future_value": "1",
+          "first_excess": "3",
+          "y": "0",
+          "z": "0",
+          "second_assignment": [
+            1,
+            0
+          ],
+          "candidate_count": 26
+        },
+        {
+          "value": "1",
+          "future_value": "1",
+          "first_excess": "0",
+          "y": "3",
+          "z": "0",
+          "second_assignment": [
+            1,
+            0
+          ],
+          "candidate_count": 32
+        },
+        {
+          "value": "3",
+          "future_value": "1",
+          "first_excess": "2",
+          "y": "0",
+          "z": "0",
+          "second_assignment": [
+            1,
+            0
+          ],
+          "candidate_count": 27
+        }
+      ]
+    },
+    {
+      "servers": [
+        "0",
+        "3",
+        "6"
+      ],
+      "x": "4",
+      "nearest": 1,
+      "optimal_first": 1,
+      "choices": [
+        {
+          "value": "5",
+          "future_value": "2",
+          "first_excess": "3",
+          "y": "0",
+          "z": "0",
+          "second_assignment": [
+            1,
+            0
+          ],
+          "candidate_count": 28
+        },
+        {
+          "value": "2",
+          "future_value": "2",
+          "first_excess": "0",
+          "y": "3",
+          "z": "0",
+          "second_assignment": [
+            1,
+            0
+          ],
+          "candidate_count": 36
+        },
+        {
+          "value": "2",
+          "future_value": "1",
+          "first_excess": "1",
+          "y": "0",
+          "z": "0",
+          "second_assignment": [
+            2,
+            0
+          ],
+          "candidate_count": 30
+        }
+      ]
+    },
+    {
+      "servers": [
+        "0",
+        "3",
+        "6"
+      ],
+      "x": "9/2",
+      "nearest": 1,
+      "optimal_first": 2,
+      "choices": [
+        {
+          "value": "6",
+          "future_value": "3",
+          "first_excess": "3",
+          "y": "0",
+          "z": "0",
+          "second_assignment": [
+            1,
+            0
+          ],
+          "candidate_count": 12
+        },
+        {
+          "value": "3",
+          "future_value": "3",
+          "first_excess": "0",
+          "y": "3",
+          "z": "0",
+          "second_assignment": [
+            1,
+            0
+          ],
+          "candidate_count": 14
+        },
+        {
+          "value": "0",
+          "future_value": "0",
+          "first_excess": "0",
+          "y": "0",
+          "z": "0",
+          "second_assignment": [
+            2,
+            0
+          ],
+          "candidate_count": 12
+        }
+      ]
+    },
+    {
+      "servers": [
+        "0",
+        "3",
+        "6"
+      ],
+      "x": "5",
+      "nearest": 2,
+      "optimal_first": 2,
+      "choices": [
+        {
+          "value": "6",
+          "future_value": "2",
+          "first_excess": "4",
+          "y": "0",
+          "z": "6",
+          "second_assignment": [
+            2,
+            0
+          ],
+          "candidate_count": 26
+        },
+        {
+          "value": "3",
+          "future_value": "2",
+          "first_excess": "1",
+          "y": "2",
+          "z": "0",
+          "second_assignment": [
+            1,
+            0
+          ],
+          "candidate_count": 30
+        },
+        {
+          "value": "0",
+          "future_value": "0",
+          "first_excess": "0",
+          "y": "0",
+          "z": "0",
+          "second_assignment": [
+            2,
+            0
+          ],
+          "candidate_count": 27
+        }
+      ]
+    },
+    {
+      "servers": [
+        "0",
+        "3",
+        "6"
+      ],
+      "x": "11/2",
+      "nearest": 2,
+      "optimal_first": 2,
+      "choices": [
+        {
+          "value": "6",
+          "future_value": "1",
+          "first_excess": "5",
+          "y": "0",
+          "z": "6",
+          "second_assignment": [
+            2,
+            0
+          ],
+          "candidate_count": 25
+        },
+        {
+          "value": "3",
+          "future_value": "1",
+          "first_excess": "2",
+          "y": "0",
+          "z": "6",
+          "second_assignment": [
+            2,
+            0
+          ],
+          "candidate_count": 25
+        },
+        {
+          "value": "0",
+          "future_value": "0",
+          "first_excess": "0",
+          "y": "0",
+          "z": "0",
+          "second_assignment": [
+            2,
+            0
+          ],
+          "candidate_count": 27
+        }
+      ]
+    },
+    {
+      "servers": [
+        "0",
+        "3",
+        "6"
+      ],
+      "x": "6",
+      "nearest": 2,
+      "optimal_first": 2,
+      "choices": [
+        {
+          "value": "6",
+          "future_value": "0",
+          "first_excess": "6",
+          "y": "0",
+          "z": "0",
+          "second_assignment": [
+            2,
+            0
+          ],
+          "candidate_count": 9
+        },
+        {
+          "value": "3",
+          "future_value": "0",
+          "first_excess": "3",
+          "y": "0",
+          "z": "0",
+          "second_assignment": [
+            2,
+            0
+          ],
+          "candidate_count": 12
+        },
+        {
+          "value": "0",
+          "future_value": "0",
+          "first_excess": "0",
+          "y": "0",
+          "z": "0",
+          "second_assignment": [
+            2,
+            0
+          ],
+          "candidate_count": 15
+        }
+      ]
+    },
+    {
+      "servers": [
+        "0",
+        "3",
+        "6"
+      ],
+      "x": "7/4",
+      "nearest": 1,
+      "optimal_first": 0,
+      "choices": [
+        {
+          "value": "1",
+          "future_value": "1/2",
+          "first_excess": "1/2",
+          "y": "9/2",
+          "z": "0",
+          "second_assignment": [
+            0,
+            1
+          ],
+          "candidate_count": 34
+        },
+        {
+          "value": "5/2",
+          "future_value": "5/2",
+          "first_excess": "0",
+          "y": "3",
+          "z": "0",
+          "second_assignment": [
+            1,
+            0
+          ],
+          "candidate_count": 45
+        },
+        {
+          "value": "11/2",
+          "future_value": "5/2",
+          "first_excess": "3",
+          "y": "19/8",
+          "z": "19/8",
+          "second_assignment": [
+            1,
+            0
+          ],
+          "candidate_count": 35
+        }
+      ]
+    },
+    {
+      "servers": [
+        "0",
+        "3",
+        "6"
+      ],
+      "x": "17/4",
+      "nearest": 1,
+      "optimal_first": 2,
+      "choices": [
+        {
+          "value": "11/2",
+          "future_value": "5/2",
+          "first_excess": "3",
+          "y": "0",
+          "z": "0",
+          "second_assignment": [
+            1,
+            0
+          ],
+          "candidate_count": 35
+        },
+        {
+          "value": "5/2",
+          "future_value": "5/2",
+          "first_excess": "0",
+          "y": "3",
+          "z": "0",
+          "second_assignment": [
+            1,
+            0
+          ],
+          "candidate_count": 45
+        },
+        {
+          "value": "1",
+          "future_value": "1/2",
+          "first_excess": "1/2",
+          "y": "0",
+          "z": "0",
+          "second_assignment": [
+            2,
+            0
+          ],
+          "candidate_count": 34
+        }
+      ]
+    },
+    {
+      "servers": [
+        "0",
+        "1",
+        "6"
+      ],
+      "x": "3/4",
+      "nearest": 1,
+      "optimal_first": 1,
+      "choices": [
+        {
+          "value": "1",
+          "future_value": "1/2",
+          "first_excess": "1/2",
+          "y": "7/2",
+          "z": "0",
+          "second_assignment": [
+            0,
+            1
+          ],
+          "candidate_count": 28
+        },
+        {
+          "value": "1/2",
+          "future_value": "1/2",
+          "first_excess": "0",
+          "y": "1",
+          "z": "0",
+          "second_assignment": [
+            1,
+            0
+          ],
+          "candidate_count": 34
+        },
+        {
+          "value": "6",
+          "future_value": "1",
+          "first_excess": "5",
+          "y": "1",
+          "z": "1",
+          "second_assignment": [
+            1,
+            0
+          ],
+          "candidate_count": 29
+        }
+      ]
+    },
+    {
+      "servers": [
+        "0",
+        "1",
+        "6"
+      ],
+      "x": "7/3",
+      "nearest": 1,
+      "optimal_first": 1,
+      "choices": [
+        {
+          "value": "3",
+          "future_value": "2",
+          "first_excess": "1",
+          "y": "0",
+          "z": "0",
+          "second_assignment": [
+            0,
+            1
+          ],
+          "candidate_count": 32
+        },
+        {
+          "value": "0",
+          "future_value": "0",
+          "first_excess": "0",
+          "y": "0",
+          "z": "0",
+          "second_assignment": [
+            1,
+            0
+          ],
+          "candidate_count": 43
+        },
+        {
+          "value": "14/3",
+          "future_value": "7/3",
+          "first_excess": "7/3",
+          "y": "0",
+          "z": "0",
+          "second_assignment": [
+            2,
+            0
+          ],
+          "candidate_count": 41
+        }
+      ]
+    },
+    {
+      "servers": [
+        "0",
+        "1",
+        "6"
+      ],
+      "x": "7/2",
+      "nearest": 1,
+      "optimal_first": 2,
+      "choices": [
+        {
+          "value": "3",
+          "future_value": "2",
+          "first_excess": "1",
+          "y": "0",
+          "z": "0",
+          "second_assignment": [
+            0,
+            1
+          ],
+          "candidate_count": 24
+        },
+        {
+          "value": "1",
+          "future_value": "1",
+          "first_excess": "0",
+          "y": "1",
+          "z": "0",
+          "second_assignment": [
+            1,
+            0
+          ],
+          "candidate_count": 29
+        },
+        {
+          "value": "0",
+          "future_value": "0",
+          "first_excess": "0",
+          "y": "0",
+          "z": "0",
+          "second_assignment": [
+            2,
+            0
+          ],
+          "candidate_count": 23
+        }
+      ]
+    },
+    {
+      "servers": [
+        "0",
+        "3",
+        "5"
+      ],
+      "x": "2",
+      "nearest": 1,
+      "optimal_first": 1,
+      "choices": [
+        {
+          "value": "2",
+          "future_value": "1",
+          "first_excess": "1",
+          "y": "4",
+          "z": "0",
+          "second_assignment": [
+            0,
+            1
+          ],
+          "candidate_count": 25
+        },
+        {
+          "value": "1",
+          "future_value": "1",
+          "first_excess": "0",
+          "y": "5/2",
+          "z": "0",
+          "second_assignment": [
+            1,
+            0
+          ],
+          "candidate_count": 30
+        },
+        {
+          "value": "4",
+          "future_value": "2",
+          "first_excess": "2",
+          "y": "4",
+          "z": "3",
+          "second_assignment": [
+            1,
+            2
+          ],
+          "candidate_count": 20
+        }
+      ]
+    },
+    {
+      "servers": [
+        "0",
+        "3",
+        "5"
+      ],
+      "x": "5/2",
+      "nearest": 1,
+      "optimal_first": 1,
+      "choices": [
+        {
+          "value": "3",
+          "future_value": "1",
+          "first_excess": "2",
+          "y": "7/2",
+          "z": "0",
+          "second_assignment": [
+            0,
+            1
+          ],
+          "candidate_count": 24
+        },
+        {
+          "value": "0",
+          "future_value": "0",
+          "first_excess": "0",
+          "y": "0",
+          "z": "0",
+          "second_assignment": [
+            1,
+            0
+          ],
+          "candidate_count": 26
+        },
+        {
+          "value": "3",
+          "future_value": "1",
+          "first_excess": "2",
+          "y": "7/2",
+          "z": "3",
+          "second_assignment": [
+            1,
+            2
+          ],
+          "candidate_count": 23
+        }
+      ]
+    },
+    {
+      "servers": [
+        "0",
+        "3",
+        "5"
+      ],
+      "x": "4",
+      "nearest": 1,
+      "optimal_first": 2,
+      "choices": [
+        {
+          "value": "5",
+          "future_value": "2",
+          "first_excess": "3",
+          "y": "0",
+          "z": "0",
+          "second_assignment": [
+            1,
+            0
+          ],
+          "candidate_count": 22
+        },
+        {
+          "value": "2",
+          "future_value": "2",
+          "first_excess": "0",
+          "y": "5/2",
+          "z": "0",
+          "second_assignment": [
+            1,
+            0
+          ],
+          "candidate_count": 22
+        },
+        {
+          "value": "0",
+          "future_value": "0",
+          "first_excess": "0",
+          "y": "0",
+          "z": "0",
+          "second_assignment": [
+            2,
+            0
+          ],
+          "candidate_count": 21
+        }
+      ]
+    },
+    {
+      "servers": [
+        "-2/3",
+        "5/7",
+        "17/6"
+      ],
+      "x": "1/3",
+      "nearest": 1,
+      "optimal_first": 1,
+      "choices": [
+        {
+          "value": "26/21",
+          "future_value": "13/21",
+          "first_excess": "13/21",
+          "y": "149/84",
+          "z": "-2/3",
+          "second_assignment": [
+            0,
+            1
+          ],
+          "candidate_count": 47
+        },
+        {
+          "value": "16/21",
+          "future_value": "16/21",
+          "first_excess": "0",
+          "y": "5/7",
+          "z": "-2/3",
+          "second_assignment": [
+            1,
+            0
+          ],
+          "candidate_count": 56
+        },
+        {
+          "value": "76/21",
+          "future_value": "3/2",
+          "first_excess": "89/42",
+          "y": "17/24",
+          "z": "17/24",
+          "second_assignment": [
+            1,
+            0
+          ],
+          "candidate_count": 50
+        }
+      ]
+    },
+    {
+      "servers": [
+        "-2/3",
+        "5/7",
+        "17/6"
+      ],
+      "x": "9/7",
+      "nearest": 1,
+      "optimal_first": 1,
+      "choices": [
+        {
+          "value": "53/21",
+          "future_value": "8/7",
+          "first_excess": "29/21",
+          "y": "-2/3",
+          "z": "-2/3",
+          "second_assignment": [
+            1,
+            0
+          ],
+          "candidate_count": 47
+        },
+        {
+          "value": "17/42",
+          "future_value": "17/42",
+          "first_excess": "0",
+          "y": "5/7",
+          "z": "-2/3",
+          "second_assignment": [
+            1,
+            0
+          ],
+          "candidate_count": 63
+        },
+        {
+          "value": "41/21",
+          "future_value": "41/42",
+          "first_excess": "41/42",
+          "y": "-2/3",
+          "z": "-2/3",
+          "second_assignment": [
+            2,
+            0
+          ],
+          "candidate_count": 52
+        }
+      ]
+    }
+  ],
+  "cpu_seconds": 33.1875,
+  "all_checks_passed": true
+}
