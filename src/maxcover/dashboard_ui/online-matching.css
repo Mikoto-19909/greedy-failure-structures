@@ -1,0 +1,46 @@
+.matching-shell { max-width: 1240px; margin: 0 auto; padding: 30px 24px 70px; }
+.matching-intro { max-width: 880px; margin-bottom: 26px; }
+.matching-intro h2 { font-size: clamp(25px, 3vw, 38px); margin: 10px 0 14px; }
+.matching-controls { display: grid; grid-template-columns: minmax(240px,2fr) minmax(210px,1fr) auto auto; align-items: end; gap: 14px; }
+.matching-controls label, .matching-section label { display: grid; gap: 7px; color: var(--muted-strong); font-size: 14px; }
+.matching-controls .button { min-height: 45px; }
+.matching-section { padding: 28px 0; border-top: 1px solid var(--border); }
+.matching-section h2 { margin: 0 0 16px; font-size: 23px; }
+.matching-section .wb-heading { align-items: center; }
+.matching-section .wb-heading label { min-width: 210px; }
+.matching-chart { width: 100%; margin: 16px 0; }
+.matching-chart svg { width: 100%; display: block; background: var(--panel); border-radius: 8px; }
+.matching-chart text { fill: var(--muted-strong); font: 13px "Segoe UI", "Microsoft YaHei", sans-serif; }
+.matching-chart .axis { stroke: var(--border); stroke-width: 1; }
+.matching-chart .series { fill: none; stroke-width: 2.5; }
+.matching-chart .point { stroke: var(--panel); stroke-width: 2; }
+.matching-chart .chart-title { fill: var(--ink); font-size: 17px; font-weight: 600; }
+.matching-chart .node-label { fill: var(--ink); }
+.matching-chart .coord { font-size: 12px; }
+.matching-downloads { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 16px; }
+.matching-downloads a { color: var(--accent); }
+.matching-section table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
+.matching-section th, .matching-section td { padding: 11px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.matching-section th { color: var(--muted-strong); }
+.matching-section tbody tr:hover { background: var(--panel-soft); }
+.trace-controls { grid-template-columns: 2fr 1fr 1fr; }
+.step-controls { display: flex; align-items: center; gap: 18px; margin-top: 22px; }
+.step-controls label { flex: 1; }
+.step-controls input { width: 100%; accent-color: var(--accent); }
+#matching-message { min-height: 24px; color: var(--muted-strong); }
+#matching-message.error { color: var(--red); }
+#matching-moves { color: var(--muted-strong); line-height: 1.9; }
+#matching-report-body { line-height: 1.85; overflow-wrap: anywhere; }
+#matching-report-body .report-body { max-width: 100%; }
+#matching-report-body pre { white-space: pre-wrap; overflow: auto; }
+@media (max-width: 780px) {
+  .matching-shell { padding: 22px 14px 45px; }
+  .matching-controls { grid-template-columns: 1fr 1fr; }
+  .matching-controls label:first-child { grid-column: 1 / -1; }
+  .trace-controls { grid-template-columns: 1fr 1fr; }
+  .matching-section .wb-heading { flex-direction: column; align-items: stretch; gap: 8px; }
+  .matching-chart { overflow-x: auto; }
+  .matching-chart svg { min-width: 580px; }
+  .step-controls { gap: 9px; }
+  .step-controls .button { padding: 10px; }
+}

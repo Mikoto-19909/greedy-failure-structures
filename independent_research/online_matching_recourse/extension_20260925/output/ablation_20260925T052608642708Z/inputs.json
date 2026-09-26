@@ -1,0 +1,973 @@
+{
+  "original_sha256": "85e76d853f0dc7c6ef82e05ff180b3b1b0cffa24f625014c7e74d319fa42c3fd",
+  "cases": [
+    {
+      "id": "dev_pair",
+      "split": "dev",
+      "family": "paired",
+      "servers": [
+        0,
+        10,
+        100,
+        110,
+        200,
+        210
+      ],
+      "requests": [
+        6,
+        9,
+        106,
+        109,
+        206,
+        209
+      ],
+      "order": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "id": "dev_uniform",
+      "split": "dev",
+      "family": "uniform",
+      "servers": [
+        0,
+        10,
+        20,
+        30,
+        40,
+        50
+      ],
+      "requests": [
+        4,
+        14,
+        24,
+        34,
+        44,
+        1
+      ],
+      "order": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "id": "dev_cluster",
+      "split": "dev",
+      "family": "clustered",
+      "servers": [
+        0,
+        2,
+        4,
+        40,
+        42,
+        44
+      ],
+      "requests": [
+        3,
+        1,
+        5,
+        43,
+        41,
+        39
+      ],
+      "order": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "id": "dev_alternate",
+      "split": "dev",
+      "family": "near_far",
+      "servers": [
+        0,
+        10,
+        20,
+        30,
+        40,
+        50
+      ],
+      "requests": [
+        24,
+        49,
+        26,
+        1,
+        14,
+        36
+      ],
+      "order": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "id": "dev_budget",
+      "split": "dev",
+      "family": "budget_lock",
+      "servers": [
+        0,
+        3,
+        5,
+        100,
+        110,
+        120
+      ],
+      "requests": [
+        2,
+        3,
+        0,
+        101,
+        111,
+        119
+      ],
+      "order": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "id": "dev_nested",
+      "split": "dev",
+      "family": "nested",
+      "servers": [
+        0,
+        8,
+        16,
+        32,
+        64,
+        128
+      ],
+      "requests": [
+        63,
+        31,
+        15,
+        7,
+        3,
+        1
+      ],
+      "order": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "id": "uniform_01",
+      "split": "eval",
+      "family": "uniform",
+      "servers": [
+        0,
+        10,
+        20,
+        30,
+        40,
+        50
+      ],
+      "requests": [
+        3,
+        13,
+        23,
+        33,
+        43,
+        47
+      ],
+      "order": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "id": "uniform_02",
+      "split": "eval",
+      "family": "uniform",
+      "servers": [
+        0,
+        10,
+        20,
+        30,
+        40,
+        50
+      ],
+      "requests": [
+        3,
+        13,
+        23,
+        33,
+        43,
+        47
+      ],
+      "order": [
+        5,
+        4,
+        3,
+        2,
+        1,
+        0
+      ]
+    },
+    {
+      "id": "uniform_03",
+      "split": "eval",
+      "family": "uniform",
+      "servers": [
+        0,
+        10,
+        20,
+        30,
+        40,
+        50
+      ],
+      "requests": [
+        3,
+        13,
+        23,
+        33,
+        43,
+        47
+      ],
+      "order": [
+        2,
+        3,
+        1,
+        4,
+        0,
+        5
+      ]
+    },
+    {
+      "id": "uniform_04",
+      "split": "eval",
+      "family": "uniform",
+      "servers": [
+        0,
+        10,
+        20,
+        30,
+        40,
+        50
+      ],
+      "requests": [
+        3,
+        13,
+        23,
+        33,
+        43,
+        47
+      ],
+      "order": [
+        0,
+        5,
+        1,
+        4,
+        2,
+        3
+      ]
+    },
+    {
+      "id": "uniform_05",
+      "split": "eval",
+      "family": "uniform",
+      "servers": [
+        0,
+        10,
+        20,
+        30,
+        40,
+        50
+      ],
+      "requests": [
+        3,
+        13,
+        23,
+        33,
+        43,
+        47
+      ],
+      "order": [
+        2,
+        1,
+        0,
+        4,
+        3,
+        5
+      ]
+    },
+    {
+      "id": "uniform_06",
+      "split": "eval",
+      "family": "uniform",
+      "servers": [
+        0,
+        10,
+        20,
+        30,
+        40,
+        50
+      ],
+      "requests": [
+        3,
+        13,
+        23,
+        33,
+        43,
+        47
+      ],
+      "order": [
+        3,
+        0,
+        2,
+        4,
+        1,
+        5
+      ]
+    },
+    {
+      "id": "clustered_01",
+      "split": "eval",
+      "family": "clustered",
+      "servers": [
+        0,
+        2,
+        4,
+        40,
+        42,
+        44
+      ],
+      "requests": [
+        1,
+        3,
+        5,
+        39,
+        41,
+        43
+      ],
+      "order": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "id": "clustered_02",
+      "split": "eval",
+      "family": "clustered",
+      "servers": [
+        0,
+        2,
+        4,
+        40,
+        42,
+        44
+      ],
+      "requests": [
+        1,
+        3,
+        5,
+        39,
+        41,
+        43
+      ],
+      "order": [
+        5,
+        4,
+        3,
+        2,
+        1,
+        0
+      ]
+    },
+    {
+      "id": "clustered_03",
+      "split": "eval",
+      "family": "clustered",
+      "servers": [
+        0,
+        2,
+        4,
+        40,
+        42,
+        44
+      ],
+      "requests": [
+        1,
+        3,
+        5,
+        39,
+        41,
+        43
+      ],
+      "order": [
+        2,
+        3,
+        1,
+        4,
+        0,
+        5
+      ]
+    },
+    {
+      "id": "clustered_04",
+      "split": "eval",
+      "family": "clustered",
+      "servers": [
+        0,
+        2,
+        4,
+        40,
+        42,
+        44
+      ],
+      "requests": [
+        1,
+        3,
+        5,
+        39,
+        41,
+        43
+      ],
+      "order": [
+        0,
+        5,
+        1,
+        4,
+        2,
+        3
+      ]
+    },
+    {
+      "id": "clustered_05",
+      "split": "eval",
+      "family": "clustered",
+      "servers": [
+        0,
+        2,
+        4,
+        40,
+        42,
+        44
+      ],
+      "requests": [
+        1,
+        3,
+        5,
+        39,
+        41,
+        43
+      ],
+      "order": [
+        2,
+        1,
+        4,
+        3,
+        0,
+        5
+      ]
+    },
+    {
+      "id": "clustered_06",
+      "split": "eval",
+      "family": "clustered",
+      "servers": [
+        0,
+        2,
+        4,
+        40,
+        42,
+        44
+      ],
+      "requests": [
+        1,
+        3,
+        5,
+        39,
+        41,
+        43
+      ],
+      "order": [
+        1,
+        4,
+        2,
+        3,
+        5,
+        0
+      ]
+    },
+    {
+      "id": "near_far_01",
+      "split": "eval",
+      "family": "near_far",
+      "servers": [
+        0,
+        10,
+        20,
+        30,
+        40,
+        50
+      ],
+      "requests": [
+        1,
+        9,
+        21,
+        29,
+        41,
+        49
+      ],
+      "order": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "id": "near_far_02",
+      "split": "eval",
+      "family": "near_far",
+      "servers": [
+        0,
+        10,
+        20,
+        30,
+        40,
+        50
+      ],
+      "requests": [
+        1,
+        9,
+        21,
+        29,
+        41,
+        49
+      ],
+      "order": [
+        5,
+        4,
+        3,
+        2,
+        1,
+        0
+      ]
+    },
+    {
+      "id": "near_far_03",
+      "split": "eval",
+      "family": "near_far",
+      "servers": [
+        0,
+        10,
+        20,
+        30,
+        40,
+        50
+      ],
+      "requests": [
+        1,
+        9,
+        21,
+        29,
+        41,
+        49
+      ],
+      "order": [
+        2,
+        3,
+        1,
+        4,
+        0,
+        5
+      ]
+    },
+    {
+      "id": "near_far_04",
+      "split": "eval",
+      "family": "near_far",
+      "servers": [
+        0,
+        10,
+        20,
+        30,
+        40,
+        50
+      ],
+      "requests": [
+        1,
+        9,
+        21,
+        29,
+        41,
+        49
+      ],
+      "order": [
+        0,
+        5,
+        1,
+        4,
+        2,
+        3
+      ]
+    },
+    {
+      "id": "near_far_05",
+      "split": "eval",
+      "family": "near_far",
+      "servers": [
+        0,
+        10,
+        20,
+        30,
+        40,
+        50
+      ],
+      "requests": [
+        1,
+        9,
+        21,
+        29,
+        41,
+        49
+      ],
+      "order": [
+        1,
+        5,
+        4,
+        2,
+        3,
+        0
+      ]
+    },
+    {
+      "id": "near_far_06",
+      "split": "eval",
+      "family": "near_far",
+      "servers": [
+        0,
+        10,
+        20,
+        30,
+        40,
+        50
+      ],
+      "requests": [
+        1,
+        9,
+        21,
+        29,
+        41,
+        49
+      ],
+      "order": [
+        3,
+        0,
+        4,
+        5,
+        1,
+        2
+      ]
+    },
+    {
+      "id": "paired_01",
+      "split": "eval",
+      "family": "paired",
+      "servers": [
+        0,
+        10,
+        100,
+        110,
+        200,
+        210
+      ],
+      "requests": [
+        6,
+        9,
+        106,
+        109,
+        206,
+        209
+      ],
+      "order": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "id": "paired_02",
+      "split": "eval",
+      "family": "paired",
+      "servers": [
+        0,
+        10,
+        100,
+        110,
+        200,
+        210
+      ],
+      "requests": [
+        6,
+        9,
+        106,
+        109,
+        206,
+        209
+      ],
+      "order": [
+        5,
+        4,
+        3,
+        2,
+        1,
+        0
+      ]
+    },
+    {
+      "id": "paired_03",
+      "split": "eval",
+      "family": "paired",
+      "servers": [
+        0,
+        10,
+        100,
+        110,
+        200,
+        210
+      ],
+      "requests": [
+        6,
+        9,
+        106,
+        109,
+        206,
+        209
+      ],
+      "order": [
+        2,
+        3,
+        1,
+        4,
+        0,
+        5
+      ]
+    },
+    {
+      "id": "paired_04",
+      "split": "eval",
+      "family": "paired",
+      "servers": [
+        0,
+        10,
+        100,
+        110,
+        200,
+        210
+      ],
+      "requests": [
+        6,
+        9,
+        106,
+        109,
+        206,
+        209
+      ],
+      "order": [
+        0,
+        5,
+        1,
+        4,
+        2,
+        3
+      ]
+    },
+    {
+      "id": "paired_05",
+      "split": "eval",
+      "family": "paired",
+      "servers": [
+        0,
+        10,
+        100,
+        110,
+        200,
+        210
+      ],
+      "requests": [
+        6,
+        9,
+        106,
+        109,
+        206,
+        209
+      ],
+      "order": [
+        1,
+        2,
+        5,
+        4,
+        3,
+        0
+      ]
+    },
+    {
+      "id": "paired_06",
+      "split": "eval",
+      "family": "paired",
+      "servers": [
+        0,
+        10,
+        100,
+        110,
+        200,
+        210
+      ],
+      "requests": [
+        6,
+        9,
+        106,
+        109,
+        206,
+        209
+      ],
+      "order": [
+        2,
+        1,
+        3,
+        5,
+        4,
+        0
+      ]
+    },
+    {
+      "id": "alternating_radius_n3",
+      "split": "stress",
+      "family": "alternating_radius",
+      "servers": [
+        -4,
+        -1,
+        2
+      ],
+      "requests": [
+        0,
+        -1,
+        2
+      ],
+      "order": [
+        0,
+        1,
+        2
+      ]
+    },
+    {
+      "id": "alternating_radius_n4",
+      "split": "stress",
+      "family": "alternating_radius",
+      "servers": [
+        -4,
+        -1,
+        2,
+        8
+      ],
+      "requests": [
+        0,
+        -1,
+        2,
+        -4
+      ],
+      "order": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "id": "alternating_radius_n5",
+      "split": "stress",
+      "family": "alternating_radius",
+      "servers": [
+        -16,
+        -4,
+        -1,
+        2,
+        8
+      ],
+      "requests": [
+        0,
+        -1,
+        2,
+        -4,
+        8
+      ],
+      "order": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ]
+    },
+    {
+      "id": "alternating_radius_n6",
+      "split": "stress",
+      "family": "alternating_radius",
+      "servers": [
+        -16,
+        -4,
+        -1,
+        2,
+        8,
+        32
+      ],
+      "requests": [
+        0,
+        -1,
+        2,
+        -4,
+        8,
+        -16
+      ],
+      "order": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    }
+  ]
+}

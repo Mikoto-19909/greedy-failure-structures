@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>研究与实验工作台</title>
+  <link rel="icon" href="/favicon.svg" />
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/topics.css" />
+</head>
+<body data-topic-home>
+  <header class="topbar">
+    <div class="brand-lockup"><div class="brand-mark" aria-hidden="true">R</div><div>
+      <p class="eyebrow">RESEARCH WORKSPACE</p>
+      <h1 data-topic-text="title">研究与实验工作台</h1>
+    </div></div>
+    <div class="topbar-meta">
+      <span data-topic-text="local">本地工作台</span>
+      <div class="language-toggle" role="group" aria-label="Language">
+        <button class="language-button active" data-topic-language="zh">中文</button>
+        <button class="language-button" data-topic-language="en">EN</button>
+      </div>
+    </div>
+  </header>
+  <main class="portal-shell">
+    <section class="portal-intro" aria-labelledby="portal-title">
+      <p class="section-kicker" data-topic-text="kicker">研究专题与平台案例</p>
+      <h2 id="portal-title" data-topic-text="heading">从一个研究问题开始</h2>
+      <p class="lede" data-topic-text="intro">选择专题，阅读已有成果，再进入对应的实验与回放工具。</p>
+      <p class="help-text" data-topic-text="note">进入专题不会启动计算。每项研究保留自己的评价指标与核验方法。</p>
+    </section>
+    <section aria-labelledby="topics-heading">
+      <div class="portal-section-heading">
+        <h2 id="topics-heading" data-topic-text="topics">选择研究入口</h2>
+        <span class="help-text" data-topic-count></span>
+      </div>
+      <p data-topic-message role="status" aria-live="polite">正在读取研究入口…</p>
+      <div class="topic-grid" data-topic-cards></div>
+      <noscript><p>请启用 JavaScript 查看研究入口。</p></noscript>
+    </section>
+  </main>
+  <footer class="footer" data-topic-text="footer">最大覆盖研究及其可复现实验平台</footer>
+  <script src="/topics.js"></script>
+</body>
+</html>

@@ -40,7 +40,7 @@ LIMITS = {"max_input_bytes": 4_000_000, "max_input_records": 500,
 _ID = re.compile(r"[0-9a-f]{32}\Z")
 _TERMINAL = {"completed", "failed", "interrupted", "paused", "cancelled"}
 _OUTPUT = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]*\Z")
-_RESERVED_OUTPUTS = {"workbench_jobs", "dashboard_views", "dashboard_configs"}
+_RESERVED_OUTPUTS = {"workbench_jobs", "dashboard_views", "dashboard_configs", "online_matching"}
 
 
 class JobConflictError(ValueError):
@@ -138,7 +138,7 @@ def _case(instance: dict[str, Any], evaluation: dict[str, Any]) -> dict[str, Any
 def _benchmark_output(value: object) -> str:
     if (not isinstance(value, str) or not _OUTPUT.fullmatch(value)
             or value.lower() in _RESERVED_OUTPUTS or value.endswith(".")):
-        raise ValueError("output must be a simple result name, excluding dashboard management directories")
+        raise ValueError("output must be a simple result name, excluding reserved research and dashboard directories")
     return value
 
 

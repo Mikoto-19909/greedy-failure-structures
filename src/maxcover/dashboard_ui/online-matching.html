@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>在线匹配 · 平台应用案例</title>
+  <link rel="icon" href="/favicon.svg" />
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/workbench.css" />
+  <link rel="stylesheet" href="/online-matching.css" />
+  <link rel="stylesheet" href="/topics.css" />
+</head>
+<body>
+<header class="topbar wb-topbar">
+  <div class="brand-lockup"><div class="brand-mark" aria-hidden="true">OM</div><div>
+    <p class="eyebrow">PLATFORM CASE STUDY</p><h1>有限改派在线匹配</h1>
+  </div></div>
+</header>
+<nav data-topic-nav data-topic-current="online-matching"><a href="/">研究首页</a></nav>
+<main class="matching-shell">
+  <section class="matching-intro">
+    <p class="section-kicker">已接入的独立研究案例</p>
+    <h2>把有限的改派机会用在哪里？</h2>
+    <p class="lede">请求依次到来，每个服务点接收一个请求。比较允许改派 1、2、4 次时的距离成本，再沿一条序列查看分配怎样变化。</p>
+    <p class="help-text">阶段成本和是每次到达后的总匹配距离相加，数值越小越好。坐标单位由输入定义。</p>
+    <p class="help-text">原研究成果在完成后接入平台。可以直接阅读和回放；固定实验复现会生成一份新结果。</p>
+  </section>
+  <section aria-label="结果选择与实验复现" class="matching-controls">
+    <label>已有结果<select id="matching-run" class="field"></select></label>
+    <label>复现数据<select id="matching-split" class="field"><option value="eval">固定比较 · 24 条序列</option><option value="dev">开发例子 · 6 条序列</option></select></label>
+    <button id="matching-start" class="button button-primary" disabled>运行并核验</button>
+    <button id="matching-refresh" class="button button-secondary">刷新</button>
+  </section>
+  <p id="matching-message" role="status" aria-live="polite"></p>
+  <div id="matching-content" hidden>
+    <section class="matching-section" aria-labelledby="comparison-title">
+      <div class="wb-heading"><div><p id="matching-source" class="help-text"></p><h2 id="comparison-title">成本与改派预算</h2></div>
+        <label>布局<select id="matching-family" class="field"></select></label>
+      </div>
+      <p id="matching-verification" class="help-text"></p>
+      <div id="budget-chart" class="matching-chart"></div>
+      <div id="matching-summary" class="table-wrap"></div>
+      <div id="matching-downloads" class="matching-downloads"></div>
+    </section>
+    <section class="matching-section" aria-labelledby="trace-title">
+      <h2 id="trace-title">沿一条序列看分配过程</h2>
+      <div class="matching-controls trace-controls">
+        <label>请求序列<select id="matching-case" class="field"></select></label>
+        <label>策略<select id="matching-policy" class="field"><option value="priced_chain">预算定价链</option><option value="single">单次腾位</option><option value="nearest">最近空位</option></select></label>
+        <label>单请求改派上限<select id="matching-budget" class="field"><option value="1">1 次</option><option value="2">2 次</option><option value="4">4 次</option></select></label>
+      </div>
+      <div class="step-controls"><button id="matching-prev" class="button button-secondary">上一步</button>
+        <label>到达步骤 <input id="matching-step" type="range" min="1" max="6" value="1" /></label>
+        <button id="matching-next" class="button button-secondary">下一步</button>
+      </div>
+      <p id="matching-step-label" aria-live="polite"></p>
+      <div id="assignment-chart" class="matching-chart"></div>
+      <div id="matching-moves"></div>
+      <div id="cost-chart" class="matching-chart"></div>
+    </section>
+  </div>
+  <section class="matching-section" aria-labelledby="report-title">
+    <div class="wb-heading"><h2 id="report-title">研究结论与推导</h2><label>报告<select id="matching-report" class="field"></select></label></div>
+    <div id="matching-report-body"></div>
+  </section>
+</main>
+<script src="/report.js"></script>
+<script src="/online-matching.js"></script>
+<script src="/topics.js"></script>
+</body>
+</html>

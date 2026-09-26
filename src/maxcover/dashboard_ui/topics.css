@@ -1,0 +1,30 @@
+.portal-shell { width: min(1180px, 92vw); margin: 0 auto; padding: 64px 0 80px; flex: 1; }
+body[data-topic-home] { min-height: 100vh; display: flex; flex-direction: column; }
+.portal-intro { max-width: 740px; margin-bottom: 48px; }
+.portal-intro h2 { margin: 16px 0; font-size: clamp(30px, 4vw, 46px); letter-spacing: -.04em; line-height: 1.2; }
+.portal-intro .lede { max-width: 650px; font-size: 17px; line-height: 1.9; }
+.portal-section-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+.portal-section-heading h2 { margin: 0; font-size: 18px; }
+.topic-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 310px), 1fr)); gap: 22px; }
+.topic-card { padding: 28px; border: 1px solid var(--border); border-radius: 18px; background: var(--panel); display: flex; flex-direction: column; align-items: flex-start; box-shadow: var(--shadow); }
+.topic-card-header { display: flex; align-items: center; gap: 12px; }
+.topic-card h3 { margin: 26px 0 12px; font-size: 25px; letter-spacing: -.025em; }
+.topic-card-summary { color: var(--muted-strong); line-height: 1.9; margin: 0 0 24px; }
+.topic-features { display: flex; gap: 8px; flex-wrap: wrap; list-style: none; padding: 0; margin: auto 0 28px; }
+.topic-features li { padding: 5px 10px; border: 1px solid var(--border); border-radius: 6px; color: var(--muted-strong); font-size: 12px; }
+.topic-card .button { width: 100%; justify-content: space-between; }
+.topic-nav { width: min(1180px, 92vw); margin: 18px auto 0; display: flex; align-items: center; gap: 14px; }
+.topic-home-link { color: var(--muted-strong); text-decoration: none; font-size: 13px; white-space: nowrap; }
+.topic-home-link:hover { color: var(--ink); text-decoration: underline; }
+.topic-switch-label { display: flex; gap: 10px; align-items: center; margin-left: auto; font-size: 12px; color: var(--muted); min-width: 0; }
+.topic-switch-label select { max-width: min(310px, 58vw); min-width: 0; padding: 7px 10px; border: 1px solid var(--border); border-radius: 7px; color: var(--ink); background: var(--panel); }
+[data-topic-message] { color: var(--muted); font-size: 14px; }
+[data-topic-message].error { color: var(--red); }
+@media (max-width: 620px) {
+  .portal-shell { padding-top: 38px; }
+  .portal-intro { margin-bottom: 32px; }
+  .topic-card { padding: 24px; }
+  .topic-card h3 { font-size: 22px; }
+  .topic-switch-label span { display: none; }
+  body[data-topic-home] .topbar-meta > span { display: none; }
+}
