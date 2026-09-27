@@ -227,6 +227,128 @@ class OnlineMatchingResearchTests(unittest.TestCase):
                 write_json(source, bad)
                 verifier.verify(source, cpu_limit=1)
 
+    def test_long_sequence_reset_and_independent_rejection(self):
+        producer = load_script('extension_20260925/long_sequence.py')
+        verifier = load_script('extension_20260925/verify_long_sequence.py')
+        result = producer.run([-4, -1, 2, 8], [0, -1, 2, -4], 2, [2, 4])
+        self.assertEqual([Q(row['cost']) for row in result['trace']], [1, 2, 8, 8])
+        # At stage three the transfer bound is tight: residual 6 = optimum 4 + frozen 2.
+        third = result['trace'][2]
+        self.assertEqual([Q(third[key]) for key in ('residual_optimum', 'optimum', 'frozen_cost')], [6, 4, 2])
+        self.assertEqual(verifier.verify(result)['prefixes'], 4)
+        self.assertEqual(verifier.verify(producer.run([0, 3, 5], [2, 3, 0], 0))['maximum_recourse'], 0)
+        corrupt = deepcopy(result); corrupt['trace'][2]['cost'] = '9'
+        counts = deepcopy(result); counts['trace'][1]['recourse'][0] = 0
+        short = deepcopy(result); short['trace'].pop()
+        for bad in (corrupt, counts, short):
+            with self.assertRaises((AssertionError, ValueError)):
+                verifier.verify(bad)
+        stream = producer.RestartMatcher([0, 3, 5], 1)
+        stream.arrive(2)
+        stream.arrive(3, reset=True)
+        with self.assertRaisesRegex(ValueError, 'budget'):
+            stream.arrive(0, reset=True)
+        self.assertEqual(len(stream.requests), 2)
+
+        threshold = producer.run([0, 2, 5], [1, 0, 5], 1, trigger_ratio=2)
+        self.assertEqual([Q(row['cost']) for row in threshold['trace']], [1, 1, 1])
+        self.assertEqual(verifier.verify(threshold)['resets'], 1)
+
+    def test_continuous_four_rational_witnesses_and_action_sets(self):
+        producer = load_script('extension_20260925/four_exact.py')
+        verifier = load_script('extension_20260925/verify_four_exact.py')
+        records = json.loads((ROOT / 'tests/fixtures/online_matching/four_exact_lower.json').read_text())
+        for record, expected in zip(records, ('9', '3')):
+            self.assertEqual(verifier.verify(record)['guaranteed_excess'], expected)
+            missing = deepcopy(record); missing['witness']['third'].pop()
+            wrong = deepcopy(record); wrong['bound'] = str(Q(expected) + 1)
+            unknown = dict(record, status='unknown')
+            for bad in (missing, wrong, unknown):
+                with self.assertRaises((AssertionError, ValueError)):
+                    verifier.verify(bad)
+        # Reachable action sets: path-following and an independent graph check.
+        for budget in (1, 2):
+            for model in ('atomic', 'chain'):
+                states = {((), ())}
+                for _ in range(4):
+                    following = set()
+                    for old, used in states:
+                        actions = producer.actions(old, used, budget, model)
+                        self.assertEqual(set(actions), set(verifier._legal(old, used, budget, model)))
+                        following.update(actions)
+                    states = following
+
+    def test_local_blocks_budget_and_independent_rejection(self):
+        producer = load_script('extension_20260925/local_freeze.py')
+        verifier = load_script('extension_20260925/verify_local_freeze.py')
+        study = load_script('extension_20260925/local_freeze_study.py')
+        cases = study.fixed_cases()
+        self.assertEqual(len(cases), 9)
+        self.assertEqual(cases[-1]['requests'], [5, 2, -1, -4, 105, 102, 99, 96])
+        data = producer.run([0, 2, 100, 102], [1, 0, 101, 100], 1)
+        self.assertEqual([Q(row['cost']) for row in data['trace']], [1, 1, 2, 2])
+        self.assertEqual(producer.metrics(data)['repair_arrivals'], 2)
+        self.assertEqual(verifier.verify(data)['maximum_recourse'], 1)
+        fixed = producer.run([-4, -1, 2, 8], [Q(1, 2), -1, 2, -4], 2, 4)
+        self.assertEqual(verifier.verify(fixed)['maximum_frozen_loss'], '9')
+        self.assertEqual(producer.metrics(fixed)['excess_sum'], '9')
+        repaired = producer.run([-4, -1, 2, 8], [Q(1, 2), -1, 2, -4], 2)
+        self.assertEqual(verifier.verify(repaired)['maximum_frozen_loss'], '0')
+        for row in repaired['trace']:
+            self.assertLessEqual(Q(row['cost']), Q(row['shadow_cost']))
+        cost = deepcopy(data); cost['trace'][-1]['cost'] = '999'
+        short = deepcopy(data); short['trace'].pop()
+        counts = deepcopy(data); counts['trace'][1]['counts'][0] = 0
+        route = deepcopy(data); route['trace'][1]['block'] = 1
+        shadow = deepcopy(data); shadow['shadow']['trace'][0]['cost'] = '2'
+        for bad in (cost, short, counts, route, shadow):
+            with self.assertRaises((AssertionError, ValueError)):
+                verifier.verify(bad)
+        with self.assertRaises(ValueError):
+            producer.LocalMatcher([0, 1], 1, 5)
+
+    def test_explicit_four_budget2_policy_and_independent_rejection(self):
+        producer = load_script('extension_20260925/four_budget2_policy.py')
+        verifier = load_script('extension_20260925/verify_four_budget2_policy.py')
+        lower = producer.run([Q(1, 2), -1, 2, -4])
+        self.assertEqual(lower['excess_sum'], '3')
+        self.assertEqual([Q(row['cost']) for row in lower['trace']], [Q(3, 2), Q(9, 2), Q(9, 2), Q(15, 2)])
+        self.assertTrue(verifier.verify(lower)['verified'])
+        anchor = producer.run([6, 7, 8, -4])
+        self.assertEqual(anchor['excess_sum'], '0')
+        self.assertTrue(verifier.verify(anchor)['anchored'])
+        self.assertEqual([row['assignment'][0] for row in anchor['trace']], [3, 2, 2, 2])
+        for prefix in ((5, 6), (6, 6)):
+            boundary = producer.run([*prefix, -4, 8])
+            self.assertFalse(verifier.verify(boundary)['anchored'])
+        other_future = producer.run([Q(1, 2), -1, 8, 8])
+        self.assertEqual(lower['trace'][:2], other_future['trace'][:2])
+        same_coordinates = producer.run([8] * 4)
+        self.assertEqual(verifier.verify(same_coordinates)['maximum_recourse'], 2)
+        # The announced model permits a swap cycle separate from the new arrival.
+        cycle = producer.run([Q(1, 2), 0, 8, -4])
+        chain = load_script('extension_20260925/four_exact.py').chain
+        self.assertFalse(chain(tuple(cycle['trace'][1]['assignment']), tuple(cycle['trace'][2]['assignment'])))
+        cost = deepcopy(lower); cost['trace'][1]['cost'] = '999'
+        short = deepcopy(lower); short['trace'].pop()
+        counts = deepcopy(lower); counts['trace'][-1]['counts'][0] = 3
+        scope = dict(lower, model='chain')
+        for bad in (cost, short, counts, scope):
+            with self.assertRaises((AssertionError, ValueError)):
+                verifier.verify(bad)
+        stream = producer.FourBudgetTwo()
+        stream.arrive(6)
+        before = deepcopy(stream.__dict__)
+        with self.assertRaisesRegex(ValueError, 'interval|lie'):
+            stream.arrive(9)
+        self.assertEqual(stream.__dict__, before)
+        for request in (7, 8, -4):
+            stream.arrive(request)
+        with self.assertRaisesRegex(ValueError, 'four'):
+            stream.arrive(0)
+        with self.assertRaisesRegex(ValueError, 'four'):
+            producer.run([1, 2, 3])
+
     def test_result_note_preserves_data_without_a_package_integrity_gate(self):
         _, out, _ = self.tiny_run()
         before = (out / 'summary.json').read_bytes()
