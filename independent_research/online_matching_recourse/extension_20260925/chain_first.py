@@ -11,6 +11,11 @@ import json
 import time
 
 
+def require(condition, message='verification check failed'):
+    if not condition:
+        raise AssertionError(message)
+
+
 def cost(s, r, a):
     return sum(abs(x - s[j]) for x, j in zip(r, a))
 
@@ -187,7 +192,7 @@ def first_value(s, x, p, mode='atomic'):
             witnesses.append((value, y))
     worst, y = max(witnesses, key=lambda row: (row[0], -row[1]))
     exact, _ = prefix(s, x, y, p, mode)
-    assert exact[0] == worst, (s, x, p, mode, y, exact, worst)
+    require(exact[0] == worst, (s, x, p, mode, y, exact, worst))
     initial = abs(x - s[p]) - min(abs(x - v) for v in s)
     return {'value': worst + initial, 'future_value': worst, 'first_excess': initial,
             'y': y, 'z': exact[2], 'second_assignment': exact[1],
@@ -259,7 +264,7 @@ def verify():
                     brute = brute_prefix(s, x, y, p, grid, mode)
                     # Terminal difference extrema are checked here against the grid;
                     # rational off-grid cases are verified separately below.
-                    assert result[:2] == brute, (s, x, y, mode, result, brute)
+                    require(result[:2] == brute, (s, x, y, mode, result, brute))
                     count += 1
                 if chain[0] > atomic[0]:
                     differences.append({'servers': s, 'x': x, 'y': y,
@@ -278,23 +283,23 @@ def verify():
             for p, row in enumerate(rows):
                 zs = ys | {row['z']}
                 got = max(brute_prefix(s, x, y, p, zs, 'atomic')[0] for y in ys)
-                assert got == row['future_value'], (s, x, p, got, row)
+                require(got == row['future_value'], (s, x, p, got, row))
                 # Direct prefix evaluator also tests interior points in every exact slab.
                 for lo, hi in y_slabs(s, x):
                     y = (2 * lo + hi) / 3
                     lines = score_lines(s, x, p, 'atomic', lo, hi)
                     predicted = min(max(line_value(f, y) for f in fs) for fs in lines.values())
-                    assert prefix(s, x, y, p, 'atomic')[0][0] == predicted
+                    require(prefix(s, x, y, p, 'atomic')[0][0] == predicted)
             first_results.append({'servers': s, 'x': x, 'nearest': nearest(s, x),
                                   'optimal_first': best, 'choices': rows})
     s, x, y = tuple(map(Q, (0, 2, 6))), Q(5, 4), Q(2)
     chain_example = {'servers': s, 'x': x, 'y': y,
                      'chain': prefix(s, x, y, mode='chain'),
                      'atomic': prefix(s, x, y, mode='atomic')}
-    assert chain_example['chain'][0][0] == Q(5, 2)
-    assert chain_example['chain'][0][1] == (0, 1)
-    assert chain_example['atomic'][0][0] == Q(3, 2)
-    assert chain_example['atomic'][0][1] == (1, 0)
+    require(chain_example['chain'][0][0] == Q(5, 2))
+    require(chain_example['chain'][0][1] == (0, 1))
+    require(chain_example['atomic'][0][0] == Q(3, 2))
+    require(chain_example['atomic'][0][1] == (1, 0))
     rational_checks = 0
     for s in [tuple(map(Q, (0, 2, 6))), (Q(-2, 3), Q(5, 7), Q(17, 6))]:
         for x in (s[0] + (s[2] - s[0]) * Q(2, 7),
@@ -307,7 +312,7 @@ def verify():
                         # All actual per-action worst witnesses are included.
                         # The permutation checker independently tests feasibility.
                         zs = set(s) | {r[2] for r in rows}
-                        assert brute_prefix(s, x, y, p, zs, mode) == exact[:2]
+                        require(brute_prefix(s, x, y, p, zs, mode) == exact[:2])
                         rational_checks += 1
     return {'input_domain': 'three ordered rational servers, three requests in [a,c], lifetime budget one',
             'continuous_method': 'exact Fraction arrangement and envelope enumeration; proof in report',

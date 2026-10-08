@@ -3,6 +3,7 @@ import argparse
 import csv
 from fractions import Fraction
 from itertools import permutations
+import hashlib
 import json
 from pathlib import Path
 import time
@@ -25,14 +26,22 @@ def read(path):
 
 def expected_cases():
     # Shared fixed inputs, independently constructed stress cases; no solver import.
-    cases = read(ROOT.parent/'inputs.json')['cases']
+    original = (ROOT.parent/'inputs.json').read_bytes()
+    identity = read(ROOT.parent/'input_manifest.json')['input_sha256']
+    require(hashlib.sha256(original).hexdigest() == identity, 'fixed input identity mismatch')
+    cases = json.loads(original)['cases']
     require(all(case['split'] in ('dev', 'eval') for case in cases))
     for n in (3, 4, 5, 6):
         radial = [(-1)**i * 2**(i-1) for i in range(1, n+1)]
         cases.append(dict(id=f'alternating_radius_n{n}', split='stress', family='alternating_radius',
                           servers=sorted(radial), requests=[0]+radial[:-1], order=list(range(n))))
     require(len({case['id'] for case in cases}) == len(cases), 'duplicate fixed case')
-    return {case['id']: case for case in cases}
+    return {case['id']: case for case in cases}, identity
+
+
+def require_configuration_types(rows):
+    require(all(type(row['chain_limit']) is int and type(row['budget']) is int
+                and type(row['weight']) is str for row in rows), 'invalid configuration identity type')
 
 
 def configurations(case):
@@ -67,9 +76,14 @@ def main():
     supplied_cases = read(out/'inputs.json')['cases']
     cases = {c['id']: c for c in supplied_cases}
     require(len(cases) == len(supplied_cases), 'duplicate case')
-    require(cases == expected_cases(), 'incomplete or altered case set')
+    fixed_cases, identity = expected_cases()
+    require(cases == fixed_cases, 'incomplete or altered case set')
     traces, summary, oracle = read(out/'traces.json'), read(out/'summary.json'), read(out/'oracle.json')
+    require(read(out/'inputs.json')['original_sha256'] == summary['original_sha256'] == identity,
+            'incorrect artifact input identity')
     require(cases and traces and summary['groups'], 'empty comparison')
+    require_configuration_types(traces)
+    require_configuration_types(summary['groups'])
     require(set(oracle) == set(cases), 'incomplete or extra oracle case')
     expected = {(case['id'], limit, weight, budget) for case in cases.values()
                 for limit, weight, budget in configurations(case)}

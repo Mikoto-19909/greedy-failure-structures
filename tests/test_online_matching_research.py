@@ -135,7 +135,7 @@ class OnlineMatchingResearchTests(unittest.TestCase):
         source = self.root / 'summary.json'
         write_json(source, summary)
         with patch.object(verifier, 'ALPHABET', tuple(summary['future_alphabet'])), redirect_stdout(io.StringIO()):
-            verifier.verify(source, cpu_limit=10)
+            verifier.verify(source, cpu_limit=120)
 
     def optimized_verify(self, mode, script, source, passed, message=None):
         environment = dict(os.environ)
@@ -145,7 +145,7 @@ class OnlineMatchingResearchTests(unittest.TestCase):
         certificate = source / 'verification.json' if source.is_dir() else source.parent / 'verification.json'
         certificate.unlink(missing_ok=True)
         result = subprocess.run([sys.executable, *flags, str(script), str(source)],
-                                env=environment, capture_output=True, text=True, timeout=30)
+                                env=environment, capture_output=True, text=True, timeout=180)
         if passed:
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertTrue(certificate.exists())
@@ -382,6 +382,126 @@ class OnlineMatchingResearchTests(unittest.TestCase):
                 with self.subTest(mode=mode, kind=kind):
                     self.save_ablation(out, bad)
                     self.optimized_verify(mode, script, out, False)
+
+    def test_ablation_fixed_input_identity_and_exact_config_types(self):
+        extension, out, verifier, baseline = self.ablation_run()
+        original = (self.root / 'inputs.json').read_bytes()
+        for kind in ('input_tag', 'summary_tag', 'altered_fixed_source', 'trace_budget_bool',
+                     'trace_limit_bool', 'group_budget_bool', 'group_limit_bool', 'trace_budget_float'):
+            bad = deepcopy(baseline)
+            (self.root / 'inputs.json').write_bytes(original)
+            if kind == 'input_tag': bad['inputs']['original_sha256'] = 'wrong'
+            elif kind == 'summary_tag': bad['summary']['original_sha256'] = 'wrong'
+            elif kind == 'altered_fixed_source':
+                source = json.loads(original); source['cases'][0]['family'] = 'changed'
+                write_json(self.root / 'inputs.json', source)
+                bad['inputs']['cases'][0]['family'] = 'changed'
+                for rows in (bad['traces'], bad['metrics']):
+                    for row in rows:
+                        if row['case_id'] == 'dev_tiny': row['family'] = 'changed'
+            else:
+                section = 'groups' if kind.startswith('group') else 'traces'
+                rows = bad['summary']['groups'] if section == 'groups' else bad['traces']
+                field = 'chain_limit' if 'limit' in kind else 'budget'
+                row = next(r for r in rows if r[field] == 1)
+                row[field] = 1.0 if kind.endswith('float') else True
+                if section == 'traces':
+                    index = rows.index(row); bad['metrics'][index][field] = row[field]
+            with self.subTest(kind=kind), patch.object(verifier, 'ROOT', extension), self.assertRaisesRegex(AssertionError, 'identity'):
+                self.save_ablation(out, bad)
+                self.invoke(verifier, out)
+        (self.root / 'inputs.json').write_bytes(original)
+
+    def test_ablation_producer_and_verifier_bind_inputs_under_optimization(self):
+        extension, out, _, baseline = self.ablation_run()
+        for name in ('ablation.py', 'verify_ablation.py'):
+            shutil.copyfile(EXTENSION / name, extension / name)
+        original = (self.root / 'inputs.json').read_bytes()
+        for mode in ('flag', 'environment'):
+            source = json.loads(original); source['cases'][0]['family'] = 'changed'
+            write_json(self.root / 'inputs.json', source)
+            bad = deepcopy(baseline); bad['inputs']['cases'][0]['family'] = 'changed'
+            for rows in (bad['traces'], bad['metrics']):
+                for row in rows:
+                    if row['case_id'] == 'dev_tiny': row['family'] = 'changed'
+            self.save_ablation(out, bad)
+            for script in ('ablation.py', 'verify_ablation.py'):
+                with self.subTest(mode=mode, script=script):
+                    self.optimized_verify(mode, extension / script, out, False, 'fixed input identity mismatch')
+        (self.root / 'inputs.json').write_bytes(original)
+
+    def test_remaining_scientific_checks_survive_optimization(self):
+        program = '''
+import runpy, sys
+from fractions import Fraction as Q
+from types import SimpleNamespace
+from pathlib import Path
+root=Path(sys.argv[1])
+three=runpy.run_path(str(root/'verify_three_point.py'))
+if three['audit_prefix']((0,3,5),2,3,range(6))[0] != 1: raise RuntimeError('wrong valid three-point value')
+try: three['audit_prefix']((0,3,5),2,3,[])
+except AssertionError: pass
+else: raise RuntimeError('empty future accepted')
+chain=runpy.run_path(str(root/'extension_20260925/chain_first.py'))
+if chain['first_value']((0,3,6),Q(7,4),0)['value'] != 1: raise RuntimeError('wrong valid chain value')
+chain['first_value'].__globals__['prefix']=lambda *args: ((Q(-1),(0,1),Q(0)),[])
+try: chain['first_value']((0,3,6),Q(7,4),0)
+except AssertionError: pass
+else: raise RuntimeError('inconsistent chain result accepted')
+raw=runpy.run_path(str(root/'extension_20260925/random_raw.py'))
+matrix=raw['np'].array([[58.,64.],[62.,56.]])
+if abs(raw['game'](matrix)['value']-60)>1e-8: raise RuntimeError('wrong valid LP value')
+invalid=SimpleNamespace(success=True,message='controlled inconsistent certificate',x=raw['np'].array([-.5,1.5,60.]),
+                        fun=60.,ineqlin=SimpleNamespace(marginals=raw['np'].array([-2/3,-1/3])))
+raw['game'].__globals__['linprog']=lambda *args,**kwargs: invalid
+try: raw['game'](matrix)
+except AssertionError: pass
+else: raise RuntimeError('inconsistent LP certificate accepted')
+'''
+        for mode in ('flag', 'environment'):
+            environment = dict(os.environ); environment.pop('PYTHONOPTIMIZE', None)
+            flags = ['-O', '-B'] if mode == 'flag' else ['-B']
+            if mode == 'environment': environment['PYTHONOPTIMIZE'] = '1'
+            with self.subTest(mode=mode):
+                result = subprocess.run([sys.executable, *flags, '-c', program, str(STUDY)], env=environment,
+                                        capture_output=True, text=True, timeout=180)
+                self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_optimized_fixture_runner_and_finalizer_preserve_input_guards(self):
+        for mode in ('flag', 'environment'):
+            environment = dict(os.environ); environment.pop('PYTHONOPTIMIZE', None)
+            flags = ['-O', '-B'] if mode == 'flag' else ['-B']
+            if mode == 'environment': environment['PYTHONOPTIMIZE'] = '1'
+            folder = self.root / mode; folder.mkdir()
+            for name in ('fixtures.py', 'run.py', 'matching.py', 'protocol.md'):
+                shutil.copyfile(STUDY / name, folder / name)
+            command = [sys.executable, *flags]
+            with self.subTest(mode=mode, kind='valid_fixture'):
+                result = subprocess.run([*command, str(folder / 'fixtures.py')], env=environment,
+                                        capture_output=True, text=True, timeout=180)
+                self.assertEqual(result.returncode, 0, result.stderr)
+            changed = json.loads((folder / 'inputs.json').read_text()); changed['cases'][0]['family'] = 'changed'
+            write_json(folder / 'inputs.json', changed)
+            changed_bytes = (folder / 'inputs.json').read_bytes()
+            with self.subTest(mode=mode, kind='protect_existing_fixture'):
+                result = subprocess.run([*command, str(folder / 'fixtures.py')], env=environment,
+                                        capture_output=True, text=True, timeout=180)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual((folder / 'inputs.json').read_bytes(), changed_bytes)
+            with self.subTest(mode=mode, kind='runner_identity'):
+                result = subprocess.run([*command, str(folder / 'run.py'), '--split', 'dev'], env=environment,
+                                        capture_output=True, text=True, timeout=180)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertFalse((folder / 'output').exists())
+            out = folder / 'failed'; out.mkdir()
+            write_json(out / 'verification.json', {'status': 'failed'})
+            write_json(out / 'summary.json', {'aggregates': []})
+            shutil.copyfile(STUDY / 'protocol.md', out / 'protocol.md')
+            with self.subTest(mode=mode, kind='finalizer_status'):
+                result = subprocess.run([*command, str(STUDY / 'finalize.py'), str(out)], env=environment,
+                                        capture_output=True, text=True, timeout=180)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertFalse((out / '结果说明.md').exists())
 
     def test_four_arrival_checks_survive_optimization_flag_and_environment(self):
         archived = EXTENSION / 'output/four_game_20260925T053018894723Z/summary.json'

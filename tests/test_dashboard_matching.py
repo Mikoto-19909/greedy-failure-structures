@@ -11,6 +11,7 @@ import sys
 import tempfile
 import threading
 import unittest
+from urllib.parse import urlencode
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
@@ -37,7 +38,10 @@ class OnlineMatchingTests(unittest.TestCase):
             destination.mkdir(parents=True)
             for name in ("summary.json", "metrics.csv", "traces.json", "verification.json", "inputs.json"):
                 shutil.copyfile(source / "output" / run / name, destination / name)
-        for relative in ("extension_20260925/报告/六分支研究结果.md",):
+        for relative in ("extension_20260925/报告/六分支研究结果.md",
+                         "extension_20260925/报告/图/01_budget_counterexample.png",
+                         "extension_20260925/报告/图/02_ablation.png", "报告/研究报告.md",
+                         f"output/{EVAL}/figures/01_budget_benefit.png"):
             target = self.study / relative
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(source / relative, target)
@@ -119,6 +123,41 @@ class OnlineMatchingTests(unittest.TestCase):
         report = self.service.report("results")
         self.assertIn("六分支继续研究结果", report["text"])
 
+    def test_reports_expose_their_bundled_figures_as_original_png_bytes(self) -> None:
+        expected = {
+            "results": ("extension_20260925/报告", ("图/01_budget_counterexample.png", "图/02_ablation.png")),
+            "initial": ("报告", (f"../output/{EVAL}/figures/01_budget_benefit.png",)),
+        }
+        for key, (parent, names) in expected.items():
+            report = self.service.report(key)
+            self.assertEqual(set(report["images"]), set(names))
+            for name in names:
+                with self.subTest(key=key, name=name):
+                    self.assertIn(name, report["text"])
+                    self.assertEqual(report["images"][name],
+                                     "/api/online-matching/report-asset?" + urlencode({"key": key, "file": name}))
+                    payload, media = self.service.report_asset(key, name)
+                    self.assertEqual(media, "image/png")
+                    self.assertEqual(payload, (self.study / parent / name).read_bytes())
+                    self.assertTrue(payload.startswith(b"\x89PNG\r\n\x1a\n"))
+
+    def test_report_figures_reject_unlisted_paths_and_linked_files(self) -> None:
+        for key, name in (("missing", "图/01_budget_counterexample.png"),
+                          ("initial", "图/01_budget_counterexample.png"),
+                          ("results", "../../inputs.json"), ("results", "/etc/passwd"),
+                          ("results", "图/01_budget_counterexample.svg"),
+                          ("results", "图/../图/01_budget_counterexample.png")):
+            with self.subTest(key=key, name=name), self.assertRaises(MatchingError):
+                self.service.report_asset(key, name)
+        image = self.study / "extension_20260925/报告/图/01_budget_counterexample.png"
+        image.unlink()
+        try:
+            image.symlink_to(self.study / "inputs.json")
+        except (OSError, NotImplementedError):
+            self.skipTest("file symlinks are unavailable")
+        with self.assertRaises(MatchingError):
+            self.service.report_asset("results", "图/01_budget_counterexample.png")
+
     def test_invalid_paths_and_controls_are_rejected(self) -> None:
         for identifier in ("../outside", "saved/../../README.md", "local/C:/secret", EVAL):
             with self.subTest(identifier=identifier), self.assertRaises(MatchingError):
@@ -158,6 +197,21 @@ class OnlineMatchingTests(unittest.TestCase):
             response = connection.getresponse()
             self.assertEqual(response.status, 200)
             self.assertEqual(json.loads(response.read())["summary"]["split"], "eval")
+            connection.request("GET", "/api/online-matching/report?key=results")
+            response = connection.getresponse()
+            self.assertEqual(response.status, 200)
+            report = json.loads(response.read())
+            for name, url in report["images"].items():
+                connection.request("GET", url)
+                response = connection.getresponse()
+                self.assertEqual(response.status, 200)
+                self.assertEqual(response.getheader("Content-Type"), "image/png")
+                self.assertEqual(response.read(), self.service.report_asset("results", name)[0])
+            connection.request("GET", "/api/online-matching/report-asset?" +
+                               urlencode({"key": "results", "file": "../../inputs.json"}))
+            response = connection.getresponse()
+            self.assertEqual(response.status, 400)
+            response.read()
             connection.request("GET", "/api/online-matching/detail?run=../outside")
             response = connection.getresponse()
             self.assertEqual(response.status, 400)

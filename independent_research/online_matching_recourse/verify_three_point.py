@@ -16,6 +16,11 @@ SECOND = list(permutations(range(3), 2))
 FINAL = list(permutations(range(3)))
 
 
+def require(condition, message='verification check failed'):
+    if not condition:
+        raise AssertionError(message)
+
+
 def nearest(servers, x):
     return min(range(3), key=lambda i: (abs(x-servers[i]), servers[i]))
 
@@ -67,16 +72,16 @@ def audit_prefix(servers, x, y, future):
                         and int(m[1] != old[1]) <= 1]
             objective[old] = max(objective[old], costs2[old]-opt2+min(feasible)-opt3)
         per_z = [min(value for m, value in costs3.items() if m[0] == d)-opt3 for d in range(3)]
-        assert per_z == pointwise_formula(servers, x, y, z), ('pointwise', servers, x, y, z)
+        require(per_z == pointwise_formula(servers, x, y, z), ('pointwise', servers, x, y, z))
         frozen_losses = [max(a, b) for a, b in zip(frozen_losses, per_z)]
         if z in (servers[0], servers[2]):
             endpoint_losses = [max(a, b) for a, b in zip(endpoint_losses, per_z)]
-    assert frozen_losses == endpoint_losses == frozen_loss_formula(servers, x, y)
+    require(frozen_losses == endpoint_losses == frozen_loss_formula(servers, x, y))
     chosen = second_stage_rule(servers, x, y)
     value = min(objective.values())
-    assert objective[chosen] == value, ('minimax', servers, x, y, chosen, objective)
+    require(objective[chosen] == value, ('minimax', servers, x, y, chosen, objective))
     expected = costs2[chosen]-opt2 if p == 1 else 0
-    assert value == expected
+    require(value == expected)
     return value, objective
 
 
@@ -95,12 +100,12 @@ def main():
         bound = min(servers[1]-servers[0], servers[2]-servers[1])
         witness_x, witness_y = (servers[1]+servers[2])//2, servers[1]
         value, _ = audit_prefix(servers, witness_x, witness_y, range(13))
-        assert maximum == value == bound
+        require(maximum == value == bound)
         witnesses.append(dict(servers=[s/2 for s in servers], x=witness_x/2, y=witness_y/2,
                               worst_excess=maximum/2))
     # Reuse the prior budget-lock example, restricted to its first three points.
     value, actions = audit_prefix((0, 3, 5), 2, 3, range(6))
-    assert value == 1 and actions[(0, 1)] == 4
+    require(value == 1 and actions[(0, 1)] == 4)
     result = dict(status='automatic_verification_passed_user_review_pending',
                   source_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                   model='Atomic matching updates; first request nearest, ties left; lifetime budget one.',

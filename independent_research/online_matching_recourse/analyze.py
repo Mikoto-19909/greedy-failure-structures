@@ -20,6 +20,11 @@ POLICIES = {"single": "策略 A：单请求改派", "priced_chain": "策略 B：
 FAMILIES = {"uniform": "均匀布局", "clustered": "局部聚集", "near_far": "远近交替", "paired": "成对间隔"}
 
 
+def require(condition, message='verification check failed'):
+    if not condition:
+        raise AssertionError(message)
+
+
 def read(path):
     return json.loads(path.read_text(encoding="utf-8"))
 
@@ -81,7 +86,7 @@ def family_figure(evaluation, folder):
         values = []
         for family in families:
             rows = [aggregate(evaluation, policy, b, family) for b in BUDGETS]
-            assert len({r["prefix_sum"] for r in rows}) == 1
+            require(len({r["prefix_sum"] for r in rows}) == 1)
             values.append(rows[0]["reduction_pct"])
         bars = ax.bar([i + offset for i in range(len(families))], values, width=.33,
                       color=COLORS[policy], label=POLICIES[policy])
@@ -188,13 +193,13 @@ def main():
     evaluation_folder, dev_folder = ROOT / args.eval, ROOT / args.dev
     evaluation, dev = read(evaluation_folder / "summary.json"), read(dev_folder / "summary.json")
     eval_traces, dev_traces = read(evaluation_folder / "traces.json"), read(dev_folder / "traces.json")
-    assert evaluation["split"] == "eval" and dev["split"] == "dev"
-    assert evaluation["source_sha256"] == dev["source_sha256"]
+    require(evaluation["split"] == "eval" and dev["split"] == "dev")
+    require(evaluation["source_sha256"] == dev["source_sha256"])
     for summary, traces in [(evaluation, eval_traces), (dev, dev_traces)]:
         for row in summary["aggregates"]:
             selected = [trace for trace in traces if (trace["policy"], trace["budget"]) == (row["policy"], row["budget"])
                         and (row["family"] == "all" or trace["family"] == row["family"])]
-            assert sum(sum(costs(trace)) for trace in selected) == row["prefix_sum"]
+            require(sum(sum(costs(trace)) for trace in selected) == row["prefix_sum"])
     font_manager.findfont("Microsoft YaHei", fallback_to_default=False)
     plt.rcParams.update({"font.sans-serif": ["Microsoft YaHei"], "axes.unicode_minus": False,
                          "svg.fonttype": "path", "font.size": 11})

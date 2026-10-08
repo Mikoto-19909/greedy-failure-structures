@@ -11,6 +11,7 @@ import subprocess
 import sys
 import threading
 from typing import Any
+from urllib.parse import urlencode
 
 from .dashboard_paths import linked
 
@@ -26,6 +27,10 @@ _REPORTS = {
     "literature": ("文献核查", "extension_20260925/报告/补充文献核查.md"),
 }
 _ARTIFACTS = {"metrics.csv", "summary.json", "verification.json", "traces.json", "inputs.json"}
+_REPORT_IMAGES = {
+    "results": ("图/01_budget_counterexample.png", "图/02_ablation.png"),
+    "initial": ("../output/20260924T175731049376Z-eval/figures/01_budget_benefit.png",),
+}
 
 
 class MatchingError(ValueError):
@@ -121,11 +126,20 @@ class OnlineMatchingService:
         case = next(c for c in inputs["cases"] if c["id"] == case_id)
         return {"case": case, "trace": record}
 
-    def report(self, key: str) -> dict[str, str]:
+    def report(self, key: str) -> dict[str, Any]:
         if key not in _REPORTS:
             raise MatchingError("未知研究报告")
         title, relative = _REPORTS[key]
-        return {"title": title, "text": self._file(f"{STUDY}/{relative}").read_text(encoding="utf-8")}
+        images = {name: "/api/online-matching/report-asset?" + urlencode({"key": key, "file": name})
+                  for name in _REPORT_IMAGES.get(key, ())}
+        return {"title": title, "text": self._file(f"{STUDY}/{relative}").read_text(encoding="utf-8"),
+                "images": images}
+
+    def report_asset(self, key: str, name: str) -> tuple[bytes, str]:
+        if name not in _REPORT_IMAGES.get(key, ()):
+            raise MatchingError("未知研究报告图片")
+        relative = Path(_REPORTS[key][1]).parent / name
+        return self._file(f"{STUDY}/{relative.as_posix()}").read_bytes(), "image/png"
 
     def artifact(self, identifier: str, name: str) -> tuple[bytes, str]:
         if name not in _ARTIFACTS:

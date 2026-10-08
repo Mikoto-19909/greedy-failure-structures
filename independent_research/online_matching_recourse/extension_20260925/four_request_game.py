@@ -13,6 +13,11 @@ ALPHABET = (-4, -1, 0, 2, 8)
 started = time.process_time()
 
 
+def require(condition, message='verification check failed'):
+    if not condition:
+        raise AssertionError(message)
+
+
 def single_chain(old, new):
     changed = {i for i in range(len(old)) if old[i] != new[i]}
     owners = {s: i for i, s in enumerate(old)}
@@ -80,8 +85,8 @@ def solve(budget, model, known_sequence=None, alphabet=ALPHABET):
                             counts=list(updated), cost=cost(req, m), optimum=optimum(req),
                             worst_remaining_excess=remaining))
         old, counts = m, updated
-    assert sum(s['cost']-s['optimum'] for s in witness) == value
-    assert all(max(s['counts']) <= budget for s in witness)
+    require(sum(s['cost']-s['optimum'] for s in witness) == value)
+    require(all(max(s['counts']) <= budget for s in witness))
     return dict(budget=budget, model=model, value=value, states=game.cache_info().currsize,
                 witness=witness, known_future=known_sequence is not None)
 
@@ -98,7 +103,7 @@ def main():
     hindsight = [solve(b, 'atomic', (0, -1, 2, -4)) for b in (1, 2, 4)]
     for model in ('atomic', 'chain'):
         values = [r['value'] for r in results if r['model'] == model]
-        assert values == sorted(values, reverse=True) and values[-1] == 0
+        require(values == sorted(values, reverse=True) and values[-1] == 0)
     summary = dict(status='computed_pending_independent_verification', servers=SERVERS, future_alphabet=ALPHABET,
                    horizon=4, first_step='nearest, ties left', objective='sum of prefix excess distances',
                    domain='Exact finite alphabet game; no continuous-domain minimax claim.',

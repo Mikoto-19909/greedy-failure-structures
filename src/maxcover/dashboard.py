@@ -636,6 +636,10 @@ class _DashboardRequestHandler(BaseHTTPRequestHandler):
                     _one_query(query, "policy"), _int_query(query, "budget")))
             elif path == "/api/online-matching/report":
                 self._send_json(service.online_matching.report(_one_query(query, "key")))
+            elif path == "/api/online-matching/report-asset":
+                body, media = service.online_matching.report_asset(
+                    _one_query(query, "key"), _one_query(query, "file"))
+                self._send_bytes(body, media)
             elif path == "/api/online-matching/artifact":
                 body, media = service.online_matching.artifact(
                     _one_query(query, "run"), _one_query(query, "file"))
