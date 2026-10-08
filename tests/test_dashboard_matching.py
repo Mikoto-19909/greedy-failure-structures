@@ -69,6 +69,29 @@ class OnlineMatchingTests(unittest.TestCase):
         self.assertEqual(detail["verification"]["status"], "current_artifacts_not_revalidated")
         self.assertEqual((self.study / "output" / EVAL / "summary.json").read_bytes(), original)
 
+    def test_library_skips_incomplete_runs_and_keeps_valid_runs_and_reports(self) -> None:
+        before = self.service.library()
+        identifier = "local/20261008T092600000000Z-dev"
+        folder = self.root / "results/online_matching" / identifier.split("/")[1]
+        folder.mkdir(parents=True)
+        invalid = [b'{"split":', b'\xff', b'[]', b'{}',
+                   b'{"split":"dev","aggregates":null}', b'{"split":[],"aggregates":[]}',
+                   b'{"split":"bad","aggregates":[]}', b'{"split":"dev","aggregates":[]}',
+                   b'{"split":"dev","aggregates":[null]}', b'{"split":"dev","aggregates":[{}]}',
+                   b'{"split":"dev","aggregates":[{"family":"all"}]}',
+                   b'{"split":"dev","aggregates":[{"family":"all","sequences":true}]}',
+                   b'{"split":"dev","aggregates":[{"family":"all","sequences":-1}]}']
+        for raw in invalid:
+            (folder / "summary.json").write_bytes(raw)
+            with self.subTest(raw=raw):
+                listing = self.service.library()
+                self.assertEqual(listing, before)
+                self.assertIn("六分支继续研究结果", self.service.report("results")["text"])
+        shutil.copyfile(self.study / "output" / DEV / "summary.json", folder / "summary.json")
+        listing = self.service.library()
+        local = next(r for r in listing["runs"] if r["id"] == identifier)
+        self.assertEqual((local["split"], local["sequences"], local["origin"]), ("dev", 6, "本地复现"))
+
     def test_replay_keeps_long_chain_and_lifetime_budget(self) -> None:
         data = self.service.trace("saved/" + DEV, "dev_uniform", "priced_chain", 1)
         last = data["trace"]["history"][-1]
@@ -197,6 +220,15 @@ class OnlineMatchingTests(unittest.TestCase):
             response = connection.getresponse()
             self.assertEqual(response.status, 200)
             self.assertEqual(json.loads(response.read())["summary"]["split"], "eval")
+            broken = self.root / "results/online_matching/20261008T092600000000Z-dev"
+            broken.mkdir(parents=True)
+            (broken / "summary.json").write_text('{"split":', encoding="utf-8")
+            connection.request("GET", "/api/online-matching/library")
+            response = connection.getresponse()
+            self.assertEqual(response.status, 200)
+            listing = json.loads(response.read())
+            self.assertEqual({r["id"] for r in listing["runs"]}, {"saved/" + DEV, "saved/" + EVAL})
+            self.assertTrue(listing["reports"])
             connection.request("GET", "/api/online-matching/report?key=results")
             response = connection.getresponse()
             self.assertEqual(response.status, 200)

@@ -86,15 +86,24 @@ class OnlineMatchingService:
                 if not _RUN.fullmatch(child.name):
                     continue
                 identifier = f"{group}/{child.name}"
-                summary_file = self._run_file(identifier, "summary.json")
-                if not summary_file.is_file():
+                try:
+                    summary_file = self._run_file(identifier, "summary.json")
+                    if not summary_file.is_file():
+                        continue
+                    summary = self._json(summary_file)
+                    if (not isinstance(summary, dict) or summary.get("split") not in {"dev", "eval"}
+                            or not isinstance(summary.get("aggregates"), list)):
+                        continue
+                    all_rows = [r for r in summary["aggregates"] if r["family"] == "all"]
+                    if not all_rows or not all(type(r["sequences"]) is int and r["sequences"] > 0 for r in all_rows):
+                        continue
+                    sequences = all_rows[0]["sequences"]
+                except (OSError, ValueError, KeyError, TypeError):
                     continue
-                summary = self._json(summary_file)
-                all_rows = [r for r in summary["aggregates"] if r["family"] == "all"]
                 runs.append({"id": identifier, "split": summary["split"],
                              "origin": "本地复现" if group == "local" else "研究归档",
                              "name": child.name,
-                             "sequences": all_rows[0]["sequences"] if all_rows else 0})
+                             "sequences": sequences})
         return {"available": available, "runs": runs,
                 "reports": [{"id": key, "title": title} for key, (title, _) in _REPORTS.items()]}
 

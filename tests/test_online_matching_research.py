@@ -179,6 +179,66 @@ class OnlineMatchingResearchTests(unittest.TestCase):
         with self.assertRaises((AssertionError, ValueError)):
             verifier.audit_prefix((0, 3, 5), 2, 3, [])
 
+    def test_primary_manifest_accepts_line_endings_but_rejects_changed_fields(self):
+        verifier = load_script('verify.py')
+        for split, name, traces in [('dev', '20260924T175730918352Z-dev', 48),
+                                    ('eval', '20260924T175731049376Z-eval', 192)]:
+            out = self.root / name; out.mkdir()
+            for file in ('inputs.json', 'input_manifest.json', 'traces.json', 'summary.json', 'metrics.csv'):
+                shutil.copyfile(STUDY / 'output' / name / file, out / file)
+            self.assertIn(b'\r\n', (out / 'input_manifest.json').read_bytes())
+            self.invoke(verifier, out)
+            checked = json.loads((out / 'verification.json').read_text())
+            self.assertEqual((checked['split'], checked['counts']['traces']), (split, traces))
+        folder, out, verifier = self.tiny_run()
+        baseline = json.loads((out / 'input_manifest.json').read_text())
+        (out / 'input_manifest.json').write_bytes((folder / 'input_manifest.json').read_bytes().replace(b'\n', b'\r\n'))
+        with patch.object(verifier, 'ROOT', folder):
+            self.invoke(verifier, out)
+            for field in ('input_sha256', 'seed', 'cases', 'development', 'evaluation', 'extra'):
+                bad = deepcopy(baseline); bad[field] = 'wrong'
+                write_json(out / 'input_manifest.json', bad)
+                (out / 'verification.json').unlink(missing_ok=True)
+                with self.subTest(field=field), self.assertRaisesRegex(ValueError, 'frozen input_manifest'):
+                    self.invoke(verifier, out)
+                self.assertFalse((out / 'verification.json').exists())
+        shutil.copyfile(STUDY / 'verify.py', folder / 'verify.py')
+        for mode in ('flag', 'environment'):
+            (out / 'input_manifest.json').write_bytes((folder / 'input_manifest.json').read_bytes().replace(b'\n', b'\r\n'))
+            self.optimized_verify(mode, folder / 'verify.py', out, True)
+            bad = deepcopy(baseline); bad['input_sha256'] = 'wrong'
+            write_json(out / 'input_manifest.json', bad)
+            self.optimized_verify(mode, folder / 'verify.py', out, False, 'frozen input_manifest')
+        write_json(out / 'input_manifest.json', baseline)
+        (out / 'inputs.json').write_bytes((folder / 'inputs.json').read_bytes() + b' ')
+        with patch.object(verifier, 'ROOT', folder), self.assertRaisesRegex(ValueError, 'frozen inputs'):
+            self.invoke(verifier, out)
+
+    def test_primary_verifier_rejects_boolean_and_float_budget_identities(self):
+        folder, out, verifier = self.tiny_run()
+        traces = json.loads((out / 'traces.json').read_text())
+        summary = json.loads((out / 'summary.json').read_text())
+        for kind in ('nearest_false', 'trace_true', 'trace_float', 'group_true', 'group_float'):
+            bad_traces, bad_summary = deepcopy(traces), deepcopy(summary)
+            rows = bad_summary['aggregates'] if kind.startswith('group') else bad_traces
+            row = next(r for r in rows if r['budget'] == (0 if kind == 'nearest_false' else 1))
+            row['budget'] = False if kind == 'nearest_false' else (1.0 if kind.endswith('float') else True)
+            write_json(out / 'traces.json', bad_traces); write_json(out / 'summary.json', bad_summary)
+            (out / 'verification.json').unlink(missing_ok=True)
+            with self.subTest(kind=kind), patch.object(verifier, 'ROOT', folder), self.assertRaisesRegex(ValueError, 'budget identity type'):
+                self.invoke(verifier, out)
+            self.assertFalse((out / 'verification.json').exists())
+        shutil.copyfile(STUDY / 'verify.py', folder / 'verify.py')
+        for mode in ('flag', 'environment'):
+            write_json(out / 'traces.json', traces); write_json(out / 'summary.json', summary)
+            self.optimized_verify(mode, folder / 'verify.py', out, True)
+            for section in ('trace', 'group'):
+                bad_traces, bad_summary = deepcopy(traces), deepcopy(summary)
+                rows = bad_traces if section == 'trace' else bad_summary['aggregates']
+                next(r for r in rows if r['budget'] == 1)['budget'] = True
+                write_json(out / 'traces.json', bad_traces); write_json(out / 'summary.json', bad_summary)
+                self.optimized_verify(mode, folder / 'verify.py', out, False, 'budget identity type')
+
     def test_chain_and_free_first_known_values_and_illegal_actions(self):
         chain = load_script('extension_20260925/chain_first.py')
         for mode, expected in [('chain', (Q(5, 2), (0, 1))), ('atomic', (Q(3, 2), (1, 0)))]:

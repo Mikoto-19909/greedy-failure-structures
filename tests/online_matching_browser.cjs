@@ -21,6 +21,9 @@ for (const relative of ['inputs.json', '报告/研究报告.md', 'extension_2026
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.copyFileSync(path.join(root, study, relative), file);
 }
+const incomplete = path.join(fixture, 'results/online_matching/20261008T092600000000Z-dev');
+fs.mkdirSync(incomplete, { recursive: true });
+fs.writeFileSync(path.join(incomplete, 'summary.json'), '{"split":');
 const server = spawn(process.env.DASHBOARD_PYTHON || 'python', ['-u', '-c',
   "import sys; from pathlib import Path; sys.path.insert(0, 'src'); from maxcover.dashboard import serve_dashboard; serve_dashboard(port=0, project_root=Path(sys.argv[1]))", fixture],
   { cwd: root, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
@@ -56,6 +59,9 @@ const urlReady = new Promise((resolve, reject) => {
     }
   }
   await loadedImages(2);
+  assert.deepEqual(await page.locator('#matching-run option').evaluateAll((items) => items.map((item) => item.value)),
+    ['saved/' + archivedRun]);
+  console.log('PASS interrupted local summary keeps archived runs and reports accessible');
   assert.deepEqual(await reportImages.evaluateAll((items) => items.map((image) => image.alt)),
     ['预算增加时贪心轨迹可能变差', '链长和价格的拆分结果']);
   await page.screenshot({ path: path.join(output, 'matching-report-desktop.png') });
