@@ -1,9 +1,10 @@
-# Maximum Coverage Study
+# 最大覆盖研究与实验平台
 
 [English](README.md) | **简体中文**
 
 本项目研究最大覆盖（Maximum Coverage）实例结构与贪心算法（Greedy）最优性差距的关系：
 贪心解的覆盖量比精确最优值少多少。项目提供算法、实例生成器和可复现实验工具。
+本地实验平台也承载独立研究案例。有限改派在线匹配是首个接入案例，保留自己的评价指标和核验方法。
 
 想先动手试试？打开[反例研究玩具](examples/greedy-playground/index.html)，
 挑选集合、挑战贪心、逐步回放并修改自己的反例。下载后可直接用浏览器打开，无需安装；
@@ -57,9 +58,18 @@ Dashboard 在没有保留配置选择时也优先选择 `quick.json`。这些默
 python run_project.py dashboard
 ```
 
-打开命令打印的本地地址，可校验配置、启动或恢复运行、查看产物和回放实例。
-界面支持中英文，使用与 CLI 相同的实验引擎。服务器绑定回环地址；运行边界见
+打开命令打印的本地地址，先选择研究入口：
+
+- **最大覆盖研究**：进入 `/maximum-coverage`，使用已有的配置、运行、结果比较和实例回放工具。
+- **有限改派在线匹配**：进入 `/online-matching`，阅读已接入报告、回放分配过程、复现固定实验。
+
+页面内的专题切换控件可以返回研究首页或进入其他专题。打开页面不会启动计算。
+原 `/index.html` 地址仍指向最大覆盖页面。首页和最大覆盖界面支持中英文。
+最大覆盖沿用与 CLI 相同的实验引擎。服务器绑定回环地址；运行边界见
 [Dashboard 命令](docs/cli.zh-CN.md#dashboard)和[安全说明](SECURITY.md)。
+
+首页卡片和专题切换共用一份[入口配置](src/maxcover/dashboard_ui/topics.json)。
+后续增加入口的步骤见[添加研究入口](docs/cli.zh-CN.md#添加研究入口)。
 
 ## 读取输出与验证
 
@@ -86,6 +96,7 @@ python scripts/check.py --profile full --tests-only
 
 ## 文档与支持
 
+- [独立研究目录](independent_research/README.md)：查看在线匹配的研究来源、已有结论和平台复现方式。
 - [文档索引](docs/README.md)、[英文 FAQ](docs/faq.md)和[中文 FAQ](docs/faq.zh-CN.md)。
 - [结构机制](docs/failure_mechanisms.zh-CN.md)与[Lazy Greedy 功能报告](docs/lazy_greedy_test_report.md)。
 - [贡献规则](CONTRIBUTING.md)、[额外代理执行约束](AGENTS.md)、[支持说明](SUPPORT.md)和[安全报告渠道](SECURITY.md)。

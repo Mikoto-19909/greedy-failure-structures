@@ -1,10 +1,12 @@
-# Maximum Coverage Study
+# Maximum Coverage Study and Research Dashboard
 
 **English** | [简体中文](README.zh-CN.md)
 
 This project studies how Maximum Coverage instance structure relates to
 Greedy's optimality gap: the coverage lost relative to an exact optimum.
 It includes algorithms, instance generators and tools for reproducible experiments.
+The local Dashboard also hosts independent research cases. Online matching with
+bounded recourse is the first such case, with its own metrics and verification.
 
 Try the [interactive counterexample toy](examples/greedy-playground/index.html)
 (Chinese UI): choose sets, challenge Greedy, replay its decisions, and edit a small
@@ -64,11 +66,18 @@ alone does not make a configuration historical.
 python run_project.py dashboard
 ```
 
-Open the printed local URL to validate configurations, start or resume runs,
-inspect artifacts and replay instances. The interface supports English and Chinese
-and uses the same experiment engine as the CLI. The server binds to loopback
+Open the printed local URL to choose a study. **Maximum Coverage** opens the
+existing experiment tools at `/maximum-coverage`; **Online Matching with Recourse**
+opens imported reports, assignment replay and fixed-input reproduction at `/online-matching`.
+The shared study switcher returns to the home page or opens another study.
+Opening a page starts no computation. `/index.html` remains an alias for Maximum Coverage.
+The home page and Maximum Coverage interface support English and Chinese.
+Maximum Coverage uses the same experiment engine as the CLI. The server binds to loopback
 addresses; see the [Dashboard command](docs/cli.md#dashboard) and
 [security policy](SECURITY.md) for its operating boundary.
+
+New study cards and the switcher share one [topic list](src/maxcover/dashboard_ui/topics.json).
+See [adding an entry](docs/cli.md#adding-a-research-entry) for the small presentation contract.
 
 ## Output and verification
 
@@ -97,6 +106,10 @@ no claim ledger or file-integrity manifest is required.
 The publication rules are maintained in CONTRIBUTING.
 
 ## Documentation and support
+
+The [independent research directory](independent_research/README.md) includes
+the imported online-matching study. Open **Online Matching with Recourse** from the Dashboard
+to read its reports, replay assignments and reproduce its fixed comparisons.
 
 - [Documentation index](docs/README.md), [English FAQ](docs/faq.md) and [Chinese FAQ](docs/faq.zh-CN.md).
 - [Structural mechanisms](docs/failure_mechanisms.md) and the [Lazy Greedy functional report](docs/lazy_greedy_test_report.md).

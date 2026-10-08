@@ -1,0 +1,5041 @@
+[
+  {
+    "case_id": "dev_pair",
+    "split": "dev",
+    "family": "paired",
+    "policy": "nearest",
+    "budget": 0,
+    "history": [
+      {
+        "t": 1,
+        "assignment": [
+          1
+        ],
+        "moves": [],
+        "counts": [
+          0
+        ],
+        "cost": 4
+      },
+      {
+        "t": 2,
+        "assignment": [
+          1,
+          0
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0
+        ],
+        "cost": 13
+      },
+      {
+        "t": 3,
+        "assignment": [
+          1,
+          0,
+          3
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0
+        ],
+        "cost": 17
+      },
+      {
+        "t": 4,
+        "assignment": [
+          1,
+          0,
+          3,
+          2
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 26
+      },
+      {
+        "t": 5,
+        "assignment": [
+          1,
+          0,
+          3,
+          2,
+          5
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 30
+      },
+      {
+        "t": 6,
+        "assignment": [
+          1,
+          0,
+          3,
+          2,
+          5,
+          4
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 39
+      }
+    ],
+    "oracle_costs": [
+      4,
+      7,
+      11,
+      14,
+      18,
+      21
+    ],
+    "cpu_seconds": 0.0,
+    "wall_seconds": 2.3499998860643245e-05
+  },
+  {
+    "case_id": "dev_pair",
+    "split": "dev",
+    "family": "paired",
+    "policy": "single",
+    "budget": 1,
+    "history": [
+      {
+        "t": 1,
+        "assignment": [
+          1
+        ],
+        "moves": [],
+        "counts": [
+          0
+        ],
+        "cost": 4
+      },
+      {
+        "t": 2,
+        "assignment": [
+          0,
+          1
+        ],
+        "moves": [
+          0
+        ],
+        "counts": [
+          1,
+          0
+        ],
+        "cost": 7
+      },
+      {
+        "t": 3,
+        "assignment": [
+          0,
+          1,
+          3
+        ],
+        "moves": [],
+        "counts": [
+          1,
+          0,
+          0
+        ],
+        "cost": 11
+      },
+      {
+        "t": 4,
+        "assignment": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "moves": [
+          2
+        ],
+        "counts": [
+          1,
+          0,
+          1,
+          0
+        ],
+        "cost": 14
+      },
+      {
+        "t": 5,
+        "assignment": [
+          0,
+          1,
+          2,
+          3,
+          5
+        ],
+        "moves": [],
+        "counts": [
+          1,
+          0,
+          1,
+          0,
+          0
+        ],
+        "cost": 18
+      },
+      {
+        "t": 6,
+        "assignment": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "moves": [
+          4
+        ],
+        "counts": [
+          1,
+          0,
+          1,
+          0,
+          1,
+          0
+        ],
+        "cost": 21
+      }
+    ],
+    "oracle_costs": [
+      4,
+      7,
+      11,
+      14,
+      18,
+      21
+    ],
+    "cpu_seconds": 0.0,
+    "wall_seconds": 5.229999987932388e-05
+  },
+  {
+    "case_id": "dev_pair",
+    "split": "dev",
+    "family": "paired",
+    "policy": "single",
+    "budget": 2,
+    "history": [
+      {
+        "t": 1,
+        "assignment": [
+          1
+        ],
+        "moves": [],
+        "counts": [
+          0
+        ],
+        "cost": 4
+      },
+      {
+        "t": 2,
+        "assignment": [
+          0,
+          1
+        ],
+        "moves": [
+          0
+        ],
+        "counts": [
+          1,
+          0
+        ],
+        "cost": 7
+      },
+      {
+        "t": 3,
+        "assignment": [
+          0,
+          1,
+          3
+        ],
+        "moves": [],
+        "counts": [
+          1,
+          0,
+          0
+        ],
+        "cost": 11
+      },
+      {
+        "t": 4,
+        "assignment": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "moves": [
+          2
+        ],
+        "counts": [
+          1,
+          0,
+          1,
+          0
+        ],
+        "cost": 14
+      },
+      {
+        "t": 5,
+        "assignment": [
+          0,
+          1,
+          2,
+          3,
+          5
+        ],
+        "moves": [],
+        "counts": [
+          1,
+          0,
+          1,
+          0,
+          0
+        ],
+        "cost": 18
+      },
+      {
+        "t": 6,
+        "assignment": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "moves": [
+          4
+        ],
+        "counts": [
+          1,
+          0,
+          1,
+          0,
+          1,
+          0
+        ],
+        "cost": 21
+      }
+    ],
+    "oracle_costs": [
+      4,
+      7,
+      11,
+      14,
+      18,
+      21
+    ],
+    "cpu_seconds": 0.0,
+    "wall_seconds": 4.760000047099311e-05
+  },
+  {
+    "case_id": "dev_pair",
+    "split": "dev",
+    "family": "paired",
+    "policy": "single",
+    "budget": 4,
+    "history": [
+      {
+        "t": 1,
+        "assignment": [
+          1
+        ],
+        "moves": [],
+        "counts": [
+          0
+        ],
+        "cost": 4
+      },
+      {
+        "t": 2,
+        "assignment": [
+          0,
+          1
+        ],
+        "moves": [
+          0
+        ],
+        "counts": [
+          1,
+          0
+        ],
+        "cost": 7
+      },
+      {
+        "t": 3,
+        "assignment": [
+          0,
+          1,
+          3
+        ],
+        "moves": [],
+        "counts": [
+          1,
+          0,
+          0
+        ],
+        "cost": 11
+      },
+      {
+        "t": 4,
+        "assignment": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "moves": [
+          2
+        ],
+        "counts": [
+          1,
+          0,
+          1,
+          0
+        ],
+        "cost": 14
+      },
+      {
+        "t": 5,
+        "assignment": [
+          0,
+          1,
+          2,
+          3,
+          5
+        ],
+        "moves": [],
+        "counts": [
+          1,
+          0,
+          1,
+          0,
+          0
+        ],
+        "cost": 18
+      },
+      {
+        "t": 6,
+        "assignment": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "moves": [
+          4
+        ],
+        "counts": [
+          1,
+          0,
+          1,
+          0,
+          1,
+          0
+        ],
+        "cost": 21
+      }
+    ],
+    "oracle_costs": [
+      4,
+      7,
+      11,
+      14,
+      18,
+      21
+    ],
+    "cpu_seconds": 0.0,
+    "wall_seconds": 5.6799999583745375e-05
+  },
+  {
+    "case_id": "dev_pair",
+    "split": "dev",
+    "family": "paired",
+    "policy": "priced_chain",
+    "budget": 1,
+    "history": [
+      {
+        "t": 1,
+        "assignment": [
+          1
+        ],
+        "moves": [],
+        "counts": [
+          0
+        ],
+        "cost": 4
+      },
+      {
+        "t": 2,
+        "assignment": [
+          0,
+          1
+        ],
+        "moves": [
+          0
+        ],
+        "counts": [
+          1,
+          0
+        ],
+        "cost": 7
+      },
+      {
+        "t": 3,
+        "assignment": [
+          0,
+          1,
+          3
+        ],
+        "moves": [],
+        "counts": [
+          1,
+          0,
+          0
+        ],
+        "cost": 11
+      },
+      {
+        "t": 4,
+        "assignment": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "moves": [
+          2
+        ],
+        "counts": [
+          1,
+          0,
+          1,
+          0
+        ],
+        "cost": 14
+      },
+      {
+        "t": 5,
+        "assignment": [
+          0,
+          1,
+          2,
+          3,
+          5
+        ],
+        "moves": [],
+        "counts": [
+          1,
+          0,
+          1,
+          0,
+          0
+        ],
+        "cost": 18
+      },
+      {
+        "t": 6,
+        "assignment": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "moves": [
+          4
+        ],
+        "counts": [
+          1,
+          0,
+          1,
+          0,
+          1,
+          0
+        ],
+        "cost": 21
+      }
+    ],
+    "oracle_costs": [
+      4,
+      7,
+      11,
+      14,
+      18,
+      21
+    ],
+    "cpu_seconds": 0.0,
+    "wall_seconds": 7.999999979801942e-05
+  },
+  {
+    "case_id": "dev_pair",
+    "split": "dev",
+    "family": "paired",
+    "policy": "priced_chain",
+    "budget": 2,
+    "history": [
+      {
+        "t": 1,
+        "assignment": [
+          1
+        ],
+        "moves": [],
+        "counts": [
+          0
+        ],
+        "cost": 4
+      },
+      {
+        "t": 2,
+        "assignment": [
+          0,
+          1
+        ],
+        "moves": [
+          0
+        ],
+        "counts": [
+          1,
+          0
+        ],
+        "cost": 7
+      },
+      {
+        "t": 3,
+        "assignment": [
+          0,
+          1,
+          3
+        ],
+        "moves": [],
+        "counts": [
+          1,
+          0,
+          0
+        ],
+        "cost": 11
+      },
+      {
+        "t": 4,
+        "assignment": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "moves": [
+          2
+        ],
+        "counts": [
+          1,
+          0,
+          1,
+          0
+        ],
+        "cost": 14
+      },
+      {
+        "t": 5,
+        "assignment": [
+          0,
+          1,
+          2,
+          3,
+          5
+        ],
+        "moves": [],
+        "counts": [
+          1,
+          0,
+          1,
+          0,
+          0
+        ],
+        "cost": 18
+      },
+      {
+        "t": 6,
+        "assignment": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "moves": [
+          4
+        ],
+        "counts": [
+          1,
+          0,
+          1,
+          0,
+          1,
+          0
+        ],
+        "cost": 21
+      }
+    ],
+    "oracle_costs": [
+      4,
+      7,
+      11,
+      14,
+      18,
+      21
+    ],
+    "cpu_seconds": 0.0,
+    "wall_seconds": 0.0007690999991609715
+  },
+  {
+    "case_id": "dev_pair",
+    "split": "dev",
+    "family": "paired",
+    "policy": "priced_chain",
+    "budget": 4,
+    "history": [
+      {
+        "t": 1,
+        "assignment": [
+          1
+        ],
+        "moves": [],
+        "counts": [
+          0
+        ],
+        "cost": 4
+      },
+      {
+        "t": 2,
+        "assignment": [
+          0,
+          1
+        ],
+        "moves": [
+          0
+        ],
+        "counts": [
+          1,
+          0
+        ],
+        "cost": 7
+      },
+      {
+        "t": 3,
+        "assignment": [
+          0,
+          1,
+          3
+        ],
+        "moves": [],
+        "counts": [
+          1,
+          0,
+          0
+        ],
+        "cost": 11
+      },
+      {
+        "t": 4,
+        "assignment": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "moves": [
+          2
+        ],
+        "counts": [
+          1,
+          0,
+          1,
+          0
+        ],
+        "cost": 14
+      },
+      {
+        "t": 5,
+        "assignment": [
+          0,
+          1,
+          2,
+          3,
+          5
+        ],
+        "moves": [],
+        "counts": [
+          1,
+          0,
+          1,
+          0,
+          0
+        ],
+        "cost": 18
+      },
+      {
+        "t": 6,
+        "assignment": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "moves": [
+          4
+        ],
+        "counts": [
+          1,
+          0,
+          1,
+          0,
+          1,
+          0
+        ],
+        "cost": 21
+      }
+    ],
+    "oracle_costs": [
+      4,
+      7,
+      11,
+      14,
+      18,
+      21
+    ],
+    "cpu_seconds": 0.0,
+    "wall_seconds": 0.000769899999795598
+  },
+  {
+    "case_id": "dev_pair",
+    "split": "dev",
+    "family": "paired",
+    "policy": "prefix_optimum",
+    "budget": null,
+    "history": null,
+    "oracle_costs": [
+      4,
+      7,
+      11,
+      14,
+      18,
+      21
+    ],
+    "cpu_seconds": 0.0,
+    "wall_seconds": 3.65999985660892e-05
+  },
+  {
+    "case_id": "dev_uniform",
+    "split": "dev",
+    "family": "uniform",
+    "policy": "nearest",
+    "budget": 0,
+    "history": [
+      {
+        "t": 1,
+        "assignment": [
+          0
+        ],
+        "moves": [],
+        "counts": [
+          0
+        ],
+        "cost": 4
+      },
+      {
+        "t": 2,
+        "assignment": [
+          0,
+          1
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0
+        ],
+        "cost": 8
+      },
+      {
+        "t": 3,
+        "assignment": [
+          0,
+          1,
+          2
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0
+        ],
+        "cost": 12
+      },
+      {
+        "t": 4,
+        "assignment": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 16
+      },
+      {
+        "t": 5,
+        "assignment": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 20
+      },
+      {
+        "t": 6,
+        "assignment": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 69
+      }
+    ],
+    "oracle_costs": [
+      4,
+      8,
+      12,
+      16,
+      20,
+      31
+    ],
+    "cpu_seconds": 0.0,
+    "wall_seconds": 1.3900000340072438e-05
+  },
+  {
+    "case_id": "dev_uniform",
+    "split": "dev",
+    "family": "uniform",
+    "policy": "single",
+    "budget": 1,
+    "history": [
+      {
+        "t": 1,
+        "assignment": [
+          0
+        ],
+        "moves": [],
+        "counts": [
+          0
+        ],
+        "cost": 4
+      },
+      {
+        "t": 2,
+        "assignment": [
+          0,
+          1
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0
+        ],
+        "cost": 8
+      },
+      {
+        "t": 3,
+        "assignment": [
+          0,
+          1,
+          2
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0
+        ],
+        "cost": 12
+      },
+      {
+        "t": 4,
+        "assignment": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 16
+      },
+      {
+        "t": 5,
+        "assignment": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 20
+      },
+      {
+        "t": 6,
+        "assignment": [
+          0,
+          1,
+          2,
+          3,
+          5,
+          4
+        ],
+        "moves": [
+          4
+        ],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          1,
+          0
+        ],
+        "cost": 61
+      }
+    ],
+    "oracle_costs": [
+      4,
+      8,
+      12,
+      16,
+      20,
+      31
+    ],
+    "cpu_seconds": 0.0,
+    "wall_seconds": 5.000000055588316e-05
+  },
+  {
+    "case_id": "dev_uniform",
+    "split": "dev",
+    "family": "uniform",
+    "policy": "single",
+    "budget": 2,
+    "history": [
+      {
+        "t": 1,
+        "assignment": [
+          0
+        ],
+        "moves": [],
+        "counts": [
+          0
+        ],
+        "cost": 4
+      },
+      {
+        "t": 2,
+        "assignment": [
+          0,
+          1
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0
+        ],
+        "cost": 8
+      },
+      {
+        "t": 3,
+        "assignment": [
+          0,
+          1,
+          2
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0
+        ],
+        "cost": 12
+      },
+      {
+        "t": 4,
+        "assignment": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 16
+      },
+      {
+        "t": 5,
+        "assignment": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 20
+      },
+      {
+        "t": 6,
+        "assignment": [
+          0,
+          1,
+          2,
+          3,
+          5,
+          4
+        ],
+        "moves": [
+          4
+        ],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          1,
+          0
+        ],
+        "cost": 61
+      }
+    ],
+    "oracle_costs": [
+      4,
+      8,
+      12,
+      16,
+      20,
+      31
+    ],
+    "cpu_seconds": 0.0,
+    "wall_seconds": 4.4299998990027234e-05
+  },
+  {
+    "case_id": "dev_uniform",
+    "split": "dev",
+    "family": "uniform",
+    "policy": "single",
+    "budget": 4,
+    "history": [
+      {
+        "t": 1,
+        "assignment": [
+          0
+        ],
+        "moves": [],
+        "counts": [
+          0
+        ],
+        "cost": 4
+      },
+      {
+        "t": 2,
+        "assignment": [
+          0,
+          1
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0
+        ],
+        "cost": 8
+      },
+      {
+        "t": 3,
+        "assignment": [
+          0,
+          1,
+          2
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0
+        ],
+        "cost": 12
+      },
+      {
+        "t": 4,
+        "assignment": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 16
+      },
+      {
+        "t": 5,
+        "assignment": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 20
+      },
+      {
+        "t": 6,
+        "assignment": [
+          0,
+          1,
+          2,
+          3,
+          5,
+          4
+        ],
+        "moves": [
+          4
+        ],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          1,
+          0
+        ],
+        "cost": 61
+      }
+    ],
+    "oracle_costs": [
+      4,
+      8,
+      12,
+      16,
+      20,
+      31
+    ],
+    "cpu_seconds": 0.0,
+    "wall_seconds": 4.470000021683518e-05
+  },
+  {
+    "case_id": "dev_uniform",
+    "split": "dev",
+    "family": "uniform",
+    "policy": "priced_chain",
+    "budget": 1,
+    "history": [
+      {
+        "t": 1,
+        "assignment": [
+          0
+        ],
+        "moves": [],
+        "counts": [
+          0
+        ],
+        "cost": 4
+      },
+      {
+        "t": 2,
+        "assignment": [
+          0,
+          1
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0
+        ],
+        "cost": 8
+      },
+      {
+        "t": 3,
+        "assignment": [
+          0,
+          1,
+          2
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0
+        ],
+        "cost": 12
+      },
+      {
+        "t": 4,
+        "assignment": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 16
+      },
+      {
+        "t": 5,
+        "assignment": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 20
+      },
+      {
+        "t": 6,
+        "assignment": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          0
+        ],
+        "moves": [
+          4,
+          3,
+          2,
+          1,
+          0
+        ],
+        "counts": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          0
+        ],
+        "cost": 31
+      }
+    ],
+    "oracle_costs": [
+      4,
+      8,
+      12,
+      16,
+      20,
+      31
+    ],
+    "cpu_seconds": 0.0,
+    "wall_seconds": 0.0007820000009814976
+  },
+  {
+    "case_id": "dev_uniform",
+    "split": "dev",
+    "family": "uniform",
+    "policy": "priced_chain",
+    "budget": 2,
+    "history": [
+      {
+        "t": 1,
+        "assignment": [
+          0
+        ],
+        "moves": [],
+        "counts": [
+          0
+        ],
+        "cost": 4
+      },
+      {
+        "t": 2,
+        "assignment": [
+          0,
+          1
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0
+        ],
+        "cost": 8
+      },
+      {
+        "t": 3,
+        "assignment": [
+          0,
+          1,
+          2
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0
+        ],
+        "cost": 12
+      },
+      {
+        "t": 4,
+        "assignment": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 16
+      },
+      {
+        "t": 5,
+        "assignment": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 20
+      },
+      {
+        "t": 6,
+        "assignment": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          0
+        ],
+        "moves": [
+          4,
+          3,
+          2,
+          1,
+          0
+        ],
+        "counts": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          0
+        ],
+        "cost": 31
+      }
+    ],
+    "oracle_costs": [
+      4,
+      8,
+      12,
+      16,
+      20,
+      31
+    ],
+    "cpu_seconds": 0.0,
+    "wall_seconds": 0.0007857000000512926
+  },
+  {
+    "case_id": "dev_uniform",
+    "split": "dev",
+    "family": "uniform",
+    "policy": "priced_chain",
+    "budget": 4,
+    "history": [
+      {
+        "t": 1,
+        "assignment": [
+          0
+        ],
+        "moves": [],
+        "counts": [
+          0
+        ],
+        "cost": 4
+      },
+      {
+        "t": 2,
+        "assignment": [
+          0,
+          1
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0
+        ],
+        "cost": 8
+      },
+      {
+        "t": 3,
+        "assignment": [
+          0,
+          1,
+          2
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0
+        ],
+        "cost": 12
+      },
+      {
+        "t": 4,
+        "assignment": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 16
+      },
+      {
+        "t": 5,
+        "assignment": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 20
+      },
+      {
+        "t": 6,
+        "assignment": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          0
+        ],
+        "moves": [
+          4,
+          3,
+          2,
+          1,
+          0
+        ],
+        "counts": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          0
+        ],
+        "cost": 31
+      }
+    ],
+    "oracle_costs": [
+      4,
+      8,
+      12,
+      16,
+      20,
+      31
+    ],
+    "cpu_seconds": 0.0,
+    "wall_seconds": 0.0007590000004711328
+  },
+  {
+    "case_id": "dev_uniform",
+    "split": "dev",
+    "family": "uniform",
+    "policy": "prefix_optimum",
+    "budget": null,
+    "history": null,
+    "oracle_costs": [
+      4,
+      8,
+      12,
+      16,
+      20,
+      31
+    ],
+    "cpu_seconds": 0.0,
+    "wall_seconds": 2.769999991869554e-05
+  },
+  {
+    "case_id": "dev_cluster",
+    "split": "dev",
+    "family": "clustered",
+    "policy": "nearest",
+    "budget": 0,
+    "history": [
+      {
+        "t": 1,
+        "assignment": [
+          1
+        ],
+        "moves": [],
+        "counts": [
+          0
+        ],
+        "cost": 1
+      },
+      {
+        "t": 2,
+        "assignment": [
+          1,
+          0
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0
+        ],
+        "cost": 2
+      },
+      {
+        "t": 3,
+        "assignment": [
+          1,
+          0,
+          2
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0
+        ],
+        "cost": 3
+      },
+      {
+        "t": 4,
+        "assignment": [
+          1,
+          0,
+          2,
+          4
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 4
+      },
+      {
+        "t": 5,
+        "assignment": [
+          1,
+          0,
+          2,
+          4,
+          3
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 5
+      },
+      {
+        "t": 6,
+        "assignment": [
+          1,
+          0,
+          2,
+          4,
+          3,
+          5
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 10
+      }
+    ],
+    "oracle_costs": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "cpu_seconds": 0.0,
+    "wall_seconds": 1.4299999747890979e-05
+  },
+  {
+    "case_id": "dev_cluster",
+    "split": "dev",
+    "family": "clustered",
+    "policy": "single",
+    "budget": 1,
+    "history": [
+      {
+        "t": 1,
+        "assignment": [
+          1
+        ],
+        "moves": [],
+        "counts": [
+          0
+        ],
+        "cost": 1
+      },
+      {
+        "t": 2,
+        "assignment": [
+          1,
+          0
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0
+        ],
+        "cost": 2
+      },
+      {
+        "t": 3,
+        "assignment": [
+          1,
+          0,
+          2
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0
+        ],
+        "cost": 3
+      },
+      {
+        "t": 4,
+        "assignment": [
+          1,
+          0,
+          2,
+          4
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 4
+      },
+      {
+        "t": 5,
+        "assignment": [
+          1,
+          0,
+          2,
+          4,
+          3
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 5
+      },
+      {
+        "t": 6,
+        "assignment": [
+          1,
+          0,
+          2,
+          4,
+          5,
+          3
+        ],
+        "moves": [
+          4
+        ],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          1,
+          0
+        ],
+        "cost": 8
+      }
+    ],
+    "oracle_costs": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "cpu_seconds": 0.0,
+    "wall_seconds": 9.110000064538326e-05
+  },
+  {
+    "case_id": "dev_cluster",
+    "split": "dev",
+    "family": "clustered",
+    "policy": "single",
+    "budget": 2,
+    "history": [
+      {
+        "t": 1,
+        "assignment": [
+          1
+        ],
+        "moves": [],
+        "counts": [
+          0
+        ],
+        "cost": 1
+      },
+      {
+        "t": 2,
+        "assignment": [
+          1,
+          0
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0
+        ],
+        "cost": 2
+      },
+      {
+        "t": 3,
+        "assignment": [
+          1,
+          0,
+          2
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0
+        ],
+        "cost": 3
+      },
+      {
+        "t": 4,
+        "assignment": [
+          1,
+          0,
+          2,
+          4
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 4
+      },
+      {
+        "t": 5,
+        "assignment": [
+          1,
+          0,
+          2,
+          4,
+          3
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 5
+      },
+      {
+        "t": 6,
+        "assignment": [
+          1,
+          0,
+          2,
+          4,
+          5,
+          3
+        ],
+        "moves": [
+          4
+        ],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          1,
+          0
+        ],
+        "cost": 8
+      }
+    ],
+    "oracle_costs": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "cpu_seconds": 0.0,
+    "wall_seconds": 5.229999987932388e-05
+  },
+  {
+    "case_id": "dev_cluster",
+    "split": "dev",
+    "family": "clustered",
+    "policy": "single",
+    "budget": 4,
+    "history": [
+      {
+        "t": 1,
+        "assignment": [
+          1
+        ],
+        "moves": [],
+        "counts": [
+          0
+        ],
+        "cost": 1
+      },
+      {
+        "t": 2,
+        "assignment": [
+          1,
+          0
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0
+        ],
+        "cost": 2
+      },
+      {
+        "t": 3,
+        "assignment": [
+          1,
+          0,
+          2
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0
+        ],
+        "cost": 3
+      },
+      {
+        "t": 4,
+        "assignment": [
+          1,
+          0,
+          2,
+          4
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 4
+      },
+      {
+        "t": 5,
+        "assignment": [
+          1,
+          0,
+          2,
+          4,
+          3
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 5
+      },
+      {
+        "t": 6,
+        "assignment": [
+          1,
+          0,
+          2,
+          4,
+          5,
+          3
+        ],
+        "moves": [
+          4
+        ],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          1,
+          0
+        ],
+        "cost": 8
+      }
+    ],
+    "oracle_costs": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "cpu_seconds": 0.0,
+    "wall_seconds": 4.450000051292591e-05
+  },
+  {
+    "case_id": "dev_cluster",
+    "split": "dev",
+    "family": "clustered",
+    "policy": "priced_chain",
+    "budget": 1,
+    "history": [
+      {
+        "t": 1,
+        "assignment": [
+          1
+        ],
+        "moves": [],
+        "counts": [
+          0
+        ],
+        "cost": 1
+      },
+      {
+        "t": 2,
+        "assignment": [
+          1,
+          0
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0
+        ],
+        "cost": 2
+      },
+      {
+        "t": 3,
+        "assignment": [
+          1,
+          0,
+          2
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0
+        ],
+        "cost": 3
+      },
+      {
+        "t": 4,
+        "assignment": [
+          1,
+          0,
+          2,
+          4
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 4
+      },
+      {
+        "t": 5,
+        "assignment": [
+          1,
+          0,
+          2,
+          4,
+          3
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 5
+      },
+      {
+        "t": 6,
+        "assignment": [
+          1,
+          0,
+          2,
+          5,
+          4,
+          3
+        ],
+        "moves": [
+          3,
+          4
+        ],
+        "counts": [
+          0,
+          0,
+          0,
+          1,
+          1,
+          0
+        ],
+        "cost": 6
+      }
+    ],
+    "oracle_costs": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "cpu_seconds": 0.0,
+    "wall_seconds": 0.0007661999989068136
+  },
+  {
+    "case_id": "dev_cluster",
+    "split": "dev",
+    "family": "clustered",
+    "policy": "priced_chain",
+    "budget": 2,
+    "history": [
+      {
+        "t": 1,
+        "assignment": [
+          1
+        ],
+        "moves": [],
+        "counts": [
+          0
+        ],
+        "cost": 1
+      },
+      {
+        "t": 2,
+        "assignment": [
+          1,
+          0
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0
+        ],
+        "cost": 2
+      },
+      {
+        "t": 3,
+        "assignment": [
+          1,
+          0,
+          2
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0
+        ],
+        "cost": 3
+      },
+      {
+        "t": 4,
+        "assignment": [
+          1,
+          0,
+          2,
+          4
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 4
+      },
+      {
+        "t": 5,
+        "assignment": [
+          1,
+          0,
+          2,
+          4,
+          3
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 5
+      },
+      {
+        "t": 6,
+        "assignment": [
+          1,
+          0,
+          2,
+          5,
+          4,
+          3
+        ],
+        "moves": [
+          3,
+          4
+        ],
+        "counts": [
+          0,
+          0,
+          0,
+          1,
+          1,
+          0
+        ],
+        "cost": 6
+      }
+    ],
+    "oracle_costs": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "cpu_seconds": 0.0,
+    "wall_seconds": 0.0007640999992872821
+  },
+  {
+    "case_id": "dev_cluster",
+    "split": "dev",
+    "family": "clustered",
+    "policy": "priced_chain",
+    "budget": 4,
+    "history": [
+      {
+        "t": 1,
+        "assignment": [
+          1
+        ],
+        "moves": [],
+        "counts": [
+          0
+        ],
+        "cost": 1
+      },
+      {
+        "t": 2,
+        "assignment": [
+          1,
+          0
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0
+        ],
+        "cost": 2
+      },
+      {
+        "t": 3,
+        "assignment": [
+          1,
+          0,
+          2
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0
+        ],
+        "cost": 3
+      },
+      {
+        "t": 4,
+        "assignment": [
+          1,
+          0,
+          2,
+          4
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 4
+      },
+      {
+        "t": 5,
+        "assignment": [
+          1,
+          0,
+          2,
+          4,
+          3
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 5
+      },
+      {
+        "t": 6,
+        "assignment": [
+          1,
+          0,
+          2,
+          5,
+          4,
+          3
+        ],
+        "moves": [
+          3,
+          4
+        ],
+        "counts": [
+          0,
+          0,
+          0,
+          1,
+          1,
+          0
+        ],
+        "cost": 6
+      }
+    ],
+    "oracle_costs": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "cpu_seconds": 0.0,
+    "wall_seconds": 0.000754300001062802
+  },
+  {
+    "case_id": "dev_cluster",
+    "split": "dev",
+    "family": "clustered",
+    "policy": "prefix_optimum",
+    "budget": null,
+    "history": null,
+    "oracle_costs": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "cpu_seconds": 0.0,
+    "wall_seconds": 2.9099999665049836e-05
+  },
+  {
+    "case_id": "dev_alternate",
+    "split": "dev",
+    "family": "near_far",
+    "policy": "nearest",
+    "budget": 0,
+    "history": [
+      {
+        "t": 1,
+        "assignment": [
+          2
+        ],
+        "moves": [],
+        "counts": [
+          0
+        ],
+        "cost": 4
+      },
+      {
+        "t": 2,
+        "assignment": [
+          2,
+          5
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0
+        ],
+        "cost": 5
+      },
+      {
+        "t": 3,
+        "assignment": [
+          2,
+          5,
+          3
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0
+        ],
+        "cost": 9
+      },
+      {
+        "t": 4,
+        "assignment": [
+          2,
+          5,
+          3,
+          0
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 10
+      },
+      {
+        "t": 5,
+        "assignment": [
+          2,
+          5,
+          3,
+          0,
+          1
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 14
+      },
+      {
+        "t": 6,
+        "assignment": [
+          2,
+          5,
+          3,
+          0,
+          1,
+          4
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 18
+      }
+    ],
+    "oracle_costs": [
+      4,
+      5,
+      9,
+      10,
+      14,
+      18
+    ],
+    "cpu_seconds": 0.0,
+    "wall_seconds": 1.4100000043981709e-05
+  },
+  {
+    "case_id": "dev_alternate",
+    "split": "dev",
+    "family": "near_far",
+    "policy": "single",
+    "budget": 1,
+    "history": [
+      {
+        "t": 1,
+        "assignment": [
+          2
+        ],
+        "moves": [],
+        "counts": [
+          0
+        ],
+        "cost": 4
+      },
+      {
+        "t": 2,
+        "assignment": [
+          2,
+          5
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0
+        ],
+        "cost": 5
+      },
+      {
+        "t": 3,
+        "assignment": [
+          2,
+          5,
+          3
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0
+        ],
+        "cost": 9
+      },
+      {
+        "t": 4,
+        "assignment": [
+          2,
+          5,
+          3,
+          0
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 10
+      },
+      {
+        "t": 5,
+        "assignment": [
+          2,
+          5,
+          3,
+          0,
+          1
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 14
+      },
+      {
+        "t": 6,
+        "assignment": [
+          2,
+          5,
+          3,
+          0,
+          1,
+          4
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 18
+      }
+    ],
+    "oracle_costs": [
+      4,
+      5,
+      9,
+      10,
+      14,
+      18
+    ],
+    "cpu_seconds": 0.0,
+    "wall_seconds": 4.780000017490238e-05
+  },
+  {
+    "case_id": "dev_alternate",
+    "split": "dev",
+    "family": "near_far",
+    "policy": "single",
+    "budget": 2,
+    "history": [
+      {
+        "t": 1,
+        "assignment": [
+          2
+        ],
+        "moves": [],
+        "counts": [
+          0
+        ],
+        "cost": 4
+      },
+      {
+        "t": 2,
+        "assignment": [
+          2,
+          5
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0
+        ],
+        "cost": 5
+      },
+      {
+        "t": 3,
+        "assignment": [
+          2,
+          5,
+          3
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0
+        ],
+        "cost": 9
+      },
+      {
+        "t": 4,
+        "assignment": [
+          2,
+          5,
+          3,
+          0
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 10
+      },
+      {
+        "t": 5,
+        "assignment": [
+          2,
+          5,
+          3,
+          0,
+          1
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 14
+      },
+      {
+        "t": 6,
+        "assignment": [
+          2,
+          5,
+          3,
+          0,
+          1,
+          4
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 18
+      }
+    ],
+    "oracle_costs": [
+      4,
+      5,
+      9,
+      10,
+      14,
+      18
+    ],
+    "cpu_seconds": 0.0,
+    "wall_seconds": 4.42000000475673e-05
+  },
+  {
+    "case_id": "dev_alternate",
+    "split": "dev",
+    "family": "near_far",
+    "policy": "single",
+    "budget": 4,
+    "history": [
+      {
+        "t": 1,
+        "assignment": [
+          2
+        ],
+        "moves": [],
+        "counts": [
+          0
+        ],
+        "cost": 4
+      },
+      {
+        "t": 2,
+        "assignment": [
+          2,
+          5
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0
+        ],
+        "cost": 5
+      },
+      {
+        "t": 3,
+        "assignment": [
+          2,
+          5,
+          3
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0
+        ],
+        "cost": 9
+      },
+      {
+        "t": 4,
+        "assignment": [
+          2,
+          5,
+          3,
+          0
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 10
+      },
+      {
+        "t": 5,
+        "assignment": [
+          2,
+          5,
+          3,
+          0,
+          1
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 14
+      },
+      {
+        "t": 6,
+        "assignment": [
+          2,
+          5,
+          3,
+          0,
+          1,
+          4
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 18
+      }
+    ],
+    "oracle_costs": [
+      4,
+      5,
+      9,
+      10,
+      14,
+      18
+    ],
+    "cpu_seconds": 0.0,
+    "wall_seconds": 4.540000009001233e-05
+  },
+  {
+    "case_id": "dev_alternate",
+    "split": "dev",
+    "family": "near_far",
+    "policy": "priced_chain",
+    "budget": 1,
+    "history": [
+      {
+        "t": 1,
+        "assignment": [
+          2
+        ],
+        "moves": [],
+        "counts": [
+          0
+        ],
+        "cost": 4
+      },
+      {
+        "t": 2,
+        "assignment": [
+          2,
+          5
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0
+        ],
+        "cost": 5
+      },
+      {
+        "t": 3,
+        "assignment": [
+          2,
+          5,
+          3
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0
+        ],
+        "cost": 9
+      },
+      {
+        "t": 4,
+        "assignment": [
+          2,
+          5,
+          3,
+          0
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 10
+      },
+      {
+        "t": 5,
+        "assignment": [
+          2,
+          5,
+          3,
+          0,
+          1
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 14
+      },
+      {
+        "t": 6,
+        "assignment": [
+          2,
+          5,
+          3,
+          0,
+          1,
+          4
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 18
+      }
+    ],
+    "oracle_costs": [
+      4,
+      5,
+      9,
+      10,
+      14,
+      18
+    ],
+    "cpu_seconds": 0.0,
+    "wall_seconds": 0.0007757000003039138
+  },
+  {
+    "case_id": "dev_alternate",
+    "split": "dev",
+    "family": "near_far",
+    "policy": "priced_chain",
+    "budget": 2,
+    "history": [
+      {
+        "t": 1,
+        "assignment": [
+          2
+        ],
+        "moves": [],
+        "counts": [
+          0
+        ],
+        "cost": 4
+      },
+      {
+        "t": 2,
+        "assignment": [
+          2,
+          5
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0
+        ],
+        "cost": 5
+      },
+      {
+        "t": 3,
+        "assignment": [
+          2,
+          5,
+          3
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0
+        ],
+        "cost": 9
+      },
+      {
+        "t": 4,
+        "assignment": [
+          2,
+          5,
+          3,
+          0
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 10
+      },
+      {
+        "t": 5,
+        "assignment": [
+          2,
+          5,
+          3,
+          0,
+          1
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 14
+      },
+      {
+        "t": 6,
+        "assignment": [
+          2,
+          5,
+          3,
+          0,
+          1,
+          4
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 18
+      }
+    ],
+    "oracle_costs": [
+      4,
+      5,
+      9,
+      10,
+      14,
+      18
+    ],
+    "cpu_seconds": 0.0,
+    "wall_seconds": 0.0007834999996703118
+  },
+  {
+    "case_id": "dev_alternate",
+    "split": "dev",
+    "family": "near_far",
+    "policy": "priced_chain",
+    "budget": 4,
+    "history": [
+      {
+        "t": 1,
+        "assignment": [
+          2
+        ],
+        "moves": [],
+        "counts": [
+          0
+        ],
+        "cost": 4
+      },
+      {
+        "t": 2,
+        "assignment": [
+          2,
+          5
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0
+        ],
+        "cost": 5
+      },
+      {
+        "t": 3,
+        "assignment": [
+          2,
+          5,
+          3
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0
+        ],
+        "cost": 9
+      },
+      {
+        "t": 4,
+        "assignment": [
+          2,
+          5,
+          3,
+          0
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 10
+      },
+      {
+        "t": 5,
+        "assignment": [
+          2,
+          5,
+          3,
+          0,
+          1
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 14
+      },
+      {
+        "t": 6,
+        "assignment": [
+          2,
+          5,
+          3,
+          0,
+          1,
+          4
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 18
+      }
+    ],
+    "oracle_costs": [
+      4,
+      5,
+      9,
+      10,
+      14,
+      18
+    ],
+    "cpu_seconds": 0.0,
+    "wall_seconds": 0.0007992999999260064
+  },
+  {
+    "case_id": "dev_alternate",
+    "split": "dev",
+    "family": "near_far",
+    "policy": "prefix_optimum",
+    "budget": null,
+    "history": null,
+    "oracle_costs": [
+      4,
+      5,
+      9,
+      10,
+      14,
+      18
+    ],
+    "cpu_seconds": 0.0,
+    "wall_seconds": 2.8000000384054147e-05
+  },
+  {
+    "case_id": "dev_budget",
+    "split": "dev",
+    "family": "budget_lock",
+    "policy": "nearest",
+    "budget": 0,
+    "history": [
+      {
+        "t": 1,
+        "assignment": [
+          1
+        ],
+        "moves": [],
+        "counts": [
+          0
+        ],
+        "cost": 1
+      },
+      {
+        "t": 2,
+        "assignment": [
+          1,
+          2
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0
+        ],
+        "cost": 3
+      },
+      {
+        "t": 3,
+        "assignment": [
+          1,
+          2,
+          0
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0
+        ],
+        "cost": 3
+      },
+      {
+        "t": 4,
+        "assignment": [
+          1,
+          2,
+          0,
+          3
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 4
+      },
+      {
+        "t": 5,
+        "assignment": [
+          1,
+          2,
+          0,
+          3,
+          4
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 5
+      },
+      {
+        "t": 6,
+        "assignment": [
+          1,
+          2,
+          0,
+          3,
+          4,
+          5
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 6
+      }
+    ],
+    "oracle_costs": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "cpu_seconds": 0.0,
+    "wall_seconds": 1.6600000890321098e-05
+  },
+  {
+    "case_id": "dev_budget",
+    "split": "dev",
+    "family": "budget_lock",
+    "policy": "single",
+    "budget": 1,
+    "history": [
+      {
+        "t": 1,
+        "assignment": [
+          1
+        ],
+        "moves": [],
+        "counts": [
+          0
+        ],
+        "cost": 1
+      },
+      {
+        "t": 2,
+        "assignment": [
+          0,
+          1
+        ],
+        "moves": [
+          0
+        ],
+        "counts": [
+          1,
+          0
+        ],
+        "cost": 2
+      },
+      {
+        "t": 3,
+        "assignment": [
+          0,
+          1,
+          2
+        ],
+        "moves": [],
+        "counts": [
+          1,
+          0,
+          0
+        ],
+        "cost": 7
+      },
+      {
+        "t": 4,
+        "assignment": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "moves": [],
+        "counts": [
+          1,
+          0,
+          0,
+          0
+        ],
+        "cost": 8
+      },
+      {
+        "t": 5,
+        "assignment": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "moves": [],
+        "counts": [
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 9
+      },
+      {
+        "t": 6,
+        "assignment": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "moves": [],
+        "counts": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 10
+      }
+    ],
+    "oracle_costs": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "cpu_seconds": 0.0,
+    "wall_seconds": 5.059999966761097e-05
+  },
+  {
+    "case_id": "dev_budget",
+    "split": "dev",
+    "family": "budget_lock",
+    "policy": "single",
+    "budget": 2,
+    "history": [
+      {
+        "t": 1,
+        "assignment": [
+          1
+        ],
+        "moves": [],
+        "counts": [
+          0
+        ],
+        "cost": 1
+      },
+      {
+        "t": 2,
+        "assignment": [
+          0,
+          1
+        ],
+        "moves": [
+          0
+        ],
+        "counts": [
+          1,
+          0
+        ],
+        "cost": 2
+      },
+      {
+        "t": 3,
+        "assignment": [
+          2,
+          1,
+          0
+        ],
+        "moves": [
+          0
+        ],
+        "counts": [
+          2,
+          0,
+          0
+        ],
+        "cost": 3
+      },
+      {
+        "t": 4,
+        "assignment": [
+          2,
+          1,
+          0,
+          3
+        ],
+        "moves": [],
+        "counts": [
+          2,
+          0,
+          0,
+          0
+        ],
+        "cost": 4
+      },
+      {
+        "t": 5,
+        "assignment": [
+          2,
+          1,
+          0,
+          3,
+          4
+        ],
+        "moves": [],
+        "counts": [
+          2,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 5
+      },
+      {
+        "t": 6,
+        "assignment": [
+          2,
+          1,
+          0,
+          3,
+          4,
+          5
+        ],
+        "moves": [],
+        "counts": [
+          2,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 6
+      }
+    ],
+    "oracle_costs": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "cpu_seconds": 0.0,
+    "wall_seconds": 4.340000123193022e-05
+  },
+  {
+    "case_id": "dev_budget",
+    "split": "dev",
+    "family": "budget_lock",
+    "policy": "single",
+    "budget": 4,
+    "history": [
+      {
+        "t": 1,
+        "assignment": [
+          1
+        ],
+        "moves": [],
+        "counts": [
+          0
+        ],
+        "cost": 1
+      },
+      {
+        "t": 2,
+        "assignment": [
+          0,
+          1
+        ],
+        "moves": [
+          0
+        ],
+        "counts": [
+          1,
+          0
+        ],
+        "cost": 2
+      },
+      {
+        "t": 3,
+        "assignment": [
+          2,
+          1,
+          0
+        ],
+        "moves": [
+          0
+        ],
+        "counts": [
+          2,
+          0,
+          0
+        ],
+        "cost": 3
+      },
+      {
+        "t": 4,
+        "assignment": [
+          2,
+          1,
+          0,
+          3
+        ],
+        "moves": [],
+        "counts": [
+          2,
+          0,
+          0,
+          0
+        ],
+        "cost": 4
+      },
+      {
+        "t": 5,
+        "assignment": [
+          2,
+          1,
+          0,
+          3,
+          4
+        ],
+        "moves": [],
+        "counts": [
+          2,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 5
+      },
+      {
+        "t": 6,
+        "assignment": [
+          2,
+          1,
+          0,
+          3,
+          4,
+          5
+        ],
+        "moves": [],
+        "counts": [
+          2,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 6
+      }
+    ],
+    "oracle_costs": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "cpu_seconds": 0.0,
+    "wall_seconds": 4.7500001528533176e-05
+  },
+  {
+    "case_id": "dev_budget",
+    "split": "dev",
+    "family": "budget_lock",
+    "policy": "priced_chain",
+    "budget": 1,
+    "history": [
+      {
+        "t": 1,
+        "assignment": [
+          1
+        ],
+        "moves": [],
+        "counts": [
+          0
+        ],
+        "cost": 1
+      },
+      {
+        "t": 2,
+        "assignment": [
+          1,
+          2
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0
+        ],
+        "cost": 3
+      },
+      {
+        "t": 3,
+        "assignment": [
+          1,
+          2,
+          0
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0
+        ],
+        "cost": 3
+      },
+      {
+        "t": 4,
+        "assignment": [
+          1,
+          2,
+          0,
+          3
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 4
+      },
+      {
+        "t": 5,
+        "assignment": [
+          1,
+          2,
+          0,
+          3,
+          4
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 5
+      },
+      {
+        "t": 6,
+        "assignment": [
+          1,
+          2,
+          0,
+          3,
+          4,
+          5
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 6
+      }
+    ],
+    "oracle_costs": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "cpu_seconds": 0.0,
+    "wall_seconds": 0.0007810999995854218
+  },
+  {
+    "case_id": "dev_budget",
+    "split": "dev",
+    "family": "budget_lock",
+    "policy": "priced_chain",
+    "budget": 2,
+    "history": [
+      {
+        "t": 1,
+        "assignment": [
+          1
+        ],
+        "moves": [],
+        "counts": [
+          0
+        ],
+        "cost": 1
+      },
+      {
+        "t": 2,
+        "assignment": [
+          0,
+          1
+        ],
+        "moves": [
+          0
+        ],
+        "counts": [
+          1,
+          0
+        ],
+        "cost": 2
+      },
+      {
+        "t": 3,
+        "assignment": [
+          1,
+          2,
+          0
+        ],
+        "moves": [
+          1,
+          0
+        ],
+        "counts": [
+          2,
+          1,
+          0
+        ],
+        "cost": 3
+      },
+      {
+        "t": 4,
+        "assignment": [
+          1,
+          2,
+          0,
+          3
+        ],
+        "moves": [],
+        "counts": [
+          2,
+          1,
+          0,
+          0
+        ],
+        "cost": 4
+      },
+      {
+        "t": 5,
+        "assignment": [
+          1,
+          2,
+          0,
+          3,
+          4
+        ],
+        "moves": [],
+        "counts": [
+          2,
+          1,
+          0,
+          0,
+          0
+        ],
+        "cost": 5
+      },
+      {
+        "t": 6,
+        "assignment": [
+          1,
+          2,
+          0,
+          3,
+          4,
+          5
+        ],
+        "moves": [],
+        "counts": [
+          2,
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 6
+      }
+    ],
+    "oracle_costs": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "cpu_seconds": 0.0,
+    "wall_seconds": 0.000179899998329347
+  },
+  {
+    "case_id": "dev_budget",
+    "split": "dev",
+    "family": "budget_lock",
+    "policy": "priced_chain",
+    "budget": 4,
+    "history": [
+      {
+        "t": 1,
+        "assignment": [
+          1
+        ],
+        "moves": [],
+        "counts": [
+          0
+        ],
+        "cost": 1
+      },
+      {
+        "t": 2,
+        "assignment": [
+          0,
+          1
+        ],
+        "moves": [
+          0
+        ],
+        "counts": [
+          1,
+          0
+        ],
+        "cost": 2
+      },
+      {
+        "t": 3,
+        "assignment": [
+          1,
+          2,
+          0
+        ],
+        "moves": [
+          1,
+          0
+        ],
+        "counts": [
+          2,
+          1,
+          0
+        ],
+        "cost": 3
+      },
+      {
+        "t": 4,
+        "assignment": [
+          1,
+          2,
+          0,
+          3
+        ],
+        "moves": [],
+        "counts": [
+          2,
+          1,
+          0,
+          0
+        ],
+        "cost": 4
+      },
+      {
+        "t": 5,
+        "assignment": [
+          1,
+          2,
+          0,
+          3,
+          4
+        ],
+        "moves": [],
+        "counts": [
+          2,
+          1,
+          0,
+          0,
+          0
+        ],
+        "cost": 5
+      },
+      {
+        "t": 6,
+        "assignment": [
+          1,
+          2,
+          0,
+          3,
+          4,
+          5
+        ],
+        "moves": [],
+        "counts": [
+          2,
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 6
+      }
+    ],
+    "oracle_costs": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "cpu_seconds": 0.0,
+    "wall_seconds": 0.0007255999989865813
+  },
+  {
+    "case_id": "dev_budget",
+    "split": "dev",
+    "family": "budget_lock",
+    "policy": "prefix_optimum",
+    "budget": null,
+    "history": null,
+    "oracle_costs": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "cpu_seconds": 0.0,
+    "wall_seconds": 2.9599999834317714e-05
+  },
+  {
+    "case_id": "dev_nested",
+    "split": "dev",
+    "family": "nested",
+    "policy": "nearest",
+    "budget": 0,
+    "history": [
+      {
+        "t": 1,
+        "assignment": [
+          4
+        ],
+        "moves": [],
+        "counts": [
+          0
+        ],
+        "cost": 1
+      },
+      {
+        "t": 2,
+        "assignment": [
+          4,
+          3
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0
+        ],
+        "cost": 2
+      },
+      {
+        "t": 3,
+        "assignment": [
+          4,
+          3,
+          2
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0
+        ],
+        "cost": 3
+      },
+      {
+        "t": 4,
+        "assignment": [
+          4,
+          3,
+          2,
+          1
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 4
+      },
+      {
+        "t": 5,
+        "assignment": [
+          4,
+          3,
+          2,
+          1,
+          0
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 7
+      },
+      {
+        "t": 6,
+        "assignment": [
+          4,
+          3,
+          2,
+          1,
+          0,
+          5
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 134
+      }
+    ],
+    "oracle_costs": [
+      1,
+      2,
+      3,
+      4,
+      7,
+      130
+    ],
+    "cpu_seconds": 0.0,
+    "wall_seconds": 1.340000017080456e-05
+  },
+  {
+    "case_id": "dev_nested",
+    "split": "dev",
+    "family": "nested",
+    "policy": "single",
+    "budget": 1,
+    "history": [
+      {
+        "t": 1,
+        "assignment": [
+          4
+        ],
+        "moves": [],
+        "counts": [
+          0
+        ],
+        "cost": 1
+      },
+      {
+        "t": 2,
+        "assignment": [
+          4,
+          3
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0
+        ],
+        "cost": 2
+      },
+      {
+        "t": 3,
+        "assignment": [
+          4,
+          3,
+          2
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0
+        ],
+        "cost": 3
+      },
+      {
+        "t": 4,
+        "assignment": [
+          4,
+          3,
+          2,
+          1
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 4
+      },
+      {
+        "t": 5,
+        "assignment": [
+          4,
+          3,
+          2,
+          1,
+          0
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 7
+      },
+      {
+        "t": 6,
+        "assignment": [
+          4,
+          3,
+          2,
+          1,
+          5,
+          0
+        ],
+        "moves": [
+          4
+        ],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          1,
+          0
+        ],
+        "cost": 130
+      }
+    ],
+    "oracle_costs": [
+      1,
+      2,
+      3,
+      4,
+      7,
+      130
+    ],
+    "cpu_seconds": 0.0,
+    "wall_seconds": 4.439999975147657e-05
+  },
+  {
+    "case_id": "dev_nested",
+    "split": "dev",
+    "family": "nested",
+    "policy": "single",
+    "budget": 2,
+    "history": [
+      {
+        "t": 1,
+        "assignment": [
+          4
+        ],
+        "moves": [],
+        "counts": [
+          0
+        ],
+        "cost": 1
+      },
+      {
+        "t": 2,
+        "assignment": [
+          4,
+          3
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0
+        ],
+        "cost": 2
+      },
+      {
+        "t": 3,
+        "assignment": [
+          4,
+          3,
+          2
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0
+        ],
+        "cost": 3
+      },
+      {
+        "t": 4,
+        "assignment": [
+          4,
+          3,
+          2,
+          1
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 4
+      },
+      {
+        "t": 5,
+        "assignment": [
+          4,
+          3,
+          2,
+          1,
+          0
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 7
+      },
+      {
+        "t": 6,
+        "assignment": [
+          4,
+          3,
+          2,
+          1,
+          5,
+          0
+        ],
+        "moves": [
+          4
+        ],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          1,
+          0
+        ],
+        "cost": 130
+      }
+    ],
+    "oracle_costs": [
+      1,
+      2,
+      3,
+      4,
+      7,
+      130
+    ],
+    "cpu_seconds": 0.0,
+    "wall_seconds": 4.2300000131945126e-05
+  },
+  {
+    "case_id": "dev_nested",
+    "split": "dev",
+    "family": "nested",
+    "policy": "single",
+    "budget": 4,
+    "history": [
+      {
+        "t": 1,
+        "assignment": [
+          4
+        ],
+        "moves": [],
+        "counts": [
+          0
+        ],
+        "cost": 1
+      },
+      {
+        "t": 2,
+        "assignment": [
+          4,
+          3
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0
+        ],
+        "cost": 2
+      },
+      {
+        "t": 3,
+        "assignment": [
+          4,
+          3,
+          2
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0
+        ],
+        "cost": 3
+      },
+      {
+        "t": 4,
+        "assignment": [
+          4,
+          3,
+          2,
+          1
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 4
+      },
+      {
+        "t": 5,
+        "assignment": [
+          4,
+          3,
+          2,
+          1,
+          0
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 7
+      },
+      {
+        "t": 6,
+        "assignment": [
+          4,
+          3,
+          2,
+          1,
+          5,
+          0
+        ],
+        "moves": [
+          4
+        ],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          1,
+          0
+        ],
+        "cost": 130
+      }
+    ],
+    "oracle_costs": [
+      1,
+      2,
+      3,
+      4,
+      7,
+      130
+    ],
+    "cpu_seconds": 0.0,
+    "wall_seconds": 4.260000059730373e-05
+  },
+  {
+    "case_id": "dev_nested",
+    "split": "dev",
+    "family": "nested",
+    "policy": "priced_chain",
+    "budget": 1,
+    "history": [
+      {
+        "t": 1,
+        "assignment": [
+          4
+        ],
+        "moves": [],
+        "counts": [
+          0
+        ],
+        "cost": 1
+      },
+      {
+        "t": 2,
+        "assignment": [
+          4,
+          3
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0
+        ],
+        "cost": 2
+      },
+      {
+        "t": 3,
+        "assignment": [
+          4,
+          3,
+          2
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0
+        ],
+        "cost": 3
+      },
+      {
+        "t": 4,
+        "assignment": [
+          4,
+          3,
+          2,
+          1
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 4
+      },
+      {
+        "t": 5,
+        "assignment": [
+          4,
+          3,
+          2,
+          1,
+          0
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 7
+      },
+      {
+        "t": 6,
+        "assignment": [
+          4,
+          3,
+          2,
+          1,
+          0,
+          5
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 134
+      }
+    ],
+    "oracle_costs": [
+      1,
+      2,
+      3,
+      4,
+      7,
+      130
+    ],
+    "cpu_seconds": 0.0,
+    "wall_seconds": 0.0007402999999612803
+  },
+  {
+    "case_id": "dev_nested",
+    "split": "dev",
+    "family": "nested",
+    "policy": "priced_chain",
+    "budget": 2,
+    "history": [
+      {
+        "t": 1,
+        "assignment": [
+          4
+        ],
+        "moves": [],
+        "counts": [
+          0
+        ],
+        "cost": 1
+      },
+      {
+        "t": 2,
+        "assignment": [
+          4,
+          3
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0
+        ],
+        "cost": 2
+      },
+      {
+        "t": 3,
+        "assignment": [
+          4,
+          3,
+          2
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0
+        ],
+        "cost": 3
+      },
+      {
+        "t": 4,
+        "assignment": [
+          4,
+          3,
+          2,
+          1
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 4
+      },
+      {
+        "t": 5,
+        "assignment": [
+          4,
+          3,
+          2,
+          1,
+          0
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 7
+      },
+      {
+        "t": 6,
+        "assignment": [
+          4,
+          3,
+          2,
+          1,
+          0,
+          5
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 134
+      }
+    ],
+    "oracle_costs": [
+      1,
+      2,
+      3,
+      4,
+      7,
+      130
+    ],
+    "cpu_seconds": 0.0,
+    "wall_seconds": 0.0007697000000916887
+  },
+  {
+    "case_id": "dev_nested",
+    "split": "dev",
+    "family": "nested",
+    "policy": "priced_chain",
+    "budget": 4,
+    "history": [
+      {
+        "t": 1,
+        "assignment": [
+          4
+        ],
+        "moves": [],
+        "counts": [
+          0
+        ],
+        "cost": 1
+      },
+      {
+        "t": 2,
+        "assignment": [
+          4,
+          3
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0
+        ],
+        "cost": 2
+      },
+      {
+        "t": 3,
+        "assignment": [
+          4,
+          3,
+          2
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0
+        ],
+        "cost": 3
+      },
+      {
+        "t": 4,
+        "assignment": [
+          4,
+          3,
+          2,
+          1
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 4
+      },
+      {
+        "t": 5,
+        "assignment": [
+          4,
+          3,
+          2,
+          1,
+          0
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 7
+      },
+      {
+        "t": 6,
+        "assignment": [
+          4,
+          3,
+          2,
+          1,
+          0,
+          5
+        ],
+        "moves": [],
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "cost": 134
+      }
+    ],
+    "oracle_costs": [
+      1,
+      2,
+      3,
+      4,
+      7,
+      130
+    ],
+    "cpu_seconds": 0.0,
+    "wall_seconds": 0.0007521999996242812
+  },
+  {
+    "case_id": "dev_nested",
+    "split": "dev",
+    "family": "nested",
+    "policy": "prefix_optimum",
+    "budget": null,
+    "history": null,
+    "oracle_costs": [
+      1,
+      2,
+      3,
+      4,
+      7,
+      130
+    ],
+    "cpu_seconds": 0.0,
+    "wall_seconds": 2.4700000722077675e-05
+  }
+]

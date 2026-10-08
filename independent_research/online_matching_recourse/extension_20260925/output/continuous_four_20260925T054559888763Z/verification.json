@@ -1,0 +1,50 @@
+{
+  "status": "independently_verified",
+  "source": "summary.json",
+  "source_sha256": "08bd7d892554434a179f9cc78d0821899943bd27cd7b5b37d8089192ba3ff56f",
+  "verifier_sha256": "f258d69a4d0effaf683560e9bf2aef5c1574762e3bb74ffb7c9e4fbe0a0c6746",
+  "scope": "4 finite alphabet online games, 0 known future comparisons, all 16 saved witness stages",
+  "independence": {
+    "imports_original_solver": false,
+    "state": "sorted multiset of coordinate, server index, lifetime count triples",
+    "optimum": "sorted requests against every service subset",
+    "chain_actions": "grow backwards from each free service; move each old request at most once"
+  },
+  "results": [
+    {
+      "model": "atomic",
+      "budget": 1,
+      "known_future": false,
+      "value": 9,
+      "canonical_states": 54487,
+      "witness_stages_verified": 4
+    },
+    {
+      "model": "atomic",
+      "budget": 2,
+      "known_future": false,
+      "value": 2,
+      "canonical_states": 133579,
+      "witness_stages_verified": 4
+    },
+    {
+      "model": "chain",
+      "budget": 1,
+      "known_future": false,
+      "value": 9,
+      "canonical_states": 44672,
+      "witness_stages_verified": 4
+    },
+    {
+      "model": "chain",
+      "budget": 2,
+      "known_future": false,
+      "value": 2,
+      "canonical_states": 84207,
+      "witness_stages_verified": 4
+    }
+  ],
+  "cpu_seconds": 179.03125,
+  "all_checks_passed": true,
+  "scope_note": "Corrected fixed wording inherited from the earlier 6-game/3-hindsight template after execution; all numerical results, source hash, and actual executed verifier hash remain unchanged."
+}

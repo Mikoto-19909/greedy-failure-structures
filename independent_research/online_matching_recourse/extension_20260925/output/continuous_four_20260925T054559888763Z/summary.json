@@ -1,0 +1,341 @@
+{
+  "status": "computed_pending_independent_verification",
+  "servers": [
+    -4,
+    -1,
+    2,
+    8
+  ],
+  "future_alphabet": [
+    -4,
+    -3,
+    -2,
+    -1,
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+  ],
+  "horizon": 4,
+  "first_step": "nearest, ties left",
+  "objective": "sum of prefix excess distances",
+  "results": [
+    {
+      "budget": 1,
+      "model": "atomic",
+      "value": 9,
+      "states": 107498,
+      "witness": [
+        {
+          "request": 5,
+          "assignment": [
+            2
+          ],
+          "counts": [
+            0
+          ],
+          "cost": 3,
+          "optimum": 3,
+          "worst_remaining_excess": 9
+        },
+        {
+          "request": 2,
+          "assignment": [
+            2,
+            -1
+          ],
+          "counts": [
+            0,
+            0
+          ],
+          "cost": 6,
+          "optimum": 3,
+          "worst_remaining_excess": 9
+        },
+        {
+          "request": -1,
+          "assignment": [
+            2,
+            -1,
+            -4
+          ],
+          "counts": [
+            0,
+            0,
+            0
+          ],
+          "cost": 9,
+          "optimum": 3,
+          "worst_remaining_excess": 6
+        },
+        {
+          "request": -4,
+          "assignment": [
+            8,
+            2,
+            -1,
+            -4
+          ],
+          "counts": [
+            1,
+            1,
+            1,
+            0
+          ],
+          "cost": 3,
+          "optimum": 3,
+          "worst_remaining_excess": 0
+        }
+      ],
+      "known_future": false
+    },
+    {
+      "budget": 2,
+      "model": "atomic",
+      "value": 2,
+      "states": 212954,
+      "witness": [
+        {
+          "request": 0,
+          "assignment": [
+            -1
+          ],
+          "counts": [
+            0
+          ],
+          "cost": 1,
+          "optimum": 1,
+          "worst_remaining_excess": 2
+        },
+        {
+          "request": -1,
+          "assignment": [
+            -1,
+            -4
+          ],
+          "counts": [
+            0,
+            0
+          ],
+          "cost": 4,
+          "optimum": 2,
+          "worst_remaining_excess": 2
+        },
+        {
+          "request": -4,
+          "assignment": [
+            2,
+            -1,
+            -4
+          ],
+          "counts": [
+            1,
+            1,
+            0
+          ],
+          "cost": 2,
+          "optimum": 2,
+          "worst_remaining_excess": 0
+        },
+        {
+          "request": -4,
+          "assignment": [
+            2,
+            -1,
+            -4,
+            8
+          ],
+          "counts": [
+            1,
+            1,
+            0,
+            0
+          ],
+          "cost": 14,
+          "optimum": 14,
+          "worst_remaining_excess": 0
+        }
+      ],
+      "known_future": false
+    },
+    {
+      "budget": 1,
+      "model": "chain",
+      "value": 9,
+      "states": 80120,
+      "witness": [
+        {
+          "request": 5,
+          "assignment": [
+            2
+          ],
+          "counts": [
+            0
+          ],
+          "cost": 3,
+          "optimum": 3,
+          "worst_remaining_excess": 9
+        },
+        {
+          "request": 2,
+          "assignment": [
+            2,
+            -1
+          ],
+          "counts": [
+            0,
+            0
+          ],
+          "cost": 6,
+          "optimum": 3,
+          "worst_remaining_excess": 9
+        },
+        {
+          "request": -1,
+          "assignment": [
+            2,
+            -1,
+            -4
+          ],
+          "counts": [
+            0,
+            0,
+            0
+          ],
+          "cost": 9,
+          "optimum": 3,
+          "worst_remaining_excess": 6
+        },
+        {
+          "request": -4,
+          "assignment": [
+            8,
+            2,
+            -1,
+            -4
+          ],
+          "counts": [
+            1,
+            1,
+            1,
+            0
+          ],
+          "cost": 3,
+          "optimum": 3,
+          "worst_remaining_excess": 0
+        }
+      ],
+      "known_future": false
+    },
+    {
+      "budget": 2,
+      "model": "chain",
+      "value": 2,
+      "states": 119666,
+      "witness": [
+        {
+          "request": 0,
+          "assignment": [
+            -1
+          ],
+          "counts": [
+            0
+          ],
+          "cost": 1,
+          "optimum": 1,
+          "worst_remaining_excess": 2
+        },
+        {
+          "request": -1,
+          "assignment": [
+            2,
+            -1
+          ],
+          "counts": [
+            1,
+            0
+          ],
+          "cost": 2,
+          "optimum": 2,
+          "worst_remaining_excess": 2
+        },
+        {
+          "request": 1,
+          "assignment": [
+            -1,
+            -4,
+            2
+          ],
+          "counts": [
+            2,
+            1,
+            0
+          ],
+          "cost": 5,
+          "optimum": 5,
+          "worst_remaining_excess": 2
+        },
+        {
+          "request": -4,
+          "assignment": [
+            -1,
+            8,
+            2,
+            -4
+          ],
+          "counts": [
+            2,
+            2,
+            0,
+            0
+          ],
+          "cost": 11,
+          "optimum": 9,
+          "worst_remaining_excess": 2
+        }
+      ],
+      "known_future": false
+    }
+  ],
+  "hindsight_fixed_sequence": [],
+  "cpu_seconds": 52.6875,
+  "rounding": {
+    "first_coordinate_error_at_most": 1,
+    "later_coordinate_error_at_most": 0.5,
+    "preserve_first_nearest_server": true,
+    "additive_certificate": 12,
+    "reason": "stage1 excess zero; 2*[3*1+(3+2+1)*0.5]=12"
+  },
+  "continuous_intervals": [
+    {
+      "model": "atomic",
+      "budget": 1,
+      "lower": 9,
+      "upper": 21
+    },
+    {
+      "model": "atomic",
+      "budget": 2,
+      "lower": 2,
+      "upper": 14
+    },
+    {
+      "model": "chain",
+      "budget": 1,
+      "lower": 9,
+      "upper": 21
+    },
+    {
+      "model": "chain",
+      "budget": 2,
+      "lower": 2,
+      "upper": 14
+    }
+  ],
+  "budget4_continuous_value": 0
+}

@@ -11,7 +11,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts'))
 import check
-from check_profiles import ANALYSIS_OWNERS, GROUPS, RESEARCH_MODULES, REQUIRED_RESEARCH, OPTIONAL_CASES, affected_groups, extended_group
+from check_profiles import RESEARCH_OWNERS, GROUPS, RESEARCH_MODULES, REQUIRED_RESEARCH, OPTIONAL_CASES, affected_groups, extended_group
 
 class NamedCase:
     def __init__(self, name): self.name = name
@@ -82,9 +82,22 @@ class CheckProfilesTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             (root / 'analysis').mkdir()
-            for filename in ANALYSIS_OWNERS:
-                (root / 'analysis' / filename).touch()
+            for source, owners in RESEARCH_OWNERS.items():
+                for filename in owners:
+                    file = root / source / filename
+                    file.parent.mkdir(parents=True, exist_ok=True)
+                    file.touch()
             check.validate_research_registration(root, cases)
+            study = root / 'independent_research/online_matching_recourse'
+            archived = study / 'output/old-run/unregistered_snapshot.py'
+            archived.parent.mkdir(parents=True)
+            archived.touch()
+            check.validate_research_registration(root, cases)
+            unregistered = study / 'extension_20260925/new_solver.py'
+            unregistered.touch()
+            with self.assertRaisesRegex(ValueError, 'ownership'):
+                check.validate_research_registration(root, cases)
+            unregistered.unlink()
             with self.assertRaises(ValueError):
                 check.validate_research_registration(root, [])
             with self.assertRaisesRegex(ValueError, 'required verification'):

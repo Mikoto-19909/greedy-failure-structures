@@ -60,7 +60,7 @@ const passed = (name) => { checks.push(name); console.log('PASS ' + name); };
   const page = await context.newPage();
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
-  await page.goto(url);
+  await page.goto(url + 'maximum-coverage');
   const loaded = async (name) => {
     await page.waitForFunction((name) => document.querySelector('#spectrum-source').textContent === name, name);
     assert.equal(await page.locator('#result-select').inputValue(), name);
@@ -261,7 +261,7 @@ const passed = (name) => { checks.push(name); console.log('PASS ' + name); };
   await storageContext.addInitScript(() => {
     Object.defineProperty(window, 'localStorage', { get() { throw new Error('Storage disabled'); } });
   });
-  const storagePage = await storageContext.newPage(); await storagePage.goto(url);
+  const storagePage = await storageContext.newPage(); await storagePage.goto(url + 'maximum-coverage');
   await storagePage.waitForFunction(() => document.querySelector('#spectrum-source').textContent === 'browser-new-run');
   await storageContext.close(); passed('disabled local storage does not prevent loading');
   await page.route('**/api/result?name=*', (route) => route.fulfill({ status: 400, json: { error: 'bad CSV' } }));

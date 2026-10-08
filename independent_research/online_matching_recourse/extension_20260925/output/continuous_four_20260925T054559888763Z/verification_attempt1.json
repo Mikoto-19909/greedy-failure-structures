@@ -1,0 +1,15 @@
+{
+  "status": "terminated_at_cpu_limit",
+  "cpu_limit_seconds": 180,
+  "completed_game": {
+    "model": "atomic",
+    "budget": 1,
+    "value": 9,
+    "canonical_states": 454047,
+    "witness_stages_verified": 4,
+    "cpu_seconds_so_far": 60.9375
+  },
+  "stopped_during": "atomic budget 2",
+  "reason": "RuntimeError: Independent verification exceeded 180.0 CPU seconds",
+  "next_change": "omit terminal state memoization and one-use successor cache; preserve game and all inputs"
+}

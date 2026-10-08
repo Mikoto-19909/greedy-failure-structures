@@ -12,3 +12,9 @@ experiments/r1c_confirmation_v1/r1c_confirmation.svg -text whitespace=-blank-at-
 # Keep captured command output unchanged, including Windows line endings.
 experiments/gate_speed_comparison_v1/**/*.log -text whitespace=-blank-at-eol,-blank-at-eof,cr-at-eol
 experiments/gate_speed_comparison_v1/*.txt -text whitespace=-blank-at-eol,-blank-at-eof,cr-at-eol
+
+# Preserve imported research snapshots and generated figures byte-for-byte.
+independent_research/online_matching_recourse/output/** -text whitespace=-blank-at-eol,-blank-at-eof,cr-at-eol
+independent_research/online_matching_recourse/extension_20260925/output/** -text whitespace=-blank-at-eol,-blank-at-eof,cr-at-eol
+independent_research/online_matching_recourse/extension_20260925/报告/图/*.svg -text whitespace=-blank-at-eol,cr-at-eol
+independent_research/online_matching_recourse/报告/分步例子.md -text whitespace=-blank-at-eof,cr-at-eol

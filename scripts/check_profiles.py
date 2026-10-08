@@ -79,6 +79,7 @@ RESEARCH_MODULES = {
     'r1c': ('test_r1c_confirmation', 'test_r1c_report'),
     'r2': ('test_r2_budget_grid', 'test_verification_completion', 'test_r2_production_backends'),
     'r3': ('test_r3_feasibility', 'test_r3_confirmation'),
+    'online_matching': ('test_online_matching_research',),
 }
 # Producer, verifier, and shared helper ownership; tools need no fake second solver.
 ANALYSIS_OWNERS = {
@@ -119,6 +120,28 @@ ANALYSIS_OWNERS = {
     'r3_confirmation_inputs.py': 'r3',
     'r3_confirmation.py': 'r3',
     'validate_r3_confirmation.py': 'r3',
+}
+
+RESEARCH_OWNERS = {
+    'analysis': ANALYSIS_OWNERS,
+    'independent_research/online_matching_recourse': {
+        'analyze.py': 'tool',
+        'finalize.py': 'tool',
+        'fixtures.py': 'online_matching',
+        'matching.py': 'online_matching',
+        'run.py': 'online_matching',
+        'test_matching.py': 'online_matching',
+        'verify.py': 'online_matching',
+        'verify_three_point.py': 'online_matching',
+        'extension_20260925/ablation.py': 'online_matching',
+        'extension_20260925/chain_first.py': 'online_matching',
+        'extension_20260925/continuous_four_bounds.py': 'online_matching',
+        'extension_20260925/four_request_game.py': 'online_matching',
+        'extension_20260925/plots.py': 'tool',
+        'extension_20260925/random_raw.py': 'online_matching',
+        'extension_20260925/verify_ablation.py': 'online_matching',
+        'extension_20260925/verify_four_game.py': 'online_matching',
+    },
 }
 
 def is_research(test_id: str) -> bool:
@@ -164,6 +187,15 @@ def affected_groups(paths: list[str]) -> set[str]:
     return groups
 
 REQUIRED_RESEARCH = {
+    'online_matching': (
+        'test_online_matching_research.OnlineMatchingResearchTests.test_matching_policies_and_independent_trace_rejection',
+        'test_online_matching_research.OnlineMatchingResearchTests.test_three_point_known_value_and_missing_future_rejected',
+        'test_online_matching_research.OnlineMatchingResearchTests.test_chain_and_free_first_known_values_and_illegal_actions',
+        'test_online_matching_research.OnlineMatchingResearchTests.test_randomized_raw_game_known_certificate_and_nonfinite_input',
+        'test_online_matching_research.OnlineMatchingResearchTests.test_ablation_tiny_trajectory_and_corrupt_or_incomplete_output',
+        'test_online_matching_research.OnlineMatchingResearchTests.test_four_arrival_known_values_and_corrupt_or_incomplete_witness',
+        'test_online_matching_research.OnlineMatchingResearchTests.test_continuous_rounding_known_bounds_and_corrupt_certificate',
+    ),
     'r4': (
         'test_r4_dual.R4DualTests.test_hand_examples_strict_tightening_and_unequal_size_certification',
         'test_r4_dual.R4DualTests.test_all_tiny_set_systems_bound_exact_optimum_and_match_independent_checker',

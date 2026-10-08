@@ -11,7 +11,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts'))
-from check_profiles import ANALYSIS_OWNERS, GROUPS, RESEARCH_MODULES, REQUIRED_RESEARCH, OPTIONAL_CASES, CUDA_CASES, affected_groups, extended_group, is_platform, is_research
+from check_profiles import RESEARCH_OWNERS, GROUPS, RESEARCH_MODULES, REQUIRED_RESEARCH, OPTIONAL_CASES, CUDA_CASES, affected_groups, extended_group, is_platform, is_research
 
 REFERENCE_CONFIG_REVISION = 'cef5b92954571423b10a0c3b56947a4b26400d3c'
 REFERENCE_CONFIG_PATHS = ('analysis/r2_f2_config.json', 'analysis/r3_confirmation_config.json')
@@ -37,12 +37,17 @@ def flatten(suite):
             yield item
 
 def validate_research_registration(root: Path, cases) -> None:
-    files = {p.relative_to(root / 'analysis').as_posix() for p in (root / 'analysis').rglob('*.py')}
-    if files != set(ANALYSIS_OWNERS):
-        raise ValueError(f'analysis ownership must be reviewed: new={sorted(files-set(ANALYSIS_OWNERS))}, missing={sorted(set(ANALYSIS_OWNERS)-files)}')
+    all_owners = set()
+    for source, owners in RESEARCH_OWNERS.items():
+        folder = root / source
+        files = {p.relative_to(folder).as_posix() for p in folder.rglob('*.py')
+                 if source == 'analysis' or not {'output', 'evidence'}.intersection(p.relative_to(folder).parts)}
+        if files != set(owners):
+            raise ValueError(f'{source} ownership must be reviewed: new={sorted(files-set(owners))}, missing={sorted(set(owners)-files)}')
+        all_owners.update(owners.values())
     discovered = {case.id() for case in cases}
     modules = {case.id().split('.')[0] for case in cases}
-    for owner in set(ANALYSIS_OWNERS.values()) - {'tool'}:
+    for owner in all_owners - {'tool'}:
         if owner not in RESEARCH_MODULES or not set(RESEARCH_MODULES[owner]) <= modules:
             raise ValueError(f'missing executable research verification: {owner}')
         required = REQUIRED_RESEARCH.get(owner, ())

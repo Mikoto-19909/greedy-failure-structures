@@ -1,0 +1,93 @@
+{
+  "status": "automatic_verification_passed_user_review_pending",
+  "source_sha256": "50f6869983669eb160c532b89a44f72b71c0d5fdfaddc2574acb70135fac9904",
+  "model": "Atomic matching updates; first request nearest, ties left; lifetime budget one.",
+  "objective": "max_z [(C2-OPT2)+(C3(z)-OPT3(z))]",
+  "grid": {
+    "server_layouts": 5,
+    "coordinate_unit": 0.5,
+    "request_coordinates": 13,
+    "distinct_prefixes": 845,
+    "future_cases": 10985,
+    "stage_two_actions_per_prefix": 6,
+    "final_bijections_per_future": 6
+  },
+  "checks": [
+    "all_second_stage_actions",
+    "all_budget_feasible_final_bijections",
+    "pointwise_frozen_loss",
+    "worst_loss_at_endpoints",
+    "closed_form_loss",
+    "second_stage_minimax_rule",
+    "conditional_value",
+    "tight_global_bound",
+    "prior_budget_lock_example"
+  ],
+  "worst_excess_witnesses": [
+    {
+      "servers": [
+        0.0,
+        1.0,
+        6.0
+      ],
+      "x": 3.5,
+      "y": 1.0,
+      "worst_excess": 1.0
+    },
+    {
+      "servers": [
+        0.0,
+        2.0,
+        6.0
+      ],
+      "x": 4.0,
+      "y": 2.0,
+      "worst_excess": 2.0
+    },
+    {
+      "servers": [
+        0.0,
+        3.0,
+        6.0
+      ],
+      "x": 4.5,
+      "y": 3.0,
+      "worst_excess": 3.0
+    },
+    {
+      "servers": [
+        0.0,
+        4.0,
+        6.0
+      ],
+      "x": 5.0,
+      "y": 4.0,
+      "worst_excess": 2.0
+    },
+    {
+      "servers": [
+        0.0,
+        5.0,
+        6.0
+      ],
+      "x": 5.5,
+      "y": 5.0,
+      "worst_excess": 1.0
+    }
+  ],
+  "prior_example": {
+    "servers": [
+      0,
+      3,
+      5
+    ],
+    "x": 2,
+    "y": 3,
+    "keep_worst_excess": 1,
+    "move_first_to_zero_worst_excess": 4
+  },
+  "cpu_seconds": 0.109375,
+  "wall_seconds": 0.11327859999437351,
+  "scope": "Finite grid consistency check, plus the prior example; continuous-domain validity comes from the written proof.",
+  "previous_study_inputs_modified": false
+}

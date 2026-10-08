@@ -1,0 +1,33 @@
+{
+  "status": "automatic_verification_passed_user_review_pending",
+  "split": "dev",
+  "input_sha256": "85e76d853f0dc7c6ef82e05ff180b3b1b0cffa24f625014c7e74d319fa42c3fd",
+  "traces_sha256": "e94e1e7189210e67ff3cebf4101f315a648ef8a508b52aa686fd607d81bcb122",
+  "checks": [
+    "input_manifest",
+    "complete_trace_coverage",
+    "prefix_optimum_by_all_injections",
+    "matching_injection",
+    "vacant_destination_execution",
+    "lifetime_recourse_counts",
+    "lifetime_budget",
+    "coordinate_cost",
+    "policy_choice_by_all_injections",
+    "deterministic_ties",
+    "tampered_cost_rejected_in_memory",
+    "frozen_input_snapshots",
+    "metrics_csv",
+    "summary_aggregates"
+  ],
+  "counts": {
+    "cases": 6,
+    "traces": 48,
+    "online_stages": 252,
+    "executed_reassignments": 59,
+    "exhaustive_assignments": 11736,
+    "tampered_cost_rejected": true,
+    "metrics_rows": 48,
+    "summary_groups": 56
+  },
+  "cpu_seconds": 0.078125
+}

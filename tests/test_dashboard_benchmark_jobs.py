@@ -124,7 +124,8 @@ class BenchmarkJobsTests(unittest.TestCase):
             for changed in ({}, {"force": True}):
                 with self.assertRaises(JobConflictError):
                     service.submit(self.payload(**changed))
-            for changed in ({"output": "workbench_jobs"}, {"output": "../outside"}, {"workers": True},
+            for changed in ({"output": "workbench_jobs"}, {"output": "online_matching"},
+                            {"output": "ONLINE_MATCHING"}, {"output": "../outside"}, {"workers": True},
                             {"force": "yes"}, {"config": "../../outside.json"}, {"config_hash": "f" * 64}):
                 with self.assertRaises(ValueError):
                     service.submit(self.payload(**changed))

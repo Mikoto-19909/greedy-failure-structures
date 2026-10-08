@@ -8,12 +8,14 @@
   <link rel="stylesheet" href="/styles.css" />
   <link rel="stylesheet" href="/workbench.css" />
   <link rel="stylesheet" href="/research.css" />
+  <link rel="stylesheet" href="/topics.css" />
 </head>
 <body>
   <header class="topbar wb-topbar">
     <div class="brand-lockup"><div class="brand-mark" aria-hidden="true">MC</div><div><p class="eyebrow">MAXIMUM COVERAGE</p><h1>专题与研究实验</h1></div></div>
-    <div class="wb-actions"><a href="/workbench" class="button button-secondary">实验库与实例分析 ↗</a><a href="/experiments" class="button button-secondary">配置管理 ↗</a><a href="/" class="button button-secondary">原实验入口 ↗</a></div>
+    <div class="wb-actions"><a href="/workbench" class="button button-secondary">实验库与实例分析 ↗</a><a href="/experiments" class="button button-secondary">配置管理 ↗</a><a href="/maximum-coverage" class="button button-secondary">最大覆盖实验入口 ↗</a></div>
   </header>
+  <nav data-topic-nav data-topic-current="maximum-coverage"><a href="/">研究首页</a></nav>
   <main class="wb-shell research-shell">
     <nav class="wb-nav" aria-label="研究模块"><button id="nav-studies" aria-current="page">04 专题研究</button><button id="nav-experiments">05 提交实验</button><button id="nav-jobs">06 运行中心</button></nav>
     <p id="research-message" role="status" aria-live="polite"></p>
@@ -62,5 +64,6 @@
     </section>
   </main>
   <script src="/research.js"></script>
+  <script src="/topics.js"></script>
 </body>
 </html>
