@@ -10,8 +10,10 @@ import hashlib
 import importlib.util
 import io
 import json
+import os
 from pathlib import Path
 import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -134,6 +136,23 @@ class OnlineMatchingResearchTests(unittest.TestCase):
         write_json(source, summary)
         with patch.object(verifier, 'ALPHABET', tuple(summary['future_alphabet'])), redirect_stdout(io.StringIO()):
             verifier.verify(source, cpu_limit=10)
+
+    def optimized_verify(self, mode, script, source, passed, message=None):
+        environment = dict(os.environ)
+        environment.pop('PYTHONOPTIMIZE', None)
+        flags = ['-O', '-B'] if mode == 'flag' else ['-B']
+        if mode == 'environment': environment['PYTHONOPTIMIZE'] = '1'
+        certificate = source / 'verification.json' if source.is_dir() else source.parent / 'verification.json'
+        certificate.unlink(missing_ok=True)
+        result = subprocess.run([sys.executable, *flags, str(script), str(source)],
+                                env=environment, capture_output=True, text=True, timeout=30)
+        if passed:
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertTrue(certificate.exists())
+        else:
+            self.assertNotEqual(result.returncode, 0, result.stdout)
+            self.assertFalse(certificate.exists(), result.stdout)
+            if message: self.assertIn(message, result.stderr)
 
     def test_matching_policies_and_independent_trace_rejection(self):
         fixtures = load_script('fixtures.py')
@@ -344,6 +363,48 @@ class OnlineMatchingResearchTests(unittest.TestCase):
         bad['results'][2] = alternative
         with self.assertRaisesRegex(AssertionError, 'request tie'):
             self.verify_game(verifier, bad)
+
+    def test_ablation_checks_survive_optimization_flag_and_environment(self):
+        extension, out, _, baseline = self.ablation_run()
+        script = extension / 'verify_ablation.py'
+        shutil.copyfile(EXTENSION / 'verify_ablation.py', script)
+        for mode in ('flag', 'environment'):
+            with self.subTest(mode=mode, kind='valid'):
+                self.save_ablation(out, baseline)
+                self.optimized_verify(mode, script, out, True)
+            for kind in ('missing_config', 'incorrect_cost', 'missing_identity'):
+                bad = deepcopy(baseline)
+                if kind == 'missing_config':
+                    self.filter_ablation(bad, lambda r: (r['chain_limit'], r['weight'], r['budget']) != (1, '1/2', 1))
+                elif kind == 'incorrect_cost': bad['traces'][0]['history'][0]['cost'] += 1
+                else:
+                    for row in bad['metrics']: row.pop('case_id')
+                with self.subTest(mode=mode, kind=kind):
+                    self.save_ablation(out, bad)
+                    self.optimized_verify(mode, script, out, False)
+
+    def test_four_arrival_checks_survive_optimization_flag_and_environment(self):
+        archived = EXTENSION / 'output/four_game_20260925T053018894723Z/summary.json'
+        baseline = json.loads(archived.read_text())
+        script, source = EXTENSION / 'verify_four_game.py', self.root / 'summary.json'
+        for mode in ('flag', 'environment'):
+            with self.subTest(mode=mode, kind='valid'):
+                write_json(source, baseline)
+                self.optimized_verify(mode, script, source, True)
+            for kind in ('missing_config', 'incorrect_cost', 'tied_extra_move', 'continuous_certificate'):
+                bad = deepcopy(baseline)
+                if kind == 'missing_config': bad['results'].pop()
+                elif kind == 'incorrect_cost': bad['results'][0]['witness'][0]['cost'] += 1
+                elif kind == 'tied_extra_move':
+                    row = next(r for r in bad['results'] if (r['model'], r['budget']) == ('atomic', 2))['witness'][-1]
+                    row['assignment'], row['counts'] = [2, -1, 8, -4], [1, 1, 1, 0]
+                else:
+                    archived_continuous = EXTENSION / 'output/continuous_four_20260925T054559888763Z/summary.json'
+                    bad = json.loads(archived_continuous.read_text())
+                    bad['rounding']['additive_certificate'] += 1
+                with self.subTest(mode=mode, kind=kind):
+                    write_json(source, bad)
+                    self.optimized_verify(mode, script, source, False)
 
     def test_continuous_rounding_known_bounds_and_corrupt_certificate(self):
         continuous = load_script('extension_20260925/continuous_four_bounds.py')

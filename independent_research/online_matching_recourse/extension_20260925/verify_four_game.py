@@ -16,33 +16,39 @@ ALPHABET = (-4, -1, 0, 2, 8)
 HINDSIGHT_SEQUENCE = (0, -1, 2, -4)
 
 
+def require(condition, message='verification check failed'):
+    """Keep scientific checks active under -O and PYTHONOPTIMIZE."""
+    if not condition:
+        raise AssertionError(message)
+
+
 def require_configurations(rows, expected):
     identities = [(row['model'], row['budget'], row['known_future']) for row in rows]
-    assert all(type(row['budget']) is int and type(row['known_future']) is bool for row in rows), 'invalid configuration identity'
-    assert len(set(identities)) == len(identities), 'duplicate game configuration'
-    assert set(identities) == expected, 'incomplete or extra game configuration'
+    require(all(type(row['budget']) is int and type(row['known_future']) is bool for row in rows), 'invalid configuration identity')
+    require(len(set(identities)) == len(identities), 'duplicate game configuration')
+    require(set(identities) == expected, 'incomplete or extra game configuration')
 
 
 def verify_rounding(summary):
     """Check the saved rounding bound independently of its report producer."""
-    assert tuple(summary['servers']) == (-4, -1, 2, 8)
-    assert tuple(summary['future_alphabet']) == tuple(range(-4, 9))
-    assert summary['horizon'] == 4
+    require(tuple(summary['servers']) == (-4, -1, 2, 8))
+    require(tuple(summary['future_alphabet']) == tuple(range(-4, 9)))
+    require(summary['horizon'] == 4)
     rounding = summary['rounding']
-    assert rounding['first_coordinate_error_at_most'] == 1
-    assert rounding['later_coordinate_error_at_most'] == 0.5
-    assert rounding['preserve_first_nearest_server'] is True
+    require(rounding['first_coordinate_error_at_most'] == 1)
+    require(rounding['later_coordinate_error_at_most'] == 0.5)
+    require(rounding['preserve_first_nearest_server'] is True)
     certificate = 2 * (3 * 1 + sum(range(1, 4)) * 0.5)
-    assert rounding['additive_certificate'] == certificate
+    require(rounding['additive_certificate'] == certificate)
     lower = {(row['model'], row['budget']): row['value'] for row in summary['results']}
     intervals = {(row['model'], row['budget']): row for row in summary['continuous_intervals']}
     expected = {(model, budget) for model in ('atomic', 'chain') for budget in (1, 2)}
-    assert len(summary['results']) == len(summary['continuous_intervals']) == len(expected)
-    assert set(lower) == set(intervals) == expected
+    require(len(summary['results']) == len(summary['continuous_intervals']) == len(expected))
+    require(set(lower) == set(intervals) == expected)
     for key, value in lower.items():
-        assert intervals[key]['lower'] == value
-        assert intervals[key]['upper'] == value + certificate
-    assert summary['budget4_continuous_value'] == 0
+        require(intervals[key]['lower'] == value)
+        require(intervals[key]['upper'] == value + certificate)
+    require(summary['budget4_continuous_value'] == 0)
     require_configurations(summary['results'], {(model, budget, False) for model in ('atomic', 'chain') for budget in (1, 2)})
     require_configurations(summary['hindsight_fixed_sequence'], set())
 
@@ -53,18 +59,18 @@ def verify(source, cpu_limit=120):
     servers = tuple(summary["servers"])
     alphabet = tuple(summary["future_alphabet"])
     horizon = summary["horizon"]
-    assert horizon == len(servers) == 4
-    assert servers == SERVERS
-    assert alphabet, 'empty request alphabet'
-    assert summary['results'] or summary['hindsight_fixed_sequence'], 'empty game comparison'
+    require(horizon == len(servers) == 4)
+    require(servers == SERVERS)
+    require(alphabet, 'empty request alphabet')
+    require(summary['results'] or summary['hindsight_fixed_sequence'], 'empty game comparison')
     if 'rounding' in summary or 'continuous_intervals' in summary:
         verify_rounding(summary)
     else:
-        assert alphabet == ALPHABET, 'incorrect finite request alphabet'
+        require(alphabet == ALPHABET, 'incorrect finite request alphabet')
         require_configurations(summary['results'], {(model, budget, False) for model in ('atomic', 'chain') for budget in (1, 2, 4)})
         require_configurations(summary['hindsight_fixed_sequence'], {('atomic', budget, True) for budget in (1, 2, 4)})
         for reference in summary['hindsight_fixed_sequence']:
-            assert tuple(row['request'] for row in reference['witness']) == HINDSIGHT_SEQUENCE, 'incorrect hindsight sequence'
+            require(tuple(row['request'] for row in reference['witness']) == HINDSIGHT_SEQUENCE, 'incorrect hindsight sequence')
 
     @lru_cache(None)
     def optimum(requests_sorted):
@@ -76,7 +82,7 @@ def verify(source, cpu_limit=120):
 
     verified = []
     for reference in summary["results"] + summary["hindsight_fixed_sequence"]:
-        assert len(reference["witness"]) == horizon, "incomplete witness"
+        require(len(reference["witness"]) == horizon, "incomplete witness")
         budget, model = reference["budget"], reference["model"]
         fixed = tuple(row["request"] for row in reference["witness"]) if reference["known_future"] else None
 
@@ -92,7 +98,7 @@ def verify(source, cpu_limit=120):
                     if all(used <= budget for _, _, used in old):
                         result.add(old+((request, assigned[-1], 0),))
             else:
-                assert model == "chain"
+                require(model == "chain")
                 used_servers = {s for _, s, _ in state}
 
                 def grow(free, current, moved):
@@ -106,7 +112,7 @@ def verify(source, cpu_limit=120):
 
                 for free in set(range(4))-used_servers:
                     grow(free, state, frozenset())
-            assert result
+            require(result)
             return tuple(sorted(result))
 
         def objective(child, reference_cost):
@@ -130,11 +136,11 @@ def verify(source, cpu_limit=120):
             return worst
 
         computed = value(())
-        assert computed == reference["value"], (model, budget, computed, reference["value"])
+        require(computed == reference["value"], (model, budget, computed, reference["value"]))
         current, requests, assigned, counts = (), [], [], []
         witness_excess = 0
         for row in reference["witness"]:
-            assert row["worst_remaining_excess"] == value(current)
+            require(row["worst_remaining_excess"] == value(current))
             request = row["request"]
             # Nature selects the smallest coordinate among worst branches.
             possible = alphabet if fixed is None else (fixed[len(requests)],)
@@ -143,21 +149,21 @@ def verify(source, cpu_limit=120):
                 reference_cost = optimum(tuple(sorted(requests+[candidate_request])))
                 best = min(objective(child, reference_cost) for child in successors(current, candidate_request))
                 branches.append((best, candidate_request))
-            assert request == max(branches, key=lambda item: (item[0], -item[1]))[1], 'nondeterministic request tie'
+            require(request == max(branches, key=lambda item: (item[0], -item[1]))[1], 'nondeterministic request tie')
             ordered_state = tuple(zip(requests, assigned, counts))
             requests.append(request)
             next_assigned = [servers.index(s) for s in row["assignment"]]
-            assert len(set(next_assigned)) == len(next_assigned) == len(requests)
+            require(len(set(next_assigned)) == len(next_assigned) == len(requests))
             next_counts = [used+int(old != new) for used, old, new
                            in zip(counts, assigned, next_assigned)]+[0]
-            assert next_counts == row["counts"] and max(next_counts) <= budget
+            require(next_counts == row["counts"] and max(next_counts) <= budget)
             child = tuple(sorted(zip(requests, next_assigned, next_counts)))
-            assert child in {tuple(sorted(candidate)) for candidate in successors(current, request)}
+            require(child in {tuple(sorted(candidate)) for candidate in successors(current, request)})
             observed_cost = cost(child)
             reference_cost = optimum(tuple(sorted(requests)))
-            assert observed_cost == row["cost"]
-            assert reference_cost == row["optimum"]
-            assert observed_cost-reference_cost+value(child) == value(current)
+            require(observed_cost == row["cost"])
+            require(reference_cost == row["optimum"])
+            require(observed_cost-reference_cost+value(child) == value(current))
             # Preserve arrival identities for the full production action tie key;
             # only value computations use canonical, coordinate-sorted states.
             keys = []
@@ -166,10 +172,10 @@ def verify(source, cpu_limit=120):
                 updated = tuple(used for _, _, used in candidate)
                 keys.append((objective(candidate, reference_cost), sum(updated)-sum(counts), matching, updated))
             observed = (objective(child, reference_cost), sum(next_counts)-sum(counts), tuple(next_assigned), tuple(next_counts))
-            assert observed == min(keys), 'nondeterministic action tie'
+            require(observed == min(keys), 'nondeterministic action tie')
             witness_excess += observed_cost-reference_cost
             current, assigned, counts = child, next_assigned, next_counts
-        assert witness_excess == computed
+        require(witness_excess == computed)
         verified.append({"model": model, "budget": budget, "known_future": fixed is not None,
                          "value": computed, "canonical_states": value.cache_info().currsize,
                          "witness_stages_verified": len(requests)})
