@@ -177,7 +177,7 @@ async function loadReport() {
   try {
     const data=await api('report?key='+encodeURIComponent($('matching-report').value));
     if(version!==state.reportVersion) return;
-    $('matching-report-body').replaceChildren(window.MaxcoverReport.render(data.text));
+    $('matching-report-body').replaceChildren(window.MaxcoverReport.render(data.text,data.images));
   } catch(error) {if(version===state.reportVersion) message(error.message,true);}
 }
 $('matching-start').addEventListener('click',async()=>{

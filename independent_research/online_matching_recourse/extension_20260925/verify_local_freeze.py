@@ -8,6 +8,12 @@ from pathlib import Path
 from verify_long_sequence import verify as verify_router
 
 
+def require(condition, message='verification check failed'):
+    """Keep scientific checks active under -O and PYTHONOPTIMIZE."""
+    if not condition:
+        raise AssertionError(message)
+
+
 def cost(servers, requests, assignment):
     return sum((abs(r - servers[s]) for r, s in zip(requests, assignment)), Q())
 
@@ -16,26 +22,26 @@ def verify(data):
     servers = tuple(map(Q, data['servers']))
     requests = tuple(map(Q, data['requests']))
     budget, size = data['budget'], data['block_size']
-    assert type(budget) is int and budget >= 0
-    assert type(size) is int and 1 <= size <= 4
-    assert servers and len(servers) == len(set(servers)) and len(requests) <= len(servers)
+    require(type(budget) is int and budget >= 0)
+    require(type(size) is int and 1 <= size <= 4)
+    require(servers and len(servers) == len(set(servers)) and len(requests) <= len(servers))
     order = sorted(range(len(servers)), key=lambda i: (servers[i], i))
     blocks = [order[i:i + size] for i in range(0, len(order), size)]
-    assert data['blocks'] == blocks
-    assert data['shadow']['servers'] == data['servers'] and data['shadow']['requests'] == data['requests']
-    assert data['shadow']['budget'] == 0
+    require(data['blocks'] == blocks)
+    require(data['shadow']['servers'] == data['servers'] and data['shadow']['requests'] == data['requests'])
+    require(data['shadow']['budget'] == 0)
     verify_router(data['shadow'])
-    assert len(data['trace']) == len(requests), 'incomplete trajectory'
+    require(len(data['trace']) == len(requests), 'incomplete trajectory')
     owner = {server: b for b, block in enumerate(blocks) for server in block}
     admitted, old, counts = [], (), []
     max_loss = Q(0)
     for t, (row, route) in enumerate(zip(data['trace'], data['shadow']['trace']), 1):
         block_id = owner[route['assignment'][-1]]
         admitted.append(block_id)
-        assert row['arrival'] == t and row['block'] == block_id
+        require(row['arrival'] == t and row['block'] == block_id)
         current = tuple(row['assignment'])
-        assert len(current) == t and len(set(current)) == t
-        assert all(type(s) is int and 0 <= s < len(servers) for s in current)
+        require(len(current) == t and len(set(current)) == t)
+        require(all(type(s) is int and 0 <= s < len(servers) for s in current))
         candidates = []
         best = None
         for assignment in permutations(range(len(servers)), t):
@@ -47,15 +53,15 @@ def verify(data):
             if any(admitted[i] != block_id or counts[i] == budget for i in changed):
                 continue
             candidates.append((value, len(changed), assignment))
-        assert (Q(row['cost']), len(row['moved']), current) == min(candidates), 'not the budget-feasible minimum'
+        require((Q(row['cost']), len(row['moved']), current) == min(candidates), 'not the budget-feasible minimum')
         changed = [i for i, s in enumerate(current[:-1]) if old[i] != s]
-        assert row['moved'] == changed
+        require(row['moved'] == changed)
         counts = [c + (i in changed) for i, c in enumerate(counts)] + [0]
-        assert row['counts'] == counts and max(counts) <= budget
-        assert row['frozen'] == [i for i, c in enumerate(counts) if c == budget]
-        assert Q(row['cost']) == cost(servers, requests[:t], current)
-        assert Q(row['optimum']) == best
-        assert Q(row['shadow_cost']) == Q(route['cost'])
+        require(row['counts'] == counts and max(counts) <= budget)
+        require(row['frozen'] == [i for i, c in enumerate(counts) if c == budget])
+        require(Q(row['cost']) == cost(servers, requests[:t], current))
+        require(Q(row['optimum']) == best)
+        require(Q(row['shadow_cost']) == Q(route['cost']))
         relaxed = Q(0)
         for b, block in enumerate(blocks):
             members = [i for i, assignment_block in enumerate(admitted) if assignment_block == b]
@@ -63,13 +69,13 @@ def verify(data):
             local_best = min(cost(servers, local_requests, p) for p in permutations(block, len(members)))
             relaxed += local_best
             if b == block_id:
-                assert Q(row['block_optimum']) == local_best
-                assert Q(row['block_cost']) == cost(servers, local_requests, tuple(current[i] for i in members))
-        assert Q(row['block_optimum_sum']) == relaxed
+                require(Q(row['block_optimum']) == local_best)
+                require(Q(row['block_cost']) == cost(servers, local_requests, tuple(current[i] for i in members)))
+        require(Q(row['block_optimum_sum']) == relaxed)
         alpha = 2 ** max(1, size - budget) - 1
-        assert Q(row['cost']) <= alpha * relaxed <= alpha * Q(route['cost'])
+        require(Q(row['cost']) <= alpha * relaxed <= alpha * Q(route['cost']))
         if size <= budget + 1:
-            assert Q(row['cost']) == relaxed <= Q(route['cost'])
+            require(Q(row['cost']) == relaxed <= Q(route['cost']))
         max_loss = max(max_loss, Q(row['cost']) - relaxed)
         old = current
     return dict(verified=True, prefixes=len(requests), maximum_recourse=max(counts, default=0),

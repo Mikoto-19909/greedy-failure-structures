@@ -12,6 +12,12 @@ from itertools import permutations
 import json
 from pathlib import Path
 
+
+def require(condition, message='verification check failed'):
+    """Keep scientific checks active under -O and PYTHONOPTIMIZE."""
+    if not condition:
+        raise AssertionError(message)
+
 SERVERS = (-4, -1, 2, 8)
 
 
@@ -58,29 +64,29 @@ def _optimum(requests):
 
 
 def verify(data):
-    assert data['status'] == 'sat', 'only SAT lower witnesses can be checked here'
+    require(data['status'] == 'sat', 'only SAT lower witnesses can be checked here')
     budget, model = data['budget'], data['model']
-    assert type(budget) is int and budget in (1, 2)
-    assert model in ('atomic', 'chain')
+    require(type(budget) is int and budget in (1, 2))
+    require(model in ('atomic', 'chain'))
     relation = data.get('relation', 'gt')
-    assert relation in ('gt', 'ge')
+    require(relation in ('gt', 'ge'))
     bound = Q(data['bound'])
     witness = data['witness']
     x, y = Q(witness['x']), Q(witness['y'])
-    assert all(SERVERS[0] <= q <= SERVERS[-1] for q in (x, y))
+    require(all(SERVERS[0] <= q <= SERVERS[-1] for q in (x, y)))
     first = min(range(4), key=lambda s: (abs(x - SERVERS[s]), SERVERS[s]))
-    assert data['first_server_index'] == first, 'first assignment violates nearest/ties-left'
+    require(data['first_server_index'] == first, 'first assignment violates nearest/ties-left')
     expected = dict(_legal((first,), (0,), budget, model))
     provided = {tuple(row['second_assignment']): row for row in witness['third']}
-    assert len(provided) == len(witness['third']) and set(provided) == set(expected), 'incomplete second-action coverage'
+    require(len(provided) == len(witness['third']) and set(provided) == set(expected), 'incomplete second-action coverage')
     branches = []
     third_count = terminal_count = 0
     requests2 = (x, y)
     for a2, used2 in expected.items():
         row = provided[a2]
-        assert tuple(row['used']) == used2, 'incorrect lifetime counts'
+        require(tuple(row['used']) == used2, 'incorrect lifetime counts')
         z = Q(row['coordinate'])
-        assert SERVERS[0] <= z <= SERVERS[-1]
+        require(SERVERS[0] <= z <= SERVERS[-1])
         requests3 = requests2 + (z,)
         e2 = _cost(requests2, a2) - _optimum(requests2)
         third_values = []
@@ -97,7 +103,7 @@ def verify(data):
             )
             third_values.append(e2 + e3 + worst_last)
         guaranteed = min(third_values)
-        assert guaranteed >= bound if relation == 'ge' else guaranteed > bound, 'lower bound is not forced'
+        require(guaranteed >= bound if relation == 'ge' else guaranteed > bound, 'lower bound is not forced')
         branches.append({'second_assignment': list(a2), 'guaranteed_excess': str(guaranteed)})
     return {'verified': True, 'scope': 'rational adaptive lower witness only',
             'guaranteed_excess': str(min(Q(row['guaranteed_excess']) for row in branches)),

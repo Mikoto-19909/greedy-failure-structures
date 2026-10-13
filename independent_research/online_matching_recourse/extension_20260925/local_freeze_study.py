@@ -13,6 +13,12 @@ from long_sequence import run as run_restart
 from verify_local_freeze import verify
 from verify_long_sequence import verify as verify_restart
 
+
+def require(condition, message='verification check failed'):
+    """Keep scientific checks active under -O and PYTHONOPTIMIZE."""
+    if not condition:
+        raise AssertionError(message)
+
 HERE = Path(__file__).resolve().parent
 DEFAULT_OUT = HERE.parents[2] / 'results/online_matching_local_20260927'
 CPU_LIMIT = 600
@@ -42,12 +48,12 @@ def write(path, value):
 def compare(root):
     initial = json.loads((root / 'initial/summary.json').read_text())
     revised = json.loads((root / 'revised/summary.json').read_text())
-    assert initial['status'] == revised['status'] == 'complete'
+    require(initial['status'] == revised['status'] == 'complete')
     old = {(r['case'], r['budget'], r['policy']): r for r in initial['comparisons']}
     result = dict(groups=[], cases=[], cpu_seconds=initial['cpu_seconds'] + revised['cpu_seconds'])
     for budget in (1, 2, 4):
         rows = [r for r in revised['comparisons'] if r['budget'] == budget]
-        assert len(rows) == revised['input_cases'] and len({r['case'] for r in rows}) == len(rows)
+        require(len(rows) == revised['input_cases'] and len({r['case'] for r in rows}) == len(rows))
         totals = {policy: Q(0) for policy in ('rm', 'global_reset', 'fixed4', 'budget_blocks')}
         wins = ties = losses = 0
         freeze = {'fixed4': Q(0), 'budget_blocks': Q(0)}
@@ -87,9 +93,9 @@ def run_phase(phase, root):
         previous_cpu = 0
     else:
         old = json.loads((root / 'initial/summary.json').read_text())
-        assert old['status'] == 'complete'
-        assert any(Q(row['verification'].get('maximum_frozen_loss', '0')) > 0
-                   for row in old['comparisons']), 'predeclared second-round trigger absent'
+        require(old['status'] == 'complete')
+        require(any(Q(row['verification'].get('maximum_frozen_loss', '0')) > 0
+                   for row in old['comparisons']), 'predeclared second-round trigger absent')
         cases = json.loads((root / 'initial/inputs.json').read_text())
         previous_cpu = old['cpu_seconds']
     write(out / 'inputs.json', cases)
@@ -143,7 +149,7 @@ def run_phase(phase, root):
                     audit['sequences'] += 1
                     if audit['sequences'] % 216 == 0:
                         print(f"audit {audit['sequences']}/1296", flush=True)
-            assert audit['sequences'] == 1296 and audit['traces'] == 3888
+            require(audit['sequences'] == 1296 and audit['traces'] == 3888)
         summary['status'] = 'complete'
     finally:
         summary['cpu_seconds'] = time.process_time() - start

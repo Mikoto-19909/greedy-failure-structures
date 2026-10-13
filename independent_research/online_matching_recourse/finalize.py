@@ -7,6 +7,11 @@ import shutil
 ROOT = Path(__file__).resolve().parent
 
 
+def require(condition, message='verification check failed'):
+    if not condition:
+        raise AssertionError(message)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('directory', type=Path)
@@ -14,7 +19,7 @@ def main():
     out = args.directory
     verification = json.loads((out / 'verification.json').read_text(encoding='utf-8'))
     summary = json.loads((out / 'summary.json').read_text(encoding='utf-8'))
-    assert verification['status'] == 'automatic_verification_passed_user_review_pending'
+    require(verification['status'] == 'automatic_verification_passed_user_review_pending')
     shutil.copyfile(out / 'protocol.md', out / 'protocol_snapshot.md')
     for name in ['verify.py', 'test_matching.py', 'fixtures.py', 'analyze.py', 'finalize.py', 'run.ps1']:
         shutil.copyfile(ROOT / name, out / name)

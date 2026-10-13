@@ -66,7 +66,8 @@ def main():
     started = time.process_time()
     original = (ROOT.parent/'inputs.json').read_bytes()
     manifest = json.loads((ROOT.parent/'input_manifest.json').read_text())
-    assert hashlib.sha256(original).hexdigest() == manifest['input_sha256']
+    if hashlib.sha256(original).hexdigest() != manifest['input_sha256']:
+        raise AssertionError('fixed input identity mismatch')
     cases = json.loads(original)['cases']
     for n in (3, 4, 5, 6):
         radial = [(-1)**i*2**(i-1) for i in range(1, n+1)]

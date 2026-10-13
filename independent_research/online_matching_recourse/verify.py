@@ -23,6 +23,10 @@ def require(condition, message):
         raise ValueError(message)
 
 
+def require_budget_type(budget):
+    require(budget is None or type(budget) is int, 'invalid budget identity type')
+
+
 def distance(servers, requests, assignment):
     return sum(abs(requests[i] - servers[j]) for i, j in enumerate(assignment))
 
@@ -106,6 +110,7 @@ def independent_choice(servers, prefix, old, counts, policy, budget):
 
 
 def audit_trace(trace, case, optimal):
+    require_budget_type(trace['budget'])
     tag = f"{case['id']}/{trace['policy']}/{trace['budget']}"
     require(trace['split'] == case['split'], f'{tag}: split')
     require(trace['family'] == case['family'], f'{tag}: family')
@@ -159,6 +164,8 @@ def audit_trace(trace, case, optimal):
 
 def audit_traces(traces, data, split):
     cases = {case['id']: case for case in data['cases'] if case['split'] == split}
+    for trace in traces:
+        require_budget_type(trace['budget'])
     seen = Counter((trace['case_id'], trace['policy'], trace['budget']) for trace in traces)
     expected = {(case_id, policy, budget) for case_id in cases for policy, budget in CONFIGURATIONS}
     require(set(seen) == expected and all(n == 1 for n in seen.values()), 'trace coverage')
@@ -198,8 +205,9 @@ def audit_summaries(traces, summary, directory, manifest):
     require(summary['source_sha256'] == manifest['input_sha256'], 'summary input hash')
     require(summary['processes'] == 1, 'single-process execution')
     require(summary['runtime']['process_cpu_seconds'] >= 0, 'process CPU time')
-    for name in ('inputs.json', 'input_manifest.json'):
-        require((directory / name).read_bytes() == (ROOT / name).read_bytes(), f'frozen {name}')
+    require((directory / 'inputs.json').read_bytes() == (ROOT / 'inputs.json').read_bytes(), 'frozen inputs.json')
+    archived_manifest = json.loads((directory / 'input_manifest.json').read_text(encoding='utf-8'))
+    require(archived_manifest == manifest, 'frozen input_manifest.json')
     with (directory / 'metrics.csv').open(encoding='utf-8-sig', newline='') as handle:
         metrics = list(csv.DictReader(handle))
     require(len(metrics) == len(traces), 'metrics row count')
@@ -210,6 +218,7 @@ def audit_summaries(traces, summary, directory, manifest):
         measured[key] = row
     recomputed = []
     for trace in traces:
+        require_budget_type(trace['budget'])
         key = (trace['case_id'], trace['policy'], trace['budget'])
         require(key in measured, 'missing metrics row')
         optimum = trace['oracle_costs']
@@ -231,6 +240,7 @@ def audit_summaries(traces, summary, directory, manifest):
         recomputed.append(row)
     groups = {}
     for entry in summary['aggregates']:
+        require_budget_type(entry['budget'])
         key = (entry['family'], entry['policy'], entry['budget'])
         require(key not in groups, 'duplicate summary group')
         groups[key] = entry

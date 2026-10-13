@@ -19,6 +19,11 @@ FINAL = tuple(permutations(range(3)))
 TOL = 1e-8
 
 
+def require(condition, message='verification check failed'):
+    if not condition:
+        raise AssertionError(message)
+
+
 def cost(servers, requests, assignment):
     return sum(abs(requests[i] - servers[s]) for i, s in enumerate(assignment))
 
@@ -37,7 +42,7 @@ def final_cost(servers, x, y, z, p, state):
     used = (int(state[0] != p), 0)
     feasible = [m for m in FINAL
                 if all(used[i] + int(m[i] != state[i]) <= 1 for i in range(2))]
-    assert feasible
+    require(feasible)
     return min(cost(servers, (x, y, z), m) for m in feasible)
 
 
@@ -63,7 +68,7 @@ def game(matrix):
         b_ub=np.zeros(cols), A_eq=[[1.0] * rows + [0.0]], b_eq=[1.0],
         bounds=[(0.0, None)] * rows + [(None, None)], method="highs",
     )
-    assert result.success, result.message
+    require(result.success, result.message)
     policy = result.x[:-1]
     adversary = -result.ineqlin.marginals
     value = float(result.fun)
@@ -71,7 +76,7 @@ def game(matrix):
                    max(0.0, -min(policy)), max(0.0, -min(adversary)),
                    abs(max(matrix.T @ policy) - value),
                    abs(min(matrix @ adversary) - value))
-    assert residual < TOL, residual
+    require(residual < TOL, residual)
     return {"value": value, "policy": policy.tolist(),
             "adversary": adversary.tolist(), "certificate_residual": float(residual)}
 
@@ -141,20 +146,20 @@ def main():
                 ed = float(min(np.max(excess, axis=1)))
                 formula = raw_formula(servers, x, y)
                 rule_state, rule_value = excess_rule(servers, x, y)
-                assert abs(rd - formula["value"]) < TOL
-                assert abs(ed - rule_value) < TOL
-                assert abs(ed - excess_game["value"]) < TOL
+                require(abs(rd - formula["value"]) < TOL)
+                require(abs(ed - rule_value) < TOL)
+                require(abs(ed - excess_game["value"]) < TOL)
                 for action in formula["candidates"]:
                     row = SECOND.index(tuple(action["state"]))
-                    assert abs(max(raw[row]) - action["max_raw"]) < TOL
+                    require(abs(max(raw[row]) - action["max_raw"]) < TOL)
                 # Verify interpolation by fresh budget-feasible enumeration.
                 for left, right in zip(points, points[1:]):
                     for weight in (1 / 3, 1 / 2, 2 / 3):
                         z = left + weight * (right - left)
                         ri, ei = matrices(servers, x, y, [z])
                         j = points.index(left)
-                        assert np.max(abs(ri[:, 0] - ((1-weight)*raw[:, j]+weight*raw[:, j+1]))) < TOL
-                        assert np.max(abs(ei[:, 0] - ((1-weight)*excess[:, j]+weight*excess[:, j+1]))) < TOL
+                        require(np.max(abs(ri[:, 0] - ((1-weight)*raw[:, j]+weight*raw[:, j+1]))) < TOL)
+                        require(np.max(abs(ei[:, 0] - ((1-weight)*excess[:, j]+weight*excess[:, j+1]))) < TOL)
                         checks["affine_interior_points"] += 1
                 gain = rd - raw_game["value"]
                 checks["raw_random_strict_improvements"] += int(gain > TOL)
@@ -170,14 +175,14 @@ def main():
                 checks["prefixes"] += 1
                 checks["lp_solved"] += 2
     witness = example((0, 10, 50), 6, 10)
-    assert witness["raw_deterministic"] == 62
-    assert abs(witness["raw_randomized"]["value"] - 60) < TOL
-    assert witness["excess_deterministic"] == 8
+    require(witness["raw_deterministic"] == 62)
+    require(abs(witness["raw_randomized"]["value"] - 60) < TOL)
+    require(witness["excess_deterministic"] == 8)
     # Exact rational certificate for the reduced two-action raw game.
     reduced = ((58, 64), (62, 56))
     policy, adversary = (Fraction(1, 2), Fraction(1, 2)), (Fraction(2, 3), Fraction(1, 3))
-    assert all(sum(policy[i] * reduced[i][j] for i in range(2)) == 60 for j in range(2))
-    assert all(sum(adversary[j] * reduced[i][j] for j in range(2)) == 60 for i in range(2))
+    require(all(sum(policy[i] * reduced[i][j] for i in range(2)) == 60 for j in range(2)))
+    require(all(sum(adversary[j] * reduced[i][j] for j in range(2)) == 60 for i in range(2)))
     result = {"model": {"first": "nearest_ties_left", "update": "atomic_batch",
                         "budget": "one_per_request_lifetime", "future": "continuous_in_server_hull",
                         "random_adversary": "chooses_z_without_observing_sampled_state",

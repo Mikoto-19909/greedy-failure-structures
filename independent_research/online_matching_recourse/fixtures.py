@@ -8,6 +8,11 @@ ROOT = Path(__file__).resolve().parent
 SEED = 20260925
 
 
+def require(condition, message='verification check failed'):
+    if not condition:
+        raise AssertionError(message)
+
+
 def build():
     rng = random.Random(SEED)
     cases = []
@@ -45,14 +50,14 @@ if __name__ == '__main__':
     target = ROOT / 'inputs.json'
     data = (json.dumps(build(), ensure_ascii=False, indent=2) + '\n').encode('utf-8')
     if target.exists():
-        assert target.read_bytes() == data, 'Refuse to replace frozen inputs'
+        require(target.read_bytes() == data, 'Refuse to replace frozen inputs')
     else:
         target.write_bytes(data)
     digest = hashlib.sha256(data).hexdigest()
     manifest = ROOT / 'input_manifest.json'
     obj = dict(input_sha256=digest, seed=SEED, cases=30, development=6, evaluation=24)
     if manifest.exists():
-        assert json.loads(manifest.read_text(encoding='utf-8')) == obj
+        require(json.loads(manifest.read_text(encoding='utf-8')) == obj)
     else:
         manifest.write_text(json.dumps(obj, indent=2) + '\n', encoding='utf-8')
     print(digest)

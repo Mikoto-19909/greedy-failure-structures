@@ -5,6 +5,12 @@ from itertools import combinations
 import json
 from pathlib import Path
 
+
+def require(condition, message='verification check failed'):
+    """Keep scientific checks active under -O and PYTHONOPTIMIZE."""
+    if not condition:
+        raise AssertionError(message)
+
 SERVERS = (-4, -1, 2, 8)
 
 
@@ -64,7 +70,7 @@ class FourBudgetTwo:
         value = cost(requests, assignment)
         optimum = cost(requests, prefix_matching(requests))
         self.excess += value - optimum
-        assert max(counts) <= 2 and self.excess <= 3
+        require(max(counts) <= 2 and self.excess <= 3)
         row = dict(arrival=t, action=action, assignment=list(assignment), counts=counts,
                    changed=changed, anchored=self.anchored, cost=str(value), optimum=str(optimum),
                    excess=str(value - optimum), cumulative_excess=str(self.excess))

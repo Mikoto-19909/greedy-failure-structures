@@ -4,8 +4,16 @@
  */
 (() => {
   "use strict";
-  function inline(parent, text) {
-    const tokens = /(`[^`]+`|\*\*[^*]+\*\*|\[[^\]]+\]\([^\s)]+\))/g;
+  function imageUrl(images, target) {
+    if (!Object.prototype.hasOwnProperty.call(images, target) || typeof images[target] !== "string") return null;
+    try {
+      const url = new URL(images[target], window.location.href);
+      return url.origin === window.location.origin && /^https?:$/.test(url.protocol) ? url.href : null;
+    } catch { return null; }
+  }
+
+  function inline(parent, text, images) {
+    const tokens = /(`[^`]+`|\*\*[^*]+\*\*|!?\[[^\]]*\]\([^\s)]+\))/g;
     let start = 0;
     for (const match of text.matchAll(tokens)) {
       parent.append(document.createTextNode(text.slice(start, match.index)));
@@ -18,8 +26,17 @@
         const strong = document.createElement("strong");
         strong.textContent = token.slice(2, -2);
         parent.append(strong);
+      } else if (token.startsWith("![")) {
+        const parts = /^!\[([^\]]*)\]\(([^\s)]+)\)$/.exec(token);
+        const source = imageUrl(images, parts[2]);
+        if (source) {
+          const image = document.createElement("img");
+          image.alt = parts[1]; image.src = source;
+          image.loading = "lazy"; image.decoding = "async";
+          parent.append(image);
+        } else parent.append(document.createTextNode(token));
       } else {
-        const parts = /^\[([^\]]+)\]\(([^\s)]+)\)$/.exec(token);
+        const parts = /^\[([^\]]*)\]\(([^\s)]+)\)$/.exec(token);
         if (/^https?:\/\//i.test(parts[2])) {
           const link = document.createElement("a");
           link.textContent = parts[1];
@@ -50,7 +67,7 @@
     return values;
   }
 
-  function render(text) {
+  function render(text, images = {}) {
     const root = document.createElement("div");
     root.className = "report-body";
     const lines = text.replace(/\r\n?/g, "\n").split("\n");
@@ -68,7 +85,7 @@
       } else if (/^#{1,6} /.test(line)) {
         const heading = /^(#{1,6}) (.*)$/.exec(line);
         const node = document.createElement(`h${Math.min(heading[1].length + 1, 6)}`);
-        inline(node, heading[2]); root.append(node); i++;
+        inline(node, heading[2], images); root.append(node); i++;
       } else if (line.includes("|") && lines[i + 1]?.includes("|") &&
           cells(lines[i + 1]).every((cell) => /^:?-{3,}:?$/.test(cell))) {
         const table = document.createElement("table");
@@ -77,7 +94,7 @@
           for (const value of values) {
             const cell = document.createElement(tag);
             if (tag === "th") cell.scope = "col";
-            inline(cell, value); tr.append(cell);
+            inline(cell, value, images); tr.append(cell);
           }
           return tr;
         };
@@ -95,12 +112,12 @@
         const pattern = ordered ? /^\s*\d+\. / : /^\s*[-*] /;
         while (i < lines.length && pattern.test(lines[i])) {
           const item = document.createElement("li");
-          inline(item, lines[i++].replace(pattern, "")); list.append(item);
+          inline(item, lines[i++].replace(pattern, ""), images); list.append(item);
         }
         root.append(list);
       } else {
         const paragraph = document.createElement("p");
-        inline(paragraph, line); root.append(paragraph); i++;
+        inline(paragraph, line, images); root.append(paragraph); i++;
       }
     }
     return root;

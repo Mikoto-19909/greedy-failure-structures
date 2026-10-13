@@ -14,6 +14,11 @@ from matching import exact_prefix, simulate
 ROOT = Path(__file__).resolve().parent
 
 
+def require(condition, message='verification check failed'):
+    if not condition:
+        raise AssertionError(message)
+
+
 def dump(path, obj):
     path.write_text(json.dumps(obj, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
 
@@ -26,7 +31,7 @@ def main():
     args = parser.parse_args()
     data = (ROOT / 'inputs.json').read_bytes()
     digest = hashlib.sha256(data).hexdigest()
-    assert digest == json.loads((ROOT / 'input_manifest.json').read_text())['input_sha256']
+    require(digest == json.loads((ROOT / 'input_manifest.json').read_text())['input_sha256'])
     out = args.output_root.resolve() / (datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ') + '-' + args.split)
     out.mkdir(parents=True, exist_ok=False)
     for name in ['inputs.json', 'input_manifest.json', 'protocol.md', 'matching.py', 'run.py']:

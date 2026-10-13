@@ -9,6 +9,12 @@ from itertools import permutations
 from pathlib import Path
 
 
+def require(condition, message='verification check failed'):
+    """Keep scientific checks active under -O and PYTHONOPTIMIZE."""
+    if not condition:
+        raise AssertionError(message)
+
+
 def _minimum(servers, requests, available):
     return min(
         sum((abs(r - servers[s]) for r, s in zip(requests, assignment)), Fraction())
@@ -22,7 +28,7 @@ def _path_score(servers, requests, previous_auxiliary, epoch_start, path):
         value += 3 * abs(requests[request] - servers[server])
         if index + 1 < len(path):
             following_request = path[index + 1][0]
-            assert previous_auxiliary[following_request - epoch_start] == server
+            require(previous_auxiliary[following_request - epoch_start] == server)
             value -= abs(requests[following_request] - servers[server])
     return value, 2 * len(path) - 1
 
@@ -55,17 +61,17 @@ def verify(data):
     servers = tuple(Fraction(s) for s in data["servers"])
     requests = tuple(Fraction(r) for r in data["requests"])
     budget = data["budget"]
-    assert type(budget) is int and budget >= 0
-    assert servers and len(servers) == len(set(servers))
-    assert len(requests) <= len(servers)
+    require(type(budget) is int and budget >= 0)
+    require(servers and len(servers) == len(set(servers)))
+    require(len(requests) <= len(servers))
     schedule = data["reset_at"]
     threshold = data.get("trigger_ratio")
     if threshold is not None:
         threshold = Fraction(threshold)
-        assert threshold >= 1
-    assert all(type(t) is int and 1 <= t <= len(requests) for t in schedule)
-    assert len(schedule) == len(set(schedule)) and len(schedule) <= budget
-    assert len(data["trace"]) == len(requests)
+        require(threshold >= 1)
+    require(all(type(t) is int and 1 <= t <= len(requests) for t in schedule))
+    require(len(schedule) == len(set(schedule)) and len(schedule) <= budget)
+    require(len(data["trace"]) == len(requests))
     previous = []
     used = []
     auxiliary = []
@@ -76,54 +82,54 @@ def verify(data):
     for time, row in enumerate(data["trace"], 1):
         current_requests = requests[:time]
         assignment = row["assignment"]
-        assert len(assignment) == time and len(set(assignment)) == time
-        assert all(type(s) is int and 0 <= s < len(servers) for s in assignment)
-        assert row["arrival"] == time
-        assert type(row["reset"]) is bool and row["reset"] == (time in schedule)
+        require(len(assignment) == time and len(set(assignment)) == time)
+        require(all(type(s) is int and 0 <= s < len(servers) for s in assignment))
+        require(row["arrival"] == time)
+        require(type(row["reset"]) is bool and row["reset"] == (time in schedule))
         best = _minimum(servers, current_requests, range(len(servers)))
         cost = sum((abs(r - servers[s]) for r, s in zip(current_requests, assignment)), Fraction())
         path_score, endpoint = _best_path_score(servers, current_requests, available, auxiliary, epoch_start)
         if threshold is not None:
             previous_cost = sum((abs(r - servers[s]) for r, s in zip(requests, previous)), Fraction())
             tentative = previous_cost + abs(current_requests[-1] - servers[endpoint])
-            assert row["reset"] == (resets < budget and tentative > threshold * best)
+            require(row["reset"] == (resets < budget and tentative > threshold * best))
         used = [count + (old != new) for count, old, new in zip(used, previous, assignment)] + [0]
-        assert row["recourse"] == used and max(used) <= budget
-        assert Fraction(row["cost"]) == cost and Fraction(row["optimum"]) == best
+        require(row["recourse"] == used and max(used) <= budget)
+        require(Fraction(row["cost"]) == cost and Fraction(row["optimum"]) == best)
         if row["reset"]:
-            assert cost == best and row["path"] == [] and row["auxiliary"] == []
+            require(cost == best and row["path"] == [] and row["auxiliary"] == [])
             resets += 1
             epoch_start = time
             available = [s for s in range(len(servers)) if s not in assignment]
             auxiliary = []
             frozen_cost = best
         else:
-            assert assignment[:-1] == previous
+            require(assignment[:-1] == previous)
             path = row["path"]
-            assert path and path[0][0] == time - 1
-            assert len({r for r, _ in path}) == len(path)
-            assert len({s for _, s in path}) == len(path)
-            assert all(type(r) is int and epoch_start <= r < time for r, _ in path)
-            assert all(type(s) is int and s in available for _, s in path)
-            assert path[-1][1] not in auxiliary
-            assert assignment[-1] == path[-1][1]
-            assert _path_score(servers, current_requests, auxiliary, epoch_start, path) == path_score
-            assert assignment[-1] == endpoint
+            require(path and path[0][0] == time - 1)
+            require(len({r for r, _ in path}) == len(path))
+            require(len({s for _, s in path}) == len(path))
+            require(all(type(r) is int and epoch_start <= r < time for r, _ in path))
+            require(all(type(s) is int and s in available for _, s in path))
+            require(path[-1][1] not in auxiliary)
+            require(assignment[-1] == path[-1][1])
+            require(_path_score(servers, current_requests, auxiliary, epoch_start, path) == path_score)
+            require(assignment[-1] == endpoint)
             following_auxiliary = auxiliary + [path[0][1]]
             for r, s in path:
                 following_auxiliary[r - epoch_start] = s
-            assert row["auxiliary"] == following_auxiliary
+            require(row["auxiliary"] == following_auxiliary)
             auxiliary = following_auxiliary
-            assert len(set(auxiliary)) == len(auxiliary)
-            assert set(auxiliary) == set(assignment[epoch_start:])
-        assert row["epoch_start"] == epoch_start and row["resets_used"] == resets
-        assert Fraction(row["frozen_cost"]) == frozen_cost
+            require(len(set(auxiliary)) == len(auxiliary))
+            require(set(auxiliary) == set(assignment[epoch_start:]))
+        require(row["epoch_start"] == epoch_start and row["resets_used"] == resets)
+        require(Fraction(row["frozen_cost"]) == frozen_cost)
         residual = _minimum(servers, current_requests[epoch_start:], available)
-        assert Fraction(row["residual_optimum"]) == residual
-        assert residual <= best + frozen_cost
-        assert frozen_cost <= best
+        require(Fraction(row["residual_optimum"]) == residual)
+        require(residual <= best + frozen_cost)
+        require(frozen_cost <= best)
         aux_cost = sum((abs(r - servers[s]) for r, s in zip(current_requests[epoch_start:], auxiliary)), Fraction())
-        assert aux_cost <= 3 * residual
+        require(aux_cost <= 3 * residual)
         previous = assignment
     return {"verified": True, "prefixes": len(requests), "resets": resets,
             "maximum_recourse": max(used, default=0), "independent_method": "exhaustive assignments and alternating paths"}

@@ -8,6 +8,12 @@ import json
 from pathlib import Path
 import time
 
+
+def require(condition, message='verification check failed'):
+    """Keep scientific checks active under -O and PYTHONOPTIMIZE."""
+    if not condition:
+        raise AssertionError(message)
+
 SERVERS = (-4, -1, 2, 8)
 ALPHABET = ('-4', '-5/2', '-1', '1/2', '2', '5', '6', '7', '8')
 BOUNDARY_CASES = (
@@ -19,55 +25,55 @@ BOUNDARY_CASES = (
 
 
 def verify(data):
-    assert data['servers'] == list(SERVERS) and data['budget'] == 2
-    assert data['horizon'] == 4 and data['model'] == 'atomic'
-    assert data['first_step'] == 'nearest_ties_left'
+    require(data['servers'] == list(SERVERS) and data['budget'] == 2)
+    require(data['horizon'] == 4 and data['model'] == 'atomic')
+    require(data['first_step'] == 'nearest_ties_left')
     requests = tuple(map(Q, data['requests']))
-    assert len(requests) == len(data['trace']) == 4, 'incomplete trajectory'
-    assert all(-4 <= r <= 8 for r in requests)
+    require(len(requests) == len(data['trace']) == 4, 'incomplete trajectory')
+    require(all(-4 <= r <= 8 for r in requests))
     first = min(range(4), key=lambda s: (abs(requests[0] - SERVERS[s]), s))
     anchored = requests[0] > 5 and requests[1] > requests[0]
     previous, counts = (), []
     cumulative = Q(0)
     for t, row in enumerate(data['trace'], 1):
         current = tuple(row['assignment'])
-        assert row['arrival'] == t and len(current) == len(set(current)) == t
-        assert all(type(s) is int and 0 <= s < 4 for s in current)
+        require(row['arrival'] == t and len(current) == len(set(current)) == t)
+        require(all(type(s) is int and 0 <= s < 4 for s in current))
         candidates = [(sum((abs(r - SERVERS[s]) for r, s in zip(requests[:t], p)), Q()), p)
                       for p in permutations(range(4), t)]
         optimum = min(c for c, _ in candidates)
         value = sum((abs(r - SERVERS[s]) for r, s in zip(requests, current)), Q())
         if t == 1:
-            assert current == (first,) and row['action'] == 'nearest'
+            require(current == (first,) and row['action'] == 'nearest')
         elif t == 2:
             if anchored:
-                assert current == (2, 3) and row['action'] == 'anchor_first_at_2'
+                require(current == (2, 3) and row['action'] == 'anchor_first_at_2')
             else:
                 nearest = min((s for s in range(4) if s != first),
                               key=lambda s: (abs(requests[1] - SERVERS[s]), s))
-                assert current == (first, nearest) and row['action'] == 'preserve_first'
+                require(current == (first, nearest) and row['action'] == 'preserve_first')
         else:
-            assert value == optimum, 'late stage is not globally optimal'
+            require(value == optimum, 'late stage is not globally optimal')
             eligible = [(c, p) for c, p in candidates if not anchored or p[0] == 2]
             active = list(range(1 if anchored else 0, t))
             active.sort(key=lambda i: (requests[i], i))
             ordered = [(c, p) for c, p in eligible
                        if all(p[active[i]] < p[active[i + 1]] for i in range(len(active) - 1))]
-            assert (value, current) == min(ordered), 'wrong deterministic tie rule'
-            assert row['action'] == ('anchored_optimum' if anchored else 'prefix_optimum')
-        assert type(row['anchored']) is bool and row['anchored'] == (anchored and t >= 2)
+            require((value, current) == min(ordered), 'wrong deterministic tie rule')
+            require(row['action'] == ('anchored_optimum' if anchored else 'prefix_optimum'))
+        require(type(row['anchored']) is bool and row['anchored'] == (anchored and t >= 2))
         if anchored and t >= 2:
-            assert current[0] == 2 and value == optimum
+            require(current[0] == 2 and value == optimum)
         changed = [i for i, (old, new) in enumerate(zip(previous, current)) if old != new]
         counts = [used + (i in changed) for i, used in enumerate(counts)] + [0]
-        assert row['changed'] == changed and row['counts'] == counts and max(counts) <= 2
+        require(row['changed'] == changed and row['counts'] == counts and max(counts) <= 2)
         excess = value - optimum
         cumulative += excess
-        assert Q(row['cost']) == value and Q(row['optimum']) == optimum
-        assert Q(row['excess']) == excess and Q(row['cumulative_excess']) == cumulative
-        assert 0 <= cumulative <= 3
+        require(Q(row['cost']) == value and Q(row['optimum']) == optimum)
+        require(Q(row['excess']) == excess and Q(row['cumulative_excess']) == cumulative)
+        require(0 <= cumulative <= 3)
         previous = current
-    assert Q(data['excess_sum']) == cumulative and data['maximum_recourse'] == max(counts)
+    require(Q(data['excess_sum']) == cumulative and data['maximum_recourse'] == max(counts))
     return dict(verified=True, prefixes=4, anchored=anchored, excess_sum=str(cumulative),
                 maximum_recourse=max(counts), independent_method='all injective matchings')
 
@@ -96,8 +102,8 @@ def audit(out):
                     if Q(checked['excess_sum']) > Q(summary['maximum_excess']):
                         summary['maximum_excess'] = checked['excess_sum']
                         summary['witness_requests'] = list(requests)
-        assert summary['grid_sequences'] == 6561 and summary['boundary_sequences'] == 8
-        assert summary['maximum_excess'] == '3'
+        require(summary['grid_sequences'] == 6561 and summary['boundary_sequences'] == 8)
+        require(summary['maximum_excess'] == '3')
         for name, requests in [('lower_witness', ('1/2', '-1', '2', '-4')),
                                ('anchor_example', ('6', '7', '8', '-4'))]:
             data = run(requests)
