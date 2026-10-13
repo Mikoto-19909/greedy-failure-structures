@@ -12,18 +12,19 @@ Try the [interactive counterexample toy](examples/greedy-playground/index.html)
 (Chinese UI): choose sets, challenge Greedy, replay its decisions, and edit a small
 instance. Open the downloaded HTML in a browser; no installation is needed.
 
-## Current research
+## Research overview
 
-The completed pilot compares shared-core `high_overlap` instances with a
-`uniform` control matched on dimensions and expected set size, using Greedy
-and an exhaustive reference. It did not provide sufficient paired evidence
-of a failure-rate difference at the fixed setting. The report retains the
-observed direction and the other structural differences between the generators.
-See [pilot data](experiments/core_rq/overlap_pilot_v1/).
+Maximum Coverage remains the repository's primary research topic. The fixed pilot
+compares shared-core `high_overlap` instances with a `uniform` control matched on
+dimensions and expected set size, using Greedy and an exhaustive reference. This
+batch did not provide sufficient paired evidence of a failure-rate difference; the
+conclusion applies only to the fixed instances in the report. See the
+[pilot report](analysis/overlap_pilot_v1.md) and [pilot data](experiments/core_rq/overlap_pilot_v1/).
 
-Read the [pilot report](analysis/overlap_pilot_v1.md), start from the
-[research index](analysis/README.md), or inspect the
-[pilot data](experiments/core_rq/overlap_pilot_v1/).
+The R1c and R3 confirmation studies, R2 fixed-budget exploration and R4 bound
+comparison are complete within their stated scopes. The primary R1c contrast remains inconclusive.
+The R4 small-instance results do not by themselves support scaling up. See the
+[research index](analysis/README.md) for the reports and evidence.
 
 The [R1 follow-up](analysis/r1_prefix_exchange_report.md) reanalyzes these same
 instances to locate Greedy's first loss of optimal reachability and measure
@@ -52,7 +53,7 @@ has been retained. These defaults select an example workflow.
 
 | Purpose | Entry point |
 | --- | --- |
-| Current research | [Fixed pilot commands](docs/cli.md#core-overlap-pilot), [report](analysis/overlap_pilot_v1.md) and [original design](docs/core_overlap_checkpoint_plan.zh-CN.md). |
+| Research status | [Research index](analysis/README.md), [pilot report](analysis/overlap_pilot_v1.md) and [original design](docs/core_overlap_checkpoint_plan.zh-CN.md). |
 | Examples and compatibility | `python run_project.py demo`, `quick`, and the larger legacy `full.json` workflow in the CLI guide. The name `full` does not designate the complete current research study. |
 | Method checks and broader exploration | The [documentation index](docs/README.md) distinguishes pairing checks, generator audits, functional checks and wider structural scans. |
 
@@ -72,7 +73,8 @@ opens imported reports, assignment replay and fixed-input reproduction at `/onli
 The shared study switcher returns to the home page or opens another study.
 Opening a page starts no computation. `/index.html` remains an alias for Maximum Coverage.
 The home page and Maximum Coverage interface support English and Chinese.
-Maximum Coverage uses the same experiment engine as the CLI. The server binds to loopback
+Maximum Coverage uses the same experiment engine as the CLI. Online matching has its own
+runner and verifier; it does not enter the Maximum Coverage task queue. The server binds to loopback
 addresses; see the [Dashboard command](docs/cli.md#dashboard) and
 [security policy](SECURITY.md) for its operating boundary.
 
@@ -100,10 +102,17 @@ Windows users can also use `./project.ps1 test`, `./project.ps1 typecheck` and
 ## Scope
 
 `demo` prints locally computed coverage and a benchmark writes measurements under
-`results/`. Full exploratory output stays local. Research reports in `analysis/` link directly to configurations and data in
-`experiments/core_rq/`. Keep enough information to rerun and understand a result;
-no claim ledger or file-integrity manifest is required.
+`results/`. Full exploratory output stays local. Research reports in `analysis/` link
+directly to configurations and data in `experiments/core_rq/`. Keep enough information
+to rerun and understand a result; no claim ledger or file-integrity manifest is required.
 The publication rules are maintained in CONTRIBUTING.
+
+Historical online-matching results are under
+`independent_research/online_matching_recourse/output/`; standalone reruns also
+default to that directory, where new run directories are ignored by `.gitignore`.
+Dashboard reruns use the separate `results/online_matching/` directory, which is
+also ignored by `.gitignore`. This study keeps its own metrics, runner and verifier.
+Its novelty has not been established.
 
 ## Documentation and support
 

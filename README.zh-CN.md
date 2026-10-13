@@ -10,16 +10,16 @@
 挑选集合、挑战贪心、逐步回放并修改自己的反例。下载后可直接用浏览器打开，无需安装；
 见[简短说明](examples/greedy-playground/README.zh-CN.md)。
 
-## 当前研究
+## 研究概览
 
-已完成的试验使用 Greedy 与穷举参考，比较共核式 `high_overlap` 实例和维度、
-期望集合大小匹配的 `uniform` 对照。本轮未获得足够的失效率差异证据；报告保留
-观察到的方向，并列出两种生成机制之间的其他结构差异。结果对应
-[实验数据](experiments/core_rq/overlap_pilot_v1/)。
+最大覆盖仍是仓库的主要研究专题。固定先导试验使用 Greedy 与穷举参考，比较共核式
+`high_overlap` 实例和维度、期望集合大小匹配的 `uniform` 对照。该批数据未提供足够的
+失效率差异证据；结论仅适用于报告中的固定实例范围。详见[试验报告](analysis/overlap_pilot_v1.md)
+和[实验数据](experiments/core_rq/overlap_pilot_v1/)。
 
-可直接阅读[试验报告](analysis/overlap_pilot_v1.md)，从
-[研究索引](analysis/README.md)了解进展，或查看
-[实验配置与数据](experiments/core_rq/overlap_pilot_v1/)。
+R1c 和 R3 确认研究、R2 固定预算探索及 R4 上界比较均已完成各自固定范围内的工作。
+R1c 的主要比较结果仍不确定；R4 的小实例收益不足以支持仅据此扩大规模。完整进展见
+[研究索引](analysis/README.md)。
 
 [R1 后续报告](analysis/r1_prefix_exchange_report.md)已用同一批实例定位 Greedy
 首次失去最优可达性的步骤，并比较一换一与至多二换二的修复能力。这是探索性
@@ -45,7 +45,7 @@ Dashboard 在没有保留配置选择时也优先选择 `quick.json`。这些默
 
 | 用途 | 入口 |
 | --- | --- |
-| 当前研究 | [固定试验命令](docs/cli.zh-CN.md#核心重叠-pilot)、[报告](analysis/overlap_pilot_v1.md)和[原始设计](docs/core_overlap_checkpoint_plan.zh-CN.md)。 |
+| 研究进展 | [研究索引](analysis/README.md)、[先导试验报告](analysis/overlap_pilot_v1.md)和[原始设计](docs/core_overlap_checkpoint_plan.zh-CN.md)。 |
 | 演示与兼容验证 | `python run_project.py demo`、`quick`，以及 CLI 指南中的较大旧版 `full.json` 工作流。`full` 这一名称不表示当前研究的完整方案。 |
 | 方法检查与更广探索 | [文档索引](docs/README.md)区分配对检查、生成器审计、功能检查和较大的结构扫描。 |
 
@@ -65,7 +65,8 @@ python run_project.py dashboard
 
 页面内的专题切换控件可以返回研究首页或进入其他专题。打开页面不会启动计算。
 原 `/index.html` 地址仍指向最大覆盖页面。首页和最大覆盖界面支持中英文。
-最大覆盖沿用与 CLI 相同的实验引擎。服务器绑定回环地址；运行边界见
+最大覆盖沿用与 CLI 相同的实验引擎。在线匹配使用自己的运行入口和核验器，不进入最大覆盖任务队列。
+服务器绑定回环地址；运行边界见
 [Dashboard 命令](docs/cli.zh-CN.md#dashboard)和[安全说明](SECURITY.md)。
 
 首页卡片和专题切换共用一份[入口配置](src/maxcover/dashboard_ui/topics.json)。
@@ -93,6 +94,10 @@ python scripts/check.py --profile full --tests-only
 完整探索输出留在本地；研究报告位于 `analysis/`，直接链接
 `experiments/core_rq/` 中的配置和数据。保留种子、原始结果和分析脚本，
 不再要求结论台账、manifest 或文件摘要。研究流程见 CONTRIBUTING。
+
+在线匹配的历史结果保存在 `independent_research/online_matching_recourse/output/`，
+本地命令复现默认也写入该目录；新增运行目录由 `.gitignore` 忽略。看板复现单独写入
+`results/online_matching/`，该目录也由 `.gitignore` 忽略。该研究保留自己的指标、运行器和核验器；其新颖性尚未确认。
 
 ## 文档与支持
 
