@@ -1,0 +1,29 @@
+{
+  "servers": [
+    -4,
+    -1,
+    2,
+    8
+  ],
+  "requests": [
+    "5",
+    "2",
+    "8",
+    "-4"
+  ],
+  "budget": 2,
+  "records": {
+    "local_blocks": {
+      "source": "results/online_matching_local_20260927/revised/finite_audit.jsonl.gz",
+      "cost_sum": "48",
+      "optimum_sum": "18",
+      "excess_sum": "30"
+    },
+    "explicit_policy": {
+      "source": "results/online_matching_policy_20260928/trajectories.jsonl.gz",
+      "cost_sum": "21",
+      "optimum_sum": "18",
+      "excess_sum": "3"
+    }
+  }
+}

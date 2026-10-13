@@ -15,6 +15,7 @@ experiments/gate_speed_comparison_v1/*.txt -text whitespace=-blank-at-eol,-blank
 
 # Preserve imported research snapshots and generated figures byte-for-byte.
 independent_research/online_matching_recourse/output/** -text whitespace=-blank-at-eol,-blank-at-eof,cr-at-eol
+experiments/online_matching_exact_v1/**/*.json -text whitespace=-blank-at-eol,cr-at-eol
 independent_research/online_matching_recourse/extension_20260925/output/** -text whitespace=-blank-at-eol,-blank-at-eof,cr-at-eol
 independent_research/online_matching_recourse/extension_20260925/报告/图/*.svg -text whitespace=-blank-at-eol,cr-at-eol
 independent_research/online_matching_recourse/报告/分步例子.md -text whitespace=-blank-at-eof,cr-at-eol
