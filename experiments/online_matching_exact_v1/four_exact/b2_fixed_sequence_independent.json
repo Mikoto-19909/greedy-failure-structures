@@ -1,0 +1,121 @@
+{
+  "verified": true,
+  "method": "independent standard-library exhaustive injection enumeration and all-history budget DP",
+  "servers": [
+    -4,
+    -1,
+    2,
+    8
+  ],
+  "requests": [
+    "1/2",
+    "-1",
+    "2",
+    "-4"
+  ],
+  "first_assignment_rule": "nearest server; ties to smaller coordinate",
+  "budget": 2,
+  "stages": [
+    {
+      "t": 1,
+      "optimum": "3/2",
+      "optimal_first_request_servers": [
+        -1,
+        2
+      ],
+      "minimum_positive_excess": "3",
+      "positive_excess_values": [
+        "3",
+        "6"
+      ],
+      "matching_count": 4
+    },
+    {
+      "t": 2,
+      "optimum": "3/2",
+      "optimal_first_request_servers": [
+        2
+      ],
+      "minimum_positive_excess": "3",
+      "positive_excess_values": [
+        "3",
+        "6",
+        "9",
+        "12"
+      ],
+      "matching_count": 12
+    },
+    {
+      "t": 3,
+      "optimum": "9/2",
+      "optimal_first_request_servers": [
+        -4,
+        -1
+      ],
+      "minimum_positive_excess": "3",
+      "positive_excess_values": [
+        "3",
+        "6",
+        "9",
+        "12"
+      ],
+      "matching_count": 24
+    },
+    {
+      "t": 4,
+      "optimum": "15/2",
+      "optimal_first_request_servers": [
+        2,
+        8
+      ],
+      "minimum_positive_excess": "3",
+      "positive_excess_values": [
+        "3",
+        "6",
+        "9",
+        "12",
+        "15"
+      ],
+      "matching_count": 24
+    }
+  ],
+  "first_step_unconstrained_optimal_servers": [
+    -1,
+    2
+  ],
+  "first_step_rule_admissible_server": -1,
+  "states_by_prefix": [
+    1,
+    12,
+    96,
+    288
+  ],
+  "hindsight_minimum_cumulative_excess": "3",
+  "witness_assignments": [
+    [
+      -1
+    ],
+    [
+      -4,
+      -1
+    ],
+    [
+      -4,
+      -1,
+      2
+    ],
+    [
+      2,
+      -1,
+      8,
+      -4
+    ]
+  ],
+  "witness_final_recourse": [
+    2,
+    0,
+    1,
+    0
+  ],
+  "note": "The requested first-prefix singleton {-1} holds only after imposing the nearest-left rule; unconstrained optima also include 2."
+}

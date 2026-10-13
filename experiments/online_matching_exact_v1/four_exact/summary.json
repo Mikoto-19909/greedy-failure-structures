@@ -1,0 +1,55 @@
+{
+  "status": "exact_fixed_layout_values_with_solver_assisted_upper_proof",
+  "servers": [
+    -4,
+    -1,
+    2,
+    8
+  ],
+  "request_interval": [
+    -4,
+    8
+  ],
+  "horizon": 4,
+  "first_step": "nearest_ties_left",
+  "objective": "sum_prefix_excess",
+  "lifetime_budget_per_request": true,
+  "exact_values": {
+    "atomic": {
+      "1": 9,
+      "2": 3,
+      "4": 0
+    },
+    "chain": {
+      "1": 9,
+      "2": 3,
+      "4": 0
+    }
+  },
+  "upper_certificates": [
+    "b1_chain_p0_gt9_sorted.json",
+    "b1_chain_p1_gt9_sorted.json",
+    "b1_chain_p2_gt9_sorted.json",
+    "b1_chain_p3_gt9_sorted.json",
+    "b2_chain_p0_gt3_sorted.json",
+    "b2_chain_p1_gt3_sorted.json",
+    "b2_chain_p2_gt3_sorted.json",
+    "b2_chain_p3_gt3_sorted.json"
+  ],
+  "lower_certificates": [
+    "b1_atomic_p2_ge9_sorted.json",
+    "b2_atomic_p1_ge3_sorted.json"
+  ],
+  "independent_lower_checks": [
+    "b1_lower_independent.json",
+    "b2_lower_independent.json",
+    "b2_fixed_sequence_independent.json"
+  ],
+  "independent_review": "Another agent reviewed the endpoint lemma, exact formula dependency order, first-step half-open cells, and the two-model sandwich. No blocking issue found.",
+  "recorded_query_cpu_seconds": 140.46875,
+  "query_count": 11,
+  "budget4_basis": "previous n-1 sufficiency proof; no rerun",
+  "upper_trust_boundary": "Exact QF_LRA encoding and Z3 5.1.0 UNSAT; no proof file checked by a second proof kernel.",
+  "source": "independent_research/online_matching_recourse/extension_20260925/four_exact.py",
+  "report": "independent_research/online_matching_recourse/extension_20260925/报告/四请求精确值.md"
+}

@@ -747,6 +747,100 @@ else: raise RuntimeError('inconsistent LP certificate accepted')
         with self.assertRaisesRegex(ValueError, 'four'):
             producer.run([1, 2, 3])
 
+    def local_study_fixture(self, case=None):
+        study = load_script('extension_20260925/local_freeze_study.py')
+        if case is None:
+            case = dict(id='tiny', servers=[-4, -1, 2, 8], requests=['1/2', -1, 2, -4])
+        self.enterContext(patch.object(study, 'fixed_cases', return_value=[case]))
+        # Phase-publication checks substitute the expensive formal alphabet audit.
+        self.enterContext(patch.object(study, 'finite_audit'))
+        with redirect_stdout(io.StringIO()):
+            study.run_phase('initial', self.root)
+        return study, case
+
+    def test_local_study_rejects_changed_inputs_before_reserving_output(self):
+        study, case = self.local_study_fixture()
+        inputs = self.root / 'initial/inputs.json'
+        changed = deepcopy(case); changed['requests'][0] = '2/3'
+        write_json(inputs, [changed])
+        with self.assertRaisesRegex(AssertionError, 'fixed initial design'):
+            study.run_phase('revised', self.root)
+        self.assertFalse((self.root / 'revised').exists())
+        write_json(inputs, [case])
+        record = self.root / 'initial/tiny_b2_fixed4.json'
+        saved = json.loads(record.read_text()); saved['requests'][0] = '2/3'
+        write_json(record, saved)
+        with self.assertRaisesRegex(AssertionError, 'trajectory differs'):
+            study.run_phase('revised', self.root)
+        self.assertFalse((self.root / 'revised').exists())
+
+    def test_local_study_rejects_changed_coordinate_types(self):
+        case = dict(id='tiny', servers=[0, 3, 6, 12], requests=['9/2', 3, 6, 0])
+        study, case = self.local_study_fixture(case)
+        for coordinate in (False, 0.0):
+            changed = deepcopy(case); changed['servers'][0] = coordinate
+            write_json(self.root / 'initial/inputs.json', [changed])
+            with self.subTest(coordinate=coordinate), self.assertRaisesRegex(AssertionError, 'fixed initial design'):
+                study.run_phase('revised', self.root)
+            self.assertFalse((self.root / 'revised').exists())
+
+    def test_local_study_prerequisite_failures_allow_retry(self):
+        study = load_script('extension_20260925/local_freeze_study.py')
+        with self.assertRaises(FileNotFoundError):
+            study.run_phase('revised', self.root)
+        self.assertFalse((self.root / 'revised').exists())
+        study, _ = self.local_study_fixture()
+        source = self.root / 'initial/summary.json'
+        original = json.loads(source.read_text())
+        for kind in ('incomplete', 'no_trigger', 'missing', 'duplicate', 'budget_type'):
+            bad = deepcopy(original)
+            if kind == 'incomplete':
+                bad['status'] = 'incomplete'
+            elif kind == 'no_trigger':
+                for row in bad['comparisons']:
+                    row['verification']['maximum_frozen_loss'] = '0'
+            elif kind == 'missing':
+                bad['comparisons'].pop(0)
+            elif kind == 'duplicate':
+                bad['comparisons'].append(deepcopy(bad['comparisons'][0]))
+            else:
+                bad['comparisons'][0]['budget'] = True
+            write_json(source, bad)
+            with self.subTest(kind=kind), self.assertRaises(AssertionError):
+                study.run_phase('revised', self.root)
+            self.assertFalse((self.root / 'revised').exists())
+        write_json(source, original)
+        with redirect_stdout(io.StringIO()):
+            result = study.run_phase('revised', self.root)
+        self.assertEqual(result['status'], 'complete')
+        comparison = json.loads((self.root / 'revised/comparison.json').read_text())
+        self.assertEqual(comparison['cpu_seconds'], original['cpu_seconds'] + result['cpu_seconds'])
+        changed = json.loads((self.root / 'revised/inputs.json').read_text())
+        changed[0]['requests'][0] = '2/3'
+        write_json(self.root / 'revised/inputs.json', changed)
+        with self.assertRaisesRegex(AssertionError, 'fixed initial design'):
+            study.compare(self.root)
+
+    def test_local_study_comparison_failures_leave_incomplete_summary(self):
+        study, _ = self.local_study_fixture()
+        write_original = study.write
+        for kind in ('comparison', 'write'):
+            root = self.root / kind
+            shutil.copytree(self.root / 'initial', root / 'initial')
+
+            def fail_comparison_write(path, value):
+                if path.name == 'comparison.json':
+                    raise OSError('controlled comparison write failure')
+                write_original(path, value)
+
+            target = (patch.object(study, 'compare', side_effect=AssertionError('controlled comparison failure'))
+                      if kind == 'comparison' else patch.object(study, 'write', side_effect=fail_comparison_write))
+            with self.subTest(kind=kind), target, redirect_stdout(io.StringIO()), self.assertRaises((AssertionError, OSError)):
+                study.run_phase('revised', root)
+            saved = json.loads((root / 'revised/summary.json').read_text())
+            self.assertEqual(saved['status'], 'incomplete')
+            self.assertFalse((root / 'revised/comparison.json').exists())
+
     def test_added_research_checks_survive_optimization(self):
         program = '''
 from copy import deepcopy

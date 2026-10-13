@@ -45,10 +45,37 @@ def write(path, value):
         stream.write('\n')
 
 
-def compare(root):
+def checked_inputs(root, phase, summary):
+    cases = json.loads((root / phase / 'inputs.json').read_text())
+    require(json.dumps(cases, sort_keys=True) == json.dumps(fixed_cases(), sort_keys=True),
+            'saved inputs differ from the fixed initial design')
+    require(summary['input_cases'] == len(cases), 'incorrect input case count')
+    by_id = {case['id']: case for case in cases}
+    configurations = ({(0, 'rm')} | {(b, p) for b in (1, 2, 4) for p in ('fixed4', 'global_reset')}
+                      if phase == 'initial' else {(b, 'budget_blocks') for b in (1, 2, 4)})
+    expected = {(case, budget, policy) for case in by_id for budget, policy in configurations}
+    rows = summary['comparisons']
+    require(all(type(row['budget']) is int for row in rows), 'invalid comparison budget identity')
+    keys = [(row['case'], row['budget'], row['policy']) for row in rows]
+    require(len(keys) == len(set(keys)) and set(keys) == expected,
+            'incomplete or duplicate phase comparisons')
+    for row in rows:
+        case = by_id[row['case']]
+        record = json.loads((root / phase / row['file']).read_text())
+        for field in ('servers', 'requests'):
+            require(tuple(map(Q, record[field])) == tuple(map(Q, case[field])),
+                    'saved trajectory differs from its input case')
+    return cases
+
+
+def compare(root, revised=None):
     initial = json.loads((root / 'initial/summary.json').read_text())
-    revised = json.loads((root / 'revised/summary.json').read_text())
-    require(initial['status'] == revised['status'] == 'complete')
+    require(initial['status'] == 'complete')
+    if revised is None:
+        revised = json.loads((root / 'revised/summary.json').read_text())
+        require(revised['status'] == 'complete')
+    require(checked_inputs(root, 'initial', initial) == checked_inputs(root, 'revised', revised),
+            'phases use different input cases')
     old = {(r['case'], r['budget'], r['policy']): r for r in initial['comparisons']}
     result = dict(groups=[], cases=[], cpu_seconds=initial['cpu_seconds'] + revised['cpu_seconds'])
     for budget in (1, 2, 4):
@@ -84,10 +111,32 @@ def compare(root):
     return result
 
 
+def finite_audit(out, audit, check_time):
+    """Write the predeclared finite audit; separate from phase publication."""
+    with gzip.open(out / 'finite_audit.jsonl.gz', 'wt', encoding='utf-8') as stream:
+        for requests in product(audit['alphabet'], repeat=4):
+            for budget in (1, 2, 4):
+                check_time()
+                data = local_freeze.run(audit['servers'], requests, budget)
+                checked = verify(data)
+                stream.write(json.dumps(dict(data=data, verification=checked), separators=(',', ':')) + '\n')
+                measures = local_freeze.metrics(data)
+                group = audit['by_budget'][str(budget)]
+                if Q(measures['excess_sum']) > Q(group['max_excess']):
+                    group['max_excess'] = measures['excess_sum']
+                    group['worst_requests'] = requests
+                group['max_ratio'] = str(max(Q(group['max_ratio']), Q(measures['max_ratio'])))
+                audit['traces'] += 1
+                audit['prefixes'] += len(requests)
+            audit['sequences'] += 1
+            if audit['sequences'] % 216 == 0:
+                print(f"audit {audit['sequences']}/1296", flush=True)
+    require(audit['sequences'] == 1296 and audit['traces'] == 3888)
+
+
 def run_phase(phase, root):
     start = time.process_time()
     out = root / phase
-    out.mkdir(parents=True, exist_ok=False)
     if phase == 'initial':
         cases = fixed_cases()
         previous_cpu = 0
@@ -96,8 +145,9 @@ def run_phase(phase, root):
         require(old['status'] == 'complete')
         require(any(Q(row['verification'].get('maximum_frozen_loss', '0')) > 0
                    for row in old['comparisons']), 'predeclared second-round trigger absent')
-        cases = json.loads((root / 'initial/inputs.json').read_text())
+        cases = checked_inputs(root, 'initial', old)
         previous_cpu = old['cpu_seconds']
+    out.mkdir(parents=True, exist_ok=False)
     write(out / 'inputs.json', cases)
     summary = dict(status='incomplete', phase=phase, started_utc=datetime.now(timezone.utc).isoformat(),
                    cpu_limit=CPU_LIMIT, previous_cpu_seconds=previous_cpu, comparisons=[], audit={},
@@ -131,32 +181,16 @@ def run_phase(phase, root):
             audit = dict(alphabet=alphabet, servers=[-4, -1, 2, 8], sequences=0, traces=0,
                          prefixes=0, by_budget={str(b): dict(max_excess='0', max_ratio='1') for b in (1, 2, 4)})
             summary['audit'] = audit
-            with gzip.open(out / 'finite_audit.jsonl.gz', 'wt', encoding='utf-8') as stream:
-                for requests in product(alphabet, repeat=4):
-                    for budget in (1, 2, 4):
-                        check_time()
-                        data = local_freeze.run(audit['servers'], requests, budget)
-                        checked = verify(data)
-                        stream.write(json.dumps(dict(data=data, verification=checked), separators=(',', ':')) + '\n')
-                        measures = local_freeze.metrics(data)
-                        group = audit['by_budget'][str(budget)]
-                        if Q(measures['excess_sum']) > Q(group['max_excess']):
-                            group['max_excess'] = measures['excess_sum']
-                            group['worst_requests'] = requests
-                        group['max_ratio'] = str(max(Q(group['max_ratio']), Q(measures['max_ratio'])))
-                        audit['traces'] += 1
-                        audit['prefixes'] += len(requests)
-                    audit['sequences'] += 1
-                    if audit['sequences'] % 216 == 0:
-                        print(f"audit {audit['sequences']}/1296", flush=True)
-            require(audit['sequences'] == 1296 and audit['traces'] == 3888)
+            finite_audit(out, audit, check_time)
+            summary['cpu_seconds'] = time.process_time() - start
+            comparison = compare(root, revised=summary)
+            write(out / 'comparison.json', comparison)
         summary['status'] = 'complete'
     finally:
-        summary['cpu_seconds'] = time.process_time() - start
+        if summary['status'] != 'complete' or 'cpu_seconds' not in summary:
+            summary['cpu_seconds'] = time.process_time() - start
         write(out / 'summary.json', summary)
         print(json.dumps(dict(status=summary['status'], cpu_seconds=summary['cpu_seconds'], output=str(out))), flush=True)
-    if phase == 'revised':
-        write(out / 'comparison.json', compare(root))
     return summary
 
 
