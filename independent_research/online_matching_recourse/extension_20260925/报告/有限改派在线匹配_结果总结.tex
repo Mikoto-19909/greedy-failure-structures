@@ -1,0 +1,318 @@
+\documentclass[UTF8,11pt,a4paper,landscape,fontset=windows]{ctexart}
+
+\usepackage[margin=16mm]{geometry}
+\usepackage{amsmath}
+\usepackage{tikz}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+
+\setlength{\parindent}{2em}
+\setlength{\parskip}{3pt}
+\linespread{1.12}
+\ctexset{
+  section={format=\large\bfseries\color{black},beforeskip=8pt,afterskip=5pt},
+  subsection={format=\normalsize\bfseries\color{black},beforeskip=6pt,afterskip=3pt}
+}
+\pagestyle{plain}
+\color{black}
+
+\newcommand{\source}[1]{\par\smallskip\noindent{\scriptsize\color{black!65}资料：#1}\par}
+\newcommand{\figuretitle}[1]{\noindent{\small\bfseries #1}\par}
+\tikzset{
+  axis/.style={draw=black!75,line width=0.5pt},
+  grid/.style={draw=black!20,line width=0.35pt},
+  label/.style={font=\scriptsize,text=black},
+  number/.style={font=\small\bfseries,text=black}
+}
+
+\begin{document}
+
+\begin{center}
+  {\LARGE\bfseries 有限改派在线匹配研究结果总结}\par\vspace{4pt}
+  {\small 资料截至 2026 年 9 月 28 日\quad｜\quad 本地研究报告}
+\end{center}
+\noindent\rule{\linewidth}{0.5pt}
+
+\noindent\textbf{摘要}\quad 本报告整理有限改派在线匹配研究的六项分支及后续核验。
+在固定四个服务点和四个连续区间内请求的模型中，每请求最多改派 $1$、$2$、$4$ 次时，
+最优在线策略的最坏累计超额分别为 $9$、$3$、$0$。
+报告同时给出小模型中的决策差异、固定输入上的策略比较和长序列保证。
+这些数字对应不同目标与数据范围，以下分别说明。
+
+\section{研究对象与核心结果}
+\noindent\begin{minipage}[t]{0.48\linewidth}
+\vspace{0pt}
+\subsection*{问题与指标}
+在线匹配（online matching）要求请求逐个到达后立即占用一个空服务点。
+有限改派（bounded recourse）允许旧请求在后续到达时换点；每个请求终生最多改派 $b$ 次，首次分配不计次。
+本报告使用的累计超额为
+\[
+  E=\sum_{t=1}^{T}\bigl(C_t-\operatorname{OPT}_t\bigr),
+\]
+其中 $C_t$ 是第 $t$ 个前缀的匹配距离，$\operatorname{OPT}_t$ 是只使用已到请求计算的精确最优距离。
+所有距离均为输入坐标单位，不表示米。
+
+\subsection*{固定四点模型}
+服务点固定在 $(-4,-1,2,8)$，四个请求均可位于区间 $[-4,8]$ 中的任意实数位置。
+第一步必须选择最近服务点，同分时选左侧；后续决策不能预知未来请求。
+图 1 的三个值是这个连续域问题的精确最坏值。
+原子批量更新与单链更新允许的动作不同，但在该布局与目标下取得相同数值。
+\end{minipage}\hfill
+\begin{minipage}[t]{0.48\linewidth}
+\vspace{0pt}
+\figuretitle{图 1\quad 每请求改派预算与最坏累计超额}
+\begin{center}
+\begin{tikzpicture}[x=1cm,y=1cm]
+  \foreach \y/\v in {0.60/0,1.80/3,3.00/6,4.20/9} {
+    \draw[grid] (1.0,\y)--(10.6,\y);
+    \node[label,anchor=east] at (0.83,\y) {\v};
+  }
+  \draw[axis] (1.0,0.60)--(10.6,0.60);
+  \fill[black!78] (1.85,0.60) rectangle (3.15,4.20);
+  \fill[black!78] (4.95,0.60) rectangle (6.25,1.80);
+  \fill[black!78] (8.65,0.60) circle (0.09);
+  \node[number,above] at (2.50,4.20) {9};
+  \node[number,above] at (5.60,1.80) {3};
+  \node[number,above] at (8.65,0.74) {0};
+  \node[label] at (2.50,0.23) {$b=1$};
+  \node[label] at (5.60,0.23) {$b=2$};
+  \node[label] at (8.65,0.23) {$b=4$};
+  \node[label] at (5.75,-0.37) {每请求终生改派上限（次）};
+  \node[label,rotate=90] at (0.13,2.50) {最坏累计超额（距离单位）};
+\end{tikzpicture}
+\end{center}
+\source{《四请求精确值》；本机 \texttt{four\_exact/summary.json}。$b=1,2$ 的单链上界仍有求解器辅助。}
+
+从预算 $1$ 增至 $2$，最坏累计超额由 $9$ 降为 $3$。
+四请求最多只有三次后续到达，因此预算 $4$ 足以保持每个前缀精确最优。
+\end{minipage}
+
+\subsection*{预算 $2$ 的可执行规则}
+在原子批量模型中，第二步通常保留首请求，只把新请求分给最近的空服务点。
+唯一例外是首请求已占用 $8$，而第二请求的位置比它更靠右：此时把首请求移到 $2$ 并永久固定。
+后两步再求当前前缀的最优匹配。该规则已给出解析证明，最坏累计超额为 $3$。
+它可能同时调整多个旧请求，因而不能直接作为单链模型的策略。
+
+\newpage
+\section{小模型中的选择差异}
+以下例子都只有三个服务点和三个请求，每个请求最多改派一次。
+左栏比较首步占点选择，右栏比较原始成本目标下的随机化。
+两图使用不同实例与目标，数值不能互相比较。
+
+\noindent\begin{minipage}[t]{0.48\linewidth}
+\vspace{0pt}
+\figuretitle{图 2\quad 最近首点并非总是最优}
+\begin{center}
+\begin{tikzpicture}[x=1cm,y=1cm]
+  \foreach \y/\v in {0.55/0,1.75/2,2.95/4,4.15/6} {
+    \draw[grid] (1.0,\y)--(10.5,\y);
+    \node[label,anchor=east] at (0.82,\y) {\v};
+  }
+  \draw[axis] (1.0,0.55)--(10.5,0.55);
+  \fill[black!78] (1.75,0.55) rectangle (2.95,1.15);
+  \fill[black!52] (4.75,0.55) rectangle (5.95,2.05);
+  \fill[black!30] (7.75,0.55) rectangle (8.95,3.85);
+  \node[number,above] at (2.35,1.15) {1};
+  \node[number,above] at (5.35,2.05) {2.5};
+  \node[number,above] at (8.35,3.85) {5.5};
+  \node[label] at (2.35,0.16) {首占 $0$};
+  \node[label] at (5.35,0.16) {首占 $3$（最近）};
+  \node[label] at (8.35,0.16) {首占 $6$};
+  \node[label] at (5.6,-0.36) {首步服务点（坐标）};
+  \node[label,rotate=90] at (0.12,2.30) {最坏累计超额（距离单位）};
+\end{tikzpicture}
+\end{center}
+\source{《链动作与自由首步》第 5 节；服务点为 $(0,3,6)$，首请求为 $7/4$。}
+
+首请求位于 $7/4$ 时，最近点是 $3$，但先占服务点 $0$ 的完整最坏累计超额只有 $1$，
+低于先占 $3$ 的 $5/2$。首占 $0$ 会增加第一步距离，却给后续请求保留更合适的服务点。
+因此，单看第一步的最短距离会遗漏未来请求造成的代价。
+
+允许的改派动作也影响时机。在服务点 $(0,2,6)$、已到请求 $(5/4,2)$ 的例子里，
+单链模型应立即改派，最坏值为 $5/2$；原子批量模型应保留，值为 $3/2$。
+\end{minipage}\hfill
+\begin{minipage}[t]{0.48\linewidth}
+\vspace{0pt}
+\figuretitle{图 3\quad 原始成本目标下的随机化}
+\begin{center}
+\begin{tikzpicture}[x=1cm,y=1cm]
+  \draw[axis] (2.3,0.75)--(10.7,0.75);
+  \foreach \x/\v in {2.3/56,4.4/58,6.5/60,8.6/62,10.7/64} {
+    \draw[axis] (\x,0.69)--(\x,0.82);
+    \node[label,below] at (\x,0.65) {\v};
+  }
+  \foreach \y in {1.55,2.70,3.85} {\draw[grid] (2.3,\y)--(10.7,\y);}
+  \node[label,anchor=east] at (2.1,3.85) {确定性};
+  \node[label,anchor=east] at (2.1,2.70) {随机，未观察};
+  \node[label,anchor=east] at (2.1,1.55) {随机，已观察};
+  \fill[black!78] (8.6,3.85) circle (0.10);
+  \fill[black!78] (6.5,2.70) circle (0.10);
+  \fill[black!78] (8.6,1.55) circle (0.10);
+  \node[number,anchor=west] at (8.78,3.85) {62};
+  \node[number,anchor=west] at (6.68,2.70) {60};
+  \node[number,anchor=west] at (8.78,1.55) {62};
+  \node[label] at (6.5,-0.25) {第二、三阶段最坏成本和（距离单位）};
+\end{tikzpicture}
+\end{center}
+\source{《随机化与原始成本》第 5 节；服务点 $(0,10,50)$、前缀 $(6,10)$。横轴仅显示 $56$--$64$。}
+
+对手看不到第二步抽样结果时，两个动作各以 $1/2$ 概率执行，可把最坏期望原始成本从 $62$ 降到 $60$。
+这个数值有双方的有理数证书。若对手先看见实际动作再决定未来请求，最优值仍为 $62$。
+
+这一收益属于第二、三阶段成本之和；若目标换成累计超额，固定最近首步下的随机化没有收益。
+同一个“是否该提前改派”的问题，在目标或对手信息发生变化时，答案也可能随之改变。
+\end{minipage}
+
+\newpage
+\section{固定输入上的策略表现}
+本节报告的是具体策略在保存输入上的\textbf{阶段成本和}，不是最优在线策略的连续域最坏值。
+预算较大时，贪心规则可以改变自己的选择；它不必沿用小预算下的轨迹。
+
+\noindent\begin{minipage}[t]{0.48\linewidth}
+\vspace{0pt}
+\subsection*{预算增加的压力例}
+图 4 是四请求序列，图 5 是六请求序列。虚线均表示各前缀精确最优成本之和。
+两条序列是专门构造的压力输入，没有混入原 $24$ 条固定比较。
+
+\figuretitle{图 4\quad 四请求：成本 $19\to23$}
+\begin{center}
+\begin{tikzpicture}[x=1cm,y=1cm]
+  \foreach \y/\v in {0.45/0,1.55/10,2.65/20} {
+    \draw[grid] (1.1,\y)--(10.5,\y);
+    \node[label,anchor=east] at (0.91,\y) {\v};
+  }
+  \draw[axis] (1.1,0.45)--(10.5,0.45);
+  \draw[dashed,black!50] (1.1,2.10)--(10.5,2.10);
+  \draw[black!80,line width=1pt] (1.8,2.54)--(4.1,2.98)--(6.4,2.10)--(8.7,2.10);
+  \foreach \x/\y/\v in {1.8/2.54/19,4.1/2.98/23,6.4/2.10/15,8.7/2.10/15} {
+    \fill[black!80] (\x,\y) circle (0.07);
+    \node[number,above] at (\x,\y) {\v};
+  }
+  \foreach \x/\v in {1.8/1,4.1/2,6.4/3,8.7/4} {\node[label] at (\x,0.11) {\v};}
+  \node[label] at (5.8,-0.37) {每请求改派预算（次）};
+  \node[label,rotate=90] at (0.10,1.80) {阶段成本和（距离单位）};
+\end{tikzpicture}
+\end{center}
+
+\figuretitle{图 5\quad 六请求：预算 $4$ 时成本为 $95$}
+\begin{center}
+\begin{tikzpicture}[x=1cm,y=1cm]
+  \foreach \y/\v in {0.45/0,1.90/50,3.35/100} {
+    \draw[grid] (1.1,\y)--(10.5,\y);
+    \node[label,anchor=east] at (0.91,\y) {\v};
+  }
+  \draw[axis] (1.1,0.45)--(10.5,0.45);
+  \draw[dashed,black!50] (1.1,2.277)--(10.5,2.277);
+  \draw[black!80,line width=1pt] (1.6,2.857)--(3.4,2.741)--(5.2,2.741)--(7.0,3.205)--(8.8,2.277);
+  \foreach \x/\y/\v in {1.6/2.857/83,3.4/2.741/79,5.2/2.741/79,7.0/3.205/95,8.8/2.277/63} {
+    \fill[black!80] (\x,\y) circle (0.07);
+    \node[number,above] at (\x,\y) {\v};
+  }
+  \foreach \x/\v in {1.6/1,3.4/2,5.2/3,7.0/4,8.8/5} {\node[label] at (\x,0.11) {\v};}
+  \node[label] at (5.8,-0.37) {每请求改派预算（次）};
+  \node[label,rotate=90] at (0.10,1.80) {阶段成本和（距离单位）};
+\end{tikzpicture}
+\end{center}
+\source{《六分支研究结果》第 3 节及保存的逐步轨迹。}
+
+四请求例在预算从 $1$ 增至 $2$ 后由 $19$ 升至 $23$；六请求例在预算 $1,2,4,5$ 下分别为 $83,79,95,63$。
+这些结果只说明固定贪心规则的轨迹可能变差。
+最优策略仍可模仿小预算决策，因此其最坏值不会随预算增加而上升。
+\end{minipage}\hfill
+\begin{minipage}[t]{0.48\linewidth}
+\vspace{0pt}
+\subsection*{原 $24$ 条序列的策略拆分}
+不改派、单次腾位、完整链在同一组固定序列上的阶段成本和分别为 $1221$、$1043$、$1033$。
+完整链比单次腾位再少 $10$ 个距离单位。图 6 用不改派成本作分母，显示两种动作范围的降幅。
+
+\figuretitle{图 6\quad 相对不改派的阶段成本降幅}
+\begin{center}
+\begin{tikzpicture}[x=1cm,y=1cm]
+  \foreach \y/\v in {0.55/0,1.55/5,2.55/10,3.55/15} {
+    \draw[grid] (1.0,\y)--(10.7,\y);
+    \node[label,anchor=east] at (0.82,\y) {\v};
+  }
+  \draw[axis] (1.0,0.55)--(10.7,0.55);
+  \fill[black!78] (1.95,0.55) circle (0.08);
+  \fill[black!52] (4.75,0.55) rectangle (6.15,3.466);
+  \fill[black!78] (7.85,0.55) rectangle (9.25,3.630);
+  \node[number,above] at (1.95,0.65) {0\%};
+  \node[number,above] at (5.45,3.466) {14.58\%};
+  \node[number,above] at (8.55,3.630) {15.40\%};
+  \node[label] at (1.95,0.15) {不改派};
+  \node[label] at (5.45,0.15) {单次腾位};
+  \node[label] at (8.55,0.15) {完整链};
+  \node[label] at (5.8,-0.39) {固定策略};
+  \node[label,rotate=90] at (0.08,2.15) {相对不改派的降幅（\%）};
+\end{tikzpicture}
+\end{center}
+\source{拆分实验 \texttt{summary.json}，原 $24$ 条固定序列。}
+
+在这组输入中，价格系数从 $0$ 改为 $1/2$ 没有额外作用，完整链的 $10$ 单位节省来自更长的动作范围。
+开发用的六条序列却没有单一方向：完整链加价格后，预算 $1$ 的成本从 $431$ 降至 $420$，
+预算 $2$ 的成本从 $415$ 升至 $419$。因此，本报告只把价格结果解释到各自固定数据集。
+\end{minipage}
+
+\newpage
+\section{局部策略、长序列与证据边界}
+局部分块让不同服务点块分别调整，整个过程的改派时刻数不再受单个预算 $b$ 限制。
+以下比较使用研究前已固定的九条序列；预算 $1,2,4$ 同时对应块大小 $2,3,4$，
+跨预算变化不能全部归因于改派次数。
+
+\noindent\begin{minipage}[t]{0.48\linewidth}
+\vspace{0pt}
+\figuretitle{图 7\quad 局部分块相对全局重置的成本变化}
+\begin{center}
+\begin{tikzpicture}[x=1cm,y=1cm]
+  \foreach \x/\v in {1.2/-10,3.4/-5,5.6/0,7.8/5,10.0/10} {
+    \draw[grid] (\x,0.7)--(\x,4.4);
+    \node[label] at (\x,0.32) {\v\%};
+  }
+  \draw[axis] (1.2,0.7)--(10.0,0.7);
+  \draw[axis] (5.6,0.7)--(5.6,4.4);
+  \fill[black!78] (3.994,3.68) rectangle (5.6,4.05);
+  \fill[black!50] (5.6,2.53) rectangle (7.787,2.90);
+  \fill[black!78] (1.772,1.38) rectangle (5.6,1.75);
+  \node[label,anchor=east] at (1.02,3.865) {$b=1$};
+  \node[label,anchor=east] at (1.02,2.715) {$b=2$};
+  \node[label,anchor=east] at (1.02,1.565) {$b=4$};
+  \node[number,anchor=east] at (3.86,3.865) {$-3.65\%$};
+  \node[number,anchor=west] at (7.92,2.715) {$+4.97\%$};
+  \node[font=\small\bfseries,text=white,anchor=west] at (1.96,1.565) {$-8.70\%$};
+  \node[label] at (5.6,-0.34) {阶段成本和相对变化（\%；负数表示局部更低）};
+\end{tikzpicture}
+\end{center}
+\source{九条固定输入的 \texttt{comparison.json}：局部与全局成本依次为 $554/575$、$591/563$、$514/563$。}
+
+预算 $1$ 和 $4$ 时局部分块成本较低，预算 $2$ 时反而多付 $28$ 个距离单位。
+这足以否定它在这些输入上稳定胜过全局重置的说法。
+修正版局部策略仍有逐前缀不劣于其零改派基线的保证，因此适合作为有理论保障的对照。
+\end{minipage}\hfill
+\begin{minipage}[t]{0.48\linewidth}
+\vspace{0pt}
+\subsection*{任意长序列的保证}
+在一般直线布局上，已有一种至多使用每请求 $b$ 次原子重置的策略。
+设 $n$ 为服务点数，$\operatorname{OPT}_t$ 为第 $t$ 个前缀的精确最优成本，其逐前缀成本满足
+\[
+  C_t\leq\bigl(1+2\rho(n)\bigr)\operatorname{OPT}_t,
+  \qquad \rho(n)=O\!\left(\log(n+1)\right).
+\]
+这一结果覆盖任意长度，但没有改善已知零改派算法的渐近阶数，也不能推出一般布局的常数竞争比。
+
+\subsection*{核验范围}
+固定四点预算 $2$ 的显式策略已在 $6569$ 条序列和 $26276$ 个前缀上独立核验。
+拆分实验有 $448$ 条轨迹、$2613$ 个在线阶段通过独立核验。
+局部策略另核验了两轮比较的 $90$ 条轨迹、$520$ 个前缀，以及有限字母表上的 $3888$ 条轨迹、$15552$ 个前缀。
+这些有限计算支持对应数据范围内的行为判断，不替代连续域证明。
+
+\subsection*{仍需保留的边界}
+预算 $1$ 与单链预算 $2$ 的连续上界仍依赖 Z3（线性实数约束求解器）的判断。
+指定相关论文的全文尚未核对，研究结论的新颖性也未认证。
+本报告没有重跑正式实验；部分机器可读数据仍位于本机 \texttt{results/} 目录。
+\end{minipage}
+
+\vspace{7pt}
+\noindent\rule{\linewidth}{0.4pt}
+\noindent{\small\textbf{阅读入口：}同目录《六分支研究结果》《四请求精确值》《链动作与自由首步》《随机化与原始成本》《局部冻结与分块修复》《长序列低改派保证》。}
+
+\end{document}
