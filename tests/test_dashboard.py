@@ -28,7 +28,7 @@ from maxcover.dashboard import (  # noqa: E402
     _DashboardHTTPServer,
     serve_dashboard,
 )
-from maxcover.dashboard_jobs import JobConflictError
+from maxcover.dashboard_jobs import JobConflictError, _FileLock, _read, _write
 
 
 def _config() -> dict[str, object]:
@@ -309,6 +309,53 @@ class DashboardHttpSecurityTests(unittest.TestCase):
                 self.assertIn("正在写入", body["sources"][0]["error"])
             finally:
                 connection.close()
+
+    @unittest.skipUnless(os.name == "nt", "Windows trailing-dot directory aliases")
+    def test_windows_result_alias_obeys_active_and_incomplete_job_guards(self) -> None:
+        queue = self.root / "results/workbench_jobs"
+        queue.mkdir(parents=True)
+        lock = _FileLock(queue / "execution.lock")
+        try:
+            service = self.server.service
+            identifier = service.inspect_config("test.json")["config_hash"]
+            job = service.start_run({"config": "test.json", "config_hash": identifier, "output": "example"})
+            path = service.research_jobs._job_path(job["id"])
+            record = _read(path)
+            directory = self.root / "results/example"
+            directory.mkdir()
+            (directory / "raw_results.csv").write_text("case,algorithm\na,greedy\n", encoding="utf-8")
+            (directory / "summary.csv").write_text("case,algorithm\nold,greedy\n", encoding="utf-8")
+            (directory / "results_summary.md").write_text("# Old report", encoding="utf-8")
+            record.update(status="running", owner="test-owner", started_at=record["created_at"])
+            _write(path, record)
+
+            for status in ("running", "paused", "failed"):
+                if status != "running":
+                    record.update(status=status, finished_at=record["created_at"])
+                    _write(path, record)
+                for name in ("example", "example."):
+                    for endpoint in (f"/api/result?name={name}",
+                                     f"/api/artifact?result={name}&file=results_summary.md"):
+                        with self.subTest(status=status, endpoint=endpoint):
+                            connection = http.client.HTTPConnection("127.0.0.1", self.port, timeout=5)
+                            try:
+                                connection.request("GET", endpoint)
+                                response = connection.getresponse()
+                                encoded = response.read()
+                                expected = 200 if status != "running" and "/api/result?" in endpoint else 409
+                                self.assertEqual(response.status, expected, encoded)
+                                body = json.loads(encoded)
+                                if expected == 200:
+                                    self.assertTrue(body["incomplete"])
+                                    self.assertEqual(body["summary"], [])
+                                    self.assertEqual(body["artifacts"], [])
+                                    self.assertEqual(len(body["runs"]), 1)
+                            finally:
+                                connection.close()
+        finally:
+            # Keep execution blocked until the worker has stopped: no benchmark runs.
+            self.server.service.close()
+            lock.close()
 
     def test_same_origin_json_post_is_allowed(self) -> None:
         status, body = self._post(

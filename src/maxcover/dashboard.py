@@ -419,8 +419,10 @@ class DashboardService:
         }
 
     def _incomplete_result(self, name: str) -> bool:
+        path = _safe_child(self.results_root, name)
         latest = next((job for job in self._research_jobs.list_jobs()["jobs"]
-                       if job.get("kind") == "benchmark" and Path(job.get("output_dir", "")) == Path("results") / name), None) if self._research_jobs is not None else None
+                       if job.get("kind") == "benchmark"
+                       and (self.project_root / job["output_dir"]).resolve() == path), None) if self._research_jobs is not None else None
         return latest is not None and latest["status"] != "completed"
 
     def list_replays(self, excluded: set[str] | None = None) -> dict[str, object]:

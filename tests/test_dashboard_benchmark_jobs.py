@@ -315,7 +315,10 @@ class BenchmarkJobsTests(unittest.TestCase):
         self.slow(30)
         active = service.submit(self.payload(output="live"))
         self.until(service, active, lambda item: item["progress"]["saved_runs"] > 0)
-        for candidate in ("results", "results/live", "results/live/raw_results.csv"):
+        candidates = ["results", "results/live", "results/live/raw_results.csv"]
+        if os.name == "nt":
+            candidates.extend(("results/live.", "results/live./raw_results.csv"))
+        for candidate in candidates:
             with self.assertRaises(JobConflictError):
                 with service.reading_outputs([candidate]):
                     self.fail("running output was readable")
