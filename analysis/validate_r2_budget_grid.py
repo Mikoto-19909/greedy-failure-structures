@@ -233,13 +233,14 @@ def _verify_summaries(output, budget):
                 or json.loads(actual["first_failure_counts"]) != first
                 or any(not math.isclose(float(actual[key]), value, rel_tol=1e-11, abs_tol=1e-12) for key, value in expected.items())):
             raise ValueError("mechanism summary differs from complete diagnostics")
-    write_json(output / "summary_verification.json", {"status": "passed", "cells": len(rows), "budget_rows": len(budget_rows), "mechanism_cells": len(mechanisms)})
+    return {"status": "passed", "cells": len(rows), "budget_rows": len(budget_rows), "mechanism_cells": len(mechanisms)}
 
 
 def verify_summaries(output):
     design = validate_design(read_json(Path(output) / "config.json"))
     with RuntimeBudget(output, design, "summary_verification") as budget:
-        _verify_summaries(output, budget)
+        result = _verify_summaries(output, budget)
+    write_json(Path(output) / "summary_verification.json", result)
 
 
 def main():
