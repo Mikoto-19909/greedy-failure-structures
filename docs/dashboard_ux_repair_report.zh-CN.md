@@ -66,7 +66,7 @@ node tests/dashboard_browser.cjs
 浏览器检查结果与临时项目路径保存在 [browser-checks.json](../output/playwright/browser-checks.json)。
 视觉检查包括 [桌面首屏](../output/playwright/home-1366.png)、[窄屏入口](../output/playwright/home-390.png)、
 [窄屏结果选择](../output/playwright/results-390.png)、[真实生成报告](../output/playwright/report-real-benchmark.png)。
-项目检查详见 [日志](../output/playwright/project-check-fast-env.log)。这些为忽略的本地证据；跨机器交接应附带此目录，而不是声称已随 Git 发布。
+项目检查现可查阅 [PR 主线整合复验日志](../results/pr-publication-20260913/dashboard-default-check.log)，对应下文的 514 项检查。原实现 469 项验收日志的旧链接文件未保留在当前入口，两次验收不能混用。这些为忽略的本地证据；跨机器交接应附带对应材料，而不是声称已随 Git 发布。
 
 所有改动限定在 dashboard 展示/交互、必要服务元信息、说明与回归；算法、种子、CSV schema、实验身份和恢复语义未修改。
 未开展大型实验、CUDA 硬件验收、完整跨平台 full profile 或远端 CI。浏览器里的结果夹具用于交互验证，不作为研究成果。
