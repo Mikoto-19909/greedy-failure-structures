@@ -180,6 +180,8 @@ python run_project.py resume --config configs/p6_uniform_scale.json --output res
 
 该命令跳过已完成的运行标识。改用 `--force` 则在同一输出目录下从头执行
 配置计划。
+复用前会核对记录的种子、实例、算法身份和选项是否与计划一致。不一致时，
+在改写现有产物前拒绝恢复；合法的部分检查点仍只执行缺失的运行。
 
 ### `summarize`
 

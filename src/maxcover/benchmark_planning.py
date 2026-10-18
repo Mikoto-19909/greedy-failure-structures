@@ -429,6 +429,7 @@ def _tasks_for_config(
 def _validate_run_identity(
     config: ExperimentConfig, expected_hash: str, rows: Sequence[RunRecord],
     *, planned_instances: Sequence[_PlannedInstance] | None = None,
+    allow_partial: bool = False,
 ) -> dict[str, _RunTask]:
     if planned_instances is None:
         planned_instances = _instances_for_config(config)
@@ -441,7 +442,7 @@ def _validate_run_identity(
         raise ValueError("raw results contain duplicate run_id values")
     missing = sorted(set(expected_by_run_id) - set(actual_by_run_id))
     unexpected = sorted(set(actual_by_run_id) - set(expected_by_run_id))
-    if missing or unexpected:
+    if (missing and not allow_partial) or unexpected:
         raise ValueError(
             "raw results run_id values do not match the execution plan "
             f"(missing={len(missing)}, unexpected={len(unexpected)})"
@@ -464,8 +465,8 @@ def _validate_run_identity(
         "algorithm",
         "algorithm_options",
     )
-    for run_id, task in expected_by_run_id.items():
-        row = actual_by_run_id[run_id]
+    for run_id, row in actual_by_run_id.items():
+        task = expected_by_run_id[run_id]
         expected_values = {
             "config_hash": expected_hash,
             "case_id": task.case_id,
