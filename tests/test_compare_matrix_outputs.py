@@ -382,6 +382,27 @@ class CompareMatrixOutputsTests(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
         self.assertIn("matrix comparison failed", result.stderr)
 
+    def test_zero_record_artifacts_are_hard_errors(self) -> None:
+        for content in ("", ",".join(RunRecord.CSV_FIELDS) + "\n", "not,a,result\n"):
+            with self.subTest(content=content):
+                for folder in (self.baseline, self.variant):
+                    (folder / "raw_results.csv").write_text(content, encoding="utf-8")
+                result = run_compare(self.baseline, self.variant)
+                self.assertEqual(result.returncode, 1)
+                self.assertIn("matrix comparison failed", result.stderr)
+
+    def test_duplicate_header_cannot_hide_an_extra_value(self) -> None:
+        path = self.variant / "raw_results.csv"
+        with path.open(encoding="utf-8", newline="") as handle:
+            rows = list(csv.reader(handle))
+        with path.open("w", encoding="utf-8", newline="") as handle:
+            writer = csv.writer(handle)
+            writer.writerow(["seed", *rows[0]])
+            writer.writerows(["9999", *row] for row in rows[1:])
+        result = run_compare(self.baseline, self.variant)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("matrix comparison failed", result.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()

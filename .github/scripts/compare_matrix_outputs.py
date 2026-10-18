@@ -93,7 +93,12 @@ def _load_records(path: Path) -> list[RunRecord]:
         raise ValueError(f"{path} does not exist")
     try:
         with path.open("r", encoding="utf-8", newline="") as handle:
-            rows = [RunRecord.from_csv_row(row) for row in csv.DictReader(handle)]
+            reader = csv.DictReader(handle)
+            if not reader.fieldnames or len(set(reader.fieldnames)) != len(reader.fieldnames):
+                raise ValueError("missing or duplicate CSV columns")
+            rows = [RunRecord.from_csv_row(row) for row in reader]
+        if not rows:
+            raise ValueError("raw results contain no records")
     except (KeyError, ValueError, csv.Error) as error:
         raise ValueError(f"{path.name} cannot be read as raw results: {error}") from error
     identifiers = [row.run_id for row in rows]
