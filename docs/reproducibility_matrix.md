@@ -67,6 +67,10 @@ where they disagree with it), and `schema_version` of the row is normalized
 on read - a run whose records cannot be loaded under the current schema is a
 hard comparison error, not a field difference.
 
+Every input must contain at least one valid run. Empty files, header-only files
+and duplicate CSV columns are hard errors, even when all matrix cells contain
+the same malformed input.
+
 The `status` field is compared. A run that completed inside its limit on one
 platform and was stopped by the limit on another is a disagreement the matrix
 reports, even though the two platforms may both be correct for their own wall

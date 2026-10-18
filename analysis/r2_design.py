@@ -133,10 +133,16 @@ class RuntimeBudget:
         return self
 
     def __exit__(self, kind, value, traceback):
-        entry = {"operation": self.operation, "wall_seconds": time.perf_counter() - self.started,
-                 "status": "complete" if kind is None else "interrupted"}
+        elapsed = time.perf_counter() - self.started
+        exhausted = self.prior + elapsed >= self.design["limits"]["wall_seconds"]
+        entry = {"operation": self.operation, "wall_seconds": elapsed,
+                 "status": "complete" if kind is None and not exhausted else "interrupted"}
         with (self.output / "execution.jsonl").open("a", encoding="utf-8") as handle:
             handle.write(json.dumps(entry) + "\n")
+        # Account trailing verification/summary work, without replacing an
+        # existing calculation or checkpoint exception with a budget error.
+        if kind is None and exhausted:
+            raise RuntimeError("cumulative research wall budget exhausted; preserve samples and resume state")
 
 
 def computed_results(function, arguments, workers, budget):
@@ -144,6 +150,7 @@ def computed_results(function, arguments, workers, budget):
         for item in arguments:
             budget.check()
             yield function(*item)
+            budget.check()
         return
     iterator = iter(arguments)
     executor = ProcessPoolExecutor(max_workers=workers)

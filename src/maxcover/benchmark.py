@@ -86,6 +86,7 @@ from .benchmark_planning import (
     _resolved_case_parameters,
     _structural_coupling_pair_id,
     _tasks_for_config,
+    _validate_run_identity,
 )
 from .certificates import known_optimum_certificate
 from .config import ExperimentConfig, load_config
@@ -468,6 +469,11 @@ def _run_benchmark_controlled(
         raise ValueError(
             "existing raw_results.csv contains runs outside the current plan; "
             "use --force"
+        )
+    if existing:
+        _validate_run_identity(
+            config, identifier, list(existing.values()),
+            planned_instances=planned_instances, allow_partial=True,
         )
     # Retired metadata must not survive a validated run, resume, or summarize.
     (output_dir / "manifest.json").unlink(missing_ok=True)

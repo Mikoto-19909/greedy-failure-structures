@@ -138,8 +138,8 @@ def verify_summaries(output):
                     raise ValueError(f"F3 primary summary differs: {key}")
             elif actual[key] != value:
                 raise ValueError(f"F3 primary summary differs: {key}")
-        write_json(output / "summary_verification.json", {"status": "passed", "graphs": n, "endpoints": 4 * n,
-                                                          "scope": "derived consistency; not an independent optimum proof"})
+    write_json(output / "summary_verification.json", {"status": "passed", "graphs": n, "endpoints": 4 * n,
+                                                      "scope": "derived consistency; not an independent optimum proof"})
 
 
 def main():

@@ -200,6 +200,9 @@ python run_project.py resume --config configs/p6_uniform_scale.json --output res
 
 This command skips completed run identifiers. Passing `--force` instead starts
 the configured plan again under the same output directory.
+Before reusing a row, it checks its seed, instance and algorithm identity and
+options against the plan. An inconsistent row is rejected before existing
+artifacts are changed; a valid partial checkpoint still resumes normally.
 
 ### `summarize`
 

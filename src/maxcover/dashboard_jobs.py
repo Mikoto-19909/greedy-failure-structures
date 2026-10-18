@@ -451,18 +451,21 @@ class JobService:
     @contextmanager
     def reading_outputs(self, paths: Iterable[str]) -> Iterator[None]:
         """Keep queued writers from starting while a result snapshot is read."""
-        candidates = []
+        relative_paths = []
         for relative in paths:
             path = Path(relative)
             if path.is_absolute() or ".." in path.parts:
                 raise ValueError("result reads require project-relative paths")
-            candidates.append(tuple(part.casefold() for part in path.parts))
+            relative_paths.append(relative)
         with self._mutex:
+            # Resolve Windows directory aliases using the same filesystem identity
+            # as the readers. Native Path comparisons retain platform case rules.
+            candidates = [_path(self.project_root, relative) for relative in relative_paths]
             for job in self._records():
                 if job["kind"] != "benchmark" or job["status"] != "running":
                     continue
-                output = tuple(part.casefold() for part in Path(job["output_dir"]).parts)
-                if any(parts[:len(output)] == output or output[:len(parts)] == parts for parts in candidates):
+                output = _path(self.project_root, job["output_dir"])
+                if any(path.is_relative_to(output) or output.is_relative_to(path) for path in candidates):
                     raise JobConflictError("benchmark output is being written; pause it or wait for completion before reading results")
             yield
 

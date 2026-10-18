@@ -119,6 +119,37 @@ class ReproducibilityTests(unittest.TestCase):
                     self.assertEqual(manifest.read_text(encoding="utf-8"), "legacy")
                     self.assertEqual((output / "raw_results.csv").read_bytes(), raw_before)
 
+    def test_resume_and_summarize_reject_changed_run_identity_without_writes(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            config = _write_config(root, _config(algorithms=[{"name": "greedy"}]))
+            output = root / "output"
+            original = run_benchmark(config, output)
+            for partial in (False, True):
+                for field, value in (("seed", "9999"), ("algorithm_options", '{"time_limit_seconds":7}')):
+                    commands = (run_benchmark,) if partial else (
+                        run_benchmark, benchmark_module.summarize_benchmark,
+                    )
+                    for command in commands:
+                        with self.subTest(partial=partial, field=field, command=command.__name__):
+                            rows = [row.to_csv_row() for row in original.rows]
+                            if partial:
+                                rows.pop()
+                            rows[0][field] = value
+                            with (output / "raw_results.csv").open("w", encoding="utf-8", newline="") as handle:
+                                writer = csv.DictWriter(handle, fieldnames=RunRecord.CSV_FIELDS)
+                                writer.writeheader()
+                                writer.writerows(rows)
+                            (output / "manifest.json").write_text("legacy", encoding="utf-8")
+                            before = {p.relative_to(output): p.read_bytes() for p in output.rglob("*") if p.is_file()}
+                            with patch.object(benchmark_module, "_execute_task", side_effect=AssertionError("unexpected rerun")):
+                                with self.assertRaisesRegex(ValueError, f"field '{field}' does not match"):
+                                    command(config, output)
+                            self.assertEqual(
+                                {p.relative_to(output): p.read_bytes() for p in output.rglob("*") if p.is_file()},
+                                before,
+                            )
+
     @staticmethod
     def _instance_payload() -> dict[str, object]:
         return {

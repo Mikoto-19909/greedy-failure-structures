@@ -53,6 +53,7 @@
 [默认检查日志](../results/instance_family_validation/default_check.log)，以及
 [独立审阅结果](../results/instance_family_validation/independent_review/result.json)。这些忽略目录中的
 材料未发布；常驻回归与旧 pickle 随源码交付，不依赖该目录才能运行。
+上述四份材料已于 2026-10-18 从 2026-09-16 的本地退役归档按原字节恢复到原链接位置，未重新执行历史验证。
 
 在仓库根目录复查常驻回归和默认检查：
 
