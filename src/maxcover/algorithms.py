@@ -322,15 +322,15 @@ def branch_and_bound(
     max_depth = 0
     initial_incumbent = best_value
 
-    def search(position: int, chosen: list[int], covered: int) -> None:
-        nonlocal best_selected, best_value, nodes, timed_out
-        nonlocal bound_prunes, cardinality_prunes, incumbent_updates, max_depth
+    pending: list[tuple[int, tuple[int, ...], int]] = [(0, (), 0)]
+    while pending:
+        position, chosen, covered = pending.pop()
         nodes += 1
         max_depth = max(max_depth, position)
 
         if deadline is not None and time.perf_counter() >= deadline:
             timed_out = True
-            return
+            break
 
         value = covered.bit_count()
         if value > best_value:
@@ -340,24 +340,20 @@ def branch_and_bound(
 
         slots = instance.k - len(chosen)
         if slots == 0 or position == n:
-            return
+            continue
         if n - position < slots:
             cardinality_prunes += 1
-            return
+            continue
 
         # Even taking every remaining element cannot improve the incumbent.
         if (covered | suffix_union[position]).bit_count() <= best_value:
             bound_prunes += 1
-            return
+            continue
 
-        chosen.append(position)
-        search(position + 1, chosen, covered | masks[position])
-        chosen.pop()
-        if timed_out:
-            return
-        search(position + 1, chosen, covered)
+        # Push exclusion first so the LIFO stack retains include-first DFS.
+        pending.append((position + 1, chosen, covered))
+        pending.append((position + 1, chosen + (position,), covered | masks[position]))
 
-    search(0, [], 0)
     status = (
         SolutionStatus.OPTIMAL
         if not timed_out or best_value == instance.universe_size
@@ -453,21 +449,17 @@ def branch_and_bound_enhanced(
     incumbent_updates = 0
     max_depth = 0
 
-    def search(
-        remaining: tuple[tuple[int, int], ...],
-        chosen: tuple[int, ...],
-        covered: int,
-        depth: int,
-    ) -> None:
-        nonlocal best_selected, best_value, nodes, timed_out
-        nonlocal bound_prunes, cardinality_bound_prunes
-        nonlocal incumbent_updates, max_depth
+    pending: list[tuple[tuple[tuple[int, int], ...], tuple[int, ...], int, int]] = [
+        (tuple(candidates), (), 0, 0)
+    ]
+    while pending:
+        remaining, chosen, covered, depth = pending.pop()
         nodes += 1
         max_depth = max(max_depth, depth)
 
         if deadline is not None and time.perf_counter() >= deadline:
             timed_out = True
-            return
+            break
 
         value = covered.bit_count()
         if value > best_value:
@@ -477,7 +469,7 @@ def branch_and_bound_enhanced(
 
         slots = instance.k - len(chosen)
         if slots == 0 or not remaining or best_value == instance.universe_size:
-            return
+            continue
 
         union_mask = covered
         marginal_gains: list[int] = []
@@ -497,7 +489,7 @@ def branch_and_bound_enhanced(
             bound_prunes += 1
             if bound_strategy == "cardinality" and union_bound > best_value:
                 cardinality_bound_prunes += 1
-            return
+            continue
 
         if ordering_strategy == "dynamic_marginal":
             branch_position = max(
@@ -513,12 +505,10 @@ def branch_and_bound_enhanced(
         original_index, mask = remaining[branch_position]
         rest = remaining[:branch_position] + remaining[branch_position + 1 :]
 
-        search(rest, chosen + (original_index,), covered | mask, depth + 1)
-        if timed_out:
-            return
-        search(rest, chosen, covered, depth + 1)
+        # Preserve the recursive implementation's branch order and node counts.
+        pending.append((rest, chosen, covered, depth + 1))
+        pending.append((rest, chosen + (original_index,), covered | mask, depth + 1))
 
-    search(tuple(candidates), (), 0, 0)
     status = (
         SolutionStatus.OPTIMAL
         if not timed_out or best_value == instance.universe_size

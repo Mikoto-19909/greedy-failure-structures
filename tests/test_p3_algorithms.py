@@ -264,6 +264,30 @@ class MultiStartLocalSearchTests(unittest.TestCase):
 
 
 class EnhancedBranchAndBoundTests(unittest.TestCase):
+    def test_suffix_union_handles_deep_candidate_search(self) -> None:
+        set_count = 1200
+        instance = MaximumCoverageInstance(
+            universe_size=set_count,
+            sets=tuple(1 << index for index in range(set_count)),
+            k=1,
+        )
+        for ordering in ("static_size", "dynamic_marginal"):
+            with self.subTest(ordering=ordering):
+                solution = branch_and_bound_enhanced(
+                    instance,
+                    time_limit_seconds=None,
+                    bound_strategy="suffix_union",
+                    ordering_strategy=ordering,
+                )
+                self.assertEqual(solution.status, SolutionStatus.OPTIMAL)
+                self.assertEqual(solution.selected, (0,))
+                self.assertEqual(solution.coverage, 1)
+                self.assertEqual(solution.best_bound, 1)
+                self.assertEqual(solution.nodes_or_iterations, 2 * set_count - 1)
+                self.assertEqual(
+                    solution.metadata["search"]["max_depth"], set_count - 1
+                )
+
     def test_enhanced_matches_both_exact_methods_on_500_random_instances(self) -> None:
         rng = random.Random(20260719)
         for sample in range(500):
