@@ -1,5 +1,9 @@
 # Research analysis
 
+For local-only outputs, supplemental audits and retired worktree archives, use
+the [historical reports and evidence index](historical_evidence.zh-CN.md).
+It distinguishes local access from evidence available in Git history or frozen snapshots.
+
 The [CPU/Numba/CUDA delivery summary](acceleration_delivery.zh-CN.md) links the
 existing measured results and complete archives without duplicating large data
 in the source tree. See the [optional CPU verification guide](../docs/r2_fast_verification.zh-CN.md).

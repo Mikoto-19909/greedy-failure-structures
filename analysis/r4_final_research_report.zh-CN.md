@@ -268,4 +268,4 @@ F4 基线已发布并完成远端回读。DUAL 的本地 ZIP 包含 1,897 个成
 
 [6] [正式命令成本记录](https://github.com/Mikoto-19909/greedy-failure-structures/blob/b0c274f6be0d810b873184f0e81af41039f1a300/results/r4_dual_comparison_v1_commands/command_runs.jsonl)、[备份恢复说明](https://github.com/Mikoto-19909/greedy-failure-structures/blob/b0c274f6be0d810b873184f0e81af41039f1a300/results/r4_dual_backup_v1/RESTORE.md)及[固定证据提交](https://github.com/Mikoto-19909/greedy-failure-structures/commit/b0c274f6be0d810b873184f0e81af41039f1a300)。证据完整性检查证明保存和恢复的一致性，科学正确性由方法论证与独立数值验证支持。
 
-综合报告的配对核对记录 `results/r4_final_report_work/data_audit.json` 与远端发布回执 `results/r4_dual_backup_v1/publication_receipt.json` 仅保存在本机，不属于上述固定快照，也不作为仓库下载链接。公开的原始数据、独立验证和命令记录见 [5]、[6]。
+综合报告的配对核对记录 `results/r4_final_report_work/data_audit.json` 与远端发布回执 `results/r4_dual_backup_v1/publication_receipt.json` 仅保存在本机，不属于上述固定快照，也不作为仓库下载链接。本机可通过[历史证据入口](historical_evidence.zh-CN.md#优先访问本地材料)直接打开这两项材料。公开的原始数据、独立验证和命令记录见 [5]、[6]。
